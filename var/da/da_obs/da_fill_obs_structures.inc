@@ -54,6 +54,15 @@ subroutine da_fill_obs_structures(iv, ob, uvq_direct)
    iv % gpsref_ef_t = 1.0
    iv % gpsref_ef_q = 1.0
 
+   iv % gpseph_ef_eph = 1.0
+   iv % gpseph_ef_ref = 1.0
+   iv % gpseph_ef_p = 1.0
+   iv % gpseph_ef_t = 1.0
+   iv % gpseph_ef_q = 1.0
+   iv % gpseph_ef_azim = 1.0
+   iv % gpseph_ef_lat = 1.0
+   iv % gpseph_ef_lon = 1.0
+
    iv % sound_ef_u = 1.0
    iv % sound_ef_v = 1.0
    iv % sound_ef_t = 1.0
@@ -267,6 +276,41 @@ subroutine da_fill_obs_structures(iv, ob, uvq_direct)
             ob % gpsref(n) %   t(k) = iv % gpsref(n) %   t(k) % inv
             ob % gpsref(n) %   q(k) = iv % gpsref(n) %   q(k) % inv
          end do
+      end do
+   end if
+
+   ! [2.6.1] Transfer GPS EPH obs:
+
+   if (iv%info(gpseph)%nlocal > 0) then
+      do n = 1, iv%info(gpseph)%nlocal
+         do k = 1, iv%info(gpseph)%levels(n)
+! ............................................................................
+! Convert the geometric height to the geopotential height for GPSEPH data
+! because GPSRO used geometric height for impact parameter, and the WRF model
+! always uses the geopotential height as the vertical coordinate for P, T, q.
+! YRG (10/05/2010):
+!      write(221,*) iv%gpseph(n)%h(k)
+            geometric_h = iv%gpseph(n)%h(k) / 1000.0
+            call da_msl2geo1 (geometric_h, iv%info(gpseph)%lat(1,n),  &
+                           iv%info(gpseph)%lon(1,n), geopotential_h)
+            iv % gpseph(n) % h(k) = geopotential_h * 1000.0
+!      write(222,*) iv%gpseph(n)%h(k)
+! ............................................................................
+            ob % gpseph(n) % eph(k) = iv % gpseph(n) % eph(k) % inv
+            ob % gpseph(n) % ref(k) = iv % gpseph(n) % ref(k) % inv
+            ob % gpseph(n) %   h(k) = geometric_h * 1000.0    ! restore the original geometric height (meter) (S.Y. Chen 05/25/2012)
+            ob % gpseph(n) %   p(k) = iv % gpseph(n) %   p(k) % inv
+            ob % gpseph(n) %   t(k) = iv % gpseph(n) %   t(k) % inv
+            ob % gpseph(n) %   q(k) = iv % gpseph(n) %   q(k) % inv
+            ob % gpseph(n) %azim(k) = iv % gpseph(n) %azim(k) % inv
+            ob % gpseph(n) % lat(k) = iv % gpseph(n) % lat(k) % inv
+            ob % gpseph(n) % lon(k) = iv % gpseph(n) % lon(k) % inv
+         end do
+         if ( kde > iv%info(gpseph)%levels(n)) then
+         do k = iv%info(gpseph)%levels(n)+1, kde
+            ob % gpseph(n) % eph(k) = missing_r
+         enddo
+         endif
       end do
    end if
 

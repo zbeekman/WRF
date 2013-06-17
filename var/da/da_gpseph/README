@@ -1,0 +1,24 @@
+#########################################################
+HOW TO USE NONLOCAL OPERATOR IN WRFDA (namelist.input) (Shu-Ya Chen)
+1. add USE_GPSEPHOBS =  T in &wrfvar4 for GPS RO data in atmPrf
+2. add USE_GPSREFOBS =  T in &wrfvar4 and use_nonlocal = T in &wrfvar5 for GPS RO data in bfrPrf
+3. provide an observation error (OBSERROR.TBL) for the nonlocal operator
+4. The nonlocal operator in this version only works for serial run
+
+#########################################################
+History for implement of nonlocal operator in WRFDA v3.2
+
+1. The nonlocal operator is implemented into WRFDA v3.2 in Feb. 2011 (v201102). (Shu-Ya Chen and Shu-Hua Chen)
+But an inconsistency in the tangent linear and adjoint check in the version of 201102.
+
+2. Fix bugs and pass through successfully for the tangent linear and adjoint checking in Mar. 2012 (v201203). (Shu-Ya Chen)
+
+3. Shu-Ya Chen found that a conversion problem in geometric and geopotential height: 
+It is no problem for WRFDA V2, because it uses geometric heigh for both model and observation. There is a conversion in the operator to convert the model geopotential height into geometric height.
+In current version (V3), the observed geometric height has been converted into geopotential height after reading the observation. But the conversion for model height(geopotential-->geometric) is still keeping in the subroutine, it will make an inconsistent information for assimilation. 
+The conversion of modle height in nonlocal operator (geopotential --> geometric) had been removed and use the xb%h (original modeled geopotential height) as the geo_h for the calculation of model mean height in Jun. 2012 (v201206). (Shu-Ya Chen)
+
+4. Shu-Ya Chen migrate the nonlocal operator into WRFDA v3.3.1 (version: CWB OP24) 
+
+5. The GPS data for nonlocal operator used to be atmPrf. This version (v3.3.1) had been modified to read either atmPrf or bfrPrf for the nonlocal operator. (Shu-Ya Chen, Sept. 2012)
+

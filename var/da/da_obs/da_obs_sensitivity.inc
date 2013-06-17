@@ -28,10 +28,10 @@ subroutine da_obs_sensitivity(ktr, iv)
 
    integer                           :: i, j, k, n, inst
    integer                           :: npred, ipred
-   real                              :: ktd(26,nbvar)
+   real                              :: ktd(29,nbvar)
    real                              :: ktdrad(iv%num_inst)
    real                              :: ktbrad(iv%num_inst,npredmax) 
-   real                              :: ktd_global(26,nbvar)
+   real                              :: ktd_global(29,nbvar)
    real                              :: ktdrad_global(iv%num_inst)
    real                              :: ktbrad_global(iv%num_inst, npredmax) 
 
@@ -385,6 +385,20 @@ subroutine da_obs_sensitivity(ktr, iv)
               end do
 	    end do
 	 end if   
+
+         if (iv%info(gpseph)%nlocal > 0) then
+            do n=1, iv%info(gpseph)%nlocal
+               if (.not. iv%info(gpseph)%proc_domain(1,n)) cycle
+               do k=1, iv%info(gpseph)%levels(n)
+                  if (iv%gpseph(n)%eph(k)%qc < obs_qc_pointer) cycle
+                  iv%gpseph(n)%eph(k)%sens = ktr%gpseph(n)%eph(k) / (iv%gpseph(n)%eph(k)%error ** 2)
+
+                  iv%gpseph(n)%eph(k)%inv  = iv%gpseph(n)%eph(k)%inv * iv%gpseph(n)%eph(k)%sens
+
+                  ktd(gpseph,rv) = ktd(gpseph,rv) + iv%gpseph(n)%eph(k)%inv
+              end do
+            end do
+         end if
 	       
          if (iv%info(ssmi_rv)%nlocal > 0) then
             do n=1, iv%info(ssmi_rv)%nlocal

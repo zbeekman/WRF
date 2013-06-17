@@ -14,23 +14,23 @@ subroutine da_get_innov_vector_gpsref(it, num_qcstat_conv, grid, ob, iv)
    type(iv_type),    intent(inout) :: iv       ! O-B structure.
    integer,          intent(inout) :: num_qcstat_conv(:,:,:,:)       
 
-   integer :: n        ! Loop counter.
-   integer :: i, j, k, kk  ! Index dimension.
-   real    :: dx, dxm, dz, dzm  ! Interpolation weights.
-   real    :: dy, dym  ! Interpolation weights.
-   real,allocatable :: model_ref(:,:) !Model gpsref at ob loc
-   real    :: v_h(kms:kme), v_p(kms:kme)     ! Model value h at ob
+   integer :: n                                ! Loop counter.
+   integer :: i, j, k, kk                      ! Index dimension.
+   real    :: dx, dxm, dz, dzm                 ! Interpolation weights.
+   real    :: dy, dym                          ! Interpolation weights.
+   real,allocatable :: model_ref(:,:)          ! Model gpsref at ob loc
+   real    :: v_h(kms:kme), v_p(kms:kme)       ! Model value h at ob
 
    integer :: Iu_ref, l
-   integer,allocatable :: used_lev(:,:) ! for obs. data thinning
-                                        ! record the closest level with model
-   integer,allocatable :: qc(:)         ! record iv%gpsref(n)%ref(k)%qc
-                               ! hor. location.
-   real    :: distance_h       ! cal. h-difference between obs and model
-   real,allocatable :: min_dis(:)   ! minimum difference
+   integer,allocatable :: used_lev(:,:)        ! for obs. data thinning
+                                               ! record the closest level with model
+   integer,allocatable :: qc(:)                ! record iv%gpsref(n)%ref(k)%qc
+                                               ! hor. location.
+   real    :: distance_h                       ! cal. h-difference between obs and model
+   real,allocatable :: min_dis(:)              ! minimum difference
                                                ! hor. location.
 ! t_iwabuchi 20111216 T for QC 
-   real, allocatable :: int_t(:,:,:)     ! for T
+   real, allocatable :: int_t(:,:,:)           ! for T
 
    ! For quality control
 

@@ -28,3 +28,6 @@ crtm_coeffs
 
 fso.io_config and plus.io_config
    input file for WRF FSO runtime config of I/O streams
+
+OBSERROR.TBL
+   observation error for GPS nonlocal operator

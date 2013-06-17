@@ -59,6 +59,7 @@ subroutine da_read_obs_ascii (iv, filename, uvq_direct)
 
    real*8                :: obs_time
    integer               :: iyear, imonth, iday, ihour, imin
+   integer               :: nlevels2
 
    if (trace_use) call da_trace_entry("da_read_obs_ascii")
 
@@ -232,6 +233,15 @@ subroutine da_read_obs_ascii (iv, filename, uvq_direct)
             platform%each(i)%td%inv, platform%each(i)%td%qc, platform%each(i)%td%error, &
             platform%each(i)%rh%inv, platform%each(i)%rh%qc, platform%each(i)%rh%error
 
+! azimuth of GPS(bfrPrf) = azimuth of GPS(atmPrf) + 180.0 (S.-Y. Chen)
+         if ( fm == 116 .and. gpseph_nonlocal ) then
+            platform%info%platform = 'FM-118 GPSEP'
+            fm = 118
+            use_gpsephobs = .True.
+            use_gpsrefobs = .False.
+!           print*,'RESET FM-116 to FM-',fm,' at ',platform%info%lat,platform%info%lon
+         endif
+
 ! cys_add
          if (uvq_direct) then
             platform%each (i)%u = platform%each (i)%speed
@@ -267,6 +277,7 @@ subroutine da_read_obs_ascii (iv, filename, uvq_direct)
          !      the model wind components: u, v
 
          if (.not. uvq_direct) then   !cys_add
+         if (fm /= 116 .and. fm /= 118) then ! for gpsref, gpseph (S.-Y. Chen)
          if (platform%each (i)%speed%qc /= missing_data .and. &
              platform%each (i)%v%qc /= missing_data) then
              if (.not. var_wind) then
@@ -292,6 +303,7 @@ subroutine da_read_obs_ascii (iv, filename, uvq_direct)
             platform%each (i)%u%qc    = missing_data
             platform%each (i)%v%qc    = missing_data
          end if
+         end if   !for GPSRO
          end if   !cys_add
       end do
 
@@ -375,9 +387,12 @@ subroutine da_read_obs_ascii (iv, filename, uvq_direct)
          end if
       end if
 
-      if (fm /= 86) call da_obs_proc_station(platform,fm,uvq_direct)  !cys_change
+      if (fm /= 86 .and. fm /= 118) call da_obs_proc_station(platform,fm,uvq_direct)  !cys_change
 
       nlevels = platform%info%levels
+
+      if (fm == 118) nlevels2 = max(kde,platform%info%levels)  !S.-Y. Chen
+
       ! Loop over duplicating obs for global
       ndup = 1
       if (global .and. (platform%loc%i < ids .or. platform%loc%i >= ide)) ndup= 2
@@ -843,6 +858,81 @@ subroutine da_read_obs_ascii (iv, filename, uvq_direct)
                iv%gpsref(nlocal(gpsref))%t(i)   = platform%each(i)%t
                iv%gpsref(nlocal(gpsref))%q(i)   = platform%each(i)%q
             end do
+
+         case (118) ;
+         if(.not.use_GpsephObs) cycle reports
+         if (n==1) ntotal(gpseph) = ntotal(gpseph) + 1
+         if (outside) cycle reports
+         nlocal(gpseph) = nlocal(gpseph) + 1
+
+         if (nlocal(gpseph) > iv%info(gpseph)%nlocal) cycle reports
+         iv%gpseph(nlocal(gpseph))%rfict  = platform%loc%pw%inv
+
+         allocate (iv%gpseph(nlocal(gpseph))%h (1:nlevels2))
+         allocate (iv%gpseph(nlocal(gpseph))%eph(1:nlevels2))
+         allocate (iv%gpseph(nlocal(gpseph))%ref(1:nlevels2))
+         allocate (iv%gpseph(nlocal(gpseph))%  p(1:nlevels2))
+         allocate (iv%gpseph(nlocal(gpseph))%  t(1:nlevels2))
+         allocate (iv%gpseph(nlocal(gpseph))%  q(1:nlevels2))
+         allocate (iv%gpseph(nlocal(gpseph))%azim(1:nlevels2))
+         allocate (iv%gpseph(nlocal(gpseph))%lat(1:nlevels2))
+         allocate (iv%gpseph(nlocal(gpseph))%lon(1:nlevels2))
+         
+         do i = 1, nlevels
+           iv%gpseph(nlocal(gpseph))%p(i)   = platform%each(i)%p
+           iv%gpseph(nlocal(gpseph))%lat(i) = platform%each(i)%speed
+           iv%gpseph(nlocal(gpseph))%lon(i) = platform%each(i)%v
+           iv%gpseph(nlocal(gpseph))%h(i)   = platform%each(i)%height
+           iv%gpseph(nlocal(gpseph))%t(i)   = platform%each(i)%t
+           iv%gpseph(nlocal(gpseph))%q(i)   = platform%each(i)%q
+           iv%gpseph(nlocal(gpseph))%ref(i) = platform%each(i)%td
+           iv%gpseph(nlocal(gpseph))%azim(i)= platform%each(i)%rh
+!          iv%info(gpseph)%lat(i,nlocal(gpseph))= platform%each(i)%speed%inv
+!          iv%info(gpseph)%lon(i,nlocal(gpseph))= platform%each(i)%v%inv
+! Shu-ya
+           iv%gpseph(nlocal(gpseph))%eph(i)%inv = missing_r
+           iv%gpseph(nlocal(gpseph))%eph(i)%qc = missing_data
+           iv%gpseph(nlocal(gpseph))%eph(i)%error = missing_r
+           iv%gpseph(nlocal(gpseph))%q(i)%inv = missing_r
+           iv%gpseph(nlocal(gpseph))%q(i)%qc = missing_data
+           iv%gpseph(nlocal(gpseph))%q(i)%error = missing_r
+
+! ==> In 3DVAR_OBSPROC, use "td" field to store "ref" :
+! ==> In 3DVAR_OBSPROC, use "rh" field to store "azim" :
+! ==> In 3DVAR_OBSPROC, use "speed" field to store "lat" :
+! ==> In 3DVAR_OBSPROC, use "v" field to store "lon" :
+         enddo
+
+! Process for the model level > the obs. level
+         if (nlevels2 > nlevels) then  
+           do i = platform%info%levels+1, nlevels2
+           iv%gpseph(nlocal(gpseph))%h(i)         = missing_r
+           iv%gpseph(nlocal(gpseph))%p(i)%inv     = missing_r
+           iv%gpseph(nlocal(gpseph))%p(i)%qc    = missing_data
+           iv%gpseph(nlocal(gpseph))%p(i)%error = missing_r
+           iv%gpseph(nlocal(gpseph))%t(i)%inv     = missing_r
+           iv%gpseph(nlocal(gpseph))%t(i)%qc    = missing_data
+           iv%gpseph(nlocal(gpseph))%t(i)%error = missing_r
+           iv%gpseph(nlocal(gpseph))%q(i)%inv     = missing_r
+           iv%gpseph(nlocal(gpseph))%q(i)%qc    = missing_data
+           iv%gpseph(nlocal(gpseph))%q(i)%error = missing_r
+           iv%gpseph(nlocal(gpseph))%eph(i)%inv   = missing_r
+           iv%gpseph(nlocal(gpseph))%eph(i)%qc    = missing_data
+           iv%gpseph(nlocal(gpseph))%eph(i)%error = missing_r
+           iv%gpseph(nlocal(gpseph))%ref(i)%inv   = missing_r
+           iv%gpseph(nlocal(gpseph))%ref(i)%qc    = missing_data
+           iv%gpseph(nlocal(gpseph))%ref(i)%error = missing_r
+           iv%gpseph(nlocal(gpseph))%lat(i)%inv   = missing_r
+           iv%gpseph(nlocal(gpseph))%lat(i)%qc    = missing_data
+           iv%gpseph(nlocal(gpseph))%lat(i)%error = missing_r
+           iv%gpseph(nlocal(gpseph))%lon(i)%inv   = missing_r
+           iv%gpseph(nlocal(gpseph))%lon(i)%qc    = missing_data
+           iv%gpseph(nlocal(gpseph))%lon(i)%error = missing_r
+           iv%gpseph(nlocal(gpseph))%azim(i)%inv   = missing_r
+           iv%gpseph(nlocal(gpseph))%azim(i)%qc    = missing_data
+           iv%gpseph(nlocal(gpseph))%azim(i)%error = missing_r
+           enddo
+         endif
 
          case (121) ;
             if (.not. use_ssmt1obs) cycle reports

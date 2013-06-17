@@ -128,6 +128,21 @@ subroutine da_deallocate_y(y)
       deallocate (y % gpsref)
    end if
 
+   if (y % nlocal(gpseph) > 0) then
+      do n = 1, y % nlocal(gpseph)
+         deallocate (y % gpseph(n)%eph)
+         deallocate (y % gpseph(n)%ref)
+         deallocate (y % gpseph(n)%  p)
+         deallocate (y % gpseph(n)%  t)
+         deallocate (y % gpseph(n)%  q)
+         deallocate (y % gpseph(n)%  h)
+         deallocate (y % gpseph(n)%azim) 
+         deallocate (y % gpseph(n)%lat)
+         deallocate (y % gpseph(n)%lon)
+      end do
+      deallocate (y % gpseph)
+   end if
+
    if (y % nlocal(satem) > 0) then
       do n = 1, y % nlocal(satem)
          deallocate (y % satem(n) % thickness)

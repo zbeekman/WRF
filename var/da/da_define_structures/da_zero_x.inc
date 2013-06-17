@@ -20,6 +20,7 @@ subroutine da_zero_x ( x )
    x % wh(:,:,:) = 0.0
    x % rho(:,:,:) = 0.0
    x % ref(:,:,:) = 0.0
+   x % eph(:) = 0.0
 
    x % qcw(:,:,:) = 0.0
    x % qrn(:,:,:) = 0.0

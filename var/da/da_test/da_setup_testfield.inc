@@ -113,13 +113,14 @@ subroutine da_setup_testfield(grid)
 
 
    if (use_ssmt1obs .or. use_ssmt2obs .or. use_gpspwobs .or. &
+       use_gpsrefobs .or. use_gpsephobs .or.  &
         use_ssmitbobs .or. use_ssmiretrievalobs) then
 
       ! Now do something for PW
       call da_transform_xtotpw(grid)
 
-      ! GPS Refractivity:
-      if (use_gpsrefobs) &
+      ! GPS Refractivity or Excess phase:
+      if (use_gpsrefobs .or. use_gpsephobs) &
          call da_transform_xtogpsref_lin(grid)
 
       if (use_ssmt1obs .or. use_ssmt2obs .or. use_ssmitbobs .or. use_ssmiretrievalobs) then

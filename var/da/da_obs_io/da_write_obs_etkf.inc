@@ -731,7 +731,29 @@ subroutine da_write_obs_etkf(ob, iv, re)
       end if
    end if
   
-    !  Transfer tamdar obs:
+   ! Transfer gpseph obs:
+
+   if (iv%info(gpseph)%nlocal > 0) then
+      num_obs = 0
+      do n = 1, iv%info(gpseph)%nlocal
+        if (iv%info(gpseph)%proc_domain(1,n)) num_obs = num_obs + 1
+      end do
+      if (num_obs > 0) then
+         num_obs = 0
+         do n = 1, iv%info(gpseph)%nlocal
+            if (iv%info(gpseph)%proc_domain(1,n)) then
+               num_obs = num_obs + 1
+               do k = 1, iv%info(gpseph)%levels(n)
+                  if ( iv%gpseph(n)%eph(k)%qc >= 0 ) then
+                     write(ounit,'(3f17.7)') ob%gpseph(n)%eph(k), iv%gpseph(n)%eph(k)%inv, iv%gpseph(n)%eph(k)%error
+                  end if
+               end do
+            end if
+         end do
+      end if
+   end if
+
+   !  Transfer tamdar obs:
 
    if (iv%info(tamdar)%nlocal > 0) then
       num_obs = 0

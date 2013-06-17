@@ -160,6 +160,21 @@ subroutine da_deallocate_observations (iv)
       deallocate (iv%gpsref)
    end if
 
+   if (iv%info(gpseph)%nlocal > 0) then
+      do n = 1, iv%info(gpseph)%nlocal
+         deallocate (iv%gpseph(n) %  h)
+         deallocate (iv%gpseph(n) % eph)
+         deallocate (iv%gpseph(n) % ref)
+         deallocate (iv%gpseph(n) %   p)
+         deallocate (iv%gpseph(n) %   t)
+         deallocate (iv%gpseph(n) %   q)
+         deallocate (iv%gpseph(n) %azim)
+         deallocate (iv%gpseph(n) % lat)
+         deallocate (iv%gpseph(n) % lon)
+      end do
+      deallocate (iv%gpseph)
+   end if
+
    if (iv%info(ssmi_tb)%nlocal > 0) deallocate (iv%ssmi_tb)
    if (iv%info(ssmi_rv)%nlocal > 0) deallocate (iv%ssmi_rv)
 

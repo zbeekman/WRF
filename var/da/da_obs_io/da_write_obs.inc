@@ -14,6 +14,7 @@ subroutine da_write_obs(it,ob, iv, re)
    integer                     :: n, k, num_obs, ios
    integer                     :: ounit     ! Output unit           
    character(len=filename_len) :: filename
+   integer                     :: nlevels2
 
    if (trace_use) call da_trace_entry("da_write_obs")
 
@@ -677,6 +678,33 @@ subroutine da_write_obs(it,ob, iv, re)
          end if
       end do
    end if
+
+   num_obs = 0
+   do n = 1, iv%info(gpseph)%nlocal
+      if (iv%info(gpseph)%proc_domain(1,n)) num_obs = num_obs + 1
+   end do
+   if (num_obs > 0) then
+      write(ounit,'(a20,i8)')'gpseph', num_obs
+       num_obs = 0
+      do n = 1, iv%info(gpseph)%nlocal
+         if (iv%info(gpseph)%proc_domain(1,n)) then
+            num_obs = num_obs + 1
+            write(ounit,'(i8)')iv%info(gpseph)%levels(n)
+            nlevels2 = max(kde,iv%info(gpseph)%levels(n))
+      !     do k = 1, iv%info(gpseph)%levels(n)
+            do k = 1, nlevels2
+               write(ounit,'(2i8,a5,2f9.2,f17.7,5(2f17.7,i8,2f17.7))')&
+                  num_obs,k, iv%info(gpseph)%id(n), &  ! Station
+                  iv%info(gpseph)%lat(k,n), &       ! Latitude
+                  iv%info(gpseph)%lon(k,n), &       ! Longitude
+                  iv%gpseph(n)%h(k),        &       ! Obs Height
+                  ob%gpseph(n)%eph(k),      &
+                  iv%gpseph(n)%eph(k)%inv, iv%gpseph(n)%eph(k)%qc, iv%gpseph(n)%eph(k)%error, &
+                  re%gpseph(n)%eph(k)
+            end do
+         end if
+      end do
+  end if
 
    num_obs = 0
    do n = 1, iv%info(tamdar)%nlocal

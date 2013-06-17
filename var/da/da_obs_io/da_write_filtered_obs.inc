@@ -1314,6 +1314,82 @@ subroutine da_write_filtered_obs(it, grid, ob, iv, &
    end if
 
    !--------------------------------------------------------------------------
+   ! Write Gps Excess Phase:
+   !--------------------------------------------------------------------------
+   if (iv%info(gpseph)%nlocal > 0) then
+      if (print_detail_f_obs) then
+         write(unit=stdout,fmt='(A,I5)') &
+            ' writing filtered obs for gpseph ', iv%info(gpseph)%nlocal
+      end if
+
+      do n = 1, iv%info(gpseph)%nlocal
+         if (.not. iv%info(gpseph)%proc_domain(1,n)) cycle
+         write(ounit, fmt = fmt_info, iostat = iost) &
+            iv%info(gpseph) %platform(n),    &
+            iv%info(gpseph) %date_char(n),   &
+            iv%info(gpseph) %name(n),        &
+            iv%info(gpseph) %levels(n),      &
+            iv%info(gpseph) %lat(1,n),         &
+            iv%info(gpseph) %lon(1,n),         &
+            iv%info(gpseph) %elv(n),         &
+            iv%info(gpseph) %id(n)
+         write(ounit, fmt = fmt_srfc)  &
+            iv%info(gpseph)%slp(n)%inv, iv%info(gpseph)%slp(n)%qc, &
+            iv%info(gpseph)%slp(n)%error,                          &
+            iv%info(gpseph)%pw(n)%inv, iv%info(gpseph)%pw(n)%qc,   &
+            iv%info(gpseph)%pw(n)%error
+
+         do k = 1, iv%info(gpseph)%levels(n)
+
+            ! get RH from Q & T
+            if (iv%gpseph(n)%q(k)%qc >= obs_qc_pointer .and.  &
+                abs(iv%gpseph(n)%q(k)%error - missing_r) > 1. .and.  &
+                abs(ob%gpseph(n)%t(k)       - missing_r) > 1. .and.  &
+                abs(ob%gpseph(n)%p(k)       - missing_r) > 1.   ) then
+               call da_tp_to_qs(ob%gpseph(n)%t(k), ob%gpseph(n)%p(k), es, qs)
+               rh = (ob%gpseph(n)%q(k)/qs) * 100.
+               rh_qc = iv%gpseph(n)%q(k)%qc
+            else
+               rh    = missing_r
+               rh_qc = missing_data
+            end if
+
+            p    = ob%gpseph(n)%p(k)
+            p_qc = iv%gpseph(n)%p(k)%qc
+            if (iv%gpseph(n)%p(k)%qc <= fails_error_max) then
+               p    = missing_r
+               p_qc = missing_data
+            end if
+
+            t    = ob%gpseph(n)%t(k)
+            t_qc  = iv%gpseph(n)%t(k)%qc
+            t_err = iv%gpseph(n)%t(k)%error
+            if (iv%gpseph(n)%t(k)%qc <= fails_error_max) then
+               t    = missing_r
+               t_qc = missing_data
+            end if
+
+            ref = ob%gpseph(n)%ref(k)
+            ref_qc = iv%gpseph(n)%ref(k)%qc
+            ref_err = iv%gpseph(n)%ref(k)%error
+            if (iv%gpseph(n)%ref(k)%qc <= fails_error_max) then
+               ref    = missing_r
+               ref_qc = missing_data
+            end if
+
+            write(ounit, fmt = trim (fmt_each))             &
+               p,  p_qc, slp_error,                         &
+               missing_r, missing_data, xmiss,              &
+               missing_r, missing_data, xmiss,              &
+               iv%gpseph(n)%h(k), zero, height_error,       &
+               t, t_qc,  t_err,                             &
+               ref, ref_qc,  ref_err,                       &
+               missing_r, missing_data, xmiss
+         end do
+      end do
+   end if
+
+   !--------------------------------------------------------------------------
    ! Write AIRS  retrievals:
    !--------------------------------------------------------------------------
 

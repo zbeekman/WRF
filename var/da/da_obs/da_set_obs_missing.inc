@@ -105,6 +105,20 @@ subroutine da_set_obs_missing (iv, n)
             iv%gpsref(i)%q(:)   = field_type(missing_r, missing_data, xmiss, missing_r, missing_r)
          end if
       end do
+   case(gpseph)
+      do i = 1, iv%info(n)%nlocal
+         if ( iv%info(n)%thinned(1,i) ) then
+            iv%gpseph(i)%h(:)   = missing_r
+            iv%gpseph(i)%eph(:) = field_type(missing_r, missing_data, xmiss, missing_r, missing_r)
+            iv%gpseph(i)%ref(:) = field_type(missing_r, missing_data, xmiss, missing_r, missing_r)
+            iv%gpseph(i)%p(:)   = field_type(missing_r, missing_data, xmiss, missing_r, missing_r)
+            iv%gpseph(i)%t(:)   = field_type(missing_r, missing_data, xmiss, missing_r, missing_r)
+            iv%gpseph(i)%q(:)   = field_type(missing_r, missing_data, xmiss, missing_r, missing_r)
+            iv%gpseph(i)%azim(:)= field_type(missing_r, missing_data, xmiss, missing_r, missing_r)
+            iv%gpseph(i)%lat(:) = field_type(missing_r, missing_data, xmiss, missing_r, missing_r)
+            iv%gpseph(i)%lon(:) = field_type(missing_r, missing_data, xmiss, missing_r, missing_r)
+         end if
+      end do
    case(metar)
       do i = 1, iv%info(n)%nlocal
          if ( iv%info(n)%thinned(1,i) ) then

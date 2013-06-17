@@ -177,6 +177,11 @@ subroutine da_count_filtered_obs (ptop, map, ds, phic, xlonc, truelat1, truelat2
             if (.not.use_gpsrefobs) cycle reports
             nlocal(gpsref) = nlocal(gpsref) + 1
 
+         case (118) ;
+
+            if (.not.use_gpsephobs) cycle reports
+            nlocal(gpseph) = nlocal(gpseph) + 1
+
          case (121) ;
             ! SSM/T1 temperatures:
 
@@ -232,7 +237,7 @@ subroutine da_count_filtered_obs (ptop, map, ds, phic, xlonc, truelat1, truelat2
 
    total_obs = nlocal(synop) + nlocal(metar) + nlocal(ships) + &
       nlocal(buoy) + nlocal(sound) + nlocal(airep) + nlocal(pilot) + &
-      nlocal(geoamv) + nlocal(polaramv) + nlocal(gpspw) + nlocal(gpsref) + &
+      nlocal(geoamv) + nlocal(polaramv) + nlocal(gpspw) + nlocal(gpsref) + nlocal(gpseph) + &
       nlocal(profiler) + nlocal(qscat) + nlocal(ssmt1) + nlocal(ssmt2) +  &
       nlocal(satem)  + nlocal(bogus) +  nlocal(airsr) + nlocal(mtgirs) + nlocal(tamdar) + num_others
 
@@ -253,6 +258,7 @@ subroutine da_count_filtered_obs (ptop, map, ds, phic, xlonc, truelat1, truelat2
       "PoAMV =",nlocal(polaramv),", ", &
       "GPSPW =",nlocal(gpspw),", ", &
       "GPSRF =",nlocal(gpsref),", ", &
+      "GPSEP =",nlocal(gpseph),", ", &
       "PROFL =",nlocal(profiler),", ", &
       "QSCAT =",nlocal(qscat),", ", &
       "SSMT1 =",nlocal(ssmt1),", ", &

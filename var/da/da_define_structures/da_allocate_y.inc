@@ -11,6 +11,7 @@ subroutine da_allocate_y (iv, y)
 
    integer :: n, i    ! Loop counter.
    integer :: nlevels ! Number of levels.
+   integer :: nlevels2 ! Number of levels. for gpseph
 
    !---------------------------------------------------------------------------
    !  [1.0] Copy number of observations:
@@ -94,6 +95,33 @@ subroutine da_allocate_y (iv, y)
          y % gpsref(n) %   p(1:nlevels) = 0.0
          y % gpsref(n) %   t(1:nlevels) = 0.0
          y % gpsref(n) %   q(1:nlevels) = 0.0
+      end do
+   end if
+
+   if (y % nlocal(gpseph) > 0) then
+      allocate (y % gpseph(1:y % nlocal(gpseph)))
+      do n = 1, y % nlocal(gpseph)
+         nlevels = iv%info(gpseph)%levels(n)
+         nlevels2 = max(kde,iv%info(gpseph)%levels(n))
+         allocate (y % gpseph(n)%eph(1:nlevels2))
+         allocate (y % gpseph(n)%ref(1:nlevels))
+         allocate (y % gpseph(n)%  p(1:nlevels))
+         allocate (y % gpseph(n)%  t(1:nlevels))
+         allocate (y % gpseph(n)%  q(1:nlevels))
+         allocate (y % gpseph(n)%  h(1:nlevels))
+         allocate (y % gpseph(n)%azim(1:nlevels))
+         allocate (y % gpseph(n)%lat(1:nlevels))
+         allocate (y % gpseph(n)%lon(1:nlevels))
+
+         y % gpseph(n) % eph(1:nlevels2) = 0.0
+         y % gpseph(n) % ref(1:nlevels) = 0.0
+         y % gpseph(n) %   p(1:nlevels) = 0.0
+         y % gpseph(n) %   t(1:nlevels) = 0.0
+         y % gpseph(n) %   q(1:nlevels) = 0.0
+         y % gpseph(n) %   h(1:nlevels) = 0.0
+         y % gpseph(n) %azim(1:nlevels) = 0.0
+         y % gpseph(n) % lat(1:nlevels) = 0.0
+         y % gpseph(n) % lon(1:nlevels) = 0.0
       end do
    end if
 

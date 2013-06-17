@@ -28,20 +28,21 @@ module da_test
       fg_format, fg_format_wrf_arw_global, fg_format_wrf_arw_regional,fg_format_wrf_nmm_regional, &
       typical_rf_rms,typical_rv_rms, typical_thickness_rms, typical_tb19v_rms,typical_tb37h_rms, &
       typical_tb85h_rms,typical_tb37v_rms,typical_tb85v_rms,typical_tb22v_rms, &
-      typical_tb19h_rms,typical_speed_rms,typical_tpw_rms,typical_ref_rms, &
+      typical_tb19h_rms,typical_speed_rms,typical_tpw_rms,typical_ref_rms,typical_eph_rms, &
       cv_options_hum,inv_typ_vp5_sumsq,inv_typ_vp1_sumsq, trajectory_io, &
       inv_typ_vp3_sumsq,inv_typ_vp2_sumsq,inv_typ_vpalpha_sumsq, &
       inv_typ_vp4_sumsq,typical_rho_rms,balance_geo,balance_cyc,balance_type, &
       balance_geocyc, var4d, num_fgat_time,cv_options_hum_specific_humidity, &
       cv_options_hum_relative_humidity, ids, ide, jds, jde, kds, kde, &
-      sound, mtgirs, synop, profiler, gpsref, gpspw, polaramv, geoamv, ships, metar, &
+      sound, mtgirs, synop, profiler, gpsref, gpseph, gpspw, polaramv, geoamv, ships, metar, &
       satem, radar, ssmi_rv, ssmi_tb, ssmt1, ssmt2, airsr, pilot, airep, tamdar,rain, &
       bogus, buoy, qscat, pseudo, radiance, use_radarobs, use_ssmiretrievalobs,use_rainobs, &
-      use_gpsrefobs, use_ssmt1obs, use_ssmitbobs, use_ssmt2obs, use_gpspwobs,&
+      use_gpsrefobs, use_gpsephobs, use_ssmt1obs, use_ssmitbobs, use_ssmt2obs, use_gpspwobs,&
       use_gpsztdobs, Use_Radar_rf, use_rad, crtm_cloud, cloud_cv_options, &
       ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, fgat_rain_flags, &
       its,ite,jts,jte,kts,kte, ips,ipe,jps,jpe,kps,kpe, cv_options, cv_size, &
-      cloud_cv_options, cp, gas_constant, test_dm_exact, cv_size_domain
+      cloud_cv_options, cp, gas_constant, test_dm_exact, cv_size_domain, &
+      missing_r,missing_data, obs_qc_pointer
 
    use da_define_structures, only : da_zero_x,da_zero_vp_type,da_allocate_y, &
       da_deallocate_y,be_type, xbx_type, iv_type, y_type, j_type, da_initialize_cv
@@ -56,7 +57,7 @@ module da_test
    use da_par_util1, only : true_mpi_real
 #endif
    use da_physics, only : da_transform_xtopsfc,da_transform_xtopsfc_adj, &
-      da_pt_to_rho_lin,da_transform_xtotpw,da_transform_xtogpsref_lin, &
+      da_pt_to_rho_lin,da_transform_xtotpw,da_transform_xtogpsref_lin, da_transform_xtogpsref_adj, &
       da_transform_xtowtq, da_transform_xtowtq_adj,da_pt_to_rho_adj, &
       da_transform_xtotpw_adj, da_transform_xtoztd_lin, da_transform_xtoztd_adj, &
       da_moist_phys_lin, da_moist_phys_adj, da_uvprho_to_w_lin, da_uvprho_to_w_adj
@@ -108,6 +109,7 @@ contains
 #include "da_check_xtoy_adjoint_airep.inc"
 #include "da_check_xtoy_adjoint_gpspw.inc"
 #include "da_check_xtoy_adjoint_gpsref.inc"
+#include "da_check_xtoy_adjoint_gpseph.inc"
 #include "da_check_xtoy_adjoint_metar.inc"
 #include "da_check_xtoy_adjoint_pilot.inc"
 #include "da_check_xtoy_adjoint_ssmi_rv.inc"

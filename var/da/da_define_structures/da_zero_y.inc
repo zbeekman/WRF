@@ -12,6 +12,7 @@ subroutine da_zero_y( iv, y, value )
 
    integer                               :: n       ! Loop counter.
    integer                               :: nlevels ! Number of levels.
+   integer                               :: nlevels2 
 
    if (trace_use_dull) call da_trace_entry("da_zero_y")
  
@@ -91,6 +92,24 @@ subroutine da_zero_y( iv, y, value )
          y % gpsref(n) %   p(1:nlevels) = value
          y % gpsref(n) %   t(1:nlevels) = value
          y % gpsref(n) %   q(1:nlevels) = value
+      end do
+   end if
+
+   ! Initialize GPS EXCESS PHASE:
+
+   if ( y % nlocal(gpseph) > 0 ) then
+      do n = 1, y % nlocal(gpseph)
+         nlevels = iv % info(gpseph) % levels(n)
+         nlevels2 = max(kde,iv % info(gpseph) % levels(n))
+         y % gpseph(n) % eph(1:nlevels2) = value
+         y % gpseph(n) % ref(1:nlevels) = value
+         y % gpseph(n) %   p(1:nlevels) = value
+         y % gpseph(n) %   t(1:nlevels) = value
+         y % gpseph(n) %   q(1:nlevels) = value
+         y % gpseph(n) %   h(1:nlevels) = value
+         y % gpseph(n) %azim(1:nlevels) = value
+         y % gpseph(n) % lat(1:nlevels) = value
+         y % gpseph(n) % lon(1:nlevels) = value
       end do
    end if
 

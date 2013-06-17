@@ -127,6 +127,14 @@ subroutine da_scan_obs_ascii (iv, filename)
       ! end if
 
       read (platform%info%platform(4:6), '(I3)') fm
+! S.-Y. Chen 
+         if ( fm == 116 .and. gpseph_nonlocal ) then
+            platform%info%platform = 'FM-118 GPSEP'
+            fm = 118
+            use_gpsephobs = .True.
+            use_gpsrefobs = .False.
+            print*,'RESET FM-116 to FM-',fm,' for ',platform%info%name
+         endif
 
       ! read model location
       read (iunit, fmt = fmt_srfc)  &
@@ -289,6 +297,12 @@ subroutine da_scan_obs_ascii (iv, filename)
             if (n==1) iv%info(gpsref)%ntotal = iv%info(gpsref)%ntotal + 1
             if (outside) cycle reports
             iv%info(gpsref)%nlocal = iv%info(gpsref)%nlocal + 1
+
+         case (118) ;
+            if (.not.use_gpsephobs .or. iv%info(gpseph)%ntotal == max_gpseph_input) cycle reports
+            if (n==1) iv%info(gpseph)%ntotal = iv%info(gpseph)%ntotal + 1
+            if (outside) cycle reports
+            iv%info(gpseph)%nlocal = iv%info(gpseph)%nlocal + 1
 
           case (121) ;
             ! SSM/T1 temperatures

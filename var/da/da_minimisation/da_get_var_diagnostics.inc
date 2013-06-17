@@ -12,7 +12,7 @@ subroutine da_get_var_diagnostics( iv, j)
    integer                      :: num_stats_tot
    integer                      :: i,k
    real                         :: jo_radiance
-   real                         :: temp(77)
+   real                         :: temp(78)
 
    if (trace_use) call da_trace_entry("da_get_var_diagnostics")
 
@@ -99,6 +99,7 @@ subroutine da_get_var_diagnostics( iv, j)
    temp(75) = j % jo % tamdar_sfc_p
    temp(76) = j % jo % tamdar_sfc_q
    temp(77) = j % jo % rain_r
+   temp(78) = j % jo % gpseph_eph
 
    call da_proc_sum_real(temp(:))
 
@@ -181,6 +182,7 @@ subroutine da_get_var_diagnostics( iv, j)
    j % jo % tamdar_sfc_p    = temp(75)
    j % jo % tamdar_sfc_q    = temp(76)
    j % jo % rain_r          = temp(77)
+   j % jo % gpseph_eph      = temp(78) 
 
    if (use_rad) then
       jo_radiance = 0.0
@@ -297,6 +299,13 @@ subroutine da_get_var_diagnostics( iv, j)
          write(unit=jo_unit,fmt='(a30,2i8,10f15.5)')'    gpsref obs, Jo(actual)  = ', &
                                iv%info(gpsref)%ntotal, iv%nstats(gpsref), &
                                j % jo % gpsref_ref, iv % gpsref_ef_ref, &
+                               0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0
+      end if
+
+      if (iv%info(gpseph)%ntotal > 0) then
+         write(unit=jo_unit,fmt='(a30,2i8,10f15.5)')'    gpseph obs, Jo(actual)  = ', &
+                               iv%info(gpseph)%ntotal, iv%nstats(gpseph), &
+                               j % jo % gpseph_eph, iv % gpseph_ef_eph, &
                                0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0
       end if
 
