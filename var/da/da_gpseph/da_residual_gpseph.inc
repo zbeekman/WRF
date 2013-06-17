@@ -95,22 +95,22 @@ SUBROUTINE model_mean_altitude ( xb, new_ob,  mean_h )
       integer :: i, j, k, is, ie, js, je, ks, ke
       real :: temp 
       real :: earth_radius_in_meter, horizontal_domain
-      real, dimension(its:ite,jts:jte,kts:kte) :: geo_h
+      real, dimension(ids:ide,jds:jde,kds:kde) :: geo_h
 
       earth_radius_in_meter = new_ob%rfict*1000.
-      is = its
-      ie = ite
-      js = jts
-      je = jte
-      ks = kts
-      ke = kte
+      is = ids
+      ie = ide
+      js = jds
+      je = jde
+      ks = kds
+      ke = kde
 ! z is normalized potential height (m)= Phi/g0
-      do i=is,ie
-      do j=js,je
       do k=ks,ke
+      do j=js,je
+      do i=is,ie
 !     geo_h(i,j,k)=earth_radius_in_meter*xb%h(i,j,k)/  &   ! xb%h(i,j,k) is nomalized height in m
 !                 (earth_radius_in_meter-xb%h(i,j,k))      ! geo_h is geometric height in m
-      geo_h(i,j,k)=xb%h(i,j,k)
+      geo_h(i,j,k)=global_h(i,j,k)
       end do
       end do
       end do
@@ -189,7 +189,7 @@ SUBROUTINE obs_nonlocal ( xb, mean_h, lowest_level, new_ob, ilocal)
       integer :: i1l,i2l,i1r,i2r
       real :: dtr, rtd, step, dst, rox, glat, glon, h, rxabs, tmp_ref
       real :: xlatd, xlond
-      real,dimension(its:ite,jts:jte) :: x2, y2
+      real,dimension(ids:ide,jds:jde) :: x2, y2
       real,dimension(kts:kte) :: refm
       real,dimension(3):: rp, rn, rr, rx
       real,dimension(2) :: w1
@@ -201,21 +201,21 @@ SUBROUTINE obs_nonlocal ( xb, mean_h, lowest_level, new_ob, ilocal)
        dtr=pi/180.
        rtd=180./pi
        step=5.
-       is = its
-       ie = ite
-       js = jts
-       je = jte
-       ks = kts
-       ke = kte
+       is = ids
+       ie = ide
+       js = jds
+       je = jde
+       ks = kds
+       ke = kde
 
-       do i=is, ie
        do j=js, je
-       if (xb%lon(i,j) >= 0.) then
-         x2(i,j)= xb%lat(i,j)
-         y2(i,j)= xb%lon(i,j)
+       do i=is, ie
+       if (global_lon(i,j) >= 0.) then
+         x2(i,j)= global_lat(i,j)
+         y2(i,j)= global_lon(i,j)
        else
-         x2(i,j)= xb%lat(i,j)
-         y2(i,j)= (xb%lon(i,j)+360.)
+         x2(i,j)= global_lat(i,j)
+         y2(i,j)= (global_lon(i,j)+360.)
        endif
        enddo
        enddo
@@ -317,8 +317,8 @@ SUBROUTINE obs_nonlocal ( xb, mean_h, lowest_level, new_ob, ilocal)
         endif
 ! avoid mountain effect
        CALL find1(ke,mean_h,h,i3,w1)
-       if (h < (xb%terr(i1,i2)/1000.)) then
-       print*,'h<terr',i,j,k,i1,i2,xb%terr(i1,i2)/1000.
+       if (h < (global_terr(i1,i2)/1000.)) then
+       !print*,'h<terr',i,j,k,i1,i2,xb%terr(i1,i2)/1000.
        w1(:)=0.
        endif
 
@@ -450,7 +450,7 @@ SUBROUTINE mod_nonlocal ( xb, new_ob, mean_h, lowest_level, ref_mean_h, model_ep
        
       real,dimension(kts:kte),intent(in) :: mean_h
       integer,intent(in) :: lowest_level
-      real,dimension(its:ite,jts:jte,kts:kte),intent(in)::ref_mean_h
+      real,dimension(ids:ide,jds:jde,kds:kde),intent(in)::ref_mean_h
       real,dimension(kts:kte),intent(out) :: model_eph
 
       integer :: i, j, k, l, m, n, i1, i2, i3, nbot, ntop
@@ -458,7 +458,7 @@ SUBROUTINE mod_nonlocal ( xb, new_ob, mean_h, lowest_level, ref_mean_h, model_ep
       integer :: i1l,i2l,i1r,i2r
       real :: dtr, rtd, step, dst, rox, glat, glon, h, rxabs, tmp_ref
       real :: xlatd, xlond
-      real,dimension(its:ite,jts:jte) :: x2, y2
+      real,dimension(ids:ide,jds:jde) :: x2, y2
       real,dimension(kts:kte) :: refm
       real,dimension(3):: rp, rn, rr, rx
       real,dimension(2) :: w1
@@ -470,21 +470,21 @@ SUBROUTINE mod_nonlocal ( xb, new_ob, mean_h, lowest_level, ref_mean_h, model_ep
        dtr=pi/180.
        rtd=180./pi
        step=5.
-       is = its
-       ie = ite
-       js = jts
-       je = jte
-       ks = kts
-       ke = kte
+       is = ids
+       ie = ide
+       js = jds
+       je = jde
+       ks = kds
+       ke = kde
 
-       do i=is, ie
        do j=js, je
-       if (xb%lon(i,j) >= 0.) then
-         x2(i,j)= xb%lat(i,j)
-         y2(i,j)= xb%lon(i,j)
+       do i=is, ie
+       if (global_lon(i,j) >= 0.) then
+         x2(i,j)= global_lat(i,j)
+         y2(i,j)= global_lon(i,j)
        else
-         x2(i,j)= xb%lat(i,j)
-         y2(i,j)= (xb%lon(i,j)+360.)
+         x2(i,j)= global_lat(i,j)
+         y2(i,j)= (global_lon(i,j)+360.)
        endif
        enddo
        enddo
@@ -585,7 +585,7 @@ SUBROUTINE mod_nonlocal ( xb, new_ob, mean_h, lowest_level, ref_mean_h, model_ep
         endif
 ! avoid mountain effect
        CALL find1(ke,mean_h,h,i3,w1)
-       if (h < (xb%terr(i1,i2)/1000.)) then
+       if (h < (global_terr(i1,i2)/1000.)) then
        w1(:)=0.
        endif
 

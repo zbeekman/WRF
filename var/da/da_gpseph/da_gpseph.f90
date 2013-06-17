@@ -18,7 +18,7 @@ module da_gpseph
       maxmin_type, da_allocate_observations
    use da_interpolation, only : da_interp_lin_3d,da_interp_lin_3d_adj, &
       da_to_zk
-   use da_par_util, only : da_proc_stats_combine
+   use da_par_util, only : da_proc_stats_combine, da_patch_to_global
    use da_par_util1, only : da_proc_sum_int
    use da_statistics, only : da_stats_calculate
    use da_tools, only : da_max_error_qc, da_residual, da_convert_zk,da_get_print_lvl
@@ -56,6 +56,9 @@ module da_gpseph
       REAL             , pointer :: eph(:)   ! Excess Phase
    END TYPE ob_in_mean_h
 
+   real, dimension(:,:), allocatable :: global_lat, global_lon, global_terr
+   real, dimension(:,:,:), allocatable :: global_h, global_ref, global_xa_ref, global_adj_ref
+
 contains
 
 #include "da_ao_stats_gpseph.inc"
@@ -74,6 +77,8 @@ contains
 #include "da_read_mod_gpseph_adj.inc"
 #include "da_residual_gpseph_ftl.inc"
 #include "da_residual_gpseph_adj.inc"
+#include "da_gpseph_init.inc"
+#include "da_gpseph_final.inc"
 
 end module da_gpseph
 

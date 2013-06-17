@@ -29,21 +29,21 @@ subroutine da_read_mod_gpseph_adj(num, jo_grad_y, xb, new_ob, &
       REAL, DIMENSION(kts:kte)   :: tmp_refm
       REAL, DIMENSION(kts:kte)   :: tmp_refm_fw
       REAL, DIMENSION(3,kts:kte) :: cc, a_cc
-      REAL, DIMENSION(its:ite,jts:jte,kts:kte) :: geo_h9
-      REAL, DIMENSION(its:ite,jts:jte,kts:kte) :: ref_keep
-      REAL, DIMENSION(its:ite,jts:jte,kts:kte) ::ref_mean_h
-      REAL, DIMENSION(its:ite,jts:jte,kts:kte) ::ref_mean_h_adj
-      REAL, DIMENSION(its:ite,jts:jte,kts:kte) ::refm_keep
+      REAL, DIMENSION(ids:ide,jds:jde,kds:kde) :: geo_h9
+      REAL, DIMENSION(ids:ide,jds:jde,kds:kde) :: ref_keep
+      REAL, DIMENSION(ids:ide,jds:jde,kds:kde) ::ref_mean_h
+      REAL, DIMENSION(ids:ide,jds:jde,kds:kde) ::ref_mean_h_adj
+      REAL, DIMENSION(ids:ide,jds:jde,kds:kde) ::refm_keep
       REAL, DIMENSION(kts:kte)   :: mean_h_meter 
       real    :: partone, parttwo, dividnd
       real    :: partone9,parttwo9,dividnd9
 ! ----------------------------------------------------------------------------      
-      is=its
-      ie=ite
-      js=jts
-      je=jte
-      ks=kts
-      ke=kte
+      is=ids
+      ie=ide
+      js=jds
+      je=jde
+      ks=kds
+      ke=kde
    
 
       dtr = pi/180.
@@ -54,12 +54,12 @@ subroutine da_read_mod_gpseph_adj(num, jo_grad_y, xb, new_ob, &
       tmp_ref_adj(:) = 0.0
       tmp_refm_adj(:) = 0.0
      
-      do i=is,ie
-      do j=js,je
       do k=ks,ke
+      do j=js,je
+      do i=is,ie
 !     geo_h9(i,j,k)=earth_radius_in_meter*xb%h(i,j,k)/  & 
 !                 (earth_radius_in_meter-xb%h(i,j,k)) 
-      geo_h9(i,j,k)=xb%h(i,j,k)
+      geo_h9(i,j,k)=global_h(i,j,k)
       enddo
       enddo
       enddo
@@ -82,12 +82,12 @@ subroutine da_read_mod_gpseph_adj(num, jo_grad_y, xb, new_ob, &
       
 ! Interpolation of refractivity on the mean altitude grid (basic)
 
-      do i=is,ie
       do j=js,je
+      do i=is,ie
 
        do k=ks,ke
        tmp_z_fw(k)=geo_h9(i,j,k)
-       tmp_ref_fw(k)=log(xb%ref(i,j,k))
+       tmp_ref_fw(k)=log(global_ref(i,j,k))
        end do
 
        CALL splinx(ke,tmp_z_fw,tmp_ref_fw,ke,mean_h_meter,cc,tmp_refm_fw)
@@ -111,8 +111,8 @@ subroutine da_read_mod_gpseph_adj(num, jo_grad_y, xb, new_ob, &
 !      mean_h(:) = mean_h_keep(:)
 
 
-    do i =  ie,is,-1
     do j =  je,js,-1
+    do i =  ie,is,-1
       do k = ke,ks,-1
        refm(k)=refm_keep(i,j,k)
         tmp_refm_adj(k) = tmp_refm_adj(k)+ref_mean_h_adj(i,j,k)*exp(refm(k))
@@ -121,17 +121,17 @@ subroutine da_read_mod_gpseph_adj(num, jo_grad_y, xb, new_ob, &
 
       do k=ks,ke
       tmp_z(k)=geo_h9(i,j,k)
-      tmp_ref(k)=log(xb%ref(i,j,k))
+      tmp_ref(k)=log(global_ref(i,j,k))
       end do
 
       call splinx_adj( ke,tmp_z,tmp_ref,tmp_ref_adj,ke,mean_h_meter,cc,a_cc,tmp_refm_adj )
       
       do k =ke,ks,-1
-       jo_grad_x%ref(i,j,k) = jo_grad_x%ref(i,j,k)+tmp_ref_adj(k)*(1./xb%ref(i,j,k))
+!      jo_grad_x%ref(i,j,k) = jo_grad_x%ref(i,j,k)+tmp_ref_adj(k)*(1./global_ref(i,j,k))
+       global_adj_ref(i,j,k) = global_adj_ref(i,j,k)+tmp_ref_adj(k)*(1./global_ref(i,j,k))
        tmp_ref_adj(k) = 0.
       end do
     end do
     end do
     
-
 end SUBROUTINE da_read_mod_gpseph_adj

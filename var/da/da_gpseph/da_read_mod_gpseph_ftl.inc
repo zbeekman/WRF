@@ -19,24 +19,24 @@ subroutine da_read_mod_gpseph_ftl(n, xa, xb, iv, lowest_level, new_ob, y)
       real, dimension(kts:kte)   :: tmp_ref,tmp_ref9
       real, dimension(kts:kte)   :: refm,refm9
       real, dimension(3,kts:kte) :: cc,cc9
-      real, dimension(its:ite,jts:jte,kts:kte) :: geo_h
-      real, dimension(its:ite,jts:jte,kts:kte) :: ref_mean_h
-      real, dimension(its:ite,jts:jte,kts:kte) :: ref_mean_h_ftl     
+      real, dimension(ids:ide,jds:jde,kds:kde) :: geo_h
+      real, dimension(ids:ide,jds:jde,kds:kde) :: ref_mean_h
+      real, dimension(ids:ide,jds:jde,kds:kde) :: ref_mean_h_ftl     
       real    :: partone, parttwo, dividnd
       real    :: partone9,parttwo9,dividnd9
 
 !      earth_radius_in_meter = earth_radius *1000.0
       earth_radius_in_meter = new_ob%rfict *1000.0
-      is = its
-      ie = ite
-      js = jts
-      je = jte
-      ks = kts
-      ke = kte
+      is = ids
+      ie = ide
+      js = jds
+      je = jde
+      ks = kds
+      ke = kde
       
-      do i=is,ie
-      do j=js,je
       do k=ks,ke
+      do j=js,je
+      do i=is,ie
 !      partone  = 0.776*xa%p(i,j,k)/xb%t(i,j,k) &
 !               - 0.776*xb%p(i,j,k)*xa%t (i,j,k)/(xb%t(i,j,k)*xb%t(i,j,k))
 !      partone9 = 0.776*xb%p(i,j,k)/xb%t(i,j,k)
@@ -51,7 +51,7 @@ subroutine da_read_mod_gpseph_ftl(n, xa, xb, iv, lowest_level, new_ob, y)
 !      xb%ref(i,j,k)=partone9 * parttwo9
 !     geo_h(i,j,k)=earth_radius_in_meter*xb%h(i,j,k)/  &   ! xb%h(i,j,k) is nomalized height in m
 !                 (earth_radius_in_meter-xb%h(i,j,k))      ! geo_h is geometric height in m
-      geo_h(i,j,k)=xb%h(i,j,k)
+      geo_h(i,j,k)=global_h(i,j,k)
       end do
       end do
       end do
@@ -68,13 +68,14 @@ subroutine da_read_mod_gpseph_ftl(n, xa, xb, iv, lowest_level, new_ob, y)
          end do
          mean_h(k)=temp/horizontal_domain   ! in m
       enddo
-      do i=is,ie
+
       do j=js,je
+      do i=is,ie
 
        do k=ks,ke
        tmp_z(k)=geo_h(i,j,k)
-       tmp_ref(k)=xa%ref(i,j,k)*(1./xb%ref(i,j,k))
-       tmp_ref9(k)=log(xb%ref(i,j,k))
+       tmp_ref(k)=global_xa_ref(i,j,k)*(1./global_ref(i,j,k))
+       tmp_ref9(k)=log(global_ref(i,j,k))
        enddo
 
       call splinx_ftl(ke,tmp_z,tmp_ref9,tmp_ref,cc9,cc,ke,mean_h,refm9,refm)

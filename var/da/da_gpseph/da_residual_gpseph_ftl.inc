@@ -106,7 +106,7 @@ subroutine mod_nonlocal_ftl (num, xb, new_ob, mean_h, lowest_level, &
       TYPE (ob_in_mean_h), INTENT(IN)   :: new_ob
       TYPE (y_type), INTENT(INout)   :: y
 !      real, dimension(its:ite,jts:jte,kts:kte),intent(in) :: ref_mean_h
-      real, dimension(its:ite,jts:jte,kts:kte),intent(in) :: ref_mean_h_ftl
+      real, dimension(ids:ide,jds:jde,kds:kde),intent(in) :: ref_mean_h_ftl
       integer :: i, j, k, l, m, n, i1, i2, i3, nbot, ntop, num
       integer,intent(in) :: lowest_level
       integer :: j1
@@ -114,7 +114,7 @@ subroutine mod_nonlocal_ftl (num, xb, new_ob, mean_h, lowest_level, &
       integer :: i1l,i2l,i1r,i2r
       real :: dtr, rtd, step, dst, rox, glat, glon, h, rxabs, tmp_ref,tmp_ref9
       real :: xlatd, xlond, help_h
-      real,dimension(its:ite,jts:jte) :: x2, y2
+      real,dimension(ids:ide,jds:jde) :: x2, y2
       real,dimension(kts:kte),intent(in) :: mean_h
       real,dimension(kts:kte) :: refm
       real,dimension(3):: rp, rn, rr, rx
@@ -128,21 +128,21 @@ subroutine mod_nonlocal_ftl (num, xb, new_ob, mean_h, lowest_level, &
       dtr=pi/180.
       rtd=180./pi
       step=5.
-      is = its
-      ie = ite
-      js = jts
-      je = jte
-      ks = kts
-      ke = kte
+      is = ids
+      ie = ide
+      js = jds
+      je = jde
+      ks = kds
+      ke = kde
 
-      do i=is, ie
-       do j=js, je
-       if (xb%lon(i,j) >= 0.) then
-         x2(i,j)= xb%lat(i,j)
-         y2(i,j)= xb%lon(i,j)
+      do j=js, je
+       do i=is, ie
+       if (global_lon(i,j) >= 0.) then
+         x2(i,j)= global_lat(i,j)
+         y2(i,j)= global_lon(i,j)
        else
-         x2(i,j)= xb%lat(i,j)
-         y2(i,j)= (xb%lon(i,j)+360.)
+         x2(i,j)= global_lat(i,j)
+         y2(i,j)= (global_lon(i,j)+360.)
        endif
        enddo
       enddo
@@ -224,7 +224,7 @@ subroutine mod_nonlocal_ftl (num, xb, new_ob, mean_h, lowest_level, &
         endif
 ! avoid mountain effect
        CALL find1(ke,mean_h,h,i3,w1)
-       if (h < (xb%terr(i1,i2)/1000.)) then
+       if (h < (global_terr(i1,i2)/1000.)) then
        w1(:)=0.
        endif
 

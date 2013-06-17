@@ -39,7 +39,7 @@ module da_transfer_model
       vertical_ip_sqrt_delta_p, vertical_ip_delta_p,check_rh_simple, check_rh_tpw, &
       t_kelvin, num_fgat_time, num_pseudo, iso_temp, interval_seconds, trajectory_io, &
       ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, num_fft_factors, &
-      its,ite,jts,jte,kts,kte, ips,ipe,jps,jpe,kps,kpe, qlimit
+      its,ite,jts,jte,kts,kte, ips,ipe,jps,jpe,kps,kpe, qlimit, gpseph_nonlocal
    use da_define_structures, only : xbx_type, be_type
    use da_grid_definitions, only : da_set_map_para
    use da_par_util, only : da_patch_to_global
@@ -74,6 +74,7 @@ module da_transfer_model
    use mediation_pertmod_io, only : da_halo_em_e_ad
 #endif
 #endif
+   use da_gpseph, only : da_gpseph_init
 
    implicit none
 

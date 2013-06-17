@@ -184,6 +184,10 @@ subroutine da_setup_firstguess_wrf(xbx, grid, config_flags)
    
    call da_transfer_wrftoxb(xbx, grid, config_flags)
 
+   if ( gpseph_nonlocal ) then
+      call da_gpseph_init ( grid )
+   endif
+
    if (trace_use) call da_trace_exit("da_setup_firstguess_wrf")
 
 end subroutine da_setup_firstguess_wrf

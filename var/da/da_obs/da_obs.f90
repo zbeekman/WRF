@@ -18,11 +18,11 @@ module da_obs
       missing_data, pseudo_var, pseudo_val,stdout, num_pseudo, pseudo_y, pseudo_z, &
       pseudo_err,obs_qc_pointer,myproc,rtm_option,rtm_option_rttov, &
       rtm_option_crtm,use_rad, base_temp, base_lapse, base_pres, &
-      ob_format,ob_format_ascii,filename_len, trace_use_dull, &
+      ob_format,ob_format_ascii,filename_len, trace_use_dull, gpseph_nonlocal, &
       sound, mtgirs, synop, profiler, gpsref, gpseph, gpspw, polaramv, geoamv, ships, metar, &
       satem, radar, ssmi_rv, ssmi_tb, ssmt1, ssmt2, airsr, pilot, airep, sonde_sfc,rain, &
-      bogus, buoy, qscat, tamdar, pseudo, num_ob_indexes, its,ite,jds,jts,jte,ids,kde, &
-      write_mod_filtered_obs   !cys_add
+      bogus, buoy, qscat, tamdar, pseudo, num_ob_indexes, its,ite,jds,jts,jte,ids,kds,kde, &
+      kts,kte,write_mod_filtered_obs   !cys_add
    ! use_crtm_kmatrix,use_crtm_kmatrix_fast
 #ifdef CRTM
    use da_crtm, only : da_transform_xtoy_crtm, da_transform_xtoy_crtm_adj
@@ -64,6 +64,7 @@ module da_obs
                             da_geo2msl1, da_msl2geo1
    use da_tracing,   only : da_trace_entry, da_trace_exit 
    use module_dm,    only : wrf_dm_sum_real, wrf_dm_sum_reals
+   use da_gpseph,    only : global_adj_ref
 
    implicit none
 

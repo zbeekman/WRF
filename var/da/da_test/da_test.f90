@@ -42,7 +42,7 @@ module da_test
       ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, fgat_rain_flags, &
       its,ite,jts,jte,kts,kte, ips,ipe,jps,jpe,kps,kpe, cv_options, cv_size, &
       cloud_cv_options, cp, gas_constant, test_dm_exact, cv_size_domain, &
-      missing_r,missing_data, obs_qc_pointer
+      missing_r,missing_data, obs_qc_pointer, gpseph_nonlocal
 
    use da_define_structures, only : da_zero_x,da_zero_vp_type,da_allocate_y, &
       da_deallocate_y,be_type, xbx_type, iv_type, y_type, j_type, da_initialize_cv
@@ -87,6 +87,7 @@ module da_test
        u6_2, v6_2, w6_2, t6_2, ph6_2, p6, mu6_2, psfc6, moist6
    use da_rain, only : da_transform_xtoy_rain, da_transform_xtoy_rain_adj
 #endif
+   use da_gpseph, only : global_xa_ref
 
    implicit none
 

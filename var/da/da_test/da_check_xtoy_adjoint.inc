@@ -39,7 +39,7 @@ subroutine da_check_xtoy_adjoint(cv_size, cv, xbx, be, grid, config_flags, iv, y
    real, dimension(ims:ime, jms:jme)          :: x6a2_psfc
    real, dimension(ims:ime, jms:jme, kms:kme) :: x6a2_qcw, x6a2_qci, x6a2_qrn, x6a2_qsn, x6a2_qgr
    real, dimension(:,:,:), allocatable :: a_hr_rainc, a_hr_rainnc
-   integer :: nobwin, i, j, k, fgat_rain
+   integer :: nobwin, i, j, k, ijk, fgat_rain
    character(len=4) :: filnam
    character(len=256) :: timestr
    integer :: time_step_seconds
@@ -263,6 +263,24 @@ print*,__FILE__,jte,' xa2_v.xa2_v for row= ',jte+1,sum(xa2_v(its:ite, jte+1, kts
             call da_transform_xtogpsref_lin(grid)
             if (use_gpsztdobs) call da_transform_xtoztd_lin(grid)
          end if
+
+        if (gpseph_nonlocal)   then
+#ifdef DM_PARALLEL
+           ijk = ( ide- ids+1)*( jde- jds+1)*(kde- kds+1)
+           !  Collect xb component of ref into global buffer.
+           call da_patch_to_global( grid, grid%xa%ref, global_xa_ref )
+           call wrf_dm_bcast_real( global_xa_ref, ijk )
+#else
+           do k = kds, kde
+              do j = jds, jde
+                 do i = ids, ide
+                    global_xa_ref(i,j,k) = grid%xa%ref(i,j,k)
+                 enddo
+              enddo
+           enddo
+#endif
+        endif
+
 
          if (use_ssmt1obs .or. use_ssmt2obs .or. &
              use_ssmitbobs .or. use_ssmiretrievalobs) then

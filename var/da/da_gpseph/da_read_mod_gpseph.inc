@@ -21,19 +21,19 @@ SUBROUTINE da_read_mod_gpseph ( n, xb, lowest_level, new_ob, model_eph)
       real, dimension(kts:kte)   :: tmp_ref
       real, dimension(kts:kte)   :: refm
       real, dimension(3,kts:kte) :: cc
-      real, dimension(its:ite,jts:jte,kts:kte) :: geo_h
-      real, dimension(its:ite,jts:jte,kts:kte) :: ref_mean_h
+      real, dimension(ids:ide,jds:jde,kds:kde) :: geo_h
+      real, dimension(ids:ide,jds:jde,kds:kde) :: ref_mean_h
 
 
 !      earth_radius_in_meter = earth_radius *1000.
       earth_radius_in_meter = new_ob%rfict *1000.
 
-      is = its
-      ie = ite
-      js = jts
-      je = jte
-      ks = kts
-      ke = kte
+      is = ids
+      ie = ide
+      js = jds
+      je = jde
+      ks = kds
+      ke = kde
 
       
 !************************************************************
@@ -45,12 +45,12 @@ SUBROUTINE da_read_mod_gpseph ( n, xb, lowest_level, new_ob, model_eph)
 ! z is normalized potential height (m)= Phi/g0
 ! p is pressure (pa), t is temperature (k)
 ! q is specific humidity (kg/kg)
-      do i=is,ie
-      do j=js,je
       do k=ks,ke
+      do j=js,je
+      do i=is,ie
 !     geo_h(i,j,k)=earth_radius_in_meter*xb%h(i,j,k)/  &   ! xb%h(i,j,k) is nomalized height in m
 !                 (earth_radius_in_meter-xb%h(i,j,k))      ! geo_h is geometric height in m
-      geo_h(i,j,k)=xb%h(i,j,k)
+      geo_h(i,j,k)=global_h(i,j,k)
 ! check if readed z is real geometric height...
       end do
       end do
@@ -58,7 +58,7 @@ SUBROUTINE da_read_mod_gpseph ( n, xb, lowest_level, new_ob, model_eph)
 
 !
 ! Calculation of the mean altitude grid
-      horizontal_domain=float((ite-its+1)*(jte-jts+1))
+      horizontal_domain=float((ide-ids+1)*(jde-jds+1))
       do k=ks,ke
          temp=0.0
          do j=js,je
@@ -70,12 +70,12 @@ SUBROUTINE da_read_mod_gpseph ( n, xb, lowest_level, new_ob, model_eph)
       enddo
 ! Interpolation of refractivity on the mean altitude grid
 
-      do i=is,ie
       do j=js,je
+      do i=is,ie
 
        do k=ks,ke
        tmp_z(k)=geo_h(i,j,k)
-       tmp_ref(k)=log(xb%ref(i,j,k))
+       tmp_ref(k)=log(global_ref(i,j,k))
        end do
        CALL splinx(ke,tmp_z,tmp_ref,ke,mean_h,cc,refm)
        do k=ks,ke
