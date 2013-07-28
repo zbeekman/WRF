@@ -862,7 +862,11 @@ subroutine da_read_obs_ascii (iv, filename, uvq_direct)
          case (118) ;
          if(.not.use_GpsephObs) cycle reports
          if (n==1) ntotal(gpseph) = ntotal(gpseph) + 1
-         if (outside) cycle reports
+         if (gpseph_loadbalance) then
+            if ( myproc .ne. MOD( (ntotal(gpseph)-1), num_procs ) ) cycle reports 
+         else
+            if (outside) cycle reports
+         endif
          nlocal(gpseph) = nlocal(gpseph) + 1
 
          if (nlocal(gpseph) > iv%info(gpseph)%nlocal) cycle reports

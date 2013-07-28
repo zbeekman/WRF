@@ -301,7 +301,11 @@ subroutine da_scan_obs_ascii (iv, filename)
          case (118) ;
             if (.not.use_gpsephobs .or. iv%info(gpseph)%ntotal == max_gpseph_input) cycle reports
             if (n==1) iv%info(gpseph)%ntotal = iv%info(gpseph)%ntotal + 1
-            if (outside) cycle reports
+            if (gpseph_loadbalance) then
+               if ( myproc .ne. MOD( (iv%info(gpseph)%ntotal-1), num_procs ) ) cycle reports
+            else
+               if (outside) cycle reports
+            endif
             iv%info(gpseph)%nlocal = iv%info(gpseph)%nlocal + 1
 
           case (121) ;
