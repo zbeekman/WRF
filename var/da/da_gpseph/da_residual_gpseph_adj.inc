@@ -173,7 +173,7 @@ subroutine mod_nonlocal_adj( num, jo_grad_y, xb, new_ob, mean_h, &
       integer,intent(in) :: lowest_level
       integer, intent(in) :: num
       integer,dimension(kts:kte),intent(in) :: ilocal
-      real,dimension(kts:kte),intent(in) :: mean_h
+      real,dimension(kts:kte),intent(inout) :: mean_h
       real,dimension(ids:ide,jds:jde,kds:kde),intent(out):: ref_mean_h_adj
 
       integer :: i, j, k, l, m, n, i1, i2, i3, nbot, ntop
@@ -182,7 +182,7 @@ subroutine mod_nonlocal_adj( num, jo_grad_y, xb, new_ob, mean_h, &
       integer :: j1
       real :: dtr, rtd, step, dst, rox, glat, glon, h, rxabs, tmp_ref
       real :: xlatd, xlond, a_rfr
-      real,dimension(ids:ide,jds:jde) :: x2, y2
+!zx   real,dimension(ids:ide,jds:jde) :: x2, y2
       real,dimension(kts:kte) :: refm
       real,dimension(3):: rp, rn, rr, rx
       real,dimension(2) :: w1
@@ -190,120 +190,140 @@ subroutine mod_nonlocal_adj( num, jo_grad_y, xb, new_ob, mean_h, &
       integer :: ip1,ip2,ip3,je2
       real :: refp, ray_length
 
-      is = ids
-      ie = ide
-      js = jds
-      je = jde
+!zx   is = ids
+!zx   ie = ide
+!zx   js = jds
+!zx   je = jde
       ks = kds
       ke = kde
 
-      dtr = pi/180.
-      rtd = 180./pi
+!zx   dtr = pi/180.
+!zx   rtd = 180./pi
       step = 5.   !  km for ray integration
 
       a_rfr = 0.
       ref_mean_h_adj(:,:,:) = 0.0
      
-       do j=js, je
-       do i=is, ie
-       if (global_lon(i,j) >= 0.) then
-         x2(i,j)= global_lat(i,j)
-         y2(i,j)= global_lon(i,j)
-       else
-         x2(i,j)= global_lat(i,j)
-         y2(i,j)= (global_lon(i,j)+360.)
-       endif
-       enddo
-       enddo
+!zx    do j=js, je
+!zx    do i=is, ie
+!zx    if (global_lon(i,j) >= 0.) then
+!zx      x2(i,j)= global_lat(i,j)
+!zx      y2(i,j)= global_lon(i,j)
+!zx    else
+!zx      x2(i,j)= global_lat(i,j)
+!zx      y2(i,j)= (global_lon(i,j)+360.)
+!zx    endif
+!zx    enddo
+!zx    enddo
       
       nbot=lowest_level+1
+      nbot = gps_rays(num)%nbot
+
       ntop=ke-1
+      ntop = gps_rays(num)%ntop
+
+      mean_h = gps_rays(num)%mean_h
+
       do i = nbot, ntop
 !       rp(1)=(earth_radius+mean_h(i))*cos(dtr*new_ob%lat(i)) &
-       rp(1)=(new_ob%rfict+mean_h(i))*cos(dtr*new_ob%lat(i)) &
-                                     *cos(dtr*new_ob%lon(i))
+!zx    rp(1)=(new_ob%rfict+mean_h(i))*cos(dtr*new_ob%lat(i)) &
+!zx                                  *cos(dtr*new_ob%lon(i))
 !       rp(2)=(earth_radius+mean_h(i))*cos(dtr*new_ob%lat(i)) &
-       rp(2)=(new_ob%rfict+mean_h(i))*cos(dtr*new_ob%lat(i)) &
-                                     *sin(dtr*new_ob%lon(i))
+!zx    rp(2)=(new_ob%rfict+mean_h(i))*cos(dtr*new_ob%lat(i)) &
+!zx                                  *sin(dtr*new_ob%lon(i))
 !       rp(3)=(earth_radius+mean_h(i))*sin(dtr*new_ob%lat(i))
-       rp(3)=(new_ob%rfict+mean_h(i))*sin(dtr*new_ob%lat(i))
-       rn(1)=-sin(dtr*new_ob%lat(i))*cos(dtr*new_ob%lon(i))
-       rn(2)=-sin(dtr*new_ob%lat(i))*sin(dtr*new_ob%lon(i))
-       rn(3)=+cos(dtr*new_ob%lat(i))
+!zx    rp(3)=(new_ob%rfict+mean_h(i))*sin(dtr*new_ob%lat(i))
+!zx    rn(1)=-sin(dtr*new_ob%lat(i))*cos(dtr*new_ob%lon(i))
+!zx    rn(2)=-sin(dtr*new_ob%lat(i))*sin(dtr*new_ob%lon(i))
+!zx    rn(3)=+cos(dtr*new_ob%lat(i))
 
-       CALL spin(rn,rp,-dtr*new_ob%azim(i),rr)
-       CALL rnorm(rr)   
+!zx    CALL spin(rn,rp,-dtr*new_ob%azim(i),rr)
+!zx    CALL rnorm(rr)   
 
        
-       rox=sqrt(rp(1)**2+rp(2)**2)
-       glat=rtd*atan(rp(3)/rox)
-       glon=rtd*atan2(rp(2),rp(1))
-       CALL absv(rp,rxabs)
-       h = rxabs - new_ob%rfict
-       ray_length=sqrt((mean_h(ke)-h)*(2*new_ob%rfict+mean_h(ke)+h))
-       je2=int(ray_length/step)+1
-       ip1=0
-       ip2=0
-       ip3=0
-       CALL find2(ie,je,rxabs,x2,y2,glat,glon,ip1,ip2,w2)
+!zx    rox=sqrt(rp(1)**2+rp(2)**2)
+!zx    glat=rtd*atan(rp(3)/rox)
+!zx    glon=rtd*atan2(rp(2),rp(1))
+!zx    CALL absv(rp,rxabs)
+!zx    h = rxabs - new_ob%rfict
+       h = gps_rays(num)%ip123(i)%h(0)
+!zx    ray_length=sqrt((mean_h(ke)-h)*(2*new_ob%rfict+mean_h(ke)+h))
+!zx    je2=int(ray_length/step)+1
+       je2 = gps_rays(num)%je2(i)
+!zx    ip1=0
+!zx    ip2=0
+!zx    ip3=0
+!zx    CALL find2(ie,je,rxabs,x2,y2,glat,glon,ip1,ip2,w2)
+       ip1 = gps_rays(num)%ip123(i)%i1(0)
+       ip2 = gps_rays(num)%ip123(i)%i2(0)
+       w2 = gps_rays(num)%ip123(i)%w2(1:2,1:2,0)
 
-       CALL find1(ke,mean_h,h,ip3,w1)
+!zx    CALL find1(ke,mean_h,h,ip3,w1)
+       ip3 = gps_rays(num)%ip123(i)%i3(0)
+       w1 = gps_rays(num)%ip123(i)%w1(1:2,0)
 
-      i1l=0
-      i2l=0
-      i1r=0
-      i2r=0
-      i1 = 0
-      i2 = 0
+!zx   i1l=0
+!zx   i2l=0
+!zx   i1r=0
+!zx   i2r=0
+!zx   i1 = 0
+!zx   i2 = 0
 
-      if (ilocal(i)==1)then   
+      if (gps_rays(num)%ilocal(i)==1)then   
       do j = 1, je2
        
        do k=-1,+1,2
-        dst=step*j*k
+!zx     dst=step*j*k
  
-        do l=1,3
-        rx(l)=rp(l)+dst*rr(l)
-        end do
+!zx     do l=1,3
+!zx     rx(l)=rp(l)+dst*rr(l)
+!zx     end do
 
-       rox=sqrt(rx(1)**2+rx(2)**2)
-       glat=rtd*atan(rx(3)/rox)
+!zx    rox=sqrt(rx(1)**2+rx(2)**2)
+!zx    glat=rtd*atan(rx(3)/rox)
        glon=rtd*atan2(rx(2),rx(1))
-       CALL absv(rx,rxabs)
+!zx    CALL absv(rx,rxabs)
 !       h = rxabs - earth_radius
-       h = rxabs - new_ob%rfict
+!zx    h = rxabs - new_ob%rfict
+       h = gps_rays(num)%ip123(i)%h(k*j)
 
        IF (h <= mean_h(ke-1))then
 
 !       CALL find1(ke,mean_h,h,i3,w1)
-         if (k == -1)then
-         i1=i1l
-         i2=i2l
-         endif
-         if (k == 1) then
-         i1=i1r
-         i2=i2r
-         endif
-       CALL find2(ie,je,rxabs,x2,y2,glat,glon,i1,i2,w2)
+!zx      if (k == -1)then
+!zx      i1=i1l
+!zx      i2=i2l
+!zx      endif
+!zx      if (k == 1) then
+!zx      i1=i1r
+!zx      i2=i2r
+!zx      endif
+!zx    CALL find2(ie,je,rxabs,x2,y2,glat,glon,i1,i2,w2)
 
 ! avoid boundry effect
-        if (i1==1 .or. i1>=ie-1 .or. i2==1 .or. i2>=je-1) then
-        w2(:,:)=0.
-        endif
-! avoid mountain effect
-       CALL find1(ke,mean_h,h,i3,w1)
-       if ( h < (global_terr(i1,i2)/1000.))then
-       w1(:)=0.
-       endif
+!zx     if (i1==1 .or. i1>=ie-1 .or. i2==1 .or. i2>=je-1) then
+!zx     w2(:,:)=0.
+!zx     endif
+       i1 = gps_rays(num)%ip123(i)%i1(k*j)
+       i2 = gps_rays(num)%ip123(i)%i2(k*j)
+       w2 = gps_rays(num)%ip123(i)%w2(1:2,1:2,k*j)
 
-         if (k == -1)then
-         i1l=i1
-         i2l=i2
-         endif
-         if (k == 1) then
-         i1r=i1
-         i2r=i2
-         endif
+! avoid mountain effect
+!zx    CALL find1(ke,mean_h,h,i3,w1)
+!zx    if ( h < (global_terr(i1,i2)/1000.))then
+!zx    w1(:)=0.
+!zx    endif
+       i3 = gps_rays(num)%ip123(i)%i3(k*j)
+       w1 = gps_rays(num)%ip123(i)%w1(1:2,k*j)
+
+!zx      if (k == -1)then
+!zx      i1l=i1
+!zx      i2l=i2
+!zx      endif
+!zx      if (k == 1) then
+!zx      i1r=i1
+!zx      i2r=i2
+!zx      endif
        
        a_rfr = a_rfr + step * jo_grad_y%gpseph(num)%eph(i)
        
@@ -324,7 +344,7 @@ subroutine mod_nonlocal_adj( num, jo_grad_y, xb, new_ob, mean_h, &
 
      jo_grad_y%gpseph(num)%eph(i) = 0.
   
-     else if (ilocal(i)==0) then
+     else if (gps_rays(num)%ilocal(i)==0) then
        a_rfr = a_rfr + step * jo_grad_y%gpseph(num)%eph(i)
        
        do l=1,2

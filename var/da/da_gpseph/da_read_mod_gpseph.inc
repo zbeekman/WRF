@@ -90,7 +90,7 @@ SUBROUTINE da_read_mod_gpseph ( n, xb, lowest_level, new_ob, model_eph)
        mean_h(k)=mean_h(k)/1000.   ! in km
       end do
 
-      CALL mod_nonlocal(xb,new_ob,mean_h,lowest_level,ref_mean_h, model_eph)
+      CALL mod_nonlocal(n,xb,new_ob,mean_h,lowest_level,ref_mean_h, model_eph)
 
        
 END SUBROUTINE da_read_mod_gpseph 

@@ -59,6 +59,24 @@ module da_gpseph
    real, dimension(:,:), allocatable :: global_lat, global_lon, global_terr
    real, dimension(:,:,:), allocatable :: global_h, global_ref, global_xa_ref, global_adj_ref
 
+   type gpsnode_type
+     integer, dimension(:), allocatable :: i1,i2,i3
+     real, dimension(:), allocatable :: h
+     real, dimension(:,:), allocatable :: w1
+     real, dimension(:,:,:), allocatable :: w2
+   end type gpsnode_type
+
+   type gpsrays_type
+     integer :: nbot
+     integer :: ntop
+     real,dimension(:),allocatable :: mean_h
+     integer,dimension(:),allocatable :: je2
+     integer,dimension(:),allocatable :: ilocal
+     type(gpsnode_type),dimension(:),allocatable :: ip123
+   end type gpsrays_type
+
+   type(gpsrays_type), dimension(:), allocatable  :: gps_rays
+
 contains
 
 #include "da_ao_stats_gpseph.inc"
@@ -77,6 +95,7 @@ contains
 #include "da_read_mod_gpseph_adj.inc"
 #include "da_residual_gpseph_ftl.inc"
 #include "da_residual_gpseph_adj.inc"
+#include "da_gpseph_rays.inc"
 #include "da_gpseph_init.inc"
 #include "da_gpseph_final.inc"
 

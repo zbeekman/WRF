@@ -33,7 +33,7 @@ subroutine da_transform_xtoy_gpseph_adj(grid, iv, jo_grad_y, jo_grad_x)
      new_ob%lon(:)    = 0.0
      new_ob%azim(:)   = 0.0
      new_ob%eph(:)    = 0.0
-     call da_read_obs_gpseph( n, grid%xb, iv, lowest_level, new_ob, mean_h, ilocal)
+     !call da_read_obs_gpseph( n, grid%xb, iv, lowest_level, new_ob, mean_h, ilocal)
      call da_read_mod_gpseph_adj(n, jo_grad_y, grid%xb, new_ob, lowest_level, jo_grad_x, ilocal)
 
      deallocate (new_ob%height)

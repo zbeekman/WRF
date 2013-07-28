@@ -144,6 +144,8 @@ subroutine da_get_innov_vector_gpseph(it, num_qcstat_conv, grid, ob, iv)
 
    if ( (.not.(pseudo_var(1:3) == 'eph' .and. num_pseudo > 0)) .or. &
         it > 1 ) then
+   if ( .not. allocated ( gps_rays ) ) &
+      allocate ( gps_rays(iv%info(gpseph)%n1:iv%info(gpseph)%n2) )
    do n=iv%info(gpseph)%n1,iv%info(gpseph)%n2
           if ( iv%info(gpseph)%levels(n) < 1 ) cycle
      
@@ -159,6 +161,7 @@ subroutine da_get_innov_vector_gpseph(it, num_qcstat_conv, grid, ob, iv)
           new_ob%   lon(:) = 0.0
           new_ob%  azim(:) = 0.0
           new_ob%   eph(:) = 0.0
+   CALL da_gpseph_rays(n, grid%xb, iv, mean_h, lowest_level, new_ob)
    CALL da_read_obs_gpseph(n, grid%xb, iv, lowest_level, new_ob, mean_h, ilocal)
    CALL da_read_mod_gpseph(n, grid%xb, lowest_level, new_ob, model_eph(:,n))
        do k=kds,kde

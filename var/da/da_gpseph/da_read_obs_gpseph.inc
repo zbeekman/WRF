@@ -141,7 +141,7 @@ SUBROUTINE da_read_obs_gpseph( n, xb, iv, lowest_level, new_ob, mean_h, ilocal)
       end do
 
  
-      CALL obs_nonlocal(xb,mean_h,lowest_level,new_ob,ilocal)
+      CALL obs_nonlocal(n, xb,mean_h,lowest_level,new_ob,ilocal)
 
       deallocate (log_ref, lat_inv, lon_inv, azim_inv, tmp_h ) 
      
