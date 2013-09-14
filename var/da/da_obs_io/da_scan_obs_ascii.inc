@@ -193,6 +193,10 @@ subroutine da_scan_obs_ascii (iv, filename)
 
       call da_llxy (platform%info, platform%loc, outside, outside_all)
 
+      if ( fm == 118 .and. outside_all) then
+         cycle reports
+      end if
+
       if (platform%info%levels < 1) then
          if (fm /= 111 .and. fm /= 114) then
             cycle reports
@@ -302,7 +306,7 @@ subroutine da_scan_obs_ascii (iv, filename)
             if (.not.use_gpsephobs .or. iv%info(gpseph)%ntotal == max_gpseph_input) cycle reports
             if (n==1) iv%info(gpseph)%ntotal = iv%info(gpseph)%ntotal + 1
             if (gpseph_loadbalance) then
-               if ( myproc .ne. MOD( (iv%info(gpseph)%ntotal-1), num_procs ) ) cycle reports
+               if ( myproc .ne. MOD( (iv%info(gpseph)%ntotal-1), num_procs ) .or. outside_all ) cycle reports
             else
                if (outside) cycle reports
             endif
