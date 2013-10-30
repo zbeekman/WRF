@@ -246,7 +246,10 @@ subroutine da_get_innov_vector_gpseph(it, num_qcstat_conv, grid, ob, iv)
 !        write(1006,'(2(A7),A12,3(A20))') 'number','level','mean_h','error(%)','Excess Phase','OBS ERROR VALSE'
 !        call lintp(count_lev,err_height,err_pencent,kde,mean_h,intp_err_pencent)
          call splinx(count_lev,err_height,err_pencent,kde,mean_h,cc,intp_err_pencent)
-         do kk=kds,kde
+
+         iv%gpseph(n)%eph(:)%error = missing_r
+         do kk = iv%gpseph(n)%level1, iv%gpseph(n)%level2
+!        do kk=kds,kde
          iv%gpseph(n)%eph(kk)%error = intp_err_pencent(kk)*ob%gpseph(n)%eph(kk)
          write(1006,'(2(I7),F12.5,3(F20.7))') n,kk,mean_h(kk),intp_err_pencent(kk),ob%gpseph(n)%eph(kk),iv%gpseph(n)%eph(kk)%error
          enddo
@@ -254,6 +257,10 @@ subroutine da_get_innov_vector_gpseph(it, num_qcstat_conv, grid, ob, iv)
          do k=kde+1,num_levs
             iv%gpseph(n)%eph(k)%error = missing_r
          enddo
+!        write(1006,*) 'mean_h:',mean_h(:)
+!        write(1006,*) 'intp_err_pencent:',intp_err_pencent(:)
+!        write(1006,*) 'OB:',ob%gpseph(n)%eph(:)
+!        write(1006,*) 'OE:',iv%gpseph(n)%eph(:)%error
          endif
 
          deallocate(intp_err_pencent,err_height,err_pencent,cc)
@@ -269,7 +276,7 @@ subroutine da_get_innov_vector_gpseph(it, num_qcstat_conv, grid, ob, iv)
    if (.not. anal_type_verify) then
    if (.not.(pseudo_var(1:3) == 'eph' .and. num_pseudo > 0)) then
 
-  goto 12345
+! goto 12345
 
 ! Write out GPS Eph data:
      DO n=iv%info(gpseph)%n1,iv%info(gpseph)%n2

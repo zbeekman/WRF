@@ -23,7 +23,9 @@ subroutine da_calculate_grady_gpseph(iv, re, jo_grad_y)
          ! Since we calculate the nonlocal thing globally, we have to exlude the obs located at boundaries.
          if (iv%gpseph(n)%eph(k)%qc < obs_qc_pointer .or. .not. iv%info(gpseph)%proc_domain(1,n) ) &
             re%gpseph(n)%eph(k) = 0.0
+         if ( iv%gpseph(n)%eph(k)%qc >= obs_qc_pointer ) then
          jo_grad_y%gpseph(n)%eph(k) = -re%gpseph(n)%eph(k) / (iv%gpseph(n)%eph(k)%error * iv%gpseph(n)%eph(k)%error)
+         end if
       end do
    end do
 

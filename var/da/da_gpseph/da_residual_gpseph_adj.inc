@@ -281,7 +281,7 @@ subroutine mod_nonlocal_adj( num, jo_grad_y, xb, new_ob, mean_h, &
 
 !zx    rox=sqrt(rx(1)**2+rx(2)**2)
 !zx    glat=rtd*atan(rx(3)/rox)
-       glon=rtd*atan2(rx(2),rx(1))
+!zx    glon=rtd*atan2(rx(2),rx(1))
 !zx    CALL absv(rx,rxabs)
 !       h = rxabs - earth_radius
 !zx    h = rxabs - new_ob%rfict
