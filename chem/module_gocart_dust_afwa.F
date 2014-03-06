@@ -11,9 +11,10 @@ MODULE GOCART_DUST_AFWA
 
 CONTAINS
   subroutine gocart_dust_afwa_driver(ktau,dt,config_flags,julday,alt,t_phy,moist,u_phy,  &
-         v_phy,chem,rho_phy,dz8w,smois,u10,v10,p8w,erod,dustin,snowh,zs,   &
-         ivgtyp,isltyp,vegfra,xland,xlat,xlong,gsw,dx,g,emis_dust,         &
-         ust,znt,clay,sand,alpha,gamma,smtune,                             &
+         v_phy,chem,rho_phy,dz8w,smois,u10,v10,p8w,erod,erod_dri,dustin,snowh,zs,   & !RAS13.1
+         ivgtyp,isltyp,vegfra,lai_vegmask,xland,xlat,xlong,gsw,dx,g,emis_dust,      & !RAS_LAI
+         ust,znt,clay_wrf,sand_wrf,clay_nga,sand_nga,afwa_dustloft,                 & !GAC/EDH 
+         tot_dust,tot_edust,vis_dust,alpha,gamma,smtune,ustune,            &
          ids,ide, jds,jde, kds,kde,                                        &
          ims,ime, jms,jme, kms,kme,                                        &
          its,ite, jts,jte, kts,kte                                         )
@@ -42,7 +43,7 @@ CONTAINS
    REAL, DIMENSION( config_flags%num_soil_layers ) ,                       &
          INTENT(IN   ) ::                            zs
    REAL, DIMENSION( ims:ime , jms:jme, ndcls )             ,               &
-         INTENT(IN   ) ::                            erod
+         INTENT(IN   ) ::                            erod,erod_dri          !RAS13.1
    REAL, DIMENSION( ims:ime , jms:jme, 5 )                 ,               &
          INTENT(INOUT) ::                            dustin
    REAL, DIMENSION( ims:ime , jms:jme )                    ,               &
@@ -51,13 +52,16 @@ CONTAINS
                                                      v10,                  &
                                                      gsw,                  &
                                                      vegfra,               &
+                                                     lai_vegmask,          &
                                                      xland,                &
                                                      xlat,                 &
                                                      xlong,                &
                                                      ust,                  &
                                                      znt,                  &
-                                                     clay,                 &
-                                                     sand,                 &
+                                                     clay_wrf,             & !EDH
+                                                     sand_wrf,             & !EDH
+                                                     clay_nga,             & !EDH
+                                                     sand_nga,             & !EDH
                                                      snowh
    REAL, DIMENSION( ims:ime , kms:kme , jms:jme ),                         &
          INTENT(IN   ) ::                                                  &
@@ -65,6 +69,14 @@ CONTAINS
                                                      t_phy,                &
                                                      dz8w,p8w,             &
                                                      u_phy,v_phy,rho_phy
+! GAC-->
+  REAL, DIMENSION( ims:ime , jms:jme )                    ,                &
+         INTENT(  OUT) ::                            afwa_dustloft,        &
+                                                     tot_edust
+  REAL, DIMENSION( ims:ime , kms:kme , jms:jme ),                          &
+         INTENT(  OUT) ::                            tot_dust,             &
+                                                     vis_dust
+! <--GAC
   REAL, INTENT(IN   ) :: dt,dx,g
 
 ! Local variables
@@ -72,15 +84,22 @@ CONTAINS
   INTEGER :: nmx,smx,i,j,k,imx,jmx,lmx,lhave
   INTEGER,DIMENSION (1,1) :: ilwi
   REAL*8, DIMENSION (1,1) :: erodtot
+  REAL*8, DIMENSION (1,1) :: vegmask   !RAS
   REAL*8, DIMENSION (1,1) :: gravsm
+  REAL, DIMENSION( ims:ime , jms:jme ) :: clay,sand ! EDH
   REAL*8, DIMENSION (1,1) :: drylimit
   REAL*8, DIMENSION (5)   :: tc,bems
   REAL*8, DIMENSION (1,1) :: airden,airmas,ustar
   REAL*8, DIMENSION (1) :: dxy
   REAL*8, DIMENSION (3) :: massfrac
-  REAL :: conver,converi,volsm
+  REAL*8                :: volsm
+  REAL :: conver,converi
+! GAC-->
+  REAL :: psi,ustart,w10
+! <--GAC
   REAL*8 :: zwant
-  REAL, INTENT(IN   ) :: alpha, gamma, smtune
+  REAL, INTENT(IN   ) :: alpha, gamma, smtune, ustune
+  INTEGER :: soilm_opt
 
   conver=1.e-9
   converi=1.e9
@@ -96,6 +115,10 @@ CONTAINS
   k=kts
   DO j=jts,jte
   DO i=its,ite
+
+! Masked value for afwa_dustloft
+
+    afwa_dustloft(i,j)=-99.
 
 ! Don't do dust over water!!!
 
@@ -116,10 +139,68 @@ CONTAINS
       airden(1,1)=rho_phy(i,kts,j)
       ustar(1,1)=ust(i,j)
       dxy(1)=dx*dx
- 
-! Total erodibility.
 
-      erodtot(1,1)=SUM(erod(i,j,:))
+! Friction velocity tuning constant 
+       
+      ustar(1,1)=ustar(1,1) * ustune
+ 
+! Total erodibility.  Determine what DSR we're using.
+!-->RAS13.1
+      IF (config_flags%dust_dsr .eq. 1) then  !DRI DSR
+          IF (erod_dri(i,j,1).ge.0) THEN  !Where DRI is defined
+             erodtot(1,1) = SUM(erod_dri(i,j,:))
+          ELSE !Outside where DRI not defined, use Ginoux
+             erodtot(1,1)=SUM(erod(i,j,:))
+          ENDIF
+      ELSE !Ginoux DSR
+          erodtot(1,1)=SUM(erod(i,j,:))
+      ENDIF
+!RAS13.1
+
+!-->RAS13.1 - fixed to use erod field to determine Ginoux vegmask
+! Set the vegmask variable to the desired vegation mask at this gridpoint
+      IF (config_flags%dust_veg .eq. 1) then
+         ! 12-month vegetation fraction
+         ! If user chose this 12-month greenfrac vegetation mask option,
+         ! cut off everything above 5%
+         IF (vegfra(i,j) .ge. 0.05) then
+             vegmask(1,1) = 0.0
+         ELSE
+             vegmask(1,1) = 1.0
+         ENDIF
+      !-->RAS_LAI
+      ELSE IF (config_flags%dust_veg .eq. 2) then
+         ! 8-day MODIS LAI vegmask
+         ! 1 = no veg, produce dust; 0 = vegation, do not produce dust
+         vegmask(1,1) = lai_vegmask(i,j)
+      !<--RAS_LAI
+      ELSE
+         ! Default choice = static ginoux vegmask
+         IF (erod(i,j,1) .eq. 0) THEN
+            vegmask(1,1) = 0.0
+         ELSE
+            vegmask(1,1) = 1.0
+         ENDIF
+      ENDIF
+
+! Remove vegetated areas (vegmask=0) from total erodibility.
+    erodtot(1,1) = erodtot(1,1) * vegmask(1,1)
+!<--RAS13.1
+
+!-->EDH - Add option to call soil types. Option 0 = WRF (default); Option 1 = NGA
+      IF (config_flags%dust_soils .eq. 1) then
+         IF (clay_nga(i,j) .ge.0) then
+             clay(i,j) = clay_nga(i,j)
+             sand(i,j) = sand_nga(i,j)
+         ELSE
+             clay(i,j) =clay_wrf(i,j)
+             sand(i,j) =sand_wrf(i,j)
+         ENDIF
+      ELSE
+         clay(i,j) =clay_wrf(i,j)
+         sand(i,j) =sand_wrf(i,j)
+      ENDIF
+!<--EDH
 
 ! Mass fractions of clay, silt, and sand.
 
@@ -160,24 +241,59 @@ CONTAINS
 ! fact that RUC subtracts hygroscopic water (drypoint) and rounds any value less
 ! than 0.005 to 0.005.  When we add drypoint back to the RUC soil moisture, we are
 ! artificially moistening any areas with initial values less than 0.005.
+!
+! UPDATE GAC 20130219 - It seems this was "fixed" at some point so that SMOIS is 
+! consistent throughout all LSMs. No longer need to add drypoint for RUC.  Now no
+! longer artificially moistening areas with initial values less than 0.005.
+!
+!      sfc_select: SELECT CASE(config_flags%sf_surface_physics)
+!        CASE ( RUCLSMSCHEME )
+!          volsm=max((smois(i,1,j)+drypoint(isltyp(i,j)))*smtune,0.)
+!        CASE DEFAULT
+!          volsm=max(smois(i,1,j)*smtune,0.)
+!      END SELECT sfc_select
 
-      sfc_select: SELECT CASE(config_flags%sf_surface_physics)
-        CASE (RUCLSMSCHEME)
-          volsm=max((smois(i,1,j)+drypoint(isltyp(i,j)))*smtune,0.)
-        CASE DEFAULT
-          volsm=max(smois(i,1,j)*smtune,0.)
-      END SELECT sfc_select
+      volsm=max(smois(i,1,j)*smtune,0.)
 
 ! Calculate gravimetric soil moisture and drylimit.
 
       gravsm(1,1)=100*volsm/((1.-porosity(isltyp(i,j)))*(2.65*(1-clay(i,j))+2.50*clay(i,j)))
-      drylimit(1,1)=14.0*clay(i,j)*clay(i,j)+17.0*clay(i,j)
+      !drylimit(1,1)=14.0*clay(i,j)*clay(i,j)+17.0*clay(i,j)
+
+!-->EDH
+! Choose an LSM option and drylimit option.
+! Drylimit calculations based on look-up table in Clapp and Hornberger (1978) for RUC and PXLSM and
+! Cosby et al. (1984) for Noah LSM.
+
+      soilm_opt = 0
+      IF (config_flags%soilm_opt == 1) then
+         sfc_select: SELECT CASE(config_flags%sf_surface_physics)
+            CASE ( RUCLSMSCHEME, PXLSMSCHEME )
+               drylimit(1,1) =0.035*(13.52*clay(i,j)+3.53)**2.68
+               soilm_opt = 1
+            CASE ( LSMSCHEME )
+               drylimit(1,1) =0.0756*(15.127*clay(i,j)+3.09)**2.3211
+               soilm_opt = 1
+            CASE DEFAULT
+               ! Don't currently support volumetric soil moisture for this scheme, use gravimetric
+               drylimit(1,1)=14.0*clay(i,j)*clay(i,j)+17.0*clay(i,j)
+         END SELECT sfc_select
+      ELSE
+         drylimit(1,1)=14.0*clay(i,j)*clay(i,j)+17.0*clay(i,j)
+      END IF
+!<--EDH
+
  
 ! Call dust emission routine.
 
+! GAC-->
+!      call source_dust(imx, jmx, lmx, nmx, smx, dt, tc, ustar, massfrac, &
+!                       erodtot, ilwi, dxy, gravsm, airden, airmas, &
+!                       bems, g, drylimit, alpha, gamma)
       call source_dust(imx, jmx, lmx, nmx, smx, dt, tc, ustar, massfrac, &
-                       erodtot, ilwi, dxy, gravsm, airden, airmas, &
-                       bems, g, drylimit, alpha, gamma)
+                       erodtot, ilwi, dxy, gravsm, volsm, airden, airmas, &
+                       bems, ustart, g, drylimit, alpha, gamma, soilm_opt)
+! <--GAC
 
       IF(config_flags%chem_opt == 2 .or. config_flags%chem_opt == 11 ) then
         dustin(i,j,1:5)=tc(1:5)*converi
@@ -189,6 +305,20 @@ CONTAINS
         chem(i,kts,j,p_dust_5)=tc(5)*converi
       ENDIF
 
+! GAC-->
+! Diagnostic dust lofting potential diagnostic calculation
+
+      psi=0.
+      w10=(u10(i,j)**2.+v10(i,j)**2.)**0.5
+      IF (ustar(1,1) .ne. 0. .and. znt(i,j) .ne. 0.) THEN
+        psi=0.4*w10/ustar(1,1)-LOG(10.0/znt(i,j))
+      ENDIF
+      IF (erodtot(1,1) .gt. 0.) then
+        !afwa_dustloft(i,j)=w10-ustart*(LOG(10.0/znt(i,j))+psi)/0.4
+        afwa_dustloft(i,j)=ustune*w10-ustart*(LOG(10.0/znt(i,j))+psi)/0.4
+      ENDIF
+! <--GAC
+
 ! For output diagnostics
 
       emis_dust(i,1,j,p_edust1)=bems(1)
@@ -197,16 +327,49 @@ CONTAINS
       emis_dust(i,1,j,p_edust4)=bems(4)
       emis_dust(i,1,j,p_edust5)=bems(5)
 
+! GAC-->
+! Diagnostic total emitted dust
+
+      tot_edust(i,j)=(bems(1)+bems(2)+bems(3)+bems(4)+bems(5))
+
+! <--GAC
+
     ENDIF
+
+! GAC-->
+! Cumulative dust concentration, flux, and visibility diagnostics
+
+    DO k=kts,kte
+      tot_dust(i,k,j)=(chem(i,k,j,p_dust_1)+chem(i,k,j,p_dust_2)+       &
+                       chem(i,k,j,p_dust_3)+chem(i,k,j,p_dust_4)+       &
+                       chem(i,k,j,p_dust_5))*rho_phy(i,k,j)
+      IF ( tot_dust(i,k,j) .gt. 0. ) THEN
+        vis_dust(i,k,j)=MIN(3.912/                                      &
+                          ((1.470E-6*chem(i,k,j,p_dust_1)+              &
+                            7.877E-7*chem(i,k,j,p_dust_2)+              &
+                            4.623E-7*chem(i,k,j,p_dust_3)+              &
+                            2.429E-7*chem(i,k,j,p_dust_4)+              &
+                            1.387E-7*chem(i,k,j,p_dust_5))*             &
+                           rho_phy(i,k,j)),20000.)
+      ELSE
+        vis_dust(i,k,j)=20000.
+      ENDIF
+    ENDDO
+! <--GAC
+
   ENDDO
   ENDDO
 
 end subroutine gocart_dust_afwa_driver
 
-  
+! GAC-->  
+!  SUBROUTINE source_dust(imx, jmx, lmx, nmx, smx, dt1, tc, ustar, massfrac,&
+!                         erod, ilwi, dxy, gravsm, airden, airmas, &
+!                         bems, g0, drylimit, alpha, gamma)
   SUBROUTINE source_dust(imx, jmx, lmx, nmx, smx, dt1, tc, ustar, massfrac,&
-                         erod, ilwi, dxy, gravsm, airden, airmas, &
-                         bems, g0, drylimit, alpha, gamma)
+                         erod, ilwi, dxy, gravsm, volsm, airden, airmas, &
+                         bems, ustart, g0, drylimit, alpha, gamma, soilm_opt)
+! <--GAC
 
 ! ****************************************************************************
 ! *  Evaluate the source of each dust particles size bin by soil emission  
@@ -284,6 +447,11 @@ end subroutine gocart_dust_afwa_driver
   REAL*8, INTENT(INOUT) :: tc(imx,jmx,lmx,nmx)
   REAL*8, INTENT(OUT)   :: bems(imx,jmx,nmx) 
   REAL, INTENT(IN)    :: g0,dt1
+! GAC-->
+  REAL, INTENT(OUT)   :: ustart
+! <--GAC
+  INTEGER, INTENT(IN) :: soilm_opt
+  REAL*8, INTENT(IN)    :: volsm
 
   REAL*8    :: den(smx), diam(smx)
   REAL*8    :: dvol(nmx), dlndp(nmx)
@@ -380,11 +548,32 @@ end subroutine gocart_dust_afwa_driver
      ! dry limit, treat as dry (no correction to threshold friction
      ! velocity). GC
 
-       IF (gravsm(i,j) > drylimit(i,j)) THEN
-         u_ts = MAX(0.0D+0,u_ts0*(sqrt(1.0+1.21*(gravsm(i,j)-drylimit(i,j))**0.68)))
+     ! Calculate threshold friction velocity. If volumetric (gravimetric)
+     ! water content is less than the drylimit, then the threshold friction
+     ! velocity (u_ts) will be equal to the dry threshold friction velocity
+     ! (u_ts0). EDH
+
+       IF (soilm_opt .EQ. 1) THEN
+          IF (100.*volsm > drylimit(i,j)) THEN
+            u_ts = MAX(0.0D+0,u_ts0*(sqrt(1.0+1.21*((100*volsm)-drylimit(i,j))**0.68)))
+          ELSE
+            u_ts = u_ts0
+          ENDIF
        ELSE
-         u_ts = u_ts0
-       END IF 
+          IF (gravsm(i,j) > drylimit(i,j)) THEN
+            u_ts = MAX(0.0D+0,u_ts0*(sqrt(1.0+1.21*(gravsm(i,j)-drylimit(i,j))**0.68)))
+          ELSE
+            u_ts = u_ts0
+          END IF 
+       END IF
+
+! GAC-->
+     ! Bin 7 threshold friction velocity for diagnostic dust lofting potential product
+
+       IF (n .eq. 7) THEN  ! Saltation bin 7 is small sand
+         ustart = u_ts
+       ENDIF
+! <--GAC
 
      ! Saltation flux from Marticorena & Bergametti 1995 (MB95). ds_rel is
      ! the relative surface area distribution
