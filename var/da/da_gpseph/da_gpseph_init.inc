@@ -15,13 +15,13 @@ subroutine da_gpseph_init (grid)
    ! Gather lat, lon, h and terr for gpseph data
    if (gpseph_nonlocal)   then
 
-      allocate ( global_lat (ids:ide,jds:jde) )
-      allocate ( global_lon (ids:ide,jds:jde) )
-      allocate ( global_terr (ids:ide,jds:jde) )
-      allocate ( global_h (ids:ide,jds:jde,kds:kde) )
-      allocate ( global_ref (ids:ide,jds:jde,kds:kde) )
-      allocate ( global_xa_ref (ids:ide,jds:jde,kds:kde) )
-      allocate ( global_adj_ref (ids:ide,jds:jde,kds:kde) )
+      if ( .not. allocated(global_lat) ) allocate ( global_lat (ids:ide,jds:jde) )
+      if ( .not. allocated(global_lon) ) allocate ( global_lon (ids:ide,jds:jde) )
+      if ( .not. allocated(global_terr) ) allocate ( global_terr (ids:ide,jds:jde) )
+      if ( .not. allocated(global_h) ) allocate ( global_h (ids:ide,jds:jde,kds:kde) )
+      if ( .not. allocated(global_ref) ) allocate ( global_ref (ids:ide,jds:jde,kds:kde) )
+      if ( .not. allocated(global_xa_ref) ) allocate ( global_xa_ref (ids:ide,jds:jde,kds:kde) )
+      if ( .not. allocated(global_adj_ref) ) allocate ( global_adj_ref (ids:ide,jds:jde,kds:kde) )
       global_lat = 0.0
       global_lon = 0.0
       global_terr = 0.0

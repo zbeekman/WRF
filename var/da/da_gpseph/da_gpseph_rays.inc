@@ -47,7 +47,7 @@ SUBROUTINE da_gpseph_rays ( n, xb, iv, mean_h, lowest_level, new_ob)
                          rpolar**2*(cos(abs(temp_lat)))**2))
       CALL model_mean_altitude(xb, new_ob, mean_h)          ! mean_h in km
 
-      allocate( gps_rays(n)%mean_h(kts:kte) )
+      if ( .not. allocated(gps_rays(n)%mean_h) ) allocate( gps_rays(n)%mean_h(kts:kte) )
       gps_rays(n)%mean_h = mean_h
 
       allocate( log_ref (iv%info(gpseph)%levels(n)) )
@@ -157,9 +157,9 @@ SUBROUTINE da_gpseph_rays ( n, xb, iv, mean_h, lowest_level, new_ob)
        gps_rays(n)%ntop = ntop
 
 
-       allocate ( gps_rays(n)%je2 (nbot:ntop) )
-       allocate ( gps_rays(n)%ip123 (nbot:ntop) )
-       allocate ( gps_rays(n)%ilocal (nbot:ntop) )
+       if ( .not. allocated(gps_rays(n)%je2) ) allocate ( gps_rays(n)%je2 (nbot:ntop) )
+       if ( .not. allocated(gps_rays(n)%ip123) ) allocate ( gps_rays(n)%ip123 (nbot:ntop) )
+       if ( .not. allocated(gps_rays(n)%ilocal) ) allocate ( gps_rays(n)%ilocal (nbot:ntop) )
 
        do i=nbot,ntop
 !
@@ -191,12 +191,12 @@ SUBROUTINE da_gpseph_rays ( n, xb, iv, mean_h, lowest_level, new_ob)
        je2=int(ray_length/step)+1
        gps_rays(n)%je2(i)=int(ray_length/step)+1
 
-       allocate ( gps_rays(n)%ip123(i)%i1(    -je2:je2) )
-       allocate ( gps_rays(n)%ip123(i)%i2(    -je2:je2) )
-       allocate ( gps_rays(n)%ip123(i)%i3(    -je2:je2) )
-       allocate ( gps_rays(n)%ip123(i)%h (    -je2:je2) )
-       allocate ( gps_rays(n)%ip123(i)%w1(2,  -je2:je2) )
-       allocate ( gps_rays(n)%ip123(i)%w2(2,2,-je2:je2) )
+       if ( .not. allocated(gps_rays(n)%ip123(i)%i1) ) allocate ( gps_rays(n)%ip123(i)%i1(    -je2:je2) )
+       if ( .not. allocated(gps_rays(n)%ip123(i)%i2) ) allocate ( gps_rays(n)%ip123(i)%i2(    -je2:je2) )
+       if ( .not. allocated(gps_rays(n)%ip123(i)%i3) ) allocate ( gps_rays(n)%ip123(i)%i3(    -je2:je2) )
+       if ( .not. allocated(gps_rays(n)%ip123(i)%h) ) allocate ( gps_rays(n)%ip123(i)%h (    -je2:je2) )
+       if ( .not. allocated(gps_rays(n)%ip123(i)%w1) ) allocate ( gps_rays(n)%ip123(i)%w1(2,  -je2:je2) )
+       if ( .not. allocated(gps_rays(n)%ip123(i)%w2) ) allocate ( gps_rays(n)%ip123(i)%w2(2,2,-je2:je2) )
 
        gps_rays(n)%ip123(i)%h(0) = h
 

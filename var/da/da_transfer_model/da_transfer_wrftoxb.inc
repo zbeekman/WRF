@@ -870,6 +870,11 @@ subroutine da_transfer_wrftoxb(xbx, grid, config_flags)
 
    deallocate (xbx % latc_mean)
 
+   ! Update the gps eph
+   if ( gpseph_nonlocal ) then
+      call da_gpseph_init ( grid )
+   endif
+
    if (trace_use) call da_trace_exit("da_transfer_wrftoxb")
 
 end subroutine da_transfer_wrftoxb
