@@ -22,20 +22,21 @@ SUBROUTINE solve_em_tl ( grid , config_flags  &
                   local_communicator, mytask, ntasks, ntasks_x, ntasks_y                   &
                  ,local_communicator_periodic, wrf_dm_maxval
    USE module_comm_dm, ONLY : &
-                  halo_em_a_tl_sub,halo_em_b_tl_sub,halo_em_c2_tl_sub,halo_em_chem_e_3_sub          &
-                 ,halo_em_chem_e_5_sub,halo_em_chem_e_7_sub,halo_em_chem_old_e_5_sub       &
-                 ,halo_em_chem_old_e_7_sub,halo_em_c_tl_sub,halo_em_d2_3_tl_sub                  &
+                  halo_em_a_tl_sub,halo_em_b_tl_sub,halo_em_c2_tl_sub &
+                 ,halo_em_c_tl_sub,halo_em_d2_3_tl_sub                  &
                  ,halo_em_d2_5_tl_sub,halo_em_d3_3_tl_sub,halo_em_d3_5_tl_sub,halo_em_d_tl_sub         &
                  ,halo_em_e_3_tl_sub,halo_em_e_5_tl_sub,halo_em_hydro_uv_tl_sub                     &
                  ,halo_em_moist_e_3_tl_sub,halo_em_moist_e_5_tl_sub,halo_em_moist_e_7_tl_sub        &
                  ,halo_em_moist_old_e_5_tl_sub,halo_em_moist_old_e_7_tl_sub                      &
-                 ,halo_em_scalar_e_3_sub,halo_em_scalar_e_5_sub,halo_em_scalar_e_7_sub     &
-                 ,halo_em_scalar_old_e_5_sub,halo_em_scalar_old_e_7_sub,halo_em_tke_3_tl_sub  &
-                 ,halo_em_tke_5_tl_sub,halo_em_tke_7_tl_sub,halo_em_tke_advect_3_tl_sub             &
+                 ,halo_em_scalar_e_3_sub,halo_em_scalar_e_5_sub,halo_em_scalar_e_7_sub           &
+                 ,halo_em_scalar_old_e_5_sub,halo_em_scalar_old_e_7_sub,halo_em_tke_3_tl_sub     &
+                 ,halo_em_tke_5_tl_sub,halo_em_tke_7_tl_sub,halo_em_tke_advect_3_tl_sub          &
                  ,halo_em_tke_advect_5_tl_sub,halo_em_tke_old_e_5_tl_sub                         &
-                 ,halo_em_tke_old_e_7_tl_sub,halo_em_tracer_e_3_tl_sub,halo_em_tracer_e_5_tl_sub    &
+                 ,halo_em_tke_old_e_7_tl_sub,halo_em_tracer_e_3_tl_sub,halo_em_tracer_e_5_tl_sub &
                  ,halo_em_tracer_e_7_tl_sub,halo_em_tracer_old_e_5_tl_sub                        &
-                 ,halo_em_tracer_old_e_7_tl_sub,period_bdy_em_a_sub,halo_em_sbm_tl_sub           &
+                 ,halo_em_tracer_old_e_7_tl_sub,halo_em_chem_e_3_tl_sub,halo_em_chem_e_5_tl_sub  &
+                 ,halo_em_chem_e_7_tl_sub,halo_em_chem_old_e_5_tl_sub                        &
+                 ,halo_em_chem_old_e_7_tl_sub,period_bdy_em_a_sub,halo_em_sbm_tl_sub         &
                  ,period_bdy_em_b3_sub,period_bdy_em_b_sub,period_bdy_em_chem2_sub         &
                  ,period_bdy_em_chem_old_sub,period_bdy_em_chem_sub,period_bdy_em_d3_sub   &
                  ,period_bdy_em_d_sub,period_bdy_em_e_sub,period_bdy_em_moist2_sub         &
@@ -66,7 +67,9 @@ SUBROUTINE solve_em_tl ( grid , config_flags  &
    USE module_fddaobs_driver
 !  USE module_diagnostics
 #if (WRF_CHEM==1)
-   USE module_input_chem_data
+!   USE module_input_chem_data
+   USE g_module_input_chem_data
+
    USE module_input_tracer
    USE module_chem_utilities
 #endif
@@ -178,6 +181,8 @@ SUBROUTINE solve_em_tl ( grid , config_flags  &
    INTEGER                                    :: num, den
    TYPE(WRFU_TimeInterval)                    :: dtInterval, intervaltime,restartinterval
 
+   INTEGER                                    :: temp_itimestep
+
 ! Define benchmarking timers if -DBENCH is compiled
 #include <bench_solve_em_def.h>
 
@@ -268,6 +273,17 @@ SUBROUTINE solve_em_tl ( grid , config_flags  &
    curr_secs  = real_time(tmpTimeInterval)
    curr_secs2 = real_time(tmpTimeInterval2)
 
+     write(message,*)'itimestep,check_count,checkpoint_interval = ',grid%itimestep,grid%check_count,grid%checkpoint_interval
+     CALL wrf_debug(50,TRIM(message))
+
+!  IF(grid%check_count .GT. 1) THEN
+
+     curr_secs = curr_secs + REAL( 3600*(grid%check_count-1)*grid%checkpoint_interval, 8 )
+
+     write(message,*)'curr_secs = ',curr_secs
+     CALL wrf_debug(50,TRIM(message))
+!  ENDIF
+
    old_dt = grid%dt   ! store old time step for flux averaging code at end of RK loop
 !-----------------------------------------------------------------------------
 ! Adaptive time step: Added by T. Hutchinson, WSI  3/5/07
@@ -294,10 +310,60 @@ SUBROUTINE solve_em_tl ( grid , config_flags  &
    endif
 
    grid%itimestep = grid%itimestep + 1
-   
+
+   temp_itimestep = grid%itimestep
+   grid%itimestep = grid%itimestep + (grid%check_count-1)*grid%checkpoint_interval*3600/grid%dt
+  
    IF (config_flags%enable_identity) RETURN
 
    IF (config_flags%polar) dclat = 90./REAL(jde-jds) !(0.5 * 180/ny)
+
+#ifdef WRF_CHEM
+
+   kte=min(k_end,kde-1)
+# ifdef DM_PARALLEL
+   if ( num_chem >= PARAM_FIRST_SCALAR ) then
+!-----------------------------------------------------------------------
+! see matching halo calls below for stencils
+!--------------------------------------------------------------
+     CALL wrf_debug ( 200 , ' call HALO_RK_CHEM_TL' )
+     IF      ( config_flags%h_mom_adv_order <= 4 ) THEN
+#      include "HALO_EM_CHEM_E_3_TL.inc"
+       IF( config_flags%progn > 0 ) THEN
+#         include "HALO_EM_SCALAR_E_3.inc"
+       ENDIF
+       IF( config_flags%cu_physics == CAMZMSCHEME ) THEN
+#         include "HALO_EM_SCALAR_E_3.inc"
+       ENDIF
+     ELSE IF ( config_flags%h_mom_adv_order <= 6 ) THEN
+#      include "HALO_EM_CHEM_E_5_TL.inc"
+       IF( config_flags%cu_physics == CAMZMSCHEME ) THEN
+#         include "HALO_EM_SCALAR_E_5.inc"
+       ENDIF
+       IF( config_flags%progn > 0 ) THEN
+#         include "HALO_EM_SCALAR_E_5.inc"
+      ENDIF
+     ELSE
+       WRITE(wrf_err_message,*)'solve_em: invalid h_mom_adv_order = ',config_flags%h_mom_adv_order
+       CALL wrf_error_fatal(TRIM(wrf_err_message))
+     ENDIF
+   ENDIF
+   if ( num_tracer >= PARAM_FIRST_SCALAR ) then
+!-----------------------------------------------------------------------
+! see matching halo calls below for stencils
+!--------------------------------------------------------------
+     CALL wrf_debug ( 200 , ' call HALO_RK_TRACER_TL' )
+     IF      ( config_flags%h_mom_adv_order <= 4 ) THEN
+#      include "HALO_EM_TRACER_E_3_TL.inc"
+     ELSE IF ( config_flags%h_mom_adv_order <= 6 ) THEN
+#      include "HALO_EM_TRACER_E_5_TL.inc"
+     ELSE
+       WRITE(wrf_err_message,*)'solve_em: invalid h_mom_adv_order = ',config_flags%h_mom_adv_order
+       CALL wrf_error_fatal(TRIM(wrf_err_message))
+     ENDIF
+   ENDIF
+# endif
+# endif
 
    rk_order = config_flags%rk_ord
 
@@ -637,7 +703,10 @@ BENCH_END(g_set_phys_bc_tim)
 
   CALL g_first_rk_step_part1 (   grid , config_flags                   &
                              , moist , g_moist, moist_tend, g_moist_tend   &
-                             , chem  , chem_tend     &
+                             , chem  , g_chem,   chem_tend,   g_chem_tend    &
+#ifdef WRF_CHEM
+                             , dvel &
+#endif
                              , tracer, g_tracer, tracer_tend, g_tracer_tend  &
                              , scalar , g_scalar, scalar_tend, g_scalar_tend &
                              , fdda3d, fdda2d           &
@@ -648,10 +717,10 @@ BENCH_END(g_set_phys_bc_tim)
                              , tke_tend,g_tke_tend                         &
                              , config_flags%use_adaptive_time_step         &
                              , curr_secs                 &
-                             , psim ,psih ,wspd  &
+                             , psim ,psih ,wspd ,g_wspd  &
                              , gz1oz0 ,br, chklowq           &
                              , cu_act_flag , hol , th_phy ,g_th_phy                 &
-                             , pi_phy ,g_pi_phy, p_phy ,g_p_phy, grid%t_phy ,grid%g_t_phy         &
+                             , pi_phy ,g_pi_phy, p_phy ,g_p_phy &  !, grid%t_phy ,grid%g_t_phy  &
                              , dz8w ,g_dz8w , p8w ,g_p8w , t8w ,g_t8w                   &
                              , ids, ide, jds, jde, kds, kde     &
                              , ims, ime, jms, jme, kms, kme     &
@@ -674,8 +743,8 @@ BENCH_END(g_set_phys_bc_tim)
         CALL g_first_rk_step_part2 (   grid , config_flags   &
                , moist ,g_moist , moist_tend ,g_moist_tend   &
 !!!!! USE THE STATEMENTS REMARKED WHEN chem is NEEDED. Ning Pan, 2010-08-20
-!               , chem  ,g_chem  , chem_tend  ,g_chem_tend    &
-               , chem  ,  chem  , chem_tend  ,  chem_tend    &
+               , chem  ,g_chem  , chem_tend  ,g_chem_tend    &
+!               , chem  ,  chem  , chem_tend  ,  chem_tend    &
                , tracer,  g_tracer, tracer_tend, g_tracer_tend  &
                , scalar,g_scalar, scalar_tend,g_scalar_tend  &
 !!!!! USE THE STATEMENT REMARKED WHEN fdda3d and fdda2d ARE NEEDED. Ning Pan, 2010-08-20
@@ -1829,10 +1898,10 @@ BENCH_END(g_small_step_finish_tim)
            DO im = PARAM_FIRST_SCALAR, num_3d_c
 
 !!!!! REPLACE WITH g_rk_update_scalar_pd WHEN chem IS NEEDED. Ning Pan
-             CALL rk_update_scalar_pd( im, im,                                  &
-                                       chem_old(ims,kms,jms,im),                &
-                                       chem_tend(ims,kms,jms,im),               &
-                                       grid%mu_1, grid%mu_1, grid%mub, &
+             CALL g_rk_update_scalar_pd( im, im,                                  &
+                                       chem_old(ims,kms,jms,im),g_chem_old(ims,kms,jms,im), &
+                                       chem_tend(ims,kms,jms,im),g_chem_tend(ims,kms,jms,im),&
+                                       grid%mu_1, grid%g_mu_1, grid%mu_1, grid%g_mu_1, grid%mub, &
                                        rk_step, dt_rk, grid%spec_zone,          &
                                        config_flags,                            &
                                        ids, ide, jds, jde, kds, kde,            &
@@ -1849,9 +1918,9 @@ BENCH_END(g_small_step_finish_tim)
 #ifdef DM_PARALLEL
          IF (config_flags%chem_adv_opt /= ORIGINAL .and. config_flags%chem_adv_opt /= WENO_SCALAR) THEN
            IF      ( config_flags%h_sca_adv_order <= 4 ) THEN
-#     include "HALO_EM_CHEM_OLD_E_5.inc"
+#     include "HALO_EM_CHEM_OLD_E_5_TL.inc"
            ELSE IF ( config_flags%h_sca_adv_order <= 6 ) THEN
-#     include "HALO_EM_CHEM_OLD_E_7.inc"
+#     include "HALO_EM_CHEM_OLD_E_7_TL.inc"
            ELSE
              WRITE(wrf_err_message,*)'solve_em_tl: invalid h_sca_adv_order = ',config_flags%h_sca_adv_order
              CALL wrf_error_fatal(TRIM(wrf_err_message))
@@ -1870,7 +1939,8 @@ BENCH_END(g_small_step_finish_tim)
              DO im = PARAM_FIRST_SCALAR , num_3d_c
 
 !!!!! REPLACE WITH g_set_physical_bc3d WHEN chem IS NEEDED. Ning Pan
-               CALL set_physical_bc3d(  chem_old(ims,kms,jms,im), 'p', config_flags,     &
+               CALL g_set_physical_bc3d(  chem_old(ims,kms,jms,im), &
+                                        g_chem_old(ims,kms,jms,im), 'p', config_flags,   &
                                         ids, ide, jds, jde, kds, kde,                    &
                                         ims, ime, jms, jme, kms, kme,                    &
                                         ips, ipe, jps, jpe, kps, kpe,                    &
@@ -2308,27 +2378,30 @@ BENCH_START(g_chem_adv_tim)
 !!!!! REPLACE WITH g_rk_scalar_tend WHEN chem IS NEEDED. Ning Pan
              tenddec = (( config_flags%chemdiag == USECHEMDIAG ) .and. &
                         ( adv_ct_indices(ic) >= PARAM_FIRST_SCALAR ))
-             CALL rk_scalar_tend ( ic, ic, config_flags,tenddec,                 &
-                              rk_step, dt_rk,                                    &
-                              grid%ru_m, grid%rv_m, grid%ww_m,                   &
-                              grid%muts, grid%mub, grid%mu_1,                    &
-                              grid%alt,                                          &
-                              chem_old(ims,kms,jms,ic),                          &
-                              chem(ims,kms,jms,ic),                              &
-                              chem_tend(ims,kms,jms,ic),                         &
-                              advect_tend,h_tendency,z_tendency,grid%rqvften,    &
-                              grid%qv_base, .false., grid%fnm, grid%fnp,         &
-                              grid%msfux,grid%msfuy, grid%msfvx, grid%msfvx_inv, &
-                              grid%msfvy, grid%msftx,grid%msfty,                 &
-                              grid%rdx, grid%rdy, grid%rdn, grid%rdnw,           &
-                              grid%khdif, grid%kvdif, grid%xkhh,                 &
-                              grid%diff_6th_opt, grid%diff_6th_factor,           &
-                              config_flags%chem_adv_opt,                         &
-                              ids, ide, jds, jde, kds, kde,                      &
-                              ims, ime, jms, jme, kms, kme,                      &
-                              grid%i_start(ij), grid%i_end(ij),                  &
-                              grid%j_start(ij), grid%j_end(ij),                  &
-                              k_start    , k_end                                )
+             CALL g_rk_scalar_tend ( ic, ic, config_flags, tenddec,                   &
+                             rk_step, dt_rk,         &
+                             grid%ru_m, grid%g_ru_m, &
+                             grid%rv_m, grid%g_rv_m, &
+                             grid%ww_m, grid%g_ww_m, &
+                             grid%muts, grid%g_muts, grid%mub, grid%mu_1, grid%g_mu_1, &
+                             grid%alt, grid%g_alt,                                     &
+                             chem_old(ims,kms,jms,ic), g_chem_old(ims,kms,jms,ic),   &
+                             chem(ims,kms,jms,ic), g_chem(ims,kms,jms,ic),           &
+                             chem_tend(ims,kms,jms,ic), g_chem_tend(ims,kms,jms,ic), &
+                             advect_tend, g_advect_tend, h_tendency,g_h_tendency,        &
+                             z_tendency, g_z_tendency, grid%rqvften, grid%g_rqvften, &
+                             grid%qv_base, .false., grid%fnm, grid%fnp,       &
+                             grid%msfux,grid%msfuy, grid%msfvx, grid%msfvx_inv, &
+                             grid%msfvy, grid%msftx,grid%msfty,               &
+                             grid%rdx, grid%rdy, grid%rdn, grid%rdnw,         &
+                             grid%khdif, grid%kvdif, grid%xkhh,grid%g_xkhh,   &
+                             grid%diff_6th_opt, grid%diff_6th_factor,         &
+                             config_flags%chem_adv_opt,                     &
+                             ids, ide, jds, jde, kds, kde,     &
+                             ims, ime, jms, jme, kms, kme,     &
+                             grid%i_start(ij), grid%i_end(ij), &
+                             grid%j_start(ij), grid%j_end(ij), &
+                             k_start    , k_end               )
 
 
 !
@@ -2341,36 +2414,45 @@ BENCH_START(g_chem_adv_tim)
              IF(ic.eq.1)CALL wrf_debug ( 10 , ' have_bcs_chem' )
 
 !!!!! REPLACE WITH g_relax_bdy_scalar WHEN chem IS NEEDED. Ning Pan
-             CALL relax_bdy_scalar ( chem_tend(ims,kms,jms,ic),                                    &
-                                     chem(ims,kms,jms,ic),  grid%mut,                              &
-                                     chem_bxs(jms,kms,1,ic),chem_bxe(jms,kms,1,ic),                &
-                                     chem_bys(ims,kms,1,ic),chem_bye(ims,kms,1,ic),                &
-                                     chem_btxs(jms,kms,1,ic),chem_btxe(jms,kms,1,ic),              &
-                                     chem_btys(ims,kms,1,ic),chem_btye(ims,kms,1,ic),              &
-                                     config_flags%spec_bdy_width, grid%spec_zone, grid%relax_zone, &
-                                     grid%dtbc, grid%fcx, grid%gcx,                                &
-                                     config_flags,                                                 &
-                                     ids,ide, jds,jde, kds,kde,                                    &
-                                     ims,ime, jms,jme, kms,kme,                                    &
-                                     ips,ipe, jps,jpe, kps,kpe,                                    &
-                                     grid%i_start(ij), grid%i_end(ij),                             &
-                                     grid%j_start(ij), grid%j_end(ij),                             &
-                                     k_start, k_end                                                )
+             CALL g_relax_bdy_scalar ( chem_tend(ims,kms,jms,im), g_chem_tend(ims,kms,jms,im),     &
+                                       chem(ims,kms,jms,im), g_chem(ims,kms,jms,im), &
+                                       grid%mut, grid%g_mut, &
+                                       chem_bxs(jms,kms,1,im),g_chem_bxs(jms,kms,1,im), &
+                                       chem_bxe(jms,kms,1,im),g_chem_bxe(jms,kms,1,im), & 
+                                       chem_bys(ims,kms,1,im),g_chem_bys(ims,kms,1,im), &
+                                       chem_bye(ims,kms,1,im),g_chem_bye(ims,kms,1,im), &
+                                       chem_btxs(jms,kms,1,im),g_chem_btxs(jms,kms,1,im), &
+                                       chem_btxe(jms,kms,1,im),g_chem_btxe(jms,kms,1,im), & 
+                                       chem_btys(ims,kms,1,im),g_chem_btys(ims,kms,1,im), &
+                                       chem_btye(ims,kms,1,im),g_chem_btye(ims,kms,1,im), &
+                                       config_flags%spec_bdy_width, grid%spec_zone, grid%relax_zone, &
+                                       grid%dtbc, grid%fcx, grid%gcx,  &
+                                       config_flags,               &
+                                       ids,ide, jds,jde, kds,kde,  & ! domain dims
+                                       ims,ime, jms,jme, kms,kme,  & ! memory dims
+                                       ips,ipe, jps,jpe, kps,kpe,  & ! patch  dims
+                                       grid%i_start(ij), grid%i_end(ij),      &
+                                       grid%j_start(ij), grid%j_end(ij),      &
+                                       k_start, k_end )
 
 !!!!! REPLACE WITH g_spec_bdy_scalar WHEN chem IS NEEDED. Ning Pan
-             CALL spec_bdy_scalar  ( chem_tend(ims,kms,jms,ic),                 &
-                                     chem_bxs(jms,kms,1,ic),chem_bxe(jms,kms,1,ic),                &
-                                     chem_bys(ims,kms,1,ic),chem_bye(ims,kms,1,ic),                &
-                                     chem_btxs(jms,kms,1,ic),chem_btxe(jms,kms,1,ic),              &
-                                     chem_btys(ims,kms,1,ic),chem_btye(ims,kms,1,ic),              &
-                                     config_flags%spec_bdy_width, grid%spec_zone,                  &
-                                     config_flags,                                                 &
-                                     ids,ide, jds,jde, kds,kde,                                    &
-                                     ims,ime, jms,jme, kms,kme,                                    &
-                                     ips,ipe, jps,jpe, kps,kpe,                                    &
-                                     grid%i_start(ij), grid%i_end(ij),                             &
-                                     grid%j_start(ij), grid%j_end(ij),                             &
-                                     k_start, k_end                                                )
+             CALL g_spec_bdy_scalar ( chem_tend(ims,kms,jms,im), g_chem_tend(ims,kms,jms,im), &
+                               chem_bxs(jms,kms,1,im),g_chem_bxs(jms,kms,1,im), &
+                               chem_bxe(jms,kms,1,im),g_chem_bxe(jms,kms,1,im), &
+                               chem_bys(ims,kms,1,im),g_chem_bys(ims,kms,1,im), &
+                               chem_bye(ims,kms,1,im),g_chem_bye(ims,kms,1,im), &
+                               chem_btxs(jms,kms,1,im),g_chem_btxs(jms,kms,1,im), &
+                               chem_btxe(jms,kms,1,im),g_chem_btxe(jms,kms,1,im), &
+                               chem_btys(ims,kms,1,im),g_chem_btys(ims,kms,1,im), &
+                               chem_btye(ims,kms,1,im),g_chem_btye(ims,kms,1,im), &
+                               config_flags%spec_bdy_width, grid%spec_zone,                 &
+                               config_flags,               &
+                               ids,ide, jds,jde, kds,kde,  & ! domain dims
+                               ims,ime, jms,jme, kms,kme,  & ! memory dims
+                               ips,ipe, jps,jpe, kps,kpe,  & ! patch  dims
+                               grid%i_start(ij), grid%i_end(ij),          &
+                               grid%j_start(ij), grid%j_end(ij),          &
+                               k_start, k_end                               )
 
            ENDIF
 
@@ -2387,14 +2469,19 @@ BENCH_START(g_chem_adv_tim)
 !!!!! REPLACE WITH g_rk_update_scalar WHEN chem IS NEEDED. Ning Pan
            tenddec = (( config_flags%chemdiag == USECHEMDIAG ) .and. &
                       ( adv_ct_indices(ic) >= PARAM_FIRST_SCALAR ))
-           CALL rk_update_scalar( scs=ic, sce=ic,                                         &
-                                  scalar_1=chem_old(ims,kms,jms,ic),                      &
-                                  scalar_2=chem(ims,kms,jms,ic),                          &
-                                  sc_tend=chem_tend(ims,kms,jms,ic),                      &
-                                  advect_tend=advect_tend,                                &
-                                  h_tendency=h_tendency, z_tendency=z_tendency,           & 
+           CALL g_rk_update_scalar( scs=ic, sce=ic,                                       &
+                                  scalar_1=chem_old(ims,kms,jms,ic),                    &
+                                  g_scalar_1=g_chem_old(ims,kms,jms,ic),                &
+                                  scalar_2=chem(ims,kms,jms,ic),                        &
+                                  g_scalar_2=g_chem(ims,kms,jms,ic),                    &
+                                  sc_tend=chem_tend(ims,kms,jms,ic),                    &
+                                  g_sc_tend=g_chem_tend(ims,kms,jms,ic),                &
+                                  advect_tend=advect_tend,g_advect_tend=g_advect_tend,    &
+                                  h_tendency=h_tendency, g_h_tendency=g_h_tendency,       & 
+                                  z_tendency=z_tendency, g_z_tendency=g_z_tendency,       & 
                                   msftx=grid%msftx,msfty=grid%msfty,                      &
-                                  mu_old=grid%mu_1, mu_new=grid%mu_2, mu_base=grid%mub,   &
+                                  mu_old=grid%mu_1, g_mu_old=grid%g_mu_1,                 &
+                                  mu_new=grid%mu_2, g_mu_new=grid%g_mu_2, mu_base=grid%mub,   &
                                   rk_step=rk_step, dt=dt_rk, spec_zone=grid%spec_zone,    &
                                   config_flags=config_flags, tenddec=tenddec,             & 
                                   ids=ids, ide=ide, jds=jds, jde=jde, kds=kds, kde=kde,   &
@@ -2406,16 +2493,21 @@ BENCH_START(g_chem_adv_tim)
            IF( config_flags%specified  ) THEN
 
 !!!!! REPLACE WITH g_flow_dep_bdy_chem WHEN chem IS NEEDED. Ning Pan
-             CALL flow_dep_bdy_chem( chem(ims,kms,jms,ic),                          &
-                                     chem_bxs(jms,kms,1,ic), chem_btxs(jms,kms,1,ic),  &
-                                     chem_bxe(jms,kms,1,ic), chem_btxe(jms,kms,1,ic),  &
-                                     chem_bys(ims,kms,1,ic), chem_btys(ims,kms,1,ic),  &
-                                     chem_bye(ims,kms,1,ic), chem_btye(ims,kms,1,ic),  &
+             CALL g_flow_dep_bdy_chem( chem(ims,kms,jms,ic), g_chem(ims,kms,jms,ic),     &
+                                     chem_bxs(jms,kms,1,ic), g_chem_bxs(jms,kms,1,ic),  &
+                                     chem_btxs(jms,kms,1,ic), g_chem_btxs(jms,kms,1,ic),  &
+                                     chem_bxe(jms,kms,1,ic), g_chem_bxe(jms,kms,1,ic),  &
+                                     chem_btxe(jms,kms,1,ic), g_chem_btxe(jms,kms,1,ic),  &
+                                     chem_bys(ims,kms,1,ic), g_chem_bys(ims,kms,1,ic),  &
+                                     chem_btys(ims,kms,1,ic), g_chem_btys(ims,kms,1,ic),  &
+                                     chem_bye(ims,kms,1,ic), g_chem_bye(ims,kms,1,ic),  &
+                                     chem_btye(ims,kms,1,ic), g_chem_btye(ims,kms,1,ic),  &
                                      dt_rk+grid%dtbc,                                  &
-                                     config_flags%spec_bdy_width,grid%z,      &
+                                     config_flags%spec_bdy_width,grid%z,grid%g_z,      &
                                      grid%have_bcs_chem,      &
-                                     grid%ru_m, grid%rv_m, config_flags,grid%alt,       &
-                                     grid%t_1,grid%pb,grid%p,t0,p1000mb,rcp,grid%ph_2,grid%phb,g, &
+                                     grid%ru_m, grid%rv_m, config_flags,               &
+                                     grid%alt,grid%g_alt,grid%t_1,grid%g_t_1,grid%pb,  &
+                                     grid%p,grid%g_p,t0,p1000mb,rcp,grid%ph_2,grid%phb,g, &
                                      grid%spec_zone,ic,                  &
                                      ids,ide, jds,jde, kds,kde,  & ! domain dims
                                      ims,ime, jms,jme, kms,kme,  & ! memory dims
@@ -3043,7 +3135,7 @@ BENCH_END(g_diag_w_tim)
            chem_species_bdy_loop_1 : DO ic = PARAM_FIRST_SCALAR , num_3d_c
 
 !!!!! REPLACE WITH g_set_physical_bc3d WHEN chem IS NEEDED. Ning Pan
-             CALL set_physical_bc3d( chem(ims,kms,jms,ic), 'p', config_flags,   &
+             CALL g_set_physical_bc3d( chem(ims,kms,jms,ic) , g_chem(ims,kms,jms,ic), 'p', config_flags,   &
                                      ids, ide, jds, jde, kds, kde,            &
                                      ims, ime, jms, jme, kms, kme,            &
                                      ips, ipe, jps, jpe, kps, kpe,            &
@@ -3153,15 +3245,15 @@ BENCH_END(g_bc_end_tim)
        IF ( num_chem >= PARAM_FIRST_SCALAR ) THEN
          IF      ( config_flags%h_sca_adv_order <= 4 ) THEN
            IF ( (config_flags%chem_adv_opt /= ORIGINAL .and. config_flags%chem_adv_opt /= WENO_SCALAR) .and. (rk_step == rk_order-1) ) THEN
-#        include "HALO_EM_CHEM_E_5.inc"
+#        include "HALO_EM_CHEM_E_5_TL.inc"
            ELSE
-#        include "HALO_EM_CHEM_E_3.inc"
+#        include "HALO_EM_CHEM_E_3_TL.inc"
            ENDIF
          ELSE IF ( config_flags%h_sca_adv_order <= 6 ) THEN
            IF ( (config_flags%chem_adv_opt /= ORIGINAL .and. config_flags%chem_adv_opt /= WENO_SCALAR) .and. (rk_step == rk_order-1) ) THEN
-#        include "HALO_EM_CHEM_E_7.inc"
+#        include "HALO_EM_CHEM_E_7_TL.inc"
            ELSE
-#        include "HALO_EM_CHEM_E_5.inc"
+#        include "HALO_EM_CHEM_E_5_TL.inc"
            ENDIF
          ELSE
            WRITE(wrf_err_message,*)'solve_em_tl: invalid h_sca_adv_order = ',config_flags%h_sca_adv_order
@@ -3516,8 +3608,8 @@ BENCH_START(g_moist_phys_end_tim)
                       k_start    , k_end                                )
 
 !!!!! REPLACE WITH g_microphysics_zero_outb WHEN CODING TL OF PHYSICS. Ning Pan
-       CALL microphysics_zero_outb (                                    &
-                      chem , num_chem , config_flags ,              &
+       CALL g_microphysics_zero_outb (                                    &
+                      chem , g_chem, num_chem , config_flags ,              &
                       ids, ide, jds, jde, kds, kde,                     &
                       ims, ime, jms, jme, kms, kme,                     &
                       its, ite, jts, jte,                               &
@@ -3555,8 +3647,8 @@ BENCH_START(g_moist_phys_end_tim)
                       k_start    , k_end                                )
 
 !!!!! REPLACE WITH g_microphysics_zero_outa WHEN CODING TL OF PHYSICS. Ning Pan
-       CALL microphysics_zero_outa (                                    &
-                      chem , num_chem , config_flags ,                  &
+       CALL g_microphysics_zero_outa (                                    &
+                      chem , g_chem, num_chem , config_flags ,                  &
                       ids, ide, jds, jde, kds, kde,                     &
                       ims, ime, jms, jme, kms, kme,                     &
                       its, ite, jts, jte,                               &
@@ -3951,7 +4043,7 @@ BENCH_START(g_bc_2d_tim)
      chem_species_bdy_loop_2 : DO ic = PARAM_FIRST_SCALAR , num_3d_c
 
 !!!!! REPLACE WITH g_set_physical_bc3d WHEN chem IS NEEDED. Ning Pan
-       CALL set_physical_bc3d( chem(ims,kms,jms,ic) , 'p', config_flags,  &
+       CALL g_set_physical_bc3d( chem(ims,kms,jms,ic) , g_chem(ims,kms,jms,ic) , 'p', config_flags,  &
                                ids, ide, jds, jde, kds, kde,            &
                                ims, ime, jms, jme, kms, kme,            &
                                ips, ipe, jps, jpe, kps, kpe,            &
@@ -4079,9 +4171,9 @@ BENCH_END(g_bc_2d_tim)
 !--------------------------------------------------------------
      CALL wrf_debug ( 200 , ' call HALO_RK_CHEM' )
      IF      ( config_flags%h_mom_adv_order <= 4 ) THEN
-#      include "HALO_EM_CHEM_E_3.inc"
+#      include "HALO_EM_CHEM_E_3_TL.inc"
      ELSE IF ( config_flags%h_mom_adv_order <= 6 ) THEN
-#      include "HALO_EM_CHEM_E_5.inc"
+#      include "HALO_EM_CHEM_E_5_TL.inc"
      ELSE
        WRITE(wrf_err_message,*)'solve_em_tl: invalid h_mom_adv_order = ',config_flags%h_mom_adv_order
        CALL wrf_error_fatal(TRIM(wrf_err_message))
@@ -4116,6 +4208,8 @@ BENCH_END(g_bc_2d_tim)
      ENDIF
    ENDIF
 #endif
+
+   grid%itimestep = temp_itimestep
 
 !  Max values of CFL for adaptive time step scheme
 

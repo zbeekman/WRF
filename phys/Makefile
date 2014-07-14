@@ -39,6 +39,8 @@ MODULES = \
 	module_bl_qnsepbl.o \
 	module_bl_qnsepbl09.o \
 	module_bl_acm.o \
+	module_bl_acm_ad.o \
+	module_bl_acm_tl.o \
 	module_bl_mynn.o \
 	module_bl_fogdes.o \
 	module_bl_gwdo.o \
@@ -187,6 +189,16 @@ MODULES = \
 	module_fddagd_driver.o  \
         module_fddaobs_rtfdda.o \
 	module_fddaobs_driver.o \
+	module_surface_driver_tl.o \
+	module_surface_driver_ad.o \
+	module_sf_sfclay_tl.o \
+	module_sf_sfclay_ad.o \
+	module_sf_pxsfclay_tl.o \
+	module_sf_pxsfclay_ad.o \
+	module_sf_pxlsm_tl.o \
+	module_sf_pxlsm_ad.o \
+	module_sf_slab_tl.o \
+	module_sf_slab_ad.o
 	module_wind_fitch.o \
         module_sf_lake.o \
 	module_diagnostics_driver.o

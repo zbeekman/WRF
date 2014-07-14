@@ -4,7 +4,11 @@
 MODULE mediation_pertmod_io
 
 USE module_domain, ONLY : domain, head_grid, get_ijk_from_grid
-USE module_state_description, ONLY : PARAM_FIRST_SCALAR, num_moist, num_tracer, num_scalar
+USE module_state_description, ONLY : PARAM_FIRST_SCALAR, num_moist, num_tracer, &
+#ifdef WRF_CHEM
+                                     num_chem,num_scaleant,num_scalebb, &
+#endif
+                                     num_scalar
 #ifdef DM_PARALLEL
 USE module_dm, ONLY : local_communicator, mytask, ntasks, ntasks_x, ntasks_y
 USE module_comm_dm, ONLY : halo_em_e_ad_sub
@@ -30,7 +34,9 @@ END TYPE ad_forcing_list
 TYPE (ad_forcing_list), POINTER :: ad_forcing_head, ad_forcing_tail, tl_pert_head
 
 INTEGER :: bytes_ad_forcing , bytes_xtraj, n3d, n2d, n1d, nsd, nbd
-
+#ifdef WRF_CHEM
+INTEGER :: nsca, nscb, kdep, ndep
+#endif
 INTEGER                         :: ids , ide , jds , jde , kds , kde , &
                                    ims , ime , jms , jme , kms , kme , &
                                    ips , ipe , jps , jpe , kps , kpe
@@ -42,12 +48,12 @@ SUBROUTINE adtl_initialize
    IMPLICIT NONE
 
    TYPE (ad_forcing_list), POINTER :: adtl_current
-   INTEGER :: i
+   INTEGER :: i,j
 
    ! 3D variables: a_u, a_v, a_w, a_t, a_ph, a_p
    bytes_ad_forcing = n3d*6
-   ! 2D variables: a_mu, a_rainnc, a_rainncv, a_rainc, a_raincv
-   bytes_ad_forcing = bytes_ad_forcing + 5*n2d
+   ! 2D variables: a_mu, a_rainnc, a_rainncv, a_rainc, a_raincv, a_pblh, a_hfx, a_qfx, a_mol, a_znt, a_ust, a_canwat
+   bytes_ad_forcing = bytes_ad_forcing + 12*n2d
    ! Moist variables
    DO i = PARAM_FIRST_SCALAR, num_moist
       bytes_ad_forcing = bytes_ad_forcing + n3d
@@ -56,6 +62,23 @@ SUBROUTINE adtl_initialize
    DO i = PARAM_FIRST_SCALAR, num_tracer
       bytes_ad_forcing = bytes_ad_forcing + n3d
    ENDDO
+#ifdef WRF_CHEM
+   ! Chem variables
+   DO i = PARAM_FIRST_SCALAR, num_chem
+      bytes_ad_forcing = bytes_ad_forcing + n3d
+   ENDDO
+   ! Anthro Scale Variables
+   DO i = PARAM_FIRST_SCALAR, num_scaleant
+      bytes_ad_forcing = bytes_ad_forcing + n2d*nsca
+   ENDDO
+   ! Biomass Scale Variables
+   DO i = PARAM_FIRST_SCALAR, num_scalebb
+      bytes_ad_forcing = bytes_ad_forcing + n2d*nscb
+   ENDDO
+#endif
+
+   !Soil variables: tslb, smois
+   bytes_ad_forcing = bytes_ad_forcing + 2*n2d*nsd
 
    adtl_current => ad_forcing_head
 
@@ -265,7 +288,7 @@ SUBROUTINE xtraj_io_initialize
 
    TYPE (pertmod_io), POINTER :: current
 
-   INTEGER :: i
+   INTEGER :: i, j
 
    CALL get_ijk_from_grid (  head_grid ,                   &
                              ids, ide, jds, jde, kds, kde,    &
@@ -279,18 +302,25 @@ SUBROUTINE xtraj_io_initialize
    n1d = (kme-kms+1)
    nsd = head_grid%num_soil_layers
    nbd = head_grid%spec_bdy_width
+#ifdef WRF_CHEM
+   nsca = head_grid%num_ant_steps
+   nscb = head_grid%num_bb_steps
+   ndep = head_grid%ndepvel
+   kdep = head_grid%kdepvel
+#endif
 
    ! 3D variables: u_2, v_2, w_2, t_2, ph_2, p, al, h_diabatic
    !-------------- alt, alb, phb, pb, tke_2
-   !               rublten,rvblten,rthblten,rqvblten
-   bytes_xtraj = n3d*8
+   !               rublten,rvblten,rthblten,rqvblten,rqcblten,rqiblten
+   !               rthcuten,rqvcuten,rqccuten,rqicuten
+   bytes_xtraj = n3d*18
 
    ! 2D variables: mu_2,tsk,psfc,snowc,snowh
    !---------------lu_index, q2, t2, th2, u10, v10, landmask, xice, ivgtyp, isltyp,
    !               vegfra, snow, canwat, sst, msft, msfu, msfv, f, e, sina, cosa,
    !               ht, xlat, xlong, albbck, tmn, xland, znt, mub,
-   !               rainnc, rainncv, rainc, raincv, hfx, qfx, ustm
-   bytes_xtraj = bytes_xtraj + n2d*13
+   !               rainnc, rainncv, rainc, raincv, hfx, qfx, ustm, ust, mol, pblh
+   bytes_xtraj = bytes_xtraj + n2d*21
 
    ! 1D K variables: znu, znw, fnm, fnp, rdnw, rdn, dnw, dn
    !bytes_xtraj = bytes_xtraj + n1d*8
@@ -318,6 +348,23 @@ SUBROUTINE xtraj_io_initialize
    DO i = PARAM_FIRST_SCALAR, num_tracer
       bytes_xtraj = bytes_xtraj + n3d
    ENDDO
+#ifdef WRF_CHEM
+   ! Chem variables
+   DO i = PARAM_FIRST_SCALAR, num_chem
+      bytes_xtraj = bytes_xtraj + n3d
+   ENDDO
+!   DO i = 1, ndep
+!      bytes_xtraj = bytes_xtraj + n2d*kdep
+!   ENDDO
+!   ! Anthro Scale Variables
+!   DO i = PARAM_FIRST_SCALAR, num_scaleant
+!      bytes_xtraj = bytes_xtraj + n2d*nsca
+!   ENDDO
+!   ! Biomass Scale Variables
+!   DO i = PARAM_FIRST_SCALAR, num_scalebb
+!      bytes_xtraj = bytes_xtraj + n2d*nscb
+!   ENDDO
+#endif
 
    ! Scalar variables
    !DO i = PARAM_FIRST_SCALAR, num_scalar
@@ -484,13 +531,44 @@ SUBROUTINE read_nl_xtraj ( time )
 
 END SUBROUTINE read_nl_xtraj
 
+SUBROUTINE find_nl_xtraj ( time )
+
+   IMPLICIT NONE
+
+   CHARACTER*256, INTENT(IN) :: time
+
+   CHARACTER*256 ::  mess
+
+   xtraj_pointer => xtraj_head
+
+   DO WHILE ( ASSOCIATED(xtraj_pointer) )
+
+      IF (TRIM(xtraj_pointer%time) .NE. TRIM(time)) THEN
+         xtraj_pointer => xtraj_pointer%next
+         CYCLE
+      ENDIF
+
+      WRITE(mess, FMT='(A,A)') &
+         'point to xtraj time stamp:', TRIM(xtraj_pointer%time)
+      CALL wrf_debug ( 1 , mess )
+
+      RETURN
+
+   ENDDO
+
+   WRITE(mess, FMT='(A,A)') &
+       'Can not find xtraj time stamp:', TRIM(time)
+   CALL wrf_error_fatal ( mess )
+
+END SUBROUTINE find_nl_xtraj
+
 SUBROUTINE packup_ad_forcing (data)
 
    IMPLICIT NONE
 
    REAL, DIMENSION(:), INTENT(OUT) :: data
 
-   INTEGER :: ns, ne, i
+   INTEGER :: ns, ne, i, j
    
    ns =       1 ; ne =    n3d ; data(ns:ne) = RESHAPE( head_grid%g_u_2, (/n3d/))
    ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%g_v_2, (/n3d/))
@@ -511,7 +589,32 @@ SUBROUTINE packup_ad_forcing (data)
    DO i = PARAM_FIRST_SCALAR, num_tracer
       ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%g_tracer(:,:,:,i), (/n3d/))
    ENDDO
- 
+#ifdef WRF_CHEM
+   DO i = PARAM_FIRST_SCALAR, num_chem
+      ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE(head_grid%g_chem(:,:,:,i), (/n3d/))
+   ENDDO
+
+!!Need these for checkpointed AD/TL runs
+   DO i = PARAM_FIRST_SCALAR, num_scaleant
+      ns =    ne+1 ; ne = ne+n2d*nsca ; data(ns:ne) = RESHAPE( head_grid%g_scaleant(:,:,:,i), (/n2d*nsca/))
+   ENDDO
+   DO i = PARAM_FIRST_SCALAR, num_scalebb
+      ns =    ne+1 ; ne = ne+n2d*nscb ; data(ns:ne) = RESHAPE( head_grid%g_scalebb(:,:,:,i), (/n2d*nscb/))
+   ENDDO
+#endif
+
+!!Need these for checkpointed AD/TL runs
+   ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%g_pblh, (/n2d/))
+   ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%g_hfx, (/n2d/))
+   ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%g_qfx, (/n2d/))
+   ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%g_mol, (/n2d/))
+   ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%g_znt, (/n2d/))
+   ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%g_ust, (/n2d/))
+   ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%g_canwat, (/n2d/))
+   ns =    ne+1 ; ne = ne+n2d*nsd ; data(ns:ne) = RESHAPE( head_grid%g_tslb, (/n2d*nsd/))
+   ns =    ne+1 ; ne = ne+n2d*nsd ; data(ns:ne) = RESHAPE( head_grid%g_smois, (/n2d*nsd/))
+
+
    IF ( ne .NE. bytes_ad_forcing ) &
       CALL wrf_error_fatal ( 'packup_ad_forcing:  ne is not equal to bytes_ad_forcing' )
 
@@ -526,7 +629,7 @@ SUBROUTINE restore_ad_forcing (data)
 
    REAL, DIMENSION(:), INTENT(INOUT) :: data
 
-   INTEGER :: ns, ne, i
+   INTEGER :: ns, ne, i, j
 
    ns =       1 ; ne =    n3d ; head_grid%g_u_2 = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
    ns =    ne+1 ; ne = ne+n3d ; head_grid%g_v_2 = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
@@ -547,6 +650,30 @@ SUBROUTINE restore_ad_forcing (data)
    DO i = PARAM_FIRST_SCALAR, num_tracer
       ns =    ne+1 ; ne = ne+n3d ; head_grid%g_tracer(:,:,:,i) = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
    ENDDO
+#ifdef WRF_CHEM
+   DO i = PARAM_FIRST_SCALAR, num_chem
+      ns =    ne+1 ; ne = ne+n3d ; head_grid%g_chem(:,:,:,i) = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
+   ENDDO
+
+!!Need these for checkpointed AD/TL runs
+   DO i = PARAM_FIRST_SCALAR, num_scaleant
+      ns =    ne+1 ; ne = ne+n2d*nsca ; head_grid%g_scaleant(:,:,:,i) = RESHAPE( data(ns:ne), (/ime-ims+1,nsca,jme-jms+1/))
+   ENDDO
+   DO i = PARAM_FIRST_SCALAR, num_scalebb
+      ns =    ne+1 ; ne = ne+n2d*nscb ; head_grid%g_scalebb(:,:,:,i) = RESHAPE( data(ns:ne), (/ime-ims+1,nscb,jme-jms+1/))
+   ENDDO
+#endif
+
+!!Need these for checkpointed AD/TL runs
+   ns =    ne+1 ; ne = ne+n2d ; head_grid%g_pblh = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n2d ; head_grid%g_hfx = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n2d ; head_grid%g_qfx = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n2d ; head_grid%g_mol = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n2d ; head_grid%g_znt = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n2d ; head_grid%g_ust = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n2d ; head_grid%g_canwat = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n2d*nsd ; head_grid%g_tslb = RESHAPE( data(ns:ne), (/ime-ims+1,nsd,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n2d*nsd ; head_grid%g_smois = RESHAPE( data(ns:ne), (/ime-ims+1,nsd,jme-jms+1/))
 
    IF ( ne .NE. bytes_ad_forcing ) &
       CALL wrf_error_fatal ( 'restore_ad_forcing:  ne is not equal to bytes_ad_forcing' )
@@ -559,10 +686,11 @@ SUBROUTINE packup_xtraj (data)
 
    REAL, DIMENSION(:), INTENT (OUT) :: data
  
-   INTEGER :: ns, ne, n, ntmp
+   INTEGER :: ns, ne, n, m, ntmp
 
    ! 3D variables: u_2, v_2, w_2, t_2, ph_2, p, al, alt, alb, phb, pb, h_diabatic
-   !               rublten, rvblten, rthblten, rqvblten
+   !               rublten, rvblten, rthblten, rqvblten, rqcblten, rqiblten
+   !               rthcuten,rqvcuten,rqccuten,rqicuten
    ns =       1 ; ne =    n3d ; data(ns:ne) = RESHAPE( head_grid%u_2, (/n3d/))
    ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%v_2, (/n3d/))
    ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%w_2, (/n3d/))
@@ -576,15 +704,22 @@ SUBROUTINE packup_xtraj (data)
    !ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%pb, (/n3d/))
    ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%h_diabatic, (/n3d/))
    !ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%tke_2, (/n3d/))
-   !ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%rublten, (/n3d/))
-   !ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%rvblten, (/n3d/))
-   !ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%rthblten, (/n3d/))
-   !ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%rqvblten, (/n3d/))
+   ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%rublten, (/n3d/))
+   ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%rvblten, (/n3d/))
+   ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%rthblten, (/n3d/))
+   ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%rqvblten, (/n3d/))
+   ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%rqcblten, (/n3d/))
+   ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%rqiblten, (/n3d/))
+   ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%rthcuten, (/n3d/))
+   ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%rqvcuten, (/n3d/))
+   ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%rqccuten, (/n3d/))
+   ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%rqicuten, (/n3d/))
+
 
    ! 2D variables: mu_2, lu_index, q2, t2, th2, u10, v10, landmask, xice, ivgtyp, isltyp,
    !               vegfra, snow, snowh, canwat, sst, msft, msfu, msfv, f, e, sina, cosa,
    !               ht, tsk, xlat, xlong, albbck, tmn, xland, znt, mub, psfc, snowc, hfx, qfx, ustm
-   !               rainnc, rainncv, rainc, raincv
+   !               ust, mol, pblh, rainnc, rainncv, rainc, raincv
    ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%mu_2, (/n2d/))
    !ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%lu_index, (/n2d/))
    ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%q2, (/n2d/))
@@ -599,7 +734,7 @@ SUBROUTINE packup_xtraj (data)
    !ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%vegfra, (/n2d/))
    !ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%snow, (/n2d/))
    ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%snowh, (/n2d/))
-   !ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%canwat, (/n2d/))
+   ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%canwat, (/n2d/))
    !ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%sst, (/n2d/))
    !ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%msft, (/n2d/))
    !ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%msfu, (/n2d/))
@@ -615,13 +750,16 @@ SUBROUTINE packup_xtraj (data)
    !ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%albbck, (/n2d/))
    !ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%tmn, (/n2d/))
    !ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%xland, (/n2d/))
-   !ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%znt, (/n2d/))
+   ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%znt, (/n2d/))
    !ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%mub, (/n2d/))
    ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%psfc, (/n2d/))
    ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%snowc, (/n2d/))
-   !ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%hfx, (/n2d/))
-   !ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%qfx, (/n2d/))
-   !ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%ustm, (/n2d/))
+   ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%hfx, (/n2d/))
+   ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%qfx, (/n2d/))
+   ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%ustm, (/n2d/))
+   ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%ust, (/n2d/))
+   ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%mol, (/n2d/))
+   ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%pblh, (/n2d/))
    ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%rainnc, (/n2d/))
    ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%rainncv, (/n2d/))
    ns =    ne+1 ; ne = ne+n2d ; data(ns:ne) = RESHAPE( head_grid%rainc, (/n2d/))
@@ -672,6 +810,20 @@ SUBROUTINE packup_xtraj (data)
    DO n = PARAM_FIRST_SCALAR, num_tracer
       ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%tracer(:,:,:,n), (/n3d/))
    ENDDO
+#ifdef WRF_CHEM
+   DO n = PARAM_FIRST_SCALAR, num_chem
+      ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE(head_grid%chem(:,:,:,n), (/n3d/))
+   ENDDO
+!   DO n = 1, ndep
+!      ns =    ne+1 ; ne = ne+n2d*kdep ; data(ns:ne) = RESHAPE(head_grid%dep_vel(:,:,:,n), (/n2d*kdep/))
+!   ENDDO
+!   DO n = PARAM_FIRST_SCALAR, num_scaleant
+!      ns =    ne+1 ; ne = ne+n2d*nsca ; data(ns:ne) = RESHAPE( head_grid%scaleant(:,:,:,n), (/n2d*nsca/))
+!   ENDDO
+!   DO n = PARAM_FIRST_SCALAR, num_scalebb
+!      ns =    ne+1 ; ne = ne+n2d*nscb ; data(ns:ne) = RESHAPE( head_grid%scalebb(:,:,:,n), (/n2d*nscb/))
+!   ENDDO
+#endif
 
    !DO n = PARAM_FIRST_SCALAR, num_scalar
    !   ns =    ne+1 ; ne = ne+n3d ; data(ns:ne) = RESHAPE( head_grid%scalar(:,:,:,n), (/n3d/))
@@ -776,10 +928,11 @@ SUBROUTINE restore_xtraj (data)
 
    REAL, DIMENSION(:), INTENT (IN) :: data
 
-   INTEGER :: ns, ne, n, ntmp
+   INTEGER :: ns, ne, n, m, ntmp
 
    ! 3D variables: u_2, v_2, w_2, t_2, ph_2, p, al, alt, alb, phb, pb, h_diabatic
-   !               rublten, rvblten, rthblten, rqvblten
+   !               rublten, rvblten, rthblten, rqvblten, rqcblten, rqiblten
+   !               rthcuten,rqvcuten,rqccuten,rqicuten
    ns =       1 ; ne =    n3d ; head_grid%u_2 = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
    ns =    ne+1 ; ne = ne+n3d ; head_grid%v_2 = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
    ns =    ne+1 ; ne = ne+n3d ; head_grid%w_2 = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
@@ -793,15 +946,21 @@ SUBROUTINE restore_xtraj (data)
    !ns =    ne+1 ; ne = ne+n3d ; head_grid%pb = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
    ns =    ne+1 ; ne = ne+n3d ; head_grid%h_diabatic = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
    !ns =    ne+1 ; ne = ne+n3d ; head_grid%tke_2 = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
-   !ns =    ne+1 ; ne = ne+n3d ; head_grid%rublten = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
-   !ns =    ne+1 ; ne = ne+n3d ; head_grid%rvblten = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
-   !ns =    ne+1 ; ne = ne+n3d ; head_grid%rthblten = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
-   !ns =    ne+1 ; ne = ne+n3d ; head_grid%rqvblten = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n3d ; head_grid%rublten = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n3d ; head_grid%rvblten = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n3d ; head_grid%rthblten = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n3d ; head_grid%rqvblten = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n3d ; head_grid%rqcblten = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n3d ; head_grid%rqiblten = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n3d ; head_grid%rthcuten = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n3d ; head_grid%rqvcuten = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n3d ; head_grid%rqccuten = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n3d ; head_grid%rqicuten = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
 
    ! 2D variables: mu_2, lu_index, q2, t2, th2, u10, v10, landmask, xice, ivgtyp, isltyp,
    !               vegfra, snow, snowh, canwat, sst, msft, msfu, msfv, f, e, sina, cosa,
    !               ht, tsk, xlat, xlong, albbck, tmn, xland, znt, mub, psfc, snowc, hfx, qfx, ustm
-   !               rainnc, rainncv, rainc, raincv
+   !               ust, mol, pblh, rainnc, rainncv, rainc, raincv
    ns =    ne+1 ; ne = ne+n2d ; head_grid%mu_2 = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
    !ns =    ne+1 ; ne = ne+n2d ; head_grid%lu_index = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
    ns =    ne+1 ; ne = ne+n2d ; head_grid%q2 = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
@@ -816,7 +975,7 @@ SUBROUTINE restore_xtraj (data)
    !ns =    ne+1 ; ne = ne+n2d ; head_grid%vegfra = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
    !ns =    ne+1 ; ne = ne+n2d ; head_grid%snow = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
    ns =    ne+1 ; ne = ne+n2d ; head_grid%snowh = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
-   !ns =    ne+1 ; ne = ne+n2d ; head_grid%canwat = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n2d ; head_grid%canwat = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
    !ns =    ne+1 ; ne = ne+n2d ; head_grid%sst = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
    !ns =    ne+1 ; ne = ne+n2d ; head_grid%msft = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
    !ns =    ne+1 ; ne = ne+n2d ; head_grid%msfu = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
@@ -832,13 +991,16 @@ SUBROUTINE restore_xtraj (data)
    !ns =    ne+1 ; ne = ne+n2d ; head_grid%albbck = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
    !ns =    ne+1 ; ne = ne+n2d ; head_grid%tmn = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
    !ns =    ne+1 ; ne = ne+n2d ; head_grid%xland = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
-   !ns =    ne+1 ; ne = ne+n2d ; head_grid%znt = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n2d ; head_grid%znt = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
    !ns =    ne+1 ; ne = ne+n2d ; head_grid%mub = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
    ns =    ne+1 ; ne = ne+n2d ; head_grid%psfc = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
    ns =    ne+1 ; ne = ne+n2d ; head_grid%snowc = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
-   !ns =    ne+1 ; ne = ne+n2d ; head_grid%hfx = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
-   !ns =    ne+1 ; ne = ne+n2d ; head_grid%qfx = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
-   !ns =    ne+1 ; ne = ne+n2d ; head_grid%ustm = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n2d ; head_grid%hfx = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n2d ; head_grid%qfx = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n2d ; head_grid%ustm = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n2d ; head_grid%ust = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n2d ; head_grid%mol = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
+   ns =    ne+1 ; ne = ne+n2d ; head_grid%pblh = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
    ns =    ne+1 ; ne = ne+n2d ; head_grid%rainnc = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
    ns =    ne+1 ; ne = ne+n2d ; head_grid%rainncv = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
    ns =    ne+1 ; ne = ne+n2d ; head_grid%rainc = RESHAPE( data(ns:ne), (/ime-ims+1,jme-jms+1/))
@@ -889,6 +1051,20 @@ SUBROUTINE restore_xtraj (data)
    DO n = PARAM_FIRST_SCALAR, num_tracer
       ns =    ne+1 ; ne = ne+n3d ; head_grid%tracer(:,:,:,n) = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
    ENDDO
+#ifdef WRF_CHEM
+   DO n = PARAM_FIRST_SCALAR, num_chem
+      ns =    ne+1 ; ne = ne+n3d ; head_grid%chem(:,:,:,n) = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
+   ENDDO
+!   DO n = 1, ndep
+!      ns =    ne+1 ; ne = ne+n2d*kdep ; head_grid%dep_vel(:,:,:,n) = RESHAPE( data(ns:ne), (/ime-ims+1,kdep,jme-jms+1/))
+!   ENDDO
+!   DO n = PARAM_FIRST_SCALAR, num_scaleant
+!      ns =    ne+1 ; ne = ne+n2d*nsca ; head_grid%scaleant(:,:,:,n) = RESHAPE( data(ns:ne), (/ime-ims+1,nsca,jme-jms+1/))
+!   ENDDO
+!   DO n = PARAM_FIRST_SCALAR, num_scalebb
+!      ns =    ne+1 ; ne = ne+n2d*nscb ; head_grid%scalebb(:,:,:,n) = RESHAPE( data(ns:ne), (/ime-ims+1,nscb,jme-jms+1/))
+!   ENDDO
+#endif
 
    !DO n = PARAM_FIRST_SCALAR, num_scalar
    !   ns =    ne+1 ; ne = ne+n3d ; head_grid%scalar(:,:,:,n) = RESHAPE( data(ns:ne), (/ime-ims+1,kme-kms+1,jme-jms+1/))
@@ -1026,12 +1202,28 @@ SUBROUTINE add_forcing_to_ad ( grid )
    grid%a_mu_2 = grid%a_mu_2 + grid%g_mu_2
    grid%a_moist = grid%a_moist + grid%g_moist
    grid%a_tracer = grid%a_tracer + grid%g_tracer
+#ifdef WRF_CHEM
+   grid%a_chem = grid%a_chem + grid%g_chem
+   grid%a_scaleant = grid%a_scaleant + grid%g_scaleant
+   grid%a_scalebb = grid%a_scalebb + grid%g_scalebb
+#endif
    grid%a_rainnc = grid%a_rainnc + grid%g_rainnc
    grid%a_rainncv = grid%a_rainncv + grid%g_rainncv
    grid%a_rainc = grid%a_rainc + grid%g_rainc
    grid%a_raincv = grid%a_raincv + grid%g_raincv
 
    grid%a_p = grid%a_p + grid%g_p
+   grid%a_al = grid%a_al + grid%g_al
+
+   grid%a_pblh = grid%a_pblh + grid%g_pblh
+   grid%a_hfx = grid%a_hfx + grid%g_hfx
+   grid%a_qfx = grid%a_qfx + grid%g_qfx
+   grid%a_mol = grid%a_mol + grid%g_mol
+   grid%a_znt = grid%a_znt + grid%g_znt
+   grid%a_ust = grid%a_ust + grid%g_ust
+   grid%a_canwat = grid%a_canwat + grid%g_canwat
+   grid%a_tslb = grid%a_tslb + grid%g_tslb
+   grid%a_smois = grid%a_smois + grid%g_smois
 
    ! Reset forcings for ZERO
    grid%g_u_2  = 0.0
@@ -1042,11 +1234,322 @@ SUBROUTINE add_forcing_to_ad ( grid )
    grid%g_mu_2 = 0.0
    grid%g_moist = 0.0
    grid%g_tracer = 0.0
+#ifdef WRF_CHEM
+   grid%g_chem = 0.0
+   grid%g_scaleant = 0.0
+   grid%g_scalebb = 0.0
+#endif
+
    grid%g_rainnc = 0.0
    grid%g_rainncv = 0.0
    grid%g_rainc = 0.0
    grid%g_raincv = 0.0
 
+   grid%g_al = 0.0
    grid%g_p = 0.0
+
+   grid%g_pblh = 0.0
+   grid%g_hfx = 0.0
+   grid%g_qfx = 0.0
+   grid%g_mol = 0.0
+   grid%g_znt = 0.0
+   grid%g_ust = 0.0
+   grid%g_canwat = 0.0
+   grid%g_tslb = 0.0
+   grid%g_smois = 0.0
+
 END SUBROUTINE add_forcing_to_ad
 
+SUBROUTINE add_forcing_to_ad_chem ( grid, config_flags )
+   USE module_domain, ONLY : domain , get_ijk_from_grid
+   USE module_configure, ONLY : grid_config_rec_type
+   USE module_state_description !, ONLY: p_bc1, p_bc2
+
+!USE module_state_description, ONLY : PARAM_FIRST_SCALAR, num_moist, num_tracer, &
+!#ifdef WRF_CHEM
+!                                     num_chem,&
+!#endif
+!                                     num_scalar
+!#ifdef DM_PARALLEL
+!USE module_dm, ONLY : local_communicator, mytask, ntasks, ntasks_x, ntasks_y
+!USE module_comm_dm, ONLY : halo_em_chem_e_3_ad_sub, halo_em_chem_e_5_ad_sub
+!#endif
+
+#ifdef DM_PARALLEL
+USE module_dm, ONLY : wrf_dm_sum_real 
+#endif
+   IMPLICIT NONE
+
+   TYPE(domain), INTENT(INOUT)             :: grid
+   TYPE (grid_config_rec_type), INTENT(IN) :: config_flags
+
+   INTEGER :: iobs, itime, iloc, jloc, kloc, ij
+   INTEGER :: its, ite, jts, jte
+   REAL :: YCHEM, ALT, H_BC, FORCING, dummy_BC, dummy_FORCING
+
+   INTEGER       :: ids , ide , jds , jde , kds , kde , &
+                    ims , ime , jms , jme , kms , kme , &
+                    ips , ipe , jps , jpe , kps , kpe
+
+   CHARACTER*256   :: message
+
+   CALL get_ijk_from_grid (  grid ,                   &
+                             ids, ide, jds, jde, kds, kde,    &
+                             ims, ime, jms, jme, kms, kme,    &
+                             ips, ipe, jps, jpe, kps, kpe )
+   itime = grid%itimestep + (grid%check_count-1)*grid%checkpoint_interval*3600/grid%dt
+
+   IF(itime .LE. 0) then
+      WRITE(message,&
+             FMT = '("WARNING in add_forcing_to_ad_chem; itime=",I4)'),itime
+      CALL wrf_message(trim(message))
+      itime = 1
+   ENDIF
+#ifdef WRF_CHEM
+   IF( config_flags%num_surf_obs .GT. 0 ) THEN
+      DO iobs = 1,config_flags%num_surf_obs
+         IF (REAL(itime,8) .GE. grid%ti_surf(iobs) .AND. REAL(itime,8) .LE. grid%tf_surf(iobs) .AND. grid%ti_surf(iobs) .GE. 1 .AND. grid%tf_surf(iobs) .LE. config_flags%num_ts) THEN
+            CALL wrf_debug( 1 ,'SURFACE_OBS' )
+            ALT = 0.D0
+            H_BC = 0.D0
+            FORCING = 0.D0
+!            dummy_BC = 0.D0
+!            dummy_FORCING = 0.D0
+            !$OMP PARALLEL DO   &
+            !$OMP PRIVATE ( ij, iobs, its, ite, jts, jte, iloc, jloc, kloc, ALT, H_BC, FORCING )
+            surf_tile_loop: DO ij = 1 , grid%num_tiles
+               its = max(grid%i_start(ij),ids)
+               ite = min(grid%i_end(ij),ide-1)
+               jts = max(grid%j_start(ij),jds)
+               jte = min(grid%j_end(ij),jde-1)
+
+! In the future will need to replace these 3 ijk roundings with calculation of interpolation coefficients for 8 surrounding grid cells (only 4 for surface obs).  These will be the coefficients of the observation operator vector.
+               iloc = INT(grid%i_surf(iobs) + 0.5D0)
+               jloc = INT(grid%j_surf(iobs) + 0.5D0)
+               kloc = INT(grid%k_surf(iobs) + 0.5D0)
+   
+               IF(iloc .GE. its .AND. &
+                  iloc .LE. ite .AND. &
+                  jloc .GE. jts .AND. &
+                  jloc .LE. jte &
+                  ) THEN
+
+                  ALT    = grid%alt(iloc,kloc,jloc)
+!                  H_BC   = (grid%chem(iloc,kloc,jloc,p_bc1) + grid%chem(iloc,kloc,jloc,p_bc2)) / ALT
+!                  H_BC    = grid%IMPROVE_H_BC(iobs)
+                  IF ( grid%num_surf_hx .GE. config_flags%p_surf_bc ) THEN
+                     H_BC   = grid%surf_hx(itime,config_flags%p_surf_bc)
+                     FORCING = ( H_BC - grid%BC_surf(iobs) ) / ALT /&
+                               ( grid%tf_surf(iobs) - grid%ti_surf(iobs) + 1.0D0)
+                  ENDIF
+!                 DO ic=PARAM_FIRST_SCALAR,num_chem
+                     grid%a_chem(iloc,kloc,jloc,p_bc1) = &
+                          grid%a_chem(iloc,kloc,jloc,p_bc1) + FORCING
+
+                     grid%a_chem(iloc,kloc,jloc,p_bc2) = &
+                          grid%a_chem(iloc,kloc,jloc,p_bc2) + FORCING
+!                 END DO
+
+               ENDIF
+            ENDDO surf_tile_loop
+            !$OMP END PARALLEL DO 
+
+!            dummy_BC   = wrf_dm_sum_real (H_BC)
+!            dummy_FORCING = wrf_dm_sum_real (FORCING)
+!WRITE(603,FMT='(4(I7),3(D16.7),I4)') itime,iloc,jloc,kloc, dummy_BC, dummy_FORCING, grid%BC_surf(iobs), iobs
+
+         END IF
+      END DO
+   ENDIF
+
+
+   IF(config_flags%num_acft_obs .GT. 0) THEN
+      H_BC = 0.D0
+      FORCING = 0.D0
+      ALT = 0.D0
+      IF( grid%acft_obs_count(itime) .GE. 1 ) THEN
+         CALL wrf_debug( 1 ,'AIRCRAFT_OBS' )
+         iloc = INT(grid%i_acft_avg(itime) + 0.5D0)
+         jloc = INT(grid%j_acft_avg(itime) + 0.5D0)
+         kloc = INT(grid%k_acft_avg(itime) + 0.5D0)
+         !$OMP PARALLEL DO   &
+         !$OMP PRIVATE ( ij, its, ite, jts, jte, ALT, H_BC, FORCING )
+         acft_tile_loop: DO ij = 1 , grid%num_tiles
+            its = max(grid%i_start(ij),ids)
+            ite = min(grid%i_end(ij),ide-1)
+            jts = max(grid%j_start(ij),jds)
+            jte = min(grid%j_end(ij),jde-1)
+            IF(iloc .GE. its .AND. &
+               iloc .LE. ite .AND. &
+               jloc .GE. jts .AND. &
+               jloc .LE. jte &
+               ) THEN
+! In the future will need to replace these 3 ijk roundings with calculation of interpolation coefficients for 8 surrounding grid cells (only 4 for surface obs).  These will be the coefficients of the observation operator vector.
+               ALT    = grid%alt(iloc,kloc,jloc)
+!               H_BC   = grid%ARCTAS_H_BC(itime)
+               IF ( grid%num_acft_hx .GE. config_flags%p_acft_bc ) THEN
+                  H_BC   = grid%acft_hx(itime,config_flags%p_acft_bc)
+
+      IF(config_flags%chem_obs_type .EQ. 1) then
+                  FORCING = ( H_BC - grid%BC_acft_avg(itime) ) / ALT
+!               grid%J(iloc,kloc,jloc) = grid%J(iloc,kloc,jloc) + (H_BC - grid%BC_acft_avg(itime))**2
+      ELSEIF(config_flags%chem_obs_type .EQ. 2) then
+                  FORCING = 1.D0 / ALT
+!               grid%J(iloc,kloc,jloc) = grid%J(iloc,kloc,jloc) + H_BC
+      ENDIF
+               ENDIF
+               grid%a_chem(iloc,kloc,jloc,p_bc1) = &
+                    grid%a_chem(iloc,kloc,jloc,p_bc1) + FORCING
+               grid%a_chem(iloc,kloc,jloc,p_bc2) = &
+                    grid%a_chem(iloc,kloc,jloc,p_bc2) + FORCING
+            ENDIF
+         ENDDO acft_tile_loop
+         !$OMP END PARALLEL DO
+!         dummy_BC   = wrf_dm_sum_real (H_BC)
+!         dummy_FORCING = wrf_dm_sum_real (FORCING)
+!
+!WRITE(602,FMT='(4(I7),3(D16.7),I4)') itime,iloc,jloc,kloc, dummy_BC, dummy_FORCING, grid%BC_acft_avg(itime), grid%acft_obs_count(itime)
+
+      ENDIF
+   ENDIF
+
+!!Should not need these HALO comms as chem_driver (next call after this) is a column model and there are
+! HALO comms at the beginning of solve_em_ad adjoint code (next call after that).
+
+#endif
+
+END SUBROUTINE add_forcing_to_ad_chem
+
+
+SUBROUTINE calc_chem_hx ( grid, config_flags )
+   USE module_domain, ONLY : domain , get_ijk_from_grid
+   USE module_configure, ONLY : grid_config_rec_type
+   USE module_state_description  !, ONLY: p_bc1, p_bc2
+
+!USE module_state_description, ONLY : PARAM_FIRST_SCALAR, num_moist, num_tracer, &
+!#ifdef WRF_CHEM
+!                                     num_chem,&
+!#endif
+!                                     num_scalar
+!#ifdef DM_PARALLEL
+!USE module_dm, ONLY : local_communicator, mytask, ntasks, ntasks_x, ntasks_y
+!USE module_comm_dm, ONLY : halo_em_chem_e_3_ad_sub, halo_em_chem_e_5_ad_sub
+!#endif
+
+   IMPLICIT NONE
+
+   TYPE(domain), INTENT(INOUT)             :: grid
+   TYPE (grid_config_rec_type), INTENT(IN) :: config_flags
+
+   INTEGER :: iobs, itime, iloc, jloc, kloc, ij
+   INTEGER :: its, ite, jts, jte
+   REAL :: YCHEM, ALT
+
+   INTEGER       :: ids , ide , jds , jde , kds , kde , &
+                    ims , ime , jms , jme , kms , kme , &
+                    ips , ipe , jps , jpe , kps , kpe
+
+   CALL get_ijk_from_grid (  grid ,                   &
+                             ids, ide, jds, jde, kds, kde,    &
+                             ims, ime, jms, jme, kms, kme,    &
+                             ips, ipe, jps, jpe, kps, kpe )
+
+   !!This subroutine is only called during forward pass (not checkpoints), 
+   !! so grid%itimestep is accurate
+   itime = grid%itimestep + 1
+
+#ifdef WRF_CHEM
+
+   IF( config_flags%num_surf_obs .GT. 0 ) THEN
+      DO iobs = 1,config_flags%num_surf_obs
+         IF (REAL(itime,8) .GE. grid%ti_surf(iobs) .AND. REAL(itime,8) .LE. grid%tf_surf(iobs) .AND. grid%ti_surf(iobs) .GE. 1 .AND. grid%tf_surf(iobs) .LE. config_flags%num_ts) THEN
+            ALT = 0.D0
+            !$OMP PARALLEL DO   &
+            !$OMP PRIVATE ( ij, iobs, its, ite, jts, jte, iloc, jloc, kloc, ALT )
+            surf_tile_loop: DO ij = 1 , grid%num_tiles
+               its = max(grid%i_start(ij),ids)
+               ite = min(grid%i_end(ij),ide-1)
+               jts = max(grid%j_start(ij),jds)
+               jte = min(grid%j_end(ij),jde-1)
+
+! In the future will need to replace these 3 ijk roundings with calculation of interpolation coefficients for 8 surrounding grid cells (only 4 for surface obs).  These will be the coefficients of the observation operator vector.
+               iloc = INT(grid%i_surf(iobs) + 0.5D0)
+               jloc = INT(grid%j_surf(iobs) + 0.5D0)
+               kloc = INT(grid%k_surf(iobs) + 0.5D0)
+   
+               IF(iloc .GE. its .AND. &
+                  iloc .LE. ite .AND. &
+                  jloc .GE. jts .AND. &
+                  jloc .LE. jte &
+                  ) THEN
+                  ALT    = grid%alt(iloc,kloc,jloc)
+!                  grid%IMPROVE_H_BC(iobs) = grid%IMPROVE_H_BC(iobs) + &
+!                           (grid%chem(iloc,kloc,jloc,p_bc1) + &
+!                            grid%chem(iloc,kloc,jloc,p_bc2)) / ALT / &
+!                           (24.D0 * 3600.D0 / grid%dt)
+                  IF ( grid%num_surf_hx .GE. config_flags%p_surf_bc ) &
+                  grid%surf_hx(iobs,config_flags%p_surf_bc) = grid%surf_hx(iobs,config_flags%p_surf_bc) + &
+                           (grid%chem(iloc,kloc,jloc,p_bc1) + &
+                            grid%chem(iloc,kloc,jloc,p_bc2)) / ALT / &
+                           (24.D0 * 3600.D0 / grid%dt)
+
+               ENDIF
+            ENDDO surf_tile_loop
+            !$OMP END PARALLEL DO
+            CALL wrf_debug( 2 , &
+                   ' calc_IMPROVE_hx: Sum BC modeled observation' )
+         END IF
+      END DO
+   ENDIF
+
+   IF(config_flags%num_acft_obs .GT. 0) THEN
+
+      ALT = 0.D0
+      IF( grid%acft_obs_count(itime) .GE. 1 ) THEN
+         iloc = INT(grid%i_acft_avg(itime) + 0.5D0)
+         jloc = INT(grid%j_acft_avg(itime) + 0.5D0)
+         kloc = INT(grid%k_acft_avg(itime) + 0.5D0)
+         !$OMP PARALLEL DO   &
+         !$OMP PRIVATE ( ij, its, ite, jts, jte, ALT )
+         acft_tile_loop: DO ij = 1 , grid%num_tiles
+            its = max(grid%i_start(ij),ids)
+            ite = min(grid%i_end(ij),ide-1)
+            jts = max(grid%j_start(ij),jds)
+            jte = min(grid%j_end(ij),jde-1)
+            IF(iloc .GE. its .AND. &
+               iloc .LE. ite .AND. &
+               jloc .GE. jts .AND. &
+               jloc .LE. jte &
+               ) THEN
+! In the future will need to replace these 3 ijk roundings with calculation of interpolation coefficients for 8 surrounding grid cells (only 4 for surface obs).  These will be the coefficients of the observation operator vector.
+               ALT    = grid%alt(iloc,kloc,jloc)
+!               grid%ARCTAS_H_BC(itime) = (grid%chem(iloc,kloc,jloc,p_bc1) + grid%chem(iloc,kloc,jloc,p_bc2)) / ALT
+               IF ( grid%num_acft_hx .GE. config_flags%p_acft_bc ) &
+               grid%acft_hx(itime,config_flags%p_acft_bc)    = (grid%chem(iloc,kloc,jloc,p_bc1) + grid%chem(iloc,kloc,jloc,p_bc2)) / ALT 
+
+               IF ( grid%num_acft_hx .GE. config_flags%p_acft_sulf ) &
+               grid%acft_hx(itime,config_flags%p_acft_sulf)  = grid%chem(iloc,kloc,jloc,p_so2) + grid%chem(iloc,kloc,jloc,p_sulf)
+
+               IF ( grid%num_acft_hx .GE. config_flags%p_acft_pblh ) &
+               grid%acft_hx(itime,config_flags%p_acft_pblh)  = grid%PBLH(iloc,jloc)
+
+               IF ( grid%num_acft_hx .GE. config_flags%p_acft_t_phy ) &
+               grid%acft_hx(itime,config_flags%p_acft_t_phy) = grid%t_phy(iloc,kloc,jloc)
+
+               IF ( grid%num_acft_hx .GE. config_flags%p_acft_wspd ) &
+               grid%acft_hx(itime,config_flags%p_acft_wspd)  = (grid%u_2(iloc,kloc,jloc)**2 + grid%v_2(iloc,kloc,jloc)**2)**0.5D0
+
+               IF ( grid%num_acft_hx .GE. config_flags%p_acft_qv ) &
+               grid%acft_hx(itime,config_flags%p_acft_qv)    = grid%moist(iloc,kloc,jloc,p_qv)
+
+            ENDIF
+         ENDDO acft_tile_loop
+         !$OMP END PARALLEL DO
+         CALL wrf_debug( 2 , &
+                ' calc_ARCTAS_hx: Interpolate BC modeled observation' )
+      ENDIF
+   ENDIF
+
+#endif
+
+END SUBROUTINE calc_chem_hx

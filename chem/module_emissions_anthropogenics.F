@@ -9,6 +9,9 @@ CONTAINS
 !
    subroutine add_anthropogenics(id,dtstep,dz8w,config_flags,rho_phy,alt,  &
                chem, emis_ant, emis_aircraft,                              &
+#if ( WRFPLUS == 1 )
+               scaleant, &
+#endif
                ids,ide, jds,jde, kds,kde,                                  &
                ims,ime, jms,jme, kms,kme,                                  &
                its,ite, jts,jte, kts,kte                                   )
@@ -39,6 +42,10 @@ CONTAINS
    REAL, DIMENSION( ims:ime, kms:config_flags%kemit, jms:jme,num_emis_ant ),            &
          INTENT(IN ) ::                                                    &
                emis_ant        
+#if ( WRFPLUS == 1 )
+   REAL, DIMENSION( ims:ime, jms:jme, num_scaleant ),            &         INTENT(IN ) ::                                                    &
+               scaleant
+#endif
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                           &
          INTENT(IN ) ::        rho_phy,                                    &
                                alt
@@ -105,47 +112,162 @@ CONTAINS
 #endif
 
         chem(i,k,j,p_so2)  = chem(i,k,j,p_so2)                         &
-                         +emis_ant(i,k,j,p_e_so2)*conv_rho
+                         +emis_ant(i,k,j,p_e_so2) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_so2) &
+#endif
+                         *conv_rho
         chem(i,k,j,p_co)  = chem(i,k,j,p_co)                           &
-                         +emis_ant(i,k,j,p_e_co)*conv_rho
+                         +emis_ant(i,k,j,p_e_co) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_co) &
+#endif
+                         *conv_rho
         chem(i,k,j,p_no)   = chem(i,k,j,p_no)                          &
-                         +emis_ant(i,k,j,p_e_no)*conv_rho
+                         +emis_ant(i,k,j,p_e_no) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_no) &
+#endif
+                         *conv_rho
         chem(i,k,j,p_no2)   = chem(i,k,j,p_no2)                          &
-                         +emis_ant(i,k,j,p_e_no2)*conv_rho
+                         +emis_ant(i,k,j,p_e_no2) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_no2) &
+#endif
+                         *conv_rho
         chem(i,k,j,p_nh3)  = chem(i,k,j,p_nh3)                         &
-                         +emis_ant(i,k,j,p_e_nh3)*conv_rho
+                         +emis_ant(i,k,j,p_e_nh3) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_nh3) &
+#endif
+                         *conv_rho
         if( config_flags%chem_opt == MOZART_KPP .or. &
             config_flags%chem_opt == MOZCART_KPP .or. &
             config_flags%chem_opt == MOZART_MOSAIC_4BIN_VBS0_KPP ) then
            conv_rho_aer = alt(i,k,j)*dtstep/dz8w(i,k,j)
-           chem(i,k,j,p_bigalk) = chem(i,k,j,p_bigalk) + emis_ant(i,k,j,p_e_bigalk)*conv_rho
-           chem(i,k,j,p_bigene) = chem(i,k,j,p_bigene) + emis_ant(i,k,j,p_e_bigene)*conv_rho
-           chem(i,k,j,p_c2h4)   = chem(i,k,j,p_c2h4)  + emis_ant(i,k,j,p_e_c2h4)*conv_rho
-           chem(i,k,j,p_c2h5oh) = chem(i,k,j,p_c2h5oh) + emis_ant(i,k,j,p_e_c2h5oh)*conv_rho
-           chem(i,k,j,p_c2h6)   = chem(i,k,j,p_c2h6) + emis_ant(i,k,j,p_e_c2h6)*conv_rho
-           chem(i,k,j,p_c3h6)   = chem(i,k,j,p_c3h6) + emis_ant(i,k,j,p_e_c3h6)*conv_rho
-           chem(i,k,j,p_c3h8)   = chem(i,k,j,p_c3h8) + emis_ant(i,k,j,p_e_c3h8)*conv_rho
-           chem(i,k,j,p_hcho)   = chem(i,k,j,p_hcho) + emis_ant(i,k,j,p_e_ch2o)*conv_rho
-           chem(i,k,j,p_ald)    = chem(i,k,j,p_ald) + emis_ant(i,k,j,p_e_ch3cho)*conv_rho
-           chem(i,k,j,p_acet)   = chem(i,k,j,p_acet) + emis_ant(i,k,j,p_e_ch3coch3)*conv_rho
-           chem(i,k,j,p_ch3oh)  = chem(i,k,j,p_ch3oh) + emis_ant(i,k,j,p_e_ch3oh)*conv_rho
-           chem(i,k,j,p_mek)    = chem(i,k,j,p_mek) + emis_ant(i,k,j,p_e_mek)*conv_rho
-           chem(i,k,j,p_tol)    = chem(i,k,j,p_tol) + emis_ant(i,k,j,p_e_toluene)*conv_rho
-           chem(i,k,j,p_isopr)  = chem(i,k,j,p_isopr) + emis_ant(i,k,j,p_e_isop)*conv_rho
-           chem(i,k,j,p_c10h16) = chem(i,k,j,p_c10h16) + emis_ant(i,k,j,p_e_c10h16)*conv_rho
+           chem(i,k,j,p_bigalk) = chem(i,k,j,p_bigalk) + emis_ant(i,k,j,p_e_bigalk) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_bigalk) &
+#endif
+                         *conv_rho
+           chem(i,k,j,p_bigene) = chem(i,k,j,p_bigene) + emis_ant(i,k,j,p_e_bigene) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_bigene) &
+#endif
+                         *conv_rho
+           chem(i,k,j,p_c2h4)   = chem(i,k,j,p_c2h4)  + emis_ant(i,k,j,p_e_c2h4) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_c2h4) &
+#endif
+                         *conv_rho
+           chem(i,k,j,p_c2h5oh) = chem(i,k,j,p_c2h5oh) + emis_ant(i,k,j,p_e_c2h5oh) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_c2h5oh) &
+#endif
+                         *conv_rho
+           chem(i,k,j,p_c2h6)   = chem(i,k,j,p_c2h6) + emis_ant(i,k,j,p_e_c2h6) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_c2h6) &
+#endif
+                         *conv_rho
+           chem(i,k,j,p_c3h6)   = chem(i,k,j,p_c3h6) + emis_ant(i,k,j,p_e_c3h6) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_c3h6) &
+#endif
+                         *conv_rho
+           chem(i,k,j,p_c3h8)   = chem(i,k,j,p_c3h8) + emis_ant(i,k,j,p_e_c3h8) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_c3h8) &
+#endif
+                         *conv_rho
+           chem(i,k,j,p_hcho)   = chem(i,k,j,p_hcho) + emis_ant(i,k,j,p_e_ch2o) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_ch2o) &
+#endif
+                         *conv_rho
+           chem(i,k,j,p_ald)    = chem(i,k,j,p_ald) + emis_ant(i,k,j,p_e_ch3cho) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_ch3cho) &
+#endif
+                         *conv_rho
+           chem(i,k,j,p_acet)   = chem(i,k,j,p_acet) + emis_ant(i,k,j,p_e_ch3coch3) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_ch3coch3) &
+#endif
+                         *conv_rho
+           chem(i,k,j,p_ch3oh)  = chem(i,k,j,p_ch3oh) + emis_ant(i,k,j,p_e_ch3oh) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_ch3oh) &
+#endif
+                         *conv_rho
+           chem(i,k,j,p_mek)    = chem(i,k,j,p_mek) + emis_ant(i,k,j,p_e_mek) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_mek) &
+#endif
+                         *conv_rho
+           chem(i,k,j,p_tol)    = chem(i,k,j,p_tol) + emis_ant(i,k,j,p_e_toluene) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_toluene) &
+#endif
+                         *conv_rho
+           chem(i,k,j,p_isopr)  = chem(i,k,j,p_isopr) + emis_ant(i,k,j,p_e_isop) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_isop) &
+#endif
+                         *conv_rho
+           chem(i,k,j,p_c10h16) = chem(i,k,j,p_c10h16) + emis_ant(i,k,j,p_e_c10h16) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_c10h16) &
+#endif
+                         *conv_rho
            chem(i,k,j,p_sulf)   = chem(i,k,j,p_sulf) + conv_rho_aer*emis_ant(i,k,j,p_e_sulf)*mwdry/mw_so4_aer*1.e-3
            if( config_flags%chem_opt == MOZCART_KPP ) then
-             chem(i,k,j,p_p10) = chem(i,k,j,p_p10) + conv_rho_aer*emis_ant(i,k,j,p_e_pm_10)
-             chem(i,k,j,p_p25) = chem(i,k,j,p_p25) + conv_rho_aer*emis_ant(i,k,j,p_e_pm_25)
-             chem(i,k,j,p_oc1) = chem(i,k,j,p_oc1) + conv_rho_aer*emis_ant(i,k,j,p_e_oc)
-             chem(i,k,j,p_bc1) = chem(i,k,j,p_bc1) + conv_rho_aer*emis_ant(i,k,j,p_e_bc)
+             chem(i,k,j,p_p10) = chem(i,k,j,p_p10) + emis_ant(i,k,j,p_e_pm_10) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_pm_10) &
+#endif
+                         *conv_rho_aer
+             chem(i,k,j,p_p25) = chem(i,k,j,p_p25) + emis_ant(i,k,j,p_e_pm_25) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_pm_25) &
+#endif
+                         *conv_rho_aer
+             chem(i,k,j,p_oc1) = chem(i,k,j,p_oc1) + emis_ant(i,k,j,p_e_oc) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_oc) &
+#endif
+                         *conv_rho_aer
+             chem(i,k,j,p_bc1) = chem(i,k,j,p_bc1) + emis_ant(i,k,j,p_e_bc) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_bc) &
+#endif
+                         *conv_rho_aer
            elseif( config_flags%chem_opt == MOZART_MOSAIC_4BIN_VBS0_KPP ) then
 ! 20130730 acd_ck_bugfix start
 ! emissions should be CO_A and CO_BB with yields instead of VOC_A and VOC_BB
-!             chem(i,k,j,p_voca)  = chem(i,k,j,p_voca) + conv_rho*emis_ant(i,k,j,p_e_voca)
-!             chem(i,k,j,p_vocbb) = chem(i,k,j,p_vocbb) + conv_rho*emis_ant(i,k,j,p_e_vocbb)
-             chem(i,k,j,p_voca)  = chem(i,k,j,p_voca) + conv_rho_aer*emis_ant(i,k,j,p_e_co_a)*0.04*28./250.
-             chem(i,k,j,p_vocbb) = chem(i,k,j,p_vocbb) + conv_rho_aer*emis_ant(i,k,j,p_e_co_bb)*0.04*28./250.
+!             chem(i,k,j,p_voca)  = chem(i,k,j,p_voca) + emis_ant(i,k,j,p_e_voca) &
+!#if ( WRFPLUS == 1 )
+!                         *scaleant(i,j,p_scant_voca) &
+!#endif
+!                         *conv_rho
+!             chem(i,k,j,p_vocbb) = chem(i,k,j,p_vocbb) + emis_ant(i,k,j,p_e_vocbb) &
+!#if ( WRFPLUS == 1 )
+!                         *scaleant(i,j,p_scant_vocbb) &
+!#endif
+!                         *conv_rho
+
+             chem(i,k,j,p_voca)  = chem(i,k,j,p_voca) + emis_ant(i,k,j,p_e_co_a)*0.04*28./250. &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_co_a) &
+#endif
+                         *conv_rho_aer
+
+             chem(i,k,j,p_vocbb) = chem(i,k,j,p_vocbb) + emis_ant(i,k,j,p_e_co_bb)*0.04*28./250.
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_co_bb) &
+#endif
+                         *conv_rho_aer
+
 ! 20130730 acd_ck_bugfix end
            endif
         else if( config_flags%chem_opt == CRIMECH_KPP &
@@ -180,37 +302,101 @@ CONTAINS
            chem(i,k,j,p_ch3co2h) = chem(i,k,j,p_ch3co2h) + emis_ant(i,k,j,p_e_ch3co2h)*conv_rho
         else
         chem(i,k,j,p_csl)  =  chem(i,k,j,p_csl)                        &
-                         +emis_ant(i,k,j,p_e_csl)*conv_rho
+                         +emis_ant(i,k,j,p_e_csl) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_csl) &
+#endif
+                         *conv_rho
         chem(i,k,j,p_iso)  = chem(i,k,j,p_iso)                         &
-                         +emis_ant(i,k,j,p_e_iso)*conv_rho
+                         +emis_ant(i,k,j,p_e_iso) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_iso) &
+#endif
+                         *conv_rho
         chem(i,k,j,p_ald)  = chem(i,k,j,p_ald)                         &
-                         +emis_ant(i,k,j,p_e_ald)*conv_rho
+                         +emis_ant(i,k,j,p_e_ald) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_ald) &
+#endif
+                         *conv_rho
         chem(i,k,j,p_hcho) = chem(i,k,j,p_hcho)                        &
-                         +emis_ant(i,k,j,p_e_hcho)*conv_rho
+                         +emis_ant(i,k,j,p_e_hcho) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_hcho) &
+#endif
+                         *conv_rho
         chem(i,k,j,p_ora2)  = chem(i,k,j,p_ora2)                       &
-                         +emis_ant(i,k,j,p_e_ora2)*conv_rho
+                         +emis_ant(i,k,j,p_e_ora2) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_ora2) &
+#endif
+                         *conv_rho
         chem(i,k,j,p_hc3)  = chem(i,k,j,p_hc3)                         &
-                         +emis_ant(i,k,j,p_e_hc3)*conv_rho
+                         +emis_ant(i,k,j,p_e_hc3) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_hc3) &
+#endif
+                         *conv_rho
         chem(i,k,j,p_hc5)  = chem(i,k,j,p_hc5)                         &
-                         +emis_ant(i,k,j,p_e_hc5)*conv_rho
+                         +emis_ant(i,k,j,p_e_hc5) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_hc5) &
+#endif
+                         *conv_rho
         chem(i,k,j,p_hc8)  = chem(i,k,j,p_hc8)                         &
-                         +emis_ant(i,k,j,p_e_hc8)*conv_rho
+                         +emis_ant(i,k,j,p_e_hc8) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_hc8) &
+#endif
+                         *conv_rho
         chem(i,k,j,p_eth)  = chem(i,k,j,p_eth)                         &
-                         +emis_ant(i,k,j,p_e_eth)*conv_rho
+                         +emis_ant(i,k,j,p_e_eth) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_eth) &
+#endif
+                         *conv_rho
         if(p_ol2.gt.1)chem(i,k,j,p_ol2)  = chem(i,k,j,p_ol2)           &
-                         +emis_ant(i,k,j,p_e_ol2)*conv_rho
+                         +emis_ant(i,k,j,p_e_ol2) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_ol2) &
+#endif
+                         *conv_rho
         if(p_ete.gt.1)chem(i,k,j,p_ete)  = chem(i,k,j,p_ete)           &
-                         +emis_ant(i,k,j,p_e_ol2)*conv_rho
+                         +emis_ant(i,k,j,p_e_ol2) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_ol2) &
+#endif
+                         *conv_rho
         chem(i,k,j,p_olt)  = chem(i,k,j,p_olt)                         &
-                         +emis_ant(i,k,j,p_e_olt)*conv_rho
+                         +emis_ant(i,k,j,p_e_olt) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_olt) &
+#endif
+                         *conv_rho
         chem(i,k,j,p_oli)  = chem(i,k,j,p_oli)                         &
-                         +emis_ant(i,k,j,p_e_oli)*conv_rho
+                         +emis_ant(i,k,j,p_e_oli) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_oli) &
+#endif
+                         *conv_rho
         chem(i,k,j,p_tol)  = chem(i,k,j,p_tol)                         &
-                         +emis_ant(i,k,j,p_e_tol)*conv_rho
+                         +emis_ant(i,k,j,p_e_tol) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_tol) &
+#endif
+                         *conv_rho
         chem(i,k,j,p_xyl)  = chem(i,k,j,p_xyl)                         &      
-                         +emis_ant(i,k,j,p_e_xyl)*conv_rho
+                         +emis_ant(i,k,j,p_e_xyl) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_xyl) &
+#endif
+                         *conv_rho
         chem(i,k,j,p_ket)  =  chem(i,k,j,p_ket)                        &     
-                         +emis_ant(i,k,j,p_e_ket)*conv_rho
+                         +emis_ant(i,k,j,p_e_ket) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,j,p_scant_ket) &
+#endif
+                         *conv_rho
         if( config_flags%chem_opt == GOCARTRACM_KPP       &
           .or. config_flags%chem_opt == GOCARTRADM2       &
           .or. config_flags%chem_opt == GOCARTRADM2_KPP) then  
@@ -224,6 +410,7 @@ CONTAINS
       END DO                                                          
  100  continue
 
+#if ( WRFPLUS != 1 )
 ! add aircraft emissions
    if (config_flags%aircraft_emiss_opt == 1 ) then
       do j=jts,jte  
@@ -238,6 +425,7 @@ CONTAINS
       enddo
       enddo
    endif 
+#endif
 
     END subroutine add_anthropogenics
 !
@@ -447,3 +635,4 @@ CONTAINS
 
 
 END MODULE module_emissions_anthropogenics
+

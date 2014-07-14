@@ -12,9 +12,13 @@ RM      =       rm -f
 MODULES =                                 \
         module_aer_opt_out.o              \
         module_add_emiss_burn.o           \
+        module_add_emiss_burn_tl.o        \
+        module_add_emiss_burn_ad.o        \
         module_add_emis_cptec.o           \
         module_bioemi_beis314.o           \
         module_chem_utilities.o           \
+        module_chem_utilities_tl.o        \
+        module_chem_utilities_ad.o        \
         module_cmu_dvode_solver.o         \
         module_ctrans_aqchem.o            \
         module_data_cbmz.o                \
@@ -50,6 +54,8 @@ MODULES =                                 \
         module_dep_simple.o               \
         module_gocart_dmsemis.o           \
         module_gocart_aerosols.o          \
+        module_gocart_aerosols_tl.o       \
+        module_gocart_aerosols_ad.o       \
         module_gocart_dust.o              \
         module_gocart_dust_afwa.o         \
         module_gocart_seasalt.o           \
@@ -69,6 +75,8 @@ MODULES =                                 \
         module_fastj_data.o               \
         module_fastj_mie.o                \
         module_input_chem_data.o          \
+        module_input_chem_data_tl.o       \
+        module_input_chem_data_ad.o       \
         module_mosaic_coag.o              \
         module_mosaic_wetscav.o           \
         module_mosaic_therm.o             \
@@ -85,6 +93,8 @@ MODULES =                                 \
         module_cbmz_rodas_prep.o          \
         module_ctrans_grell.o             \
         module_gocart_chem.o              \
+        module_gocart_chem_tl.o           \
+        module_gocart_chem_ad.o           \
         module_input_tracer.o             \
 	module_lightning_nox_driver.o     \
 	module_lightning_nox_ott.o        \
@@ -101,6 +111,8 @@ MODULES =                                 \
         module_cbmz_addemiss.o            \
         module_cbm4_addemiss.o            \
         module_emissions_anthropogenics.o \
+        module_emissions_anthropogenics_tl.o \
+        module_emissions_anthropogenics_ad.o \
         module_aer_drydep.o               \
         module_cam_mam_calcsize.o         \
         module_cam_mam_dust_sediment.o    \
@@ -125,18 +137,33 @@ MODULES =                                 \
         module_sorgam_cloudchem.o         \
         module_cam_mam_gas_wetdep_driver.o \
         module_cam_mam_mo_sethet.o         \
-        module_phot_fastj.o
+        module_phot_fastj.o                \
+        module_dry_dep_vel.o               \
+        module_dry_dep_vel_tl.o            \
+        module_dry_dep_vel_ad.o            \
+        module_dep_simple_tl.o             \
+        module_dep_simple_ad.o             \
+        module_gocart_drydep_tl.o          \
+        module_gocart_drydep_ad.o
 
 OBJS    =                           \
         chemics_init.o              \
         chem_driver.o               \
+        chem_driver_tl.o            \
+        chem_driver_ad.o            \
         cloudchem_driver.o          \
         photolysis_driver.o         \
         optical_driver.o            \
         mechanism_driver.o          \
+        mechanism_driver_tl.o       \
+        mechanism_driver_ad.o       \
         emissions_driver.o          \
+        emissions_driver_tl.o       \
+        emissions_driver_ad.o       \
         dry_dep_driver.o            \
-        aerosol_driver.o 
+        aerosol_driver.o            \
+        aerosol_driver_tl.o         \
+        aerosol_driver_ad.o
 
 LIBTARGET    =  chemics
 TARGETDIR    =  ./

@@ -43,7 +43,8 @@ CONTAINS
 &    rqscuten, rqicuten, rushten, rvshten, rthshten, rqvshten, rqrshten, &
 &    rqcshten, rqsshten, rqishten, rqgshten, rublten, rubltend, rvblten, &
 &    rvbltend, rthblten, rthbltend, rqvblten, rqvbltend, rqcblten, &
-&    rqiblten, rthraten, rthratenlw, rthratensw, stepbl, stepra, stepcu, &
+&    rqcbltend, rqiblten, rqibltend, rthraten, rthratenlw, rthratensw, &
+&    stepbl, stepra, stepcu, &
 &    w0avg, w0avgd, rainnc, rainncd, rainc, raincd, raincv, raincvd, &
 &    rainncv, rainncvd, snownc, snowncd, snowncv, snowncvd, graupelnc, &
 &    graupelncd, graupelncv, graupelncvd, nca, swrad_scat, cldefi, lowlyr&
@@ -168,7 +169,7 @@ CONTAINS
     REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(INOUT) :: rublten, &
 &    rvblten, rthblten, rqvblten, rqcblten, rqiblten, exch_h, tke_pbl
     REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(INOUT) :: rubltend&
-&    , rvbltend, rthbltend, rqvbltend
+&    , rvbltend, rthbltend, rqvbltend, rqcbltend, rqibltend
     REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(OUT), OPTIONAL ::&
 &    massflux_edkf, entr_edkf, detr_edkf, thl_up, thv_up, rt_up, rv_up, &
 &    rc_up, u_up, v_up, frac_up
@@ -619,7 +620,8 @@ CONTAINS
 !Optional oml
     CALL BL_INIT_D(stepbl, bldt, dt, rublten, rubltend, rvblten, &
 &             rvbltend, rthblten, rthbltend, rqvblten, rqvbltend, &
-&             rqcblten, rqiblten, tsk, tmn, config_flags, restart, &
+&             rqcblten, rqcbltend, rqiblten, rqibltend, &
+&             tsk, tmn, config_flags, restart, &
 &             ust, lowlyr, tslb, zs, dzs, num_soil_layers, tke_pbl, &
 &             mfshconv, massflux_edkf, entr_edkf, detr_edkf, thl_up, &
 &             thv_up, rt_up, rv_up, rc_up, u_up, v_up, frac_up, exch_h, &
@@ -703,7 +705,8 @@ CONTAINS
 !Optional oml
   SUBROUTINE BL_INIT_D(stepbl, bldt, dt, rublten, rubltend, rvblten, &
 &    rvbltend, rthblten, rthbltend, rqvblten, rqvbltend, rqcblten, &
-&    rqiblten, tsk, tmn, config_flags, restart, ust, lowlyr, tslb, &
+&    rqcbltend, rqiblten, rqibltend, &
+&    tsk, tmn, config_flags, restart, ust, lowlyr, tslb, &
 &    zs, dzs, num_soil_layers, tke_pbl, mfshconv, massflux_edkf, &
 &    entr_edkf, detr_edkf, thl_up, thv_up, rt_up, rv_up, rc_up, u_up, &
 &    v_up, frac_up, exch_h, vegfra, snow, snowc, canwat, smstav, smstot, &
@@ -731,6 +734,7 @@ CONTAINS
 
     USE module_sf_sfclay
     USE g_module_bl_surface_drag, ONLY : surface_drag_init_d
+    USE g_module_bl_acm, ONLY : g_acminit
 
     IMPLICIT NONE
 !Optional oml
@@ -759,7 +763,7 @@ CONTAINS
     REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(INOUT) :: rublten, &
 &    rvblten, exch_h, rthblten, rqvblten, rqcblten, rqiblten, tke_pbl
     REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(INOUT) :: rubltend&
-&    , rvbltend, rthbltend, rqvbltend
+&    , rvbltend, rthbltend, rqvbltend, rqcbltend, rqibltend
     REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(OUT), OPTIONAL ::&
 &    massflux_edkf, entr_edkf, detr_edkf, thl_up, thv_up, rt_up, rv_up, &
 &    rc_up, u_up, v_up, frac_up
@@ -1011,16 +1015,28 @@ CONTAINS
       CALL SFCLAYINIT(allowed_to_read)
       isfc = 1
     CASE DEFAULT
+    END SELECT
+
 !mynn 
 !-- initialize pbl scheme
-      SELECT CASE  (config_flags%bl_pbl_physics) 
-      CASE (surfdragscheme) 
-        CALL SURFACE_DRAG_INIT_D(rublten, rubltend, rvblten, rvbltend, &
+    SELECT CASE  (config_flags%bl_pbl_physics) 
+       CASE (surfdragscheme) 
+          CALL SURFACE_DRAG_INIT_D(rublten, rubltend, rvblten, rvbltend, &
 &                           rthblten, rthbltend, rqvblten, rqvbltend, &
 &                           restart, ids, ide, jds, jde, kds, kde, ims, &
 &                           ime, jms, jme, kms, kme, its, ite, jts, jte, &
 &                           kts, kte)
-      END SELECT
+       CASE (acmpblscheme) 
+          CALL G_ACMINIT(rublten, rubltend, rvblten, rvbltend, &
+&                         rthblten, rthbltend, rqvblten, rqvbltend, &
+&                         rqcblten, rqcbltend, rqiblten, rqibltend, &
+&                         p_qi, param_first_scalar, restart,  &
+&                         allowed_to_read, &
+&                         ids, ide, jds, jde, kds, kde, ims, ime&
+&                         , jms, jme, kms, kme, its, ite, jts, jte, kts, &
+&                         kte)
+
+
     END SELECT
   END SUBROUTINE BL_INIT_D
 !=====================================================================

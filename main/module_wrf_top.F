@@ -29,7 +29,14 @@ MODULE module_wrf_top
    USE module_nesting
    USE module_io_domain, ONLY: close_dataset, wrf_inquire_opened
 #if (EM_CORE==1)
-   USE module_state_description, ONLY : SURFDRAGSCHEME, PARAM_FIRST_SCALAR, num_moist, num_tracer
+   USE module_state_description, ONLY : SURFDRAGSCHEME, ACMPBLSCHEME, &
+                                        SFCLAYSCHEME, PXSFCSCHEME, &
+                                        SLABSCHEME, PXLSMSCHEME, &
+                                        PARAM_FIRST_SCALAR, num_moist, &
+#ifdef WRF_CHEM
+                                        num_chem, num_scaleant, num_scalebb, &
+#endif
+                                        num_tracer
 #endif
 
 #ifdef DM_PARALLEL
@@ -497,14 +504,15 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
    IF ( config_flags%check_TL ) THEN
       IF ( config_flags%mp_physics .NE. 0 .and. config_flags%mp_physics .NE. 99 .and. &
            config_flags%mp_physics .NE. 98 ) CALL nl_set_mp_physics (head_grid%id, config_flags%mp_physics_ad)
-      IF ( config_flags%bl_pbl_physics .GT. 0 ) CALL nl_set_bl_pbl_physics (head_grid%id, 98)
+      IF ( config_flags%bl_pbl_physics .NE. ACMPBLSCHEME .AND. config_flags%bl_pbl_physics .GT. 0 ) CALL nl_set_bl_pbl_physics (head_grid%id, 98)
       IF ( config_flags%cu_physics .GT. 0 ) THEN
          CALL nl_set_cu_physics (head_grid%id, 98)
          head_grid%cudt = 0
       ENDIF
       CALL nl_set_ra_lw_physics (head_grid%id, 0)
       CALL nl_set_ra_sw_physics (head_grid%id, 0)
-      CALL nl_set_sf_sfclay_physics (head_grid%id, 0)
+      IF ( config_flags%sf_sfclay_physics.NE.SFCLAYSCHEME .AND. config_flags%sf_sfclay_physics.NE.PXSFCSCHEME) CALL nl_set_sf_sfclay_physics (head_grid%id, 0)
+      IF ( config_flags%sf_surface_physics.NE.SLABSCHEME .AND. config_flags%sf_surface_physics.NE.PXLSMSCHEME) CALL nl_set_sf_surface_physics (head_grid%id, 0)
 
       ! Force to turn off boundary input as we can only perturb the initial boundary condition.
       CALL nl_set_io_form_boundary( head_grid%id, 0 )
@@ -547,6 +555,13 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
                                head_grid%check_w, head_grid%check_ph, &
                                head_grid%check_t, head_grid%check_mu, &
                                head_grid%check_moist, head_grid%check_tracer
+#ifdef WRF_CHEM
+   wrf_err_message = 'check==== CHEM == SCALEANT == SCALEBB  ==='
+   CALL wrf_message(TRIM(wrf_err_message))
+
+   WRITE(wrf_err_message,'(A,3(1x,L5))') 'check', head_grid%check_chem, &
+                               head_grid%check_scaleant, head_grid%check_scalebb
+#endif
    CALL wrf_message(TRIM(wrf_err_message))
 
    ! Save the f(x)
@@ -557,16 +572,16 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
    CALL copy_s_to_g_adjtest ( head_grid, 1.0 )
 
    ! Set up basic states reading
-   model_config_rec%auxinput6_inname = "auxhist6_d<domain>_<date>"
+   model_config_rec%auxinput16_inname = "auxhist6_d<domain>_<date>"
    CALL nl_get_time_step ( head_grid%id, time_step )
-   CALL nl_set_auxinput6_interval_s (head_grid%id, time_step )
-   CALL nl_set_io_form_auxinput6 ( head_grid%id, 2 )
-   CALL nl_set_frames_per_auxinput6 ( head_grid%id, 1 )
+   CALL nl_set_auxinput16_interval_s (head_grid%id, time_step )
+   CALL nl_set_io_form_auxinput16 ( head_grid%id, 2 )
+   CALL nl_set_frames_per_auxinput16 ( head_grid%id, 1 )
 
    CALL wrf_run_tl
 
-   ! Turn off auxinput6 reading
-   CALL nl_set_auxinput6_interval_s (head_grid%id, 0 )
+   ! Turn off auxinput16 reading
+   CALL nl_set_auxinput16_interval_s (head_grid%id, 0 )
    IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
      IF ( head_grid%domain_clock_created ) THEN
        CALL WRFU_ClockDestroy( head_grid%domain_clock )
@@ -658,6 +673,13 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
                                head_grid%check_w, head_grid%check_ph, &
                                head_grid%check_t, head_grid%check_mu, &
                                head_grid%check_moist, head_grid%check_tracer
+#ifdef WRF_CHEM
+   wrf_err_message = 'check==== CHEM == SCALEANT == SCALEBB  ==='
+   CALL wrf_message(TRIM(wrf_err_message))
+
+   WRITE(wrf_err_message,'(A,3(1x,L5))') 'check', head_grid%check_chem, &
+                               head_grid%check_scaleant, head_grid%check_scalebb
+#endif
 
    CALL wrf_message(TRIM(wrf_err_message))
 
@@ -667,27 +689,28 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
    CALL copy_g_to_b_adjtest ( head_grid )
 
    ! Set up basic states reading
-   model_config_rec%auxinput6_inname = "auxhist6_d<domain>_<date>"
+   model_config_rec%auxinput16_inname = "auxhist6_d<domain>_<date>"
    CALL nl_get_time_step ( head_grid%id, time_step )
-   CALL nl_set_auxinput6_interval_s (head_grid%id, time_step )
-   CALL nl_set_io_form_auxinput6 ( head_grid%id, 2 )
-   CALL nl_set_frames_per_auxinput6 ( head_grid%id, 1 )
+   CALL nl_set_auxinput16_interval_s (head_grid%id, time_step )
+   CALL nl_set_io_form_auxinput16 ( head_grid%id, 2 )
+   CALL nl_set_frames_per_auxinput16 ( head_grid%id, 1 )
 
    IF ( config_flags%mp_physics .NE. 0 .and. config_flags%mp_physics .NE. 99 .and. &
         config_flags%mp_physics .NE. 98 ) CALL nl_set_mp_physics (head_grid%id, config_flags%mp_physics_ad)
-   IF ( config_flags%bl_pbl_physics .GT. 0 ) CALL nl_set_bl_pbl_physics (head_grid%id, 98)
+   IF ( config_flags%bl_pbl_physics .NE. ACMPBLSCHEME .AND. config_flags%bl_pbl_physics .GT. 0 ) CALL nl_set_bl_pbl_physics (head_grid%id, 98)
    IF ( config_flags%cu_physics .GT. 0 ) THEN
       CALL nl_set_cu_physics (head_grid%id, 98)
       head_grid%cudt = 0
    ENDIF
    CALL nl_set_ra_lw_physics (head_grid%id, 0)
    CALL nl_set_ra_sw_physics (head_grid%id, 0)
-   CALL nl_set_sf_sfclay_physics (head_grid%id, 0)
+   IF ( config_flags%sf_sfclay_physics.NE.SFCLAYSCHEME .AND. config_flags%sf_sfclay_physics.NE.PXSFCSCHEME) CALL nl_set_sf_sfclay_physics (head_grid%id, 0)
+   IF ( config_flags%sf_surface_physics.NE.SLABSCHEME .AND. config_flags%sf_surface_physics.NE.PXLSMSCHEME) CALL nl_set_sf_surface_physics (head_grid%id, 0)
 
    CALL wrf_run_tl
 
-   ! Turn off auxinput6 reading
-   CALL nl_set_auxinput6_interval_s (head_grid%id, 0 )
+   ! Turn off auxinput16 reading
+   CALL nl_set_auxinput16_interval_s (head_grid%id, 0 )
    IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
      IF ( head_grid%domain_clock_created ) THEN
        CALL WRFU_ClockDestroy( head_grid%domain_clock )
@@ -730,16 +753,16 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
    !$OMP END PARALLEL DO
 
    ! Set the file names and interval for reading basic states.
-   model_config_rec%auxinput6_inname = "auxhist6_d<domain>_<date>"
+   model_config_rec%auxinput16_inname = "auxhist6_d<domain>_<date>"
    CALL nl_get_time_step ( head_grid%id, time_step )
-   CALL nl_set_auxinput6_interval_s (head_grid%id, time_step )
-   CALL nl_set_io_form_auxinput6 ( head_grid%id, 2 )
-   CALL nl_set_frames_per_auxinput6 ( head_grid%id, 1 )
+   CALL nl_set_auxinput16_interval_s (head_grid%id, time_step )
+   CALL nl_set_io_form_auxinput16 ( head_grid%id, 2 )
+   CALL nl_set_frames_per_auxinput16 ( head_grid%id, 1 )
 
    CALL wrf_run_ad
 
-   ! Turn off auxinput6 reading
-   CALL nl_set_auxinput6_interval_s (head_grid%id, 0 )
+   ! Turn off auxinput16 reading
+   CALL nl_set_auxinput16_interval_s (head_grid%id, 0 )
    IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
      IF ( head_grid%domain_clock_created ) THEN
        CALL WRFU_ClockDestroy( head_grid%domain_clock )
@@ -813,6 +836,7 @@ ENDIF
               vars_count, nnumer, ndenom
    CHARACTER*10, DIMENSION(:), ALLOCATABLE :: check_name !large for expectation of many future chem variables
    CHARACTER*256 :: timestr
+   CHARACTER*5000 :: wrf_msg
 
    ! Return immediately if not dyn_em_check
    IF ( config_flags%dyn_opt .NE. dyn_em_check ) RETURN
@@ -832,10 +856,15 @@ ENDIF
    ! Release linked list for trajectory
    call xtraj_io_initialize
 
-IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
+IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL ) THEN
 
    ! Save the initial condition and boundary condition, x
    CALL allocate_grid ( )
+
+#ifdef WRF_CHEM
+   head_grid%scaleant = 1.0D0
+   head_grid%scalebb = 1.0D0
+#endif
 
    !$OMP PARALLEL DO    &
    !$OMP DEFAULT (SHARED) PRIVATE ( ij ) &           
@@ -874,14 +903,15 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
    CALL WRFU_AlarmRingerOff( head_grid%alarms( HISTORY_ALARM ), rc=rc )
    IF ( config_flags%mp_physics .NE. 0 .and. config_flags%mp_physics .NE. 99 .and. &
         config_flags%mp_physics .NE. 98 ) CALL nl_set_mp_physics (head_grid%id, config_flags%mp_physics_ad)
-   IF ( config_flags%bl_pbl_physics .GT. 0 ) CALL nl_set_bl_pbl_physics (head_grid%id, 98)
+   IF ( config_flags%bl_pbl_physics .NE. ACMPBLSCHEME .AND. config_flags%bl_pbl_physics .GT. 0 ) CALL nl_set_bl_pbl_physics (head_grid%id, 98)
    IF ( config_flags%cu_physics .GT. 0 ) THEN
       CALL nl_set_cu_physics (head_grid%id, 98)
       head_grid%cudt = 0
    ENDIF
    CALL nl_set_ra_lw_physics (head_grid%id, 0)
    CALL nl_set_ra_sw_physics (head_grid%id, 0)
-   CALL nl_set_sf_sfclay_physics (head_grid%id, 0)
+   IF ( config_flags%sf_sfclay_physics.NE.SFCLAYSCHEME .AND. config_flags%sf_sfclay_physics.NE.PXSFCSCHEME) CALL nl_set_sf_sfclay_physics (head_grid%id, 0)
+   IF ( config_flags%sf_surface_physics.NE.SLABSCHEME .AND. config_flags%sf_surface_physics.NE.PXLSMSCHEME) CALL nl_set_sf_surface_physics (head_grid%id, 0)
 
    ! Force to turn off boundary input as we can only perturb the initial boundary condition.
    CALL nl_set_io_form_boundary( head_grid%id, 0 )
@@ -913,8 +943,8 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
 
    CALL copy_grid_to_b ( head_grid )
 
-   wrf_err_message = '============== Adjoint - Tangent Linear Check ==============='
-   CALL wrf_message(TRIM(wrf_err_message))
+   wrf_msg = '============== Adjoint - Tangent Linear Check ==============='
+   CALL wrf_message(TRIM(wrf_msg))
 
    ! Get the locations of adjoint and tangent linear forcings
    CALL allocate_locations( 'locations_f', locations_f, ninverse, ierr)
@@ -941,6 +971,18 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
    DO nsc = 1, num_tracer
       vars_count = vars_count + 1
    ENDDO
+#ifdef WRF_CHEM
+   DO nsc = 1, num_chem
+      vars_count = vars_count + 1
+   ENDDO
+   DO nsc = 1, num_scaleant
+      vars_count = vars_count + 1
+   ENDDO
+   DO nsc = 1, num_scalebb
+      vars_count = vars_count + 1
+   ENDDO
+
+#endif
    ALLOCATE(factors(vars_count,2))
    ALLOCATE(scenario_matrix(vars_count,vars_count))
    scenario_matrix = 0
@@ -968,43 +1010,66 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
          WRITE(check_name(6+nsc+num_moist),FMT='(A,I2.1)')'TRACER',nsc-PARAM_FIRST_SCALAR+1
       ENDIF
    ENDDO  
-
+#ifdef WRF_CHEM
+   DO nsc = 1, num_chem
+      IF( nsc .LT. PARAM_FIRST_SCALAR ) THEN
+         WRITE(check_name(6+nsc+num_moist+num_tracer),FMT='(A)')'DUMMY' 
+      ELSE
+         WRITE(check_name(6+nsc+num_moist+num_tracer),FMT='(A,I2.1)')'CHEM',nsc-PARAM_FIRST_SCALAR+1
+      ENDIF
+   ENDDO  
+   DO nsc = 1, num_scaleant
+      IF( nsc .LT. PARAM_FIRST_SCALAR ) THEN
+         WRITE(check_name(6+nsc+num_moist+num_tracer+num_chem),FMT='(A)')'DUMMY' 
+      ELSE
+         WRITE(check_name(6+nsc+num_moist+num_tracer+num_chem),FMT='(A,I2.1)')'SCALEANT',nsc-PARAM_FIRST_SCALAR+1
+      ENDIF
+   ENDDO  
+   DO nsc = 1, num_scalebb
+      IF( nsc .LT. PARAM_FIRST_SCALAR ) THEN
+         WRITE(check_name(6+nsc+num_moist+num_tracer+num_chem+num_scaleant),FMT='(A)')'DUMMY' 
+      ELSE
+         WRITE(check_name(6+nsc+num_moist+num_tracer+num_chem+num_scaleant),FMT='(A,I2.1)')'SCALEBB',nsc-PARAM_FIRST_SCALAR+1
+      ENDIF
+   ENDDO  
+#endif
    CALL wrf_message("AVAILABLE CONTROL VARIABLES FOR VALIDATION")
    DO nvar = 1, vars_count
-      WRITE(wrf_err_message, FMT='(I2,A,A)') nvar,'  ',check_name(nvar)
-      CALL wrf_message(TRIM(wrf_err_message)) 
+      WRITE(wrf_msg, FMT='(I2,A,A)') nvar,'  ',check_name(nvar)
+      CALL wrf_message(TRIM(wrf_msg)) 
    ENDDO
 
    CALL wrf_message("")
    CALL wrf_message("SELECTED CONTROL VARIABLES")
    DO nnumer = 0, vars_count      
-      WRITE(wrf_err_message, FMT='(I2,A)') nnumer, ' ,  '
+      WRITE(wrf_msg, FMT='(I2,A)') nnumer, ' ,  '
       DO ndenom = 1, vars_count
          IF ( nnumer .EQ. 0 ) THEN
-            WRITE(wrf_err_message, FMT='(A,I2,A)') TRIM(wrf_err_message),&
+            WRITE(wrf_msg, FMT='(A,I2,A)') TRIM(wrf_msg),&
                                 ndenom, ' ,  '
          ELSE
-            WRITE(wrf_err_message, FMT='(A,I2,A)') TRIM(wrf_err_message),&
+            WRITE(wrf_msg, FMT='(A,I2,A)') TRIM(wrf_msg),&
                                 scenario_matrix(nnumer,ndenom), ' ,  '
          ENDIF
       ENDDO
-      CALL wrf_message(TRIM(wrf_err_message))
+      CALL wrf_message(TRIM(wrf_msg))
    ENDDO
 
    ALLOCATE(ad_derivative(nforward,vars_count,vars_count))
    ALLOCATE(tl_derivative(nforward,vars_count,vars_count))
    ALLOCATE(nl_derivative(nforward,3,vars_count,vars_count))
    
-   ad_derivative = 0.0
-   tl_derivative = 0.0
-   nl_derivative = 0.0
+   ad_derivative = 0.0D0
+   tl_derivative = 0.0D0
+   nl_derivative = 0.0D0
 
    !Find all the adjoint sensitivities
+   IF ( head_grid%check_AD ) THEN
    numer_vars_Loop1: DO nnumer = 1, vars_count
 
       IF( ALL(scenario_matrix(nnumer,:) .EQ. 0) ) CYCLE numer_vars_Loop1
-      factors(:,1) = 0.0
-      factors(nnumer,1) = 1.0
+      factors(:,1) = 0.0D0
+      factors(nnumer,1) = 1.0D0
    
    
       iter = 0
@@ -1014,6 +1079,7 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
          jloc_f = locations_f(nf,2)
          kloc_f = locations_f(nf,3)
 
+         CALL zero_out_tl( head_grid )
          CALL zero_out_ad( head_grid )
          !$OMP PARALLEL DO    &
          !$OMP PRIVATE ( ij )
@@ -1022,25 +1088,45 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
                 head_grid%i_end(ij)  .ge. iloc_f .AND. &
                 head_grid%j_start(ij) .le. jloc_f .AND. &
                 head_grid%j_end(ij)  .ge. jloc_f ) THEN
-                CALL spot_force_ad( head_grid, iloc_f, jloc_f , kloc_f, factors(:,1), vars_count )   
+                CALL spot_force_ad( head_grid, iloc_f, jloc_f , kloc_f, factors(:,1), vars_count ) 
                 exit adforce
             ENDIF
          ENDDO adforce
          !$OMP END PARALLEL DO
 
          ! Set the file names and interval for reading basic states.
-         model_config_rec%auxinput6_inname = &
+         model_config_rec%auxinput16_inname = &
                                           "auxhist6_d<domain>_<date>"
          CALL nl_get_time_step ( head_grid%id, time_step )
-         CALL nl_set_auxinput6_interval_s (head_grid%id, time_step )
-         CALL nl_set_io_form_auxinput6 ( head_grid%id, 2 )
-         CALL nl_set_frames_per_auxinput6 ( head_grid%id, 1 )
-    
+         CALL nl_set_auxinput16_interval_s (head_grid%id, time_step )
+         CALL nl_set_io_form_auxinput16 ( head_grid%id, 2 )
+         CALL nl_set_frames_per_auxinput16 ( head_grid%id, 1 )
+         IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
+           IF ( head_grid%domain_clock_created ) THEN
+             CALL WRFU_ClockDestroy( head_grid%domain_clock )
+             head_grid%domain_clock_created = .FALSE.
+           ENDIF
+         ENDIF
+         IF ( ASSOCIATED( head_grid%alarms ) .AND. &
+              ASSOCIATED( head_grid%alarms_created ) ) THEN
+           DO alarmid = 1, MAX_WRF_ALARMS
+             IF ( head_grid%alarms_created( alarmid ) ) THEN
+               CALL WRFU_AlarmDestroy( head_grid%alarms( alarmid ) )
+               head_grid%alarms_created( alarmid ) = .FALSE.
+             ENDIF
+           ENDDO
+         ENDIF
+         CALL Setup_Timekeeping ( head_grid )
+
+         head_grid%itimestep = 0
+         gradient_out=.TRUE.
          CALL wrf_run_ad
-         
-   
-         ! Turn off auxinput6 reading
-         CALL nl_set_auxinput6_interval_s (head_grid%id, 0 )
+         model_config_rec%dyn_opt = dyn_em_check
+
+         gradient_out=.FALSE.
+
+         ! Turn off auxinput16 reading
+         CALL nl_set_auxinput16_interval_s (head_grid%id, 0 )
          IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
            IF ( head_grid%domain_clock_created ) THEN
              CALL WRFU_ClockDestroy( head_grid%domain_clock )
@@ -1066,12 +1152,12 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
    
             denom_vars_Loop1: DO ndenom = 1,vars_count
                IF ( scenario_matrix(nnumer,ndenom) .EQ. 0) CYCLE denom_vars_Loop1
-               factors(:,2)=0.0
-               factors(ndenom,2) = 1.0
-               WRITE(wrf_err_message, FMT='(2(A,I3),5(A))') 'nf = ',nf, &
+               factors(:,2)=0.0D0
+               factors(ndenom,2) = 1.0D0
+               WRITE(wrf_msg, FMT='(2(A,I3),5(A))') 'nf = ',nf, &
                             ',  ni = ',ni, ',  check_type = d[', &
                             TRIM(check_name(nnumer)),']/d[',TRIM(check_name(ndenom)),']'
-               CALL wrf_message(TRIM(wrf_err_message))
+               CALL wrf_message(TRIM(wrf_msg))
   
                CALL wrf_message("Extracting the AD sensitivity")
                !Store the AD derivative
@@ -1083,7 +1169,7 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
                      head_grid%i_end(ij)  .ge. iloc_i .AND. &
                      head_grid%j_start(ij) .le. jloc_i .AND. &
                      head_grid%j_end(ij)  .ge. jloc_i ) THEN
-                     CALL extract_ad_der( head_grid, ad_derivative(iter,nnumer,ndenom), iloc_i, jloc_i, kloc_i, factors (:,2), vars_count)
+                     CALL extract_ad_der( head_grid, ad_derivative(iter,nnumer,ndenom), iloc_i, jloc_i, kloc_i, 1, factors (:,2), vars_count)
                      exit adextract
                   ENDIF
                END DO adextract
@@ -1096,6 +1182,7 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
          ENDDO      
       ENDDO
    ENDDO numer_vars_Loop1
+   ENDIF
 
 
    !Find all the nonlinear and TL sensitivities   
@@ -1112,11 +1199,11 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
 
          denom_vars_Loop2: DO ndenom = 1,vars_count
             IF ( ALL(scenario_matrix(:,ndenom) .EQ. 0) ) CYCLE denom_vars_Loop2
-            factors(:,2)=0.0
-            factors(ndenom,2) = 1.0
+            factors(:,2)=0.0D0
+            factors(ndenom,2) = 1.0D0
   
             ! Do Finite Difference test of nonlinear model
-            IF ( head_grid%check_AD .AND. head_grid%check_TL ) THEN
+            IF ( head_grid%check_NL ) THEN
                nonlinearLoop: DO psign=-1,1,2
                   CALL restore_grid ( head_grid )
 
@@ -1127,8 +1214,8 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
                          head_grid%i_end(ij)  .ge. iloc_i .AND. &
                          head_grid%j_start(ij) .le. jloc_i .AND. &
                          head_grid%j_end(ij)  .ge. jloc_i ) THEN 
-                         CALL spot_force_nl( head_grid, iloc_i, jloc_i, kloc_i, &
-                                             factors(:,2), vars_count, REAL(psign) * config_flags%nl_pert)
+                         CALL spot_force_nl( head_grid, iloc_i, jloc_i, kloc_i, 1, &
+                                             factors(:,2), vars_count, REAL(psign,8) * config_flags%nl_pert)
                          exit nlforce 
                      ENDIF
                   ENDDO nlforce
@@ -1147,18 +1234,20 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
                   head_grid%dtbc = 0
                   head_grid%itimestep = 0
                   CALL wrf_run
+                  model_config_rec%dyn_opt = dyn_em_check
+
                   CALL wrf_message( "wrf: back from nonlinear integrate" ) 
                   numer_vars_Loop2: DO nnumer = 1, vars_count
-                     nl_num = 0.0
-                     nl_den = 0.0
+                     nl_num = 0.0D0
+                     nl_den = 0.0D0
 
                      IF( scenario_matrix(nnumer,ndenom) .EQ. 0 ) CYCLE numer_vars_Loop2
-                     factors(:,1) = 0.0
-                     factors(nnumer,1) = 1.0   
-                     WRITE(wrf_err_message, FMT='(2(A,I3),5(A))')'nf = ',nf, &
+                     factors(:,1) = 0.0D0
+                     factors(nnumer,1) = 1.0D0
+                     WRITE(wrf_msg, FMT='(2(A,I3),5(A))')'nf = ',nf, &
                                   ',  ni = ',ni, ',  check_type = d[', &
                                   TRIM(check_name(nnumer)),']/d[',TRIM(check_name(ndenom)),']'
-                     CALL wrf_message(TRIM(wrf_err_message))
+                     CALL wrf_message(TRIM(wrf_msg))
 
                      CALL wrf_message("Extracting the FD sensitivity")
                      !Store the NL derivative
@@ -1190,8 +1279,8 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
                            head_grid%j_start(ij) .le. jloc_i .AND. &
                            head_grid%j_end(ij)  .ge. jloc_i ) THEN
                            CALL extract_nl_den( nl_den, &
-                                                iloc_i, jloc_i, kloc_i, &
-                                                factors(:,2), vars_count, REAL(psign)*config_flags%nl_pert)
+                                                iloc_i, jloc_i, kloc_i, 1, &
+                                                factors(:,2), vars_count, REAL(psign,8)*config_flags%nl_pert)
                            exit denextract
                         ENDIF
                      END DO denextract
@@ -1206,96 +1295,104 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
                ENDDO nonlinearLoop
                nl_derivative(iter,2,nnumer,ndenom) = (nl_derivative(iter,1,nnumer,ndenom) + nl_derivative(iter,3,nnumer,ndenom)) * 0.5
             ENDIF
- 
-            IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
-              IF ( head_grid%domain_clock_created ) THEN
-                CALL WRFU_ClockDestroy( head_grid%domain_clock )
-                head_grid%domain_clock_created = .FALSE.
-              ENDIF
-            ENDIF
-            IF ( ASSOCIATED( head_grid%alarms ) .AND. &
-                 ASSOCIATED( head_grid%alarms_created ) ) THEN
-              DO alarmid = 1, MAX_WRF_ALARMS
-                IF ( head_grid%alarms_created( alarmid ) ) THEN
-                  CALL WRFU_AlarmDestroy( head_grid%alarms( alarmid ) )
-                  head_grid%alarms_created( alarmid ) = .FALSE.
-                ENDIF
-              ENDDO
-            ENDIF
-            CALL Setup_Timekeeping ( head_grid )
-  
-            !Set the single forcing value for each tangent linear run
-            CALL zero_out_tl( head_grid )
 
-            !$OMP PARALLEL DO    &
-            !$OMP PRIVATE ( ij )
-            tlforce: DO ij = 1 , head_grid%num_tiles
-               IF( head_grid%i_start(ij) .le. iloc_i .AND. &
-                  head_grid%i_end(ij)  .ge. iloc_i .AND. &
-                  head_grid%j_start(ij) .le. jloc_i .AND. &
-                  head_grid%j_end(ij)  .ge. jloc_i ) THEN
-                  CALL spot_force_tl( head_grid, iloc_i, jloc_i, kloc_i, factors(:,2), vars_count) 
-                  exit tlforce
-               ENDIF
-            ENDDO tlforce
-            !$OMP END PARALLEL DO
+            IF ( head_grid%check_TL ) THEN
+               CALL restore_grid ( head_grid )
 
-            ! Set up basic states reading
-            model_config_rec%auxinput6_inname = &
-                                       "auxhist6_d<domain>_<date>"
-            CALL nl_get_time_step ( head_grid%id, time_step )
-            CALL nl_set_auxinput6_interval_s (head_grid%id, time_step )
-            CALL nl_set_io_form_auxinput6 ( head_grid%id, 2 )
-            CALL nl_set_frames_per_auxinput6 ( head_grid%id, 1 )
-      
-            CALL wrf_run_tl
-
-            ! Turn off auxinput6 reading
-            CALL nl_set_auxinput6_interval_s (head_grid%id, 0 )
-            IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
-              IF ( head_grid%domain_clock_created ) THEN
-                CALL WRFU_ClockDestroy( head_grid%domain_clock )
-                head_grid%domain_clock_created = .FALSE.
-              ENDIF
-            ENDIF
-            IF ( ASSOCIATED( head_grid%alarms ) .AND. &
-                 ASSOCIATED( head_grid%alarms_created ) ) THEN
-              DO alarmid = 1, MAX_WRF_ALARMS
-                IF ( head_grid%alarms_created( alarmid ) ) THEN
-                  CALL WRFU_AlarmDestroy( head_grid%alarms( alarmid ) )
-                  head_grid%alarms_created( alarmid ) = .FALSE.
-                ENDIF
-              ENDDO
-            ENDIF
-            CALL Setup_Timekeeping ( head_grid )
-            numer_vars_Loop3: DO nnumer = 1, vars_count
-               IF( scenario_matrix(nnumer,ndenom) .EQ. 0 ) CYCLE numer_vars_Loop3
-               factors(:,1) = 0.0
-               factors(nnumer,1) = 1.0   
-               WRITE(wrf_err_message, FMT='(2(A,I3),5(A))') 'nf = ',nf, &
-                            ',  ni = ',ni, ',  check_type = d[', &
-                            TRIM(check_name(nnumer)),']/d[',TRIM(check_name(ndenom)),']'
-               CALL wrf_message(TRIM(wrf_err_message))
- 
-               CALL wrf_message("Extracting the TL sensitivity")    
-               !Store the TL derivative
+               !Set the single forcing value for each tangent linear run
+               CALL zero_out_tl( head_grid )
+               CALL zero_out_ad( head_grid )
+   
                !$OMP PARALLEL DO    &
-               !$OMP PRIVATE ( ij ) &
-               !$OMP REDUCTION (+: tl_derivative(iter,nnumer,ndenom))
-               tlextract: DO ij = 1 , head_grid%num_tiles
-                  IF( head_grid%i_start(ij) .le. iloc_f .AND. &
-                     head_grid%i_end(ij)  .ge. iloc_f .AND. &
-                     head_grid%j_start(ij) .le. jloc_f .AND. &
-                     head_grid%j_end(ij)  .ge. jloc_f ) THEN
-                     CALL extract_tl_der( head_grid, tl_derivative(iter,nnumer,ndenom), iloc_f, jloc_f, kloc_f, factors(:,1), vars_count)
-                     exit tlextract
+               !$OMP PRIVATE ( ij )
+               tlforce: DO ij = 1 , head_grid%num_tiles
+                  IF( head_grid%i_start(ij) .le. iloc_i .AND. &
+                     head_grid%i_end(ij)  .ge. iloc_i .AND. &
+                     head_grid%j_start(ij) .le. jloc_i .AND. &
+                     head_grid%j_end(ij)  .ge. jloc_i ) THEN
+                     CALL spot_force_tl( head_grid, iloc_i, jloc_i, kloc_i, 1, factors(:,2), vars_count) 
+                     exit tlforce
                   ENDIF
-               END DO tlextract
+               ENDDO tlforce
                !$OMP END PARALLEL DO
+
+               ! Set up basic states reading
+               model_config_rec%auxinput16_inname = &
+                                          "auxhist6_d<domain>_<date>"
+               CALL nl_get_time_step ( head_grid%id, time_step )
+               CALL nl_set_auxinput16_interval_s (head_grid%id, time_step )
+               CALL nl_set_io_form_auxinput16 ( head_grid%id, 2 )
+               CALL nl_set_frames_per_auxinput16 ( head_grid%id, 1 )
+               IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
+                 IF ( head_grid%domain_clock_created ) THEN
+                   CALL WRFU_ClockDestroy( head_grid%domain_clock )
+                   head_grid%domain_clock_created = .FALSE.
+                 ENDIF
+               ENDIF
+               IF ( ASSOCIATED( head_grid%alarms ) .AND. &
+                    ASSOCIATED( head_grid%alarms_created ) ) THEN
+                 DO alarmid = 1, MAX_WRF_ALARMS
+                   IF ( head_grid%alarms_created( alarmid ) ) THEN
+                     CALL WRFU_AlarmDestroy( head_grid%alarms( alarmid ) )
+                     head_grid%alarms_created( alarmid ) = .FALSE.
+                   ENDIF
+                 ENDDO
+               ENDIF
+               CALL Setup_Timekeeping ( head_grid )
+               gradient_out=.TRUE.
+               CALL wrf_run_tl
+               model_config_rec%dyn_opt = dyn_em_check
+
+               gradient_out=.FALSE.
+  
+               ! Turn off auxinput16 reading
+               CALL nl_set_auxinput16_interval_s (head_grid%id, 0 )
+               IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
+                 IF ( head_grid%domain_clock_created ) THEN
+                   CALL WRFU_ClockDestroy( head_grid%domain_clock )
+                   head_grid%domain_clock_created = .FALSE.
+                 ENDIF
+               ENDIF
+               IF ( ASSOCIATED( head_grid%alarms ) .AND. &
+                    ASSOCIATED( head_grid%alarms_created ) ) THEN
+                 DO alarmid = 1, MAX_WRF_ALARMS
+                   IF ( head_grid%alarms_created( alarmid ) ) THEN
+                     CALL WRFU_AlarmDestroy( head_grid%alarms( alarmid ) )
+                     head_grid%alarms_created( alarmid ) = .FALSE.
+                   ENDIF
+                 ENDDO
+               ENDIF
+               CALL Setup_Timekeeping ( head_grid )
+               numer_vars_Loop3: DO nnumer = 1, vars_count
+                  IF( scenario_matrix(nnumer,ndenom) .EQ. 0 ) CYCLE numer_vars_Loop3
+                  factors(:,1) = 0.0D0
+                  factors(nnumer,1) = 1.0D0
+                  WRITE(wrf_msg, FMT='(2(A,I3),5(A))') 'nf = ',nf, &
+                               ',  ni = ',ni, ',  check_type = d[', &
+                               TRIM(check_name(nnumer)),']/d[',TRIM(check_name(ndenom)),']'
+                  CALL wrf_message(TRIM(wrf_msg))
+    
+                  CALL wrf_message("Extracting the TL sensitivity")    
+                  !Store the TL derivative
+                  !$OMP PARALLEL DO    &
+                  !$OMP PRIVATE ( ij ) &
+                  !$OMP REDUCTION (+: tl_derivative(iter,nnumer,ndenom))
+                  tlextract: DO ij = 1 , head_grid%num_tiles
+                     IF( head_grid%i_start(ij) .le. iloc_f .AND. &
+                        head_grid%i_end(ij)  .ge. iloc_f .AND. &
+                        head_grid%j_start(ij) .le. jloc_f .AND. &
+                        head_grid%j_end(ij)  .ge. jloc_f ) THEN
+                        CALL extract_tl_der( head_grid, tl_derivative(iter,nnumer,ndenom), iloc_f, jloc_f, kloc_f, factors(:,1), vars_count)
+                        exit tlextract
+                     ENDIF
+                  END DO tlextract
+                  !$OMP END PARALLEL DO
 #ifdef DM_PARALLEL
-               tl_derivative(iter,nnumer,ndenom) = wrf_dm_sum_real ( tl_derivative(iter,nnumer,ndenom) )
+                  tl_derivative(iter,nnumer,ndenom) = wrf_dm_sum_real ( tl_derivative(iter,nnumer,ndenom) )
 #endif
-            ENDDO numer_vars_Loop3
+
+               ENDDO numer_vars_Loop3
+            ENDIF
          ENDDO denom_vars_Loop2
       ENDDO      
    ENDDO
@@ -1303,6 +1400,9 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
    ! Print out the sensitivities
    CALL wrf_message(&
         "====================== Results =======================")
+   CALL wrf_message(&
+        "Open fort.90456 for full results")
+
    numer_vars_Loop4: DO nnumer = 1, vars_count
       IF( ALL(scenario_matrix(nnumer,:) .EQ. 0) ) CYCLE numer_vars_Loop4
       iter = 0
@@ -1316,7 +1416,9 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
             jloc_f = locations_f(nf,2)
             kloc_f = locations_f(nf,3)
 
-            WRITE(wrf_err_message, FMT='(A,6(1x,I8))')&
+!            WRITE(wrf_msg, FMT='(A,6(1x,I8))')&
+            WRITE(90456, FMT='(A,6(1x,I8))')&
+
                          'REPORT:',&
                          iloc_f,&
                          jloc_f,&
@@ -1324,47 +1426,54 @@ IF ( config_flags%check_TL .or. config_flags%check_AD ) THEN
                          iloc_i,&
                          jloc_i,&
                          kloc_i
-            CALL wrf_message(TRIM(wrf_err_message))
+!            CALL wrf_message(TRIM(wrf_msg))
          ENDDO
       ENDDO
 
       DO ndenom = 1, vars_count
          IF( scenario_matrix(nnumer,ndenom) .EQ. 0) CYCLE
-         WRITE(wrf_err_message, FMT='(5(A))') 'REPORT: ------check_type = d[',&
-                           TRIM(check_name(nnumer)),']/d[',TRIM(check_name(ndenom)),']------'
-         CALL wrf_message(TRIM(wrf_err_message))
+!         WRITE(wrf_msg, FMT='(5(A))') 'REPORT: ------check_type = d[',&
+         WRITE(90456, FMT='(5(A))') 'REPORT: ------check_type = d[',&
 
-         IF ( head_grid%check_TL .AND. head_grid%check_AD ) THEN
-            WRITE(wrf_err_message, FMT='(A,4(1x,A17))') 'REPORT:','TL','AD','NL_BD','NL_FD'
-            CALL wrf_message(TRIM(wrf_err_message))
+                           TRIM(check_name(nnumer)),']/d[',TRIM(check_name(ndenom)),']------'
+!         CALL wrf_message(TRIM(wrf_msg))
+
+         IF ( head_grid%check_NL ) THEN
+!            WRITE(wrf_msg, FMT='(A,2(A3),4(1x,A17))') 'REPORT:','i','f','TL','AD','NL_BD','NL_FD'
+            WRITE(90456, FMT='(A,2(A3),4(1x,A17))') 'REPORT:','i','f','TL','AD','NL_BD','NL_FD'
+!            CALL wrf_message(TRIM(wrf_msg))
 
             iter = 0
             DO nf = 1, ninverse
                DO ni = 1, firatio
                   iter = iter+1
    
-                  WRITE(wrf_err_message, FMT='(A,4(E18.9))')&
-                               'REPORT:',&
+!                  WRITE(wrf_msg, FMT='(A,2(I3),4(D25.16))')&
+                  WRITE(90456, FMT='(A,2(I3),4(D25.16))')&
+                               'REPORT:',ni,nf,&
                                tl_derivative(iter,nnumer,ndenom), &
                                ad_derivative(iter,nnumer,ndenom), &
                                nl_derivative(iter,1,nnumer,ndenom), &
                                nl_derivative(iter,3,nnumer,ndenom)
-                  CALL wrf_message(TRIM(wrf_err_message))
+!                  CALL wrf_message(TRIM(wrf_msg))
                ENDDO
             ENDDO
          ELSE
-            WRITE(wrf_err_message, FMT='(A,2(1x,A17))') 'REPORT:  ','TL','AD'
-            CALL wrf_message(TRIM(wrf_err_message))
+!            WRITE(wrf_msg, FMT='(A,2(A3),2(1x,A17))') 'REPORT:  ','i','f','TL','AD'
+            WRITE(90456, FMT='(A,2(A3),2(1x,A17))') 'REPORT:  ','i','f','TL','AD'
+
+!            CALL wrf_message(TRIM(wrf_msg))
 
             iter = 0
             DO nf = 1, ninverse
                DO ni = 1, firatio
                   iter = iter+1
-                  WRITE(wrf_err_message, FMT='(A,2(E18.9))')&
-                               'REPORT:',&
+!                  WRITE(wrf_msg, FMT='(A,2(I3),2(D25.16))')&
+                  WRITE(90456, FMT='(A,2(I3),2(D25.16))')&
+                               'REPORT:',ni,nf,&
                                tl_derivative(iter,nnumer,ndenom), &
                                ad_derivative(iter,nnumer,ndenom)
-                  CALL wrf_message(TRIM(wrf_err_message))
+!                  CALL wrf_message(TRIM(wrf_msg))
                ENDDO
             ENDDO
          ENDIF        
@@ -1444,15 +1553,22 @@ ENDIF
    CALL WRFU_AlarmRingerOff( head_grid%alarms( HISTORY_ALARM ), rc=rc )
 
    IF ( model_config_rec%bl_pbl_physics(head_grid%id) .EQ. SURFDRAGSCHEME ) THEN
-      head_grid%rublten = 0.0
-      head_grid%rvblten = 0.0
-      head_grid%rthblten = 0.0
-      head_grid%rqvblten = 0.0
+      head_grid%rublten = 0.0D0
+      head_grid%rvblten = 0.0D0
+      head_grid%rthblten = 0.0D0
+      head_grid%rqvblten = 0.0D0
+   ELSEIF ( model_config_rec%bl_pbl_physics(head_grid%id) .EQ. ACMPBLSCHEME ) THEN
+      head_grid%rublten = 0.0D0
+      head_grid%rvblten = 0.0D0
+      head_grid%rthblten = 0.0D0
+      head_grid%rqvblten = 0.0D0
+      head_grid%rqcblten = 0.0D0
+      head_grid%rqiblten = 0.0D0
    ENDIF
    IF ( model_config_rec%mp_physics(head_grid%id) .EQ. LSCONDSCHEME ) THEN
-      head_grid%h_diabatic = 0.0
-      head_grid%rainnc = 0.0
-      head_grid%rainncv = 0.0
+      head_grid%h_diabatic = 0.0D0
+      head_grid%rainnc = 0.0D0
+      head_grid%rainncv = 0.0D0
    ENDIF
    IF ( model_config_rec%mp_physics(head_grid%id) .EQ. MKESSLERSCHEME ) THEN
       head_grid%h_diabatic = 0.0
@@ -1460,10 +1576,10 @@ ENDIF
       head_grid%rainncv = 0.0
    ENDIF
    IF ( model_config_rec%cu_physics(head_grid%id) .EQ. DUCUSCHEME ) THEN
-      head_grid%rthcuten = 0.0
-      head_grid%rqvcuten = 0.0
-      head_grid%rainc = 0.0
-      head_grid%raincv = 0.0
+      head_grid%rthcuten = 0.0D0
+      head_grid%rqvcuten = 0.0D0
+      head_grid%rainc = 0.0D0
+      head_grid%raincv = 0.0D0
       head_grid%pratec = 0.0
    ENDIF
 
@@ -1576,46 +1692,55 @@ ENDIF
    ENDIF 
 
    ! Set the file names and interval for reading basic states.
-   model_config_rec%auxinput6_inname = "auxhist6_d<domain>_<date>"
+   model_config_rec%auxinput16_inname = "auxhist6_d<domain>_<date>"
    CALL nl_get_time_step ( head_grid%id, time_step )
-   CALL nl_set_auxinput6_interval_s (head_grid%id, time_step )
-   CALL nl_set_io_form_auxinput6 ( head_grid%id, 2 )
-   CALL nl_set_frames_per_auxinput6 ( head_grid%id, 1 )
+   CALL nl_set_auxinput16_interval_s (head_grid%id, time_step )
+   CALL nl_set_io_form_auxinput16 ( head_grid%id, 2 )
+   CALL nl_set_frames_per_auxinput16 ( head_grid%id, 1 )
 
    IF ( config_flags%mp_physics .NE. 0 .and. config_flags%mp_physics .NE. 99 .and. &
         config_flags%mp_physics .NE. 98 ) CALL nl_set_mp_physics (head_grid%id, config_flags%mp_physics_ad)
-   IF ( config_flags%bl_pbl_physics .GT. 0 ) CALL nl_set_bl_pbl_physics (head_grid%id, 98)
+   IF ( config_flags%bl_pbl_physics .NE. ACMPBLSCHEME .AND. config_flags%bl_pbl_physics .GT. 0 ) CALL nl_set_bl_pbl_physics (head_grid%id, 98)
    IF ( config_flags%cu_physics .GT. 0 ) THEN
       CALL nl_set_cu_physics (head_grid%id, 98)
       head_grid%cudt = 0
    ENDIF
    CALL nl_set_ra_lw_physics (head_grid%id, 0)
    CALL nl_set_ra_sw_physics (head_grid%id, 0)
-   CALL nl_set_sf_sfclay_physics (head_grid%id, 0)
+   IF ( config_flags%sf_sfclay_physics.NE.SFCLAYSCHEME .AND. config_flags%sf_sfclay_physics.NE.PXSFCSCHEME) CALL nl_set_sf_sfclay_physics (head_grid%id, 0)
+   IF ( config_flags%sf_surface_physics.NE.SLABSCHEME .AND. config_flags%sf_surface_physics.NE.PXLSMSCHEME) CALL nl_set_sf_surface_physics (head_grid%id, 0)
 
-   head_grid%g_u_1 = 0.0
-   head_grid%g_v_1 = 0.0
-   head_grid%g_w_1 = 0.0
-   head_grid%g_t_1 = 0.0
-   head_grid%g_ph_1 = 0.0
-   head_grid%g_mu_1 = 0.0
+   head_grid%g_u_1 = 0.0D0
+   head_grid%g_v_1 = 0.0D0
+   head_grid%g_w_1 = 0.0D0
+   head_grid%g_t_1 = 0.0D0
+   head_grid%g_ph_1 = 0.0D0
+   head_grid%g_mu_1 = 0.0D0
    
-   head_grid%g_u_2 = 0.0
-   head_grid%g_v_2 = 0.0
-   head_grid%g_w_2 = 0.0
-   head_grid%g_t_2 = 0.0
-   head_grid%g_ph_2 = 0.0
-   head_grid%g_mu_2 = 0.0
+   head_grid%g_u_2 = 0.0D0
+   head_grid%g_v_2 = 0.0D0
+   head_grid%g_w_2 = 0.0D0
+   head_grid%g_t_2 = 0.0D0
+   head_grid%g_ph_2 = 0.0D0
+   head_grid%g_mu_2 = 0.0D0
 
-   head_grid%g_p = 0.0 
+   head_grid%g_p = 0.0D0
    
-   head_grid%g_moist = 0.0
-   head_grid%g_tracer = 0.0
-   head_grid%g_scalar = 0.0 
-   head_grid%g_rainnc  = 0.0 
-   head_grid%g_rainncv = 0.0
-   head_grid%g_rainc  = 0.0 
-   head_grid%g_raincv = 0.0
+   head_grid%g_moist = 0.0D0
+   head_grid%g_tracer = 0.0D0
+   head_grid%g_scalar = 0.0D0
+   head_grid%g_rainnc  = 0.0D0
+   head_grid%g_rainncv = 0.0D0
+   head_grid%g_rainc  = 0.0D0
+   head_grid%g_raincv = 0.0D0
+#ifdef WRF_CHEM
+   head_grid%g_chem = 0.0D0
+   head_grid%g_scaleant = 0.0D0
+   head_grid%g_scalebb = 0.0D0
+   head_grid%g_pm2_5_dry = 0.0D0
+   head_grid%g_pm2_5_dry_ec = 0.0D0
+   head_grid%g_pm10 = 0.0D0
+#endif
 
    CALL domain_clock_get( head_grid, start_timestr=timestr )
    CALL domain_clock_set( head_grid, current_timestr=timestr )
@@ -1737,6 +1862,9 @@ ENDIF
       runad = abs(runad)
 
       head_grid%itimestep = ceiling(real(runad)/timestep)
+#ifdef WRF_CHEM
+      head_grid%ktauc = head_grid%itimestep
+#endif
    ENDIF
 
    IF ( .NOT. config_flags%trajectory_io ) THEN
@@ -1753,10 +1881,11 @@ ENDIF
    CALL start_domain ( head_grid , .TRUE. )
 
    IF ( .NOT. config_flags%trajectory_io .OR. gradient_out ) THEN
-      config_flags%auxhist7_outname = "gradient_wrfplus_d<domain>_<date>"
-      config_flags%io_form_auxhist7 = 2
-      CALL nl_set_io_form_auxhist7 ( head_grid%id, 2 )
-      CALL  med_hist_out ( head_grid , AUXHIST7_ALARM , config_flags )
+      config_flags%auxhist17_outname = "gradient_wrfplus_d<domain>_<date>"
+      config_flags%io_form_auxhist17 = 2
+      CALL nl_set_io_form_auxhist17 ( head_grid%id, 2 )
+      CALL  med_hist_out ( head_grid , AUXHIST17_ALARM , config_flags )
+      CALL nl_set_io_form_auxhist17 ( head_grid%id, 0 )
       CALL  wrf_debug ( 0 , 'Output gradient in WRFPLUS (not including LBC gradient)' )
    ENDIF
 
@@ -1894,58 +2023,71 @@ ENDIF
    ENDIF 
 
    ! Set the file names and interval for reading basic states.
-   model_config_rec%auxinput6_inname = "auxhist6_d<domain>_<date>"
+   model_config_rec%auxinput16_inname = "auxhist6_d<domain>_<date>"
    CALL nl_get_time_step ( head_grid%id, time_step )
-   CALL nl_set_auxinput6_interval_s (head_grid%id, time_step )
-   CALL nl_set_io_form_auxinput6 ( head_grid%id, 2 )
-   CALL nl_set_frames_per_auxinput6 ( head_grid%id, 1 )
+   CALL nl_set_auxinput16_interval_s (head_grid%id, time_step )
+   CALL nl_set_io_form_auxinput16 ( head_grid%id, 2 )
+   CALL nl_set_frames_per_auxinput16 ( head_grid%id, 1 )
 
    IF ( config_flags%mp_physics .NE. 0 .and. config_flags%mp_physics .NE. 99 .and. &
         config_flags%mp_physics .NE. 98 ) CALL nl_set_mp_physics (head_grid%id, config_flags%mp_physics_ad)
-   IF ( config_flags%bl_pbl_physics .GT. 0 ) CALL nl_set_bl_pbl_physics (head_grid%id, 98)
+   IF ( config_flags%bl_pbl_physics .NE. ACMPBLSCHEME .AND. config_flags%bl_pbl_physics .GT. 0 ) CALL nl_set_bl_pbl_physics (head_grid%id, 98)
    IF ( config_flags%cu_physics .GT. 0 ) THEN
       CALL nl_set_cu_physics (head_grid%id, 98)
       head_grid%cudt = 0
    ENDIF
    CALL nl_set_ra_lw_physics (head_grid%id, 0)
    CALL nl_set_ra_sw_physics (head_grid%id, 0)
-   CALL nl_set_sf_sfclay_physics (head_grid%id, 0)
+   IF ( config_flags%sf_sfclay_physics.NE.SFCLAYSCHEME .AND. config_flags%sf_sfclay_physics.NE.PXSFCSCHEME) CALL nl_set_sf_sfclay_physics (head_grid%id, 0)
+   IF ( config_flags%sf_surface_physics.NE.SLABSCHEME .AND. config_flags%sf_surface_physics.NE.PXLSMSCHEME) CALL nl_set_sf_surface_physics (head_grid%id, 0)
 
    CALL zero_out_ad ( head_grid )
 
-   head_grid%g_u_1 = 0.0
-   head_grid%g_v_1 = 0.0
-   head_grid%g_w_1 = 0.0
-   head_grid%g_t_1 = 0.0
-   head_grid%g_ph_1 = 0.0
-   head_grid%g_mu_1 = 0.0
+   head_grid%g_u_1 = 0.0D0
+   head_grid%g_v_1 = 0.0D0
+   head_grid%g_w_1 = 0.0D0
+   head_grid%g_t_1 = 0.0D0
+   head_grid%g_ph_1 = 0.0D0
+   head_grid%g_mu_1 = 0.0D0
    
-   head_grid%g_u_2 = 0.0
-   head_grid%g_v_2 = 0.0
-   head_grid%g_w_2 = 0.0
-   head_grid%g_t_2 = 0.0
-   head_grid%g_ph_2 = 0.0
-   head_grid%g_mu_2 = 0.0
+   head_grid%g_u_2 = 0.0D0
+   head_grid%g_v_2 = 0.0D0
+   head_grid%g_w_2 = 0.0D0
+   head_grid%g_t_2 = 0.0D0
+   head_grid%g_ph_2 = 0.0D0
+   head_grid%g_mu_2 = 0.0D0
 
-   head_grid%g_p = 0.0 
+   head_grid%g_p = 0.0D0
    
-   head_grid%g_moist = 0.0
-   head_grid%g_tracer = 0.0
-   head_grid%g_scalar = 0.0 
-   head_grid%g_rainnc  = 0.0 
-   head_grid%g_rainncv = 0.0
-   head_grid%g_rainc  = 0.0 
-   head_grid%g_raincv = 0.0
+   head_grid%g_moist = 0.0D0
+   head_grid%g_tracer = 0.0D0
+   head_grid%g_scalar = 0.0D0
+   head_grid%g_rainnc  = 0.0D0
+   head_grid%g_rainncv = 0.0D0
+   head_grid%g_rainc  = 0.0D0
+   head_grid%g_raincv = 0.0D0
+#ifdef WRF_CHEM
+   head_grid%g_chem = 0.0D0
+   head_grid%g_scaleant = 0.0D0
+   head_grid%g_scalebb = 0.0D0
+   head_grid%g_pm2_5_dry = 0.0D0
+   head_grid%g_pm2_5_dry_ec = 0.0D0
+   head_grid%g_pm10 = 0.0D0
+
+!!!Temporary Fix - These need to be read in from file
+   head_grid%scaleant = 1.0D0
+   head_grid%scalebb = 1.0D0
+#endif
 
    CALL domain_clock_get( head_grid, stop_timestr=timestr )
    CALL domain_clock_set( head_grid, current_timestr=timestr )
-   config_flags%auxinput7_inname = "final_sens_d01"
-   config_flags%io_form_auxinput7 = 2
-   CALL nl_set_io_form_auxinput7 ( head_grid%id, 2 )
-   config_flags%frames_per_auxinput7 = 1
-   CALL med_auxinput_in ( head_grid, auxinput7_alarm, config_flags )
+   config_flags%auxinput17_inname = "final_sens_d01"
+   config_flags%io_form_auxinput17 = 2
+   CALL nl_set_io_form_auxinput17 ( head_grid%id, 2 )
+   config_flags%frames_per_auxinput17 = 1
+   CALL med_auxinput_in ( head_grid, auxinput17_alarm, config_flags )
    CALL  wrf_debug ( 0 , 'Read in final sensitivuty' )
-   config_flags%io_form_auxinput7 = 0
+   config_flags%io_form_auxinput17 = 0
    CALL domain_clock_get( head_grid, start_timestr=timestr )
    CALL domain_clock_set( head_grid, current_timestr=timestr )
 
@@ -1992,17 +2134,33 @@ ENDIF
 
    CALL       wrf_debug ( 100 , 'wrf: calling integrate' )
 #if (WRFPLUS == 1)
+
+#ifdef WRF_CHEM
+!!!Temporary Fix - These need to be read in from file
+IF(model_config_rec%dyn_opt .ne. dyn_em_check) then
+   head_grid%scaleant = 1.0D0
+   head_grid%scalebb = 1.0D0
+ENDIF
+#endif
+
    model_config_rec%dyn_opt = dyn_em
    IF ( model_config_rec%bl_pbl_physics(head_grid%id) .EQ. SURFDRAGSCHEME ) THEN
-      head_grid%rublten = 0.0
-      head_grid%rvblten = 0.0
-      head_grid%rthblten = 0.0
-      head_grid%rqvblten = 0.0
+      head_grid%rublten = 0.0D0
+      head_grid%rvblten = 0.0D0
+      head_grid%rthblten = 0.0D0
+      head_grid%rqvblten = 0.0D0
+   ELSEIF ( model_config_rec%bl_pbl_physics(head_grid%id) .EQ. ACMPBLSCHEME ) THEN
+      head_grid%rublten = 0.0D0
+      head_grid%rvblten = 0.0D0
+      head_grid%rthblten = 0.0D0
+      head_grid%rqvblten = 0.0D0
+      head_grid%rqcblten = 0.0D0
+      head_grid%rqiblten = 0.0D0
    ENDIF
    IF ( model_config_rec%mp_physics(head_grid%id) .EQ. LSCONDSCHEME ) THEN
-      head_grid%h_diabatic = 0.0
-      head_grid%rainnc = 0.0
-      head_grid%rainncv = 0.0
+      head_grid%h_diabatic = 0.0D0
+      head_grid%rainnc = 0.0D0
+      head_grid%rainncv = 0.0D0
    ENDIF
    IF ( model_config_rec%mp_physics(head_grid%id) .EQ. MKESSLERSCHEME ) THEN
       head_grid%h_diabatic = 0.0
@@ -2010,11 +2168,12 @@ ENDIF
       head_grid%rainncv = 0.0
    ENDIF
    IF ( model_config_rec%cu_physics(head_grid%id) .EQ. DUCUSCHEME ) THEN
-      head_grid%rthcuten = 0.0
-      head_grid%rqvcuten = 0.0
-      head_grid%rainc = 0.0
-      head_grid%raincv = 0.0
+      head_grid%rthcuten = 0.0D0
+      head_grid%rqvcuten = 0.0D0
+      head_grid%rainc = 0.0D0
+      head_grid%raincv = 0.0D0
    ENDIF
+
 
    CALL nl_get_io_form_auxhist7( head_grid%id, io_auxh7 )
    CALL nl_get_io_form_auxhist8( head_grid%id, io_auxh8 )

@@ -12,7 +12,7 @@ MODULE a_module_sfs_nba
 
    IMPLICIT NONE
 
-   INTEGER :: K0_ADJ,K1_ADJ,K2_ADJ,K3_ADJ
+!   INTEGER :: K0_ADJ,K1_ADJ,K2_ADJ,K3_ADJ
 !   REAL :: c1,c2,c3,ce,cb,cs  ! Remarked by Ning Pan, 2010-08-18
 
 !  a_F90 =0.0

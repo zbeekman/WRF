@@ -523,8 +523,8 @@
                       grid%rqvshten, grid%rqrshten, grid%rqcshten,           &
                       grid%rqsshten, grid%rqishten, grid%rqgshten,           &
                       grid%rublten,grid%a_rublten,grid%rvblten,grid%a_rvblten, &
-                      grid%rthblten, grid%a_rthblten,              &
-                      grid%rqvblten,grid%a_rqvblten,grid%rqcblten,grid%rqiblten, &
+                      grid%rthblten, grid%a_rthblten, grid%rqvblten, grid%a_rqvblten, &
+                      grid%rqcblten, grid%a_rqcblten, grid%rqiblten, grid%a_rqiblten, &
                       grid%rthraten,grid%rthratenlw,grid%rthratensw,         &
                       grid%stepbl,grid%stepra,grid%stepcu,                   &
                       grid%w0avg, grid%a_w0avg, grid%rainnc, grid%a_rainnc, &

@@ -157,7 +157,7 @@ RECURSIVE SUBROUTINE integrate ( grid )
    LOGICAL , EXTERNAL                     :: wrf_dm_on_monitor
    INTEGER                                :: idum1 , idum2 , ierr , open_status
    LOGICAL                                :: should_do_last_io
-   INTEGER                                :: rc
+   INTEGER                                :: rc, auxhist6_interval
    LOGICAL                                :: should_add_forcing
 
    ! interface
@@ -337,21 +337,44 @@ RECURSIVE SUBROUTINE integrate ( grid )
             CALL dfi_accumulate ( grid )
 
 #if ( WRFPLUS == 1 )
-            ! Check if the auxinput3 is ringing before read it
+            ! Check if the auxinput17 is ringing before read it
             should_add_forcing = .FALSE.
-            IF ( WRFU_AlarmIsRinging( grid%alarms( AUXINPUT7_ALARM ), rc=rc ) ) should_add_forcing = .TRUE.  
+            IF ( WRFU_AlarmIsRinging( grid%alarms( AUXINPUT17_ALARM ), rc=rc ) ) should_add_forcing = .TRUE.  
+#endif
+
+            ! This is necessary for checkpoint runs for some reason 
+#if ( WRFPLUS == 1 )
+!            CALL nl_get_auxhist6_interval_s ( grid%id, auxhist6_interval )
+            IF ( config_flags%auxhist6_interval_s .NE. 0 .and. config_flags%dyn_opt .EQ. dyn_em &
+                 .and. grid%itimestep .eq. 0 ) THEN
+               CALL WRFU_AlarmRingerOn( grid%alarms( auxhist6_ALARM ), rc=rc )
+            ENDIF
 #endif
 
             CALL med_before_solve_io ( grid , config_flags )
 
 #if ( WRFPLUS == 1 )
+#ifdef WRF_CHEM
+
             IF ( config_flags%dyn_opt .EQ. dyn_em_ad .AND. should_add_forcing) THEN
               CALL add_forcing_to_ad ( grid )
             ENDIF
+
+            IF ( config_flags%chem_ad_forcing) THEN
+               IF ( config_flags%dyn_opt .EQ. dyn_em_ad ) THEN
+                 CALL add_forcing_to_ad_chem ( grid, config_flags )
+               ELSEIF ( config_flags%dyn_opt .EQ. dyn_em) THEN
+!                 IF ( grid%io_intervals( AUXHIST6_ALARM ) .EQ. 0 ) THEN
+                 IF ( config_flags%auxhist6_interval_s .EQ. 0 ) THEN
+                    CALL calc_chem_hx ( grid, config_flags )
+                 ENDIF
+               ENDIF
+            ENDIF
+#endif
+
             IF ( grid%jcdfi_use .AND. config_flags%dyn_opt .EQ. dyn_em_ad ) THEN
                CALL jcdfi_add_forcing ( grid )
             ENDIF
-
 #endif
 
             grid_ptr => grid
@@ -429,7 +452,7 @@ RECURSIVE SUBROUTINE integrate ( grid )
 
 #if ( WRFPLUS == 1 )
 !        Read in first basic states and forcing, add forcing
-         IF ( config_flags%dyn_opt .EQ. dyn_em_ad .AND. WRFU_AlarmIsRinging( grid%alarms( AUXINPUT7_ALARM ), rc=rc ) ) THEN
+         IF ( config_flags%dyn_opt .EQ. dyn_em_ad .AND. WRFU_AlarmIsRinging( grid%alarms( AUXINPUT17_ALARM ), rc=rc ) ) THEN
            CALL med_last_ad_solve_io ( grid , config_flags )
            CALL add_forcing_to_ad ( grid )
          ENDIF

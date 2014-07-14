@@ -175,6 +175,7 @@ SUBROUTINE solve_em ( grid , config_flags  &
    INTEGER                                    :: num, den
    TYPE(WRFU_TimeInterval)                    :: dtInterval, intervaltime,restartinterval
 
+   INTEGER                                    :: temp_itimestep
 ! Define benchmarking timers if -DBENCH is compiled
 #include <bench_solve_em_def.h>
 
@@ -264,6 +265,14 @@ SUBROUTINE solve_em ( grid , config_flags  &
    tmpTimeInterval2 = domain_get_current_time ( grid ) - domain_get_start_time ( grid )
    curr_secs  = real_time(tmpTimeInterval)
    curr_secs2 = real_time(tmpTimeInterval2)
+#if ( WRFPLUS == 1 )
+  if(grid%checkpoint_interval .gt. 0) then
+     write(message,*)'itimestep,check_count,checkpoint_interval = ',grid%itimestep,grid%check_count,grid%checkpoint_interval
+     CALL wrf_debug(50,TRIM(message))
+
+!     curr_secs = curr_secs - REAL( 3600*(grid%check_count-1)*grid%checkpoint_interval, 8 )
+  endif
+#endif
 
    old_dt = grid%dt   ! store old time step for flux averaging code at end of RK loop
 !-----------------------------------------------------------------------------
@@ -296,6 +305,11 @@ call random_number(tracer)
 tracer = tracer * 10.
 tracer = tracer + 375
 endif
+
+#if ( WRFPLUS == 1 )
+   temp_itimestep = grid%itimestep
+   grid%itimestep = grid%itimestep + (grid%check_count-1)*grid%checkpoint_interval*3600/grid%dt
+#endif
 
    IF( coupler_on ) CALL cpl_store_input( grid, config_flags )
 
@@ -683,6 +697,9 @@ BENCH_END(set_phys_bc_tim)
        CALL first_rk_step_part1 (    grid, config_flags         &
                              , moist , moist_tend               &
                              , chem  , chem_tend                &
+#ifdef WRF_CHEM
+                             , dvel &
+#endif
                              , tracer, tracer_tend              &
                              , scalar , scalar_tend             &
                              , fdda3d, fdda2d                   &
@@ -696,7 +713,7 @@ BENCH_END(set_phys_bc_tim)
                              , psim , psih , wspd , gz1oz0      &
                              , br , chklowq                     &
                              , cu_act_flag , hol , th_phy       &
-                             , pi_phy , p_phy , grid%t_phy      &
+                             , pi_phy , p_phy    & !, grid%t_phy      &
                              , dz8w , p8w , t8w                 &
                              , ids, ide, jds, jde, kds, kde     &
                              , ims, ime, jms, jme, kms, kme     &
@@ -4108,6 +4125,10 @@ BENCH_END(bc_2d_tim)
        CALL wrf_error_fatal(TRIM(wrf_err_message))
      ENDIF
    ENDIF
+#endif
+
+#if ( WRFPLUS == 1 )
+   grid%itimestep = temp_itimestep
 #endif
 
 !  Max values of CFL for adaptive time step scheme

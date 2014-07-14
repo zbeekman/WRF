@@ -4,8 +4,8 @@ MODULE module_bl_acm
 
 !  USE module_model_constants
 
-  REAL, PARAMETER      :: RIC    = 0.25                ! critical Richardson number
-  REAL, PARAMETER      :: CRANKP = 0.5                 ! CRANK-NIC PARAMETER
+  REAL, PARAMETER      :: RIC    = 0.25D0                ! critical Richardson number
+  REAL, PARAMETER      :: CRANKP = 0.5D0                 ! CRANK-NIC PARAMETER
 
 CONTAINS
 
@@ -165,7 +165,7 @@ CONTAINS
       REAL, DIMENSION( kts:kte ) :: DSIGH, DSIGHI, DSIGFI
       REAL, DIMENSION( 0:kte )   :: SIGMAF
       REAL  RDT
-      REAL, PARAMETER :: KARMAN = 0.4
+      REAL, PARAMETER :: KARMAN = 0.4D0
 
 #if (WRF_CHEM == 1)
 !... Chem
@@ -174,29 +174,29 @@ CONTAINS
 #endif
 !...
 
-   RDT = 1.0 / DTPBL
+   RDT = 1.0D0 / DTPBL
 
    DO K = 1, kte
      SIGMAF(K-1) = ZNW(K)
    ENDDO
-   SIGMAF(kte) = 0.0
+   SIGMAF(kte) = 0.0D0
 
    DO K = 1, kte
      DSIGH(K)  = SIGMAF(K) - SIGMAF(K-1)
-     DSIGHI(K) = 1.0 / DSIGH(K)
+     DSIGHI(K) = 1.0D0 / DSIGH(K)
    ENDDO
 
    DO K = kts,kte-1
-     DSIGFI(K) = 1.0 / (SIGMAH(K+1) - SIGMAH(K))
+     DSIGFI(K) = 1.0D0 / (SIGMAH(K+1) - SIGMAH(K))
    ENDDO
 
    DSIGFI(kte) = DSIGFI(kte-1)
-   
+
    DO j = jts,jte   
 #if (WRF_CHEM == 1)
       DO L = 1, nchem
       DO K = kms,kme
-      DO I = ims, ime
+      DO I = its, ite
         CHEM2D(i,k,l) = chem3d(i,k,j,l)
       ENDDO
       ENDDO
@@ -204,7 +204,7 @@ CONTAINS
 
       DO L = 1, ndvel
       DO K = 1, kdvel
-      DO I = ims, ime
+      DO I = its, ite
         VD2D(i,k,l) = VD3D(i,k,j,l)
       ENDDO
       ENDDO
@@ -242,7 +242,7 @@ CONTAINS
               ,its=its,ite=ite, jts=jts,jte=jte, kts=kts,kte=kte   )
 #if (WRF_CHEM == 1)
       DO L = 1, nchem
-      DO I = ims, ime
+      DO I = its, ite
         chem3d(i,kms:kme,j,l) = CHEM2D(i,kms:kme,l)
       ENDDO
       ENDDO
@@ -344,43 +344,43 @@ CONTAINS
 
       DO i = its,ite
         DO k = kts,kte
-          utnp(i,k) = 0.
-          vtnp(i,k) = 0.
-          ttnp(i,k) = 0.
+          utnp(i,k) = 0.D0
+          vtnp(i,k) = 0.D0
+          ttnp(i,k) = 0.D0
         ENDDO
       ENDDO
 
       DO k = kts,kte
         DO i = its,ite
-          qvtnp(i,k) = 0.
+          qvtnp(i,k) = 0.D0
         ENDDO
       ENDDO
 
       DO k = kts,kte
         DO i = its,ite
-          qctnp(i,k) = 0.
-          qitnp(i,k) = 0.
+          qctnp(i,k) = 0.D0
+          qitnp(i,k) = 0.D0
         ENDDO
       ENDDO
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!  Compute Micromet Scaling variables, not availiable in WRF for ACM
      DO I = its,ite
-           CPAIR(I)  = CPD * (1.0 + 0.84 * QVS(I,1))                    ! J/(K KG)
+           CPAIR(I)  = CPD * (1.0D0 + 0.84D0 * QVS(I,1))                    ! J/(K KG)
            TMPFX     = HFX(I)  / (cpair(i) * DENSX(I,1))
-           TMPVTCON  = 1.0 + EP1 * QVS(I,1)                             ! COnversion factor for virtual temperature
+           TMPVTCON  = 1.0D0 + EP1 * QVS(I,1)                             ! COnversion factor for virtual temperature
            WS1       = SQRT(US(I,1)**2 + VS(I,1)**2)                    ! Level 1 wind speed
            TST(I)    = -TMPFX / UST(I)
            QST(I)    = -QFX(I) / (UST(I)*DENSX(I,1))
            USTM(I)   = UST(I) * WS1 / wspd(i)
            THV1      = TMPVTCON * THETA(I,1) 
            TSTV(I)   = TST(I)*TMPVTCON + THV1*EP1*QST(I)
-           IF(ABS(TSTV(I)).LT.1.0E-6) THEN
-             TSTV(I) = SIGN(1.0E-6,TSTV(I))
+           IF(ABS(TSTV(I)).LT.1.0D-6) THEN
+             TSTV(I) = SIGN(1.0D-6,TSTV(I))
            ENDIF
            MOL(I)    = THV1 * UST(i)**2/(KARMAN*G*TSTV(I))
-           WST(I)    = UST(I) * (PBL(I)/(KARMAN*ABS(MOL(I)))) ** 0.333333       
-           PSTAR(I)  =  MUT(I)/1000.                                     ! P* in cb 
+           WST(I)    = UST(I) * (PBL(I)/(KARMAN*ABS(MOL(I)))) ** 0.333333D0
+           PSTAR(I)  =  MUT(I)/1000.D0                                     ! P* in cb 
      ENDDO
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -388,20 +388,20 @@ CONTAINS
 
 !... compute the height of full- and half-sigma level above ground level
      DO I = its,ite
-       ZF(I,0)    = 0.0
+       ZF(I,0)    = 0.0D0
        KLPBL(I)   = 1
      ENDDO
 
      DO K = kts, kte
        DO I = its,ite
          ZF(I,K) = DZF(I,K) + ZF(I,K-1)
-         ZA(I,K) = 0.5 * (ZF(I,K) + ZF(I,K-1))
+         ZA(I,K) = 0.5D0 * (ZF(I,K) + ZF(I,K-1))
        ENDDO
      ENDDO
 
      DO K = kts, kte
        DO I = its,ite
-         TVCON       = 1.0 + EP1 * QVS(I,K)
+         TVCON       = 1.0D0 + EP1 * QVS(I,K)
          THETAV(I,K) = THETA(I,K) * TVCON
        ENDDO
      ENDDO
@@ -414,14 +414,14 @@ CONTAINS
          IF (SIGMAF(K).lT.0.9955) GO TO 69
        ENDDO
 69     CONTINUE
-       TH1 = 0.0
+       TH1 = 0.0D0
        DO K = 1,KSRC
          TH1 = TH1 + THETAV(I,K)  
        ENDDO  
        TH1 = TH1/KSRC
        IF(MOL(I).LT.0.0 .AND. XTIME.GT.1) then
-         WSS   = (UST(I) ** 3 + 0.6 * WST(I) ** 3) ** 0.33333
-         TCONV = -8.5 * UST(I) * TSTV(I) / WSS
+         WSS   = (UST(I) ** 3 + 0.6D0 * WST(I) ** 3) ** 0.33333D0
+         TCONV = -8.5D0 * UST(I) * TSTV(I) / WSS
          TH1   = TH1 + TCONV
        ENDIF
 
@@ -443,11 +443,11 @@ CONTAINS
        ENDIF
        DO K = KMIX,kte
          DTMP   = THETAV(I,K) - TH1
-         TOG = 0.5 * (THETAV(I,K) + TH1) / G
+         TOG = 0.5D0 * (THETAV(I,K) + TH1) / G
          WSSQ = (US(I,K)-UMIX)**2                                     &
               + (VS(I,K)-VMIX)**2
-         IF (KMIX == 1) WSSQ = WSSQ + 100.*UST(I)*UST(I) 
-         WSSQ = MAX( WSSQ, 0.1 )
+         IF (KMIX == 1) WSSQ = WSSQ + 100.D0*UST(I)*UST(I) 
+         WSSQ = MAX( WSSQ, 0.1D0 )
          RIB(I,K) = ABS(ZA(I,K)-ZMIX) * DTMP / (TOG * WSSQ)
          IF (RIB(I,K) .GE. RIC) GO TO 201
        ENDDO
@@ -472,10 +472,10 @@ CONTAINS
                     RIB(I,KPBLH(I)-1))
          IF (FINT(I) .GT. 0.5) THEN
            KPBLHT  = KPBLH(I)
-           FINT(I) = FINT(I) - 0.5
+           FINT(I) = FINT(I) - 0.5D0
          ELSE
            KPBLHT  = KPBLH(I) - 1
-           FINT(I) = FINT(I) + 0.5
+           FINT(I) = FINT(I) + 0.5D0
          ENDIF
          PBL(I)  = FINT(I) * (ZF(I,KPBLHT) - ZF(I,KPBLHT-1)) +          &
                      ZF(I,KPBLHT-1)
@@ -522,9 +522,9 @@ CONTAINS
 
      DO K = kts, kte-1
        DO I = its, ite
-         DENSF     = 0.5 * (DENSX(I,K+1) + DENSX(I,K))
+         DENSF     = 0.5D0 * (DENSX(I,K+1) + DENSX(I,K))
          exch_hx(I,K) = EDDYZ(I,K) /( (DENSF * G / PSTAR(I)) ** 2 *  &
-                       DTPBL * DSIGFI(K)*1E-6 )
+                       DTPBL * DSIGFI(K)*1.D-6 )
        ENDDO
      ENDDO
 
@@ -596,11 +596,11 @@ CONTAINS
      DO j=jts,jtf
      DO k=kts,ktf
      DO i=its,itf
-        RUBLTEN(i,k,j)=0.
-        RVBLTEN(i,k,j)=0.
-        RTHBLTEN(i,k,j)=0.
-        RQVBLTEN(i,k,j)=0.
-        RQCBLTEN(i,k,j)=0.
+        RUBLTEN(i,k,j)=0.D0
+        RVBLTEN(i,k,j)=0.D0
+        RTHBLTEN(i,k,j)=0.D0
+        RQVBLTEN(i,k,j)=0.D0
+        RQCBLTEN(i,k,j)=0.D0
      ENDDO
      ENDDO
      ENDDO
@@ -610,7 +610,7 @@ CONTAINS
       DO j=jts,jtf
       DO k=kts,ktf
       DO i=its,itf
-         RQIBLTEN(i,k,j)=0.
+         RQIBLTEN(i,k,j)=0.D0
       ENDDO
       ENDDO
       ENDDO
@@ -689,13 +689,13 @@ CONTAINS
       REAL     :: RI, QMEAN, TMEAN, XLV, ALPH, CHI, ZK, SQL, DENSF, KZO
       REAL     :: FH
 !... Parameters
-      REAL, PARAMETER :: RV     = 461.5
-      REAL, PARAMETER :: RC     = 0.25
-      REAL, PARAMETER :: RLAM   = 80.0
-      REAL, PARAMETER :: GAMH   = 16.0 !15.0  !  Holtslag and Boville (1993)
-      REAL, PARAMETER :: BETAH  = 5.0   !  Holtslag and Boville (1993)
-      REAL, PARAMETER :: KARMAN = 0.4
-      REAL, PARAMETER :: EDYZ0  = 0.01  ! New Min Kz
+      REAL, PARAMETER :: RV     = 461.5D0
+      REAL, PARAMETER :: RC     = 0.25D0
+      REAL, PARAMETER :: RLAM   = 80.0D0
+      REAL, PARAMETER :: GAMH   = 16.0D0 !15.0  !  Holtslag and Boville (1993)
+      REAL, PARAMETER :: BETAH  = 5.0D0   !  Holtslag and Boville (1993)
+      REAL, PARAMETER :: KARMAN = 0.4D0
+      REAL, PARAMETER :: EDYZ0  = 0.01D0  ! New Min Kz
 !      REAL, PARAMETER :: EDYZ0  = 0.1
 !--   IMVDIF      imvdif=1 for moist adiabat vertical diffusion
       INTEGER, PARAMETER :: imvdif = 1
@@ -706,8 +706,8 @@ CONTAINS
       
       DO K = kts,KLM
         DO I = its,ILX
-          EDYZ = 0.0
-          ZOVL = 0.0
+          EDYZ = 0.0D0
+          ZOVL = 0.0D0
           DZF  = ZA(I,K+1) - ZA(I,K)
           KZO = EDYZ0
 !--------------------------------------------------------------------------
@@ -715,76 +715,76 @@ CONTAINS
             ZOVL = ZF(I,K) / MOL(I)
             IF (ZOVL .LT. 0.0) THEN
               IF (ZF(I,K) .LT. 0.1 * PBL(I)) THEN
-                PHIH = 1.0 / SQRT(1.0 - GAMH * ZOVL)
+                PHIH = 1.0D0 / SQRT(1.0D0 - GAMH * ZOVL)
                 WT   = UST(I) / PHIH
               ELSE
-                ZSOL = 0.1 * PBL(I) / MOL(I)
-                PHIH = 1.0 / SQRT(1.0 - GAMH * ZSOL)
+                ZSOL = 0.1D0 * PBL(I) / MOL(I)
+                PHIH = 1.0D0 / SQRT(1.0D0 - GAMH * ZSOL)
                 WT   = UST(I) / PHIH
               ENDIF
             ELSE IF (ZOVL .LT. 1.0) THEN
-              PHIH = 1.0 + BETAH * ZOVL
+              PHIH = 1.0D0 + BETAH * ZOVL
               WT   = UST(I) / PHIH
             ELSE
               PHIH = BETAH + ZOVL
               WT   = UST(I) / PHIH
             ENDIF
-            ZFUNC      = ZF(I,K) * (1.0 - ZF(I,K) / PBL(I)) ** 2
+            ZFUNC      = ZF(I,K) * (1.0D0 - ZF(I,K) / PBL(I)) ** 2
             EDYZ = KARMAN * WT * ZFUNC
           ENDIF
 !--------------------------------------------------------------------------
           SS   = ((US(I,K+1) - US(I,K)) ** 2 + (VS(I,K+1) - VS(I,K)) ** 2)   &
-                  / (DZF * DZF) + 1.0E-9
-          GOTH = 2.0 * G / (THETAV(I,K+1) + THETAV(I,K))
+                  / (DZF * DZF) + 1.0D-9
+          GOTH = 2.0D0 * G / (THETAV(I,K+1) + THETAV(I,K))
           RI   = GOTH * (THETAV(I,K+1) - THETAV(I,K)) / (DZF * SS)
 !--------------------------------------------------------------------------
 !         Adjustment to vert diff in Moist air
           IF(imvdif.eq.1)then
             IF ((QCS(I,K)+QIS(I,K)) .GT. 0.01E-3 .OR. (QCS(I,K+1)+             &
                  QIS(I,K+1)) .GT. 0.01E-3) THEN
-              QMEAN = 0.5 * (QVS(I,K) + QVS(I,K+1))
-              TMEAN = 0.5 * (TT(I,K) + TT(I,K+1))
-              XLV   = (2.501 - 0.00237 * (TMEAN - 273.15)) * 1.E6
+              QMEAN = 0.5D0 * (QVS(I,K) + QVS(I,K+1))
+              TMEAN = 0.5D0 * (TT(I,K) + TT(I,K+1))
+              XLV   = (2.501D0 - 0.00237D0 * (TMEAN - 273.15D0)) * 1.D6
               ALPH  =  XLV * QMEAN / RD / TMEAN
               CHI   =  XLV * XLV * QMEAN / CPAIR(I) / RV / TMEAN / TMEAN
-              RI    = (1.0 + ALPH) * (RI -G * G / SS / TMEAN / CPAIR(I) *       &
-                      ((CHI - ALPH) / (1.0 + CHI)))
+              RI    = (1.0D0 + ALPH) * (RI -G * G / SS / TMEAN / CPAIR(I) *       &
+                      ((CHI - ALPH) / (1.0D0 + CHI)))
             ENDIF
           ENDIF
 !--------------------------------------------------------------------------
             
-	        ZK  = 0.4 * ZF(I,K)
+	        ZK  = 0.4D0 * ZF(I,K)
           SQL = (ZK * RLAM / (RLAM + ZK)) ** 2
             
           IF (RI .GE. 0.0) THEN
 	          IF (ZF(I,K).LT.PBL(I).AND.ZOVL.GT.0.0) THEN
-	            FH = MAX((1.-ZF(I,K)/PBL(I))**2,0.01) * PHIH **(-2)
+	            FH = MAX((1.D0-ZF(I,K)/PBL(I))**2,0.01D0) * PHIH **(-2)
                    SQL = ZK ** 2
 	          ELSE
-	            FH = (MAX(1.-RI/RC,0.01))**2
+	            FH = (MAX(1.D0-RI/RC,0.01D0))**2
 	          ENDIF
             EDDYZ(I,K) = KZO + SQRT(SS) * FH * SQL
           ELSE
-            EDDYZ(I,K) = KZO + SQRT(SS * (1.0 - 25.0 * RI)) * SQL
+            EDDYZ(I,K) = KZO + SQRT(SS * (1.0D0 - 25.0D0 * RI)) * SQL
           ENDIF
 	  
           IF(EDYZ.GT.EDDYZ(I,K)) THEN
             EDDYZ(I,K) = EDYZ
           ENDIF
 
-          EDDYZ(I,K) = MIN(1000.0,EDDYZ(I,K))
+          EDDYZ(I,K) = MIN(1000.0D0,EDDYZ(I,K))
           EDDYZ(I,K) = MAX(KZO,EDDYZ(I,K))
 
-          DENSF     = 0.5 * (DENSX(I,K+1) + DENSX(I,K))
+          DENSF     = 0.5D0 * (DENSX(I,K+1) + DENSX(I,K))
 
           EDDYZ(I,K) = EDDYZ(I,K) * (DENSF * G / PSTAR(I)) ** 2 *       &
-                       DTPBL * DSIGFI(K)*1E-6
+                       DTPBL * DSIGFI(K)*1.D-6
 
         ENDDO             ! for I loop
       ENDDO               ! for k loop
 !
       DO I = its,ILX
-        EDDYZ(I,KL) = 0.0 ! EDDYZ(I,KLM) -- changed jp 3/08
+        EDDYZ(I,KL) = 0.0D0 ! EDDYZ(I,KLM) -- changed jp 3/08
       ENDDO
 
    END SUBROUTINE EDDYX
@@ -889,9 +889,9 @@ CONTAINS
 !......ACM2 Parameters
 !     INTEGER, PARAMETER :: IFACM = 0
 !
-      REAL,    PARAMETER :: G1000 = 9.8 * 1.0E-3
-      REAL,    PARAMETER :: XX    = 0.5          ! FACTOR APPLIED TO CONV MIXING TIME STEP
-      REAL,    PARAMETER :: KARMAN = 0.4
+      REAL,    PARAMETER :: G1000 = 9.8D-3
+      REAL,    PARAMETER :: XX    = 0.5D0          ! FACTOR APPLIED TO CONV MIXING TIME STEP
+      REAL,    PARAMETER :: KARMAN = 0.4D0
 
 !... Integer
       INTEGER :: ILX, KL, KLM, I, K, NSPX, NLP, NL, JJ, L,LL
@@ -923,9 +923,9 @@ CONTAINS
       NSPX = NSPX + NUM_VERT_MIX 
 #endif
 
-      G1000I = 1.0 / G1000
+      G1000I = 1.0D0 / G1000
       KCBLMX = 0
-      MBMAX  = 0.0
+      MBMAX  = 0.0D0
 !...Allocate species variables
       ALLOCATE (DI( 1:NSPX,kts:kte ))       
       ALLOCATE (UI( 1:NSPX,kts:kte ))  
@@ -936,9 +936,9 @@ CONTAINS
 !---COMPUTE ACM MIXING RATE
       DO I = its, ILX
         DTLIM(I)  = DTPBL
-        PSTARI(I) = 1.0 / PSTAR(I)
+        PSTARI(I) = 1.0D0 / PSTAR(I)
         KCBL(I)   = 1
-        FSACM(I)  = 0.0
+        FSACM(I)  = 0.0D0
 
         IF (NOCONV(I) .EQ. 1) THEN
           KCBL(I) = KLPBL(I)
@@ -946,11 +946,11 @@ CONTAINS
 !-------MBARKS IS UPWARD MIXING RATE; MDWN IS DOWNWARD MIXING RATE
 !--New couple ACM & EDDY-------------------------------------------------------------
           HOVL     = -PBL(I) / MOL(I)
-          FSACM(I) = 1./(1.+((KARMAN/(HOVL))**0.3333)/(0.72*KARMAN))
+          FSACM(I) = 1.D0/(1.D0+((KARMAN/(HOVL))**0.3333D0)/(0.72D0*KARMAN))
           MEDDY    = EDDYZ(I,1) / (DTPBL * (PBLSIG(I) - SIGMAF(1)))
           MBAR     = MEDDY * FSACM(I)
           DO K = kts,KCBL(I)-1
-            EDDYZ(I,K) = EDDYZ(I,K) * (1.0 - FSACM(I))
+            EDDYZ(I,K) = EDDYZ(I,K) * (1.0D0 - FSACM(I))
           ENDDO
 
           MBMAX = AMAX1(MBMAX,MBAR)
@@ -960,14 +960,14 @@ CONTAINS
           ENDDO
           MBARKS(1,I) = MBAR
           MBARKS(KCBL(I),I) = MDWN(KCBL(I),I)
-          MDWN(KCBL(I)+1,I) = 0.0
+          MDWN(KCBL(I)+1,I) = 0.0D0
         ENDIF
       ENDDO                              ! end of I loop
 
       DO K = kts,KLM
         DO I = its,ILX
           EKZ   = EDDYZ(I,K) / DTPBL * DSIGHI(K)
-          DTLIM(I) = AMIN1(0.75 / EKZ,DTLIM(I))
+          DTLIM(I) = AMIN1(0.75D0 / EKZ,DTLIM(I))
         ENDDO
       ENDDO
        
@@ -1001,11 +1001,11 @@ CONTAINS
         FS(1,I) = -UST(I) * TST(I) * DENSX(I,1) * PSTARI(I)
         FS(2,I) = -UST(I) * QST(I) * DENSX(I,1) * PSTARI(I)
         FM      = -USTM(I) * USTM(I) * DENSX(I,1) * PSTARI(I)
-        WSPD    = SQRT(US(I,1) * US(I,1) + VS(I,1) * VS(I,1)) + 1.E-9
+        WSPD    = SQRT(US(I,1) * US(I,1) + VS(I,1) * VS(I,1)) + 1.D-9
         FS(3,I) = FM * US(I,1) / WSPD
         FS(4,I) = FM * VS(I,1) / WSPD
-        FS(5,I) = 0.0
-        FS(6,I) = 0.0                      ! SURFACE FLUXES OF CLOUD WATER AND ICE = 0
+        FS(5,I) = 0.0D0
+        FS(6,I) = 0.0D0                      ! SURFACE FLUXES OF CLOUD WATER AND ICE = 0
 #if (WRF_CHEM == 1)
         DO L= 7, NSPX
           FS(L,I) = -VD(I,1,L-NSP) * CHEM(I,1,L-NSP) * DENSX(I,1) * PSTARI(I)
@@ -1016,7 +1016,7 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       DO I = its,ILX      
 
-        NLP   = INT(DTPBL / DTLIM(I) + 1.0)
+        NLP   = INT(DTPBL / DTLIM(I) + 1.0D0)
         DTS   = (DTPBL / NLP)
         DTRAT = DTS / DTPBL
         DO NL = 1,NLP           ! LOOP OVER SUB TIME LOOP              
@@ -1024,15 +1024,15 @@ CONTAINS
 !-- COMPUTE ARRAY ELEMENTS THAT ARE INDEPENDANT OF SPECIES
 
           DO K = kts,kte
-            AI(K) = 0.0
-            BI(K) = 0.0
-            CI(K) = 0.0
-            EI(K) = 0.0
+            AI(K) = 0.0D0
+            BI(K) = 0.0D0
+            CI(K) = 0.0D0
+            EI(K) = 0.0D0
           ENDDO
 
           DO K = 2, KCBL(I)
             EI(K-1) = -CRANKP * MDWN(K,I) * DTS * DSIGH(K) * DSIGHI(K-1)
-            BI(K)   = 1.0 + CRANKP * MDWN(K,I) * DTS
+            BI(K)   = 1.0D0 + CRANKP * MDWN(K,I) * DTS
             AI(K)   = -CRANKP * MBARKS(K,I) * DTS
           ENDDO
 
@@ -1040,7 +1040,7 @@ CONTAINS
           AI(2) = AI(2) -EDDYZ(I,1) * CRANKP * DSIGHI(2) * DTRAT
 
           DO K =  KCBL(I)+1, KL
-            BI(K) = 1.0
+            BI(K) = 1.0D0
           ENDDO
 
           DO K = 2,KL
@@ -1052,16 +1052,16 @@ CONTAINS
           ENDDO
 
           IF (NOCONV(I) .EQ. 1) THEN
-            BI(1) = 1.0 + CRANKP * MBARKS(1,I) * (PBLSIG(I) - SIGMAF(1)) *    &
+            BI(1) = 1.0D0 + CRANKP * MBARKS(1,I) * (PBLSIG(I) - SIGMAF(1)) *    &
                     DTS * DSIGHI(1) + EDDYZ(I,1) * DSIGHI(1) * CRANKP * DTRAT
           ELSE
-            BI(1) = 1.0  + EDDYZ(I,1) * DSIGHI(1) * CRANKP * DTRAT
+            BI(1) = 1.0D0  + EDDYZ(I,1) * DSIGHI(1) * CRANKP * DTRAT
           ENDIF
 
 
           DO K = 1,KL
             DO L = 1,NSPX                    
-              DI(L,K) = 0.0
+              DI(L,K) = 0.0D0
             ENDDO
           ENDDO
 !
@@ -1071,7 +1071,7 @@ CONTAINS
               DELC = DTS * (MBARKS(K,I) * VCI(L,I,1) - MDWN(K,I) *          &
                  VCI(L,I,K) + DSIGH(K+1) * DSIGHI(K) *                  &
                         MDWN(K+1,I) * VCI(L,I,K+1))
-              DI(L,K)   = VCI(L,I,K) + (1.0 - CRANKP) * DELC
+              DI(L,K)   = VCI(L,I,K) + (1.0D0 - CRANKP) * DELC
             ENDDO
           ENDDO
 
@@ -1084,14 +1084,14 @@ CONTAINS
           DO K = 2,KL
             IF (K .EQ. KL) THEN
               DO L = 1,NSPX                    
-                DI(L,K) = DI(L,K)  - (1.0 - CRANKP) * XMINUS(K) *                  &
+                DI(L,K) = DI(L,K)  - (1.0D0 - CRANKP) * XMINUS(K) *                  &
                           (VCI(L,I,K) - VCI(L,I,K-1))
               ENDDO
             ELSE
               DO L = 1,NSPX                    
-                DI(L,K) = DI(L,K) + (1.0 - CRANKP) * XPLUS(K) *                   &
+                DI(L,K) = DI(L,K) + (1.0D0 - CRANKP) * XPLUS(K) *                   &
                           (VCI(L,I,K+1) - VCI(L,I,K))  -                         &
-                          (1.0 - CRANKP) * XMINUS(K) *                           &
+                          (1.0D0 - CRANKP) * XMINUS(K) *                           &
                           (VCI(L,I,K) - VCI(L,I,K-1))
               ENDDO
             ENDIF
@@ -1103,7 +1103,7 @@ CONTAINS
                       (PBLSIG(I) - SIGMAF(1)) * VCI(L,I,1) -                  &
                       MDWN(2,I) * VCI(L,I,2) * DSIGH(2))
 
-              DI(L,1) = VCI(L,I,1) - G1000 * (FS(L,I) - (1.0 - CRANKP)        &
+              DI(L,1) = VCI(L,I,1) - G1000 * (FS(L,I) - (1.0D0 - CRANKP)        &
                         * F1) * DSIGHI(1) * DTS
             ENDDO
           ELSE
@@ -1112,7 +1112,7 @@ CONTAINS
             ENDDO
           ENDIF
           DO L = 1,NSPX                    
-            DI(L,1) = DI(L,1) + (1.0 - CRANKP) * EDDYZ(I,1) * DSIGHI(1)      &
+            DI(L,1) = DI(L,1) + (1.0D0 - CRANKP) * EDDYZ(I,1) * DSIGHI(1)      &
                      * DTRAT * (VCI(L,I,2) - VCI(L,I,1))
           ENDDO
           IF ( NOCONV(I) .EQ. 1 ) THEN
@@ -1205,11 +1205,11 @@ CONTAINS
       INTEGER I,J,V
 
 !-- Define Upper and Lower matrices
-      L(1,1) = 1.
+      L(1,1) = 1.D0
       UII(1) = B(1)
-      RUII(1) = 1./UII(1)
+      RUII(1) = 1.D0/UII(1)
       DO I = 2, KL
-	      L(I,I) = 1.
+	      L(I,I) = 1.D0
 	      L(I,1) = A(I)/B(1)
         UIIP1(I-1)=E(I-1)
 	      IF(I.GE.3) THEN
@@ -1217,7 +1217,7 @@ CONTAINS
 	          IF(I.EQ.J+1) THEN
 	            AIJ = C(I)
 	          ELSE
-	            AIJ = 0.
+	            AIJ = 0.D0
 	          ENDIF
 	          L(I,J) = (AIJ-L(I,J-1)*E(J-1))/      &
                       (B(J)-L(J,J-1)*E(J-1))
@@ -1227,7 +1227,7 @@ CONTAINS
 	  
       DO I = 2,KL
         UII(I) = B(I)-L(I,I-1)*E(I-1)
-        RUII(I) = 1./UII(I)
+        RUII(I) = 1.D0/UII(I)
       ENDDO
   
 !-- Forward sub for Ly=d
@@ -1301,14 +1301,14 @@ CONTAINS
       INTEGER     V, K
 
 ! Decomposition and forward substitution:
-      BET = 1.0 / D( 1 )
+      BET = 1.0D0 / D( 1 )
       DO V = 1, NSP
          X( V,1 ) = BET * B(V,1 )
       ENDDO
 
       DO K = 2, KL
         GAM(K ) = BET * U( K-1 )
-        BET = 1.0 / ( D( K ) - L( K ) * GAM( K ) )
+        BET = 1.0D0 / ( D( K ) - L( K ) * GAM( K ) )
 	      DO V = 1, NSP
            X( V, K ) = BET * ( B( V,K ) - L( K ) * X( V,K-1 ) )
 	      ENDDO

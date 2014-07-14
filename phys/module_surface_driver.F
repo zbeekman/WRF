@@ -522,7 +522,6 @@ CONTAINS
 !
 !******************************************************************
 !------------------------------------------------------------------
-
    INTEGER, INTENT(IN) ::                                             &
      &           ids,ide,jds,jde,kds,kde                              &
      &          ,ims,ime,jms,jme,kms,kme                              &
@@ -1879,6 +1878,8 @@ CONTAINS
                ids,ide, jds,jde, kds,kde,                          &
                ims,ime, jms,jme, kms,kme,                          &
                i_start(ij),i_end(ij), j_start(ij),j_end(ij), kts,kte    )
+
+
          ENDIF
        ELSE
          CALL wrf_error_fatal('Lacking arguments for PX Surface Layer in surface driver')
@@ -3171,7 +3172,6 @@ CONTAINS
               SFCEVP(I,J)= SFCEVP(I,J) + QFX(I,J)*DTBL
            ENDDO
            ENDDO
-
        ELSE
          CALL wrf_error_fatal('Lacking arguments for P-X LSM in surface driver')
        ENDIF

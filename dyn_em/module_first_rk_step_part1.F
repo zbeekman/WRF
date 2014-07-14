@@ -10,6 +10,9 @@ CONTAINS
   SUBROUTINE first_rk_step_part1 (   grid , config_flags              &
                              , moist , moist_tend               &
                              , chem  , chem_tend                &
+#ifdef WRF_CHEM
+                             , dvel &
+#endif
                              , tracer, tracer_tend              &
                              , scalar , scalar_tend             &
                              , fdda3d, fdda2d                   &
@@ -21,7 +24,7 @@ CONTAINS
                              , adapt_step_flag , curr_secs      &
                              , psim , psih , wspd , gz1oz0 , br , chklowq &
                              , cu_act_flag , hol , th_phy       &
-                             , pi_phy , p_phy , t_phy           &
+                             , pi_phy , p_phy &!, t_phy           &
                              , dz8w , p8w , t8w                 &
                              , ids, ide, jds, jde, kds, kde     &
                              , ims, ime, jms, jme, kms, kme     &
@@ -54,6 +57,10 @@ use module_scalar_tables
     USE module_comm_dm, ONLY : halo_em_phys_a_sub,halo_em_fdda_sfc_sub,halo_pwp_sub,halo_em_chem_e_3_sub, &
     halo_em_chem_e_5_sub, halo_em_phys_a_bl_surf_sub, halo_em_hydro_noahmp_sub
 #endif
+#ifdef WRF_CHEM
+    USE module_input_chem_data, only: get_last_gas,mozcart_lbc_set
+    USE module_dry_dep_vel
+#endif
     USE module_utility
     IMPLICIT NONE
 
@@ -77,6 +84,7 @@ use module_scalar_tables
     REAL    ,DIMENSION(ims:ime,kms:kme,jms:jme,num_moist),INTENT(INOUT)   :: moist_tend
     REAL    ,DIMENSION(ims:ime,kms:kme,jms:jme,num_chem),INTENT(INOUT)   :: chem
     REAL    ,DIMENSION(ims:ime,kms:kme,jms:jme,num_chem),INTENT(INOUT)   :: chem_tend
+    REAL    ,DIMENSION(grid%sm31:grid%em31,1:grid%kdvel,grid%sm33:grid%em33,num_dvel) :: dvel
     REAL    ,DIMENSION(ims:ime,kms:kme,jms:jme,num_tracer),INTENT(INOUT)   :: tracer
     REAL    ,DIMENSION(ims:ime,kms:kme,jms:jme,num_tracer),INTENT(INOUT)   :: tracer_tend
     REAL    ,DIMENSION(ims:ime,kms:kme,jms:jme,num_scalar),INTENT(INOUT)   :: scalar
@@ -96,7 +104,7 @@ use module_scalar_tables
     REAL    ,DIMENSION(ims:ime,kms:kme,jms:jme), INTENT(INOUT) :: th_phy
     REAL    ,DIMENSION(ims:ime,kms:kme,jms:jme), INTENT(INOUT) :: pi_phy
     REAL    ,DIMENSION(ims:ime,kms:kme,jms:jme), INTENT(INOUT) :: p_phy
-    REAL    ,DIMENSION(ims:ime,kms:kme,jms:jme), INTENT(INOUT) :: t_phy
+!    REAL    ,DIMENSION(ims:ime,kms:kme,jms:jme), INTENT(INOUT) :: t_phy
     REAL    ,DIMENSION(ims:ime,kms:kme,jms:jme), INTENT(INOUT) :: dz8w
     REAL    ,DIMENSION(ims:ime,kms:kme,jms:jme), INTENT(INOUT) :: p8w
     REAL    ,DIMENSION(ims:ime,kms:kme,jms:jme), INTENT(INOUT) :: t8w
@@ -128,6 +136,7 @@ use module_scalar_tables
     INTEGER  rk_step
     INTEGER                         :: yr, month, day, hr, minute, sec, rc
     CHARACTER*80                    :: mesg
+    INTEGER                         :: current_month, numgas
 
    INTEGER                         :: sids , side , sjds , sjde , skds , skde , &
                                       sims , sime , sjms , sjme , skms , skme , &
@@ -191,7 +200,7 @@ BENCH_END(init_zero_tend_tim)
                         grid%v_2, grid%p, grid%pb, grid%alt,             &
                         grid%ph_2, grid%phb, grid%t_2, grid%tsk, moist, num_moist,   &
                         grid%rho,th_phy, p_phy, pi_phy, grid%u_phy, grid%v_phy,      &
-                        p8w, t_phy, t8w, grid%z, grid%z_at_w, dz8w,      &
+                        p8w, grid%t_phy, t8w, grid%z, grid%z_at_w, dz8w,      &
                         grid%p_hyd, grid%p_hyd_w, grid%dnw,              &
                         grid%fnm, grid%fnp, grid%znw, grid%p_top,        &
                         grid%rthraten,                                   &
@@ -222,6 +231,7 @@ BENCH_END(phy_prep_tim)
 ! radiation
      CALL domain_clock_get( grid, current_time=currentTime, &
                             current_timestr=mesg )
+     read(mesg(6:7),FMT='(I2)') current_month
      CALL WRFU_TimeGet( currentTime, YY=yr, dayOfYear=day, H=hr, M=minute, S=sec, rc=rc)
          IF( rc/= WRFU_SUCCESS)THEN
          CALL wrf_error_fatal('WRFU_TimeGet failed')
@@ -478,7 +488,7 @@ BENCH_START(surf_driver_tim)
      &        ,TYR=grid%tyr            ,TYRA=grid%tyra          ,TDLY=grid%tdly          &
      &        ,TLAG=grid%tlag          ,LAGDAY=config_flags%lagday      ,NYEAR=grid%nyear        &
      &        ,NDAY=grid%nday          ,TMN_UPDATE=grid%tmn_update      ,YR=yr            &
-     &        ,TSLB=grid%tslb          ,T_PHY=t_phy        ,U10=grid%u10            &
+     &        ,TSLB=grid%tslb          ,T_PHY=grid%t_phy        ,U10=grid%u10            &
      &        ,URATX=grid%uratx        ,VRATX=grid%vratx   ,TRATX=grid%tratx        &
      &        ,UDRUNOFF=grid%udrunoff  ,UST=grid%ust       ,UZ0=grid%uz0            &
      &        ,U_FRAME=grid%u_frame    ,U_PHY=grid%u_phy   ,V10=grid%v10            &
@@ -803,14 +813,70 @@ BENCH_END(surf_driver_tim)
 
 !*********
 ! pbl
+      CALL wrf_debug ( 200 , ' call pbl_driver' )
+BENCH_START(pbl_driver_tim)
+#if ( WRF_CHEM == 1)
+      numgas = get_last_gas(config_flags%chem_opt)
+      if (config_flags%vertmix_onoff>0 &
+          .and. grid%num_vert_mix.gt.0 &
+          .and. config_flags%chem_opt.gt.0 &
+         ) then
+
+         if (grid%itimestep.gt.2) then
+#if ( WRFPLUS == 1 )
+            if(config_flags%cu_diag .eq. 0 ) grid%raincv_b(:,:) = grid%raincv(:,:)
+#endif
+            call wrf_debug(15,'calling dry_dep_vel')
+            !$OMP PARALLEL DO   &
+            !$OMP PRIVATE ( ij )
+
+            DO ij = 1 , grid%num_tiles
+
+               call dry_dep_vel(grid%id,curr_secs,grid%itimestep,grid%dt,config_flags,          &
+                    grid%gmt,ifix(grid%julian),grid%t_phy,moist,p8w,t8w,                &
+                    grid%alt,p_phy,chem,grid%rho,dz8w,grid%hfx,grid%dx,      & 
+                    grid%raincv_b,            &
+                    grid%ivgtyp,grid%tsk,grid%gsw,grid%vegfra,grid%pblh,   &
+                    grid%rmol,grid%ust,grid%znt,grid%xlat,grid%xlong,                    &
+                    grid%z,grid%z_at_w,grid%xland,                                &
+                    grid%h2oaj,grid%h2oai,grid%nu3,grid%ac3,grid%cor3,grid%asulf,        &
+                    grid%ahno3,grid%anh3,grid%cvaro1,grid%cvaro2,grid%cvalk1,grid%cvole1,&
+                    grid%cvapi1,grid%cvapi2,grid%cvlim1,grid%cvlim2,     &
+                    numgas,current_month,dvel,grid%snowh,  &
+                    grid%is_CAMMGMP_used,                  & !BSINGH:01/31/2013: Added is_CAMMGMP_used for MAM drydep
+                    grid%dep_vel,grid%num_vert_mix,grid%dep_vel_bc,                      &
+                    ids,ide, jds,jde, kds,kde,                                           &
+                    ims,ime, jms,jme, kms,kme,                                           &
+                    grid%i_start(ij), grid%i_end(ij), &
+                    grid%j_start(ij), grid%j_end(ij), &
+                    k_start, k_end                   )
+                 
+               if( config_flags%chem_opt == MOZART_KPP .or. &
+                   config_flags%chem_opt == MOZCART_KPP .or. &
+                   config_flags%chem_opt == MOZART_MOSAIC_4BIN_VBS0_KPP ) then
+                  call mozcart_lbc_set( chem, num_chem, grid%id, &
+                                        ims, ime, jms, jme, kms, kme,    & 
+                                        grid%i_start(ij), grid%i_end(ij), &
+                                        grid%j_start(ij), grid%j_end(ij), &
+                                        k_start )
+               end if
+            END DO
+            !$OMP END PARALLEL DO
+         else
+            grid%dep_vel(:,:,:,:) = 0.D0
+         end if
+      else
+         grid%dep_vel(:,:,:,:) = 0.D0
+      endif
+#endif
+
 #ifdef DM_PARALLEL
       IF ( config_flags%bl_pbl_physics .EQ. 98 ) THEN
 #     include "HALO_EM_PHYS_A_BL_SURF.inc"
       ENDIF
 #endif
 
-      CALL wrf_debug ( 200 , ' call pbl_driver' )
-BENCH_START(pbl_driver_tim)
+
       CALL pbl_driver(                                                              &
      &         AKHS=grid%akhs          ,AKMS=grid%akms                              &
      &        ,BL_PBL_PHYSICS=config_flags%bl_pbl_physics                           &
@@ -950,6 +1016,24 @@ BENCH_START(pbl_driver_tim)
                                                          
 
 BENCH_END(pbl_driver_tim)
+
+#ifdef WRF_CHEM
+# ifdef DM_PARALLEL
+   IF ( num_chem >= PARAM_FIRST_SCALAR .AND. config_flags%bl_pbl_physics == ACMPBLSCHEME) then
+     CALL wrf_debug ( 200 , ' call HALO CHEM AFTER PBL' )
+     IF      ( config_flags%h_mom_adv_order <= 4 ) THEN
+#      include "HALO_EM_CHEM_E_3.inc"
+     ELSE IF ( config_flags%h_mom_adv_order <= 6 ) THEN
+#      include "HALO_EM_CHEM_E_5.inc"
+
+     ELSE
+       WRITE(message,*)'solve_em: invalid h_mom_adv_order = ',config_flags%h_mom_adv_order
+       CALL wrf_error_fatal(TRIM(message))
+     ENDIF
+   ENDIF
+# endif
+# endif
+
 
 !*****
 ! fire 
@@ -1094,6 +1178,26 @@ BENCH_START(cu_driver_tim)
 #endif
      &             ,cfu1=grid%cfu1,cfd1=grid%cfd1,dfu1=grid%dfu1,efu1=grid%efu1,dfd1=grid%dfd1,efd1=grid%efd1,f_flux=l_flux)
 BENCH_END(cu_driver_tim)
+
+!!! Will need this once chem convection is added to GF scheme
+!!!#ifdef WRF_CHEM
+!!!# ifdef DM_PARALLEL
+!!!   IF ( num_chem >= PARAM_FIRST_SCALAR .AND. config_flags%cu_physics == GFSCHEME) then
+!!!     CALL wrf_debug ( 200 , ' call HALO CHEM AFTER CUMULUS' )
+!!!     IF      ( config_flags%h_mom_adv_order <= 4 ) THEN
+!!!#      include "HALO_EM_CHEM_E_3.inc"
+!!!     ELSE IF ( config_flags%h_mom_adv_order <= 6 ) THEN
+!!!#      include "HALO_EM_CHEM_E_5.inc"
+!!!
+!!!     ELSE
+!!!       WRITE(message,*)'solve_em: invalid h_mom_adv_order = ',config_flags%h_mom_adv_order
+!!!       CALL wrf_error_fatal(TRIM(message))
+!!!     ENDIF
+!!!   ENDIF
+!!!# endif
+!!!# endif
+
+
 !
 ! this for calculating (G3 scheme only)  time averaged variables for online (WRF-CHem) or offline (other models) chem runs
 !
@@ -1117,6 +1221,7 @@ BENCH_END(cu_driver_tim)
       !$OMP END PARALLEL DO
      endif
 
+#if (WRFPLUS !=1 )
 ! shallow cumulus parameterization
       CALL wrf_debug ( 200 , ' call shallow_cumulus_driver' )
 
@@ -1129,7 +1234,7 @@ BENCH_START(shcu_driver_tim)
      &             ,J_START=grid%j_start, J_END=min(grid%j_end, jde-1)    &
      &             ,KTS=k_start, KTE=min(k_end, kde-1)                    &
      &             ,NUM_TILES=grid%num_tiles                              &
-     &             ,U=grid%u_phy, V=grid%v_phy, TH=th_phy, T=t_phy        &
+     &             ,U=grid%u_phy, V=grid%v_phy, TH=th_phy, T=grid%t_phy        &
      &             ,P=grid%p_hyd, PI=pi_phy, RHO=grid%rho, MOIST=moist    &
      &             ,NUM_MOIST=num_moist                                   &
      &             ,ITIMESTEP=grid%itimestep, DT=grid%dt, DX=grid%dx      &
@@ -1347,6 +1452,7 @@ BENCH_START(fdda_driver_tim)
                    ,IPSY=ipsy,IPEY=ipey,JPSY=jpsy,JPEY=jpey,KPSY=kpsy,KPEY=kpey     )
 
 BENCH_END(fdda_driver_tim)
+#endif
 
   END SUBROUTINE first_rk_step_part1
 

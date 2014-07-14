@@ -1,6 +1,11 @@
 !WRF:MODEL_LAYER:INITIALIZATION
 !
-   subroutine chem_init (id,chem,emis_ant,scalar,dt,bioemdt,photdt,chemdt,stepbioe, &
+   subroutine chem_init (id,chem,emis_ant,scalar,                    &
+#if ( WRFPLUS == 1 )
+               scaleant,scaleant_frq,stepscaleant,num_ant_steps,     &
+               scalebb,scalebb_frq,stepscalebb,num_bb_steps,         &
+#endif
+               dt,bioemdt,photdt,chemdt,stepbioe, &
                stepphot,stepchem,stepfirepl,plumerisefire_frq,z_at_w,xlat,xlong,    &
                g,aerwrf,config_flags,grid,alt,t,p,CONVFAC,ttday,tcosz,julday,gmt,   &
                tauaer1,tauaer2,tauaer3,tauaer4,                      &
@@ -112,6 +117,14 @@
    REAL,  DIMENSION( ims:ime , kms:kme , jms:jme, num_scalar ) ,     &
           INTENT(INOUT   ) ::                                        &
                               scalar
+#if ( WRFPLUS == 1 )
+   integer, intent(out) :: stepscaleant,stepscalebb
+   integer, intent(in)  :: scaleant_frq,scalebb_frq,num_ant_steps,num_bb_steps
+   REAL,  DIMENSION( ims:ime, 1:num_ant_steps , jms:jme, num_scaleant ) ,       &
+          INTENT(INOUT   ) ::                       scaleant
+   REAL,  DIMENSION( ims:ime, 1:num_bb_steps , jms:jme, num_scalebb ) ,       &
+          INTENT(INOUT   ) ::                       scalebb
+#endif
    REAL,  DIMENSION( ims:ime , kms:kme , jms:jme )         ,         &
           INTENT(INOUT   ) ::                                        &
                                aerwrf
@@ -517,6 +530,10 @@ end if
     stepchem=nint(chemdt*60./dt)
   ! stepfirepl=plumerisefire_frq*60/nint(dt)
     stepfirepl=nint(plumerisefire_frq*60/dt)
+#if ( WRFPLUS == 1 )
+    stepscaleant=nint(scaleant_frq*60/dt)
+    stepscalebb=nint(scalebb_frq*60/dt)
+#endif
     stepbioe=max(stepbioe,1)
     stepphot=max(stepphot,1)
     stepchem=max(stepchem,1)

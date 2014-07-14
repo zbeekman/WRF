@@ -54,6 +54,10 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
   ! Local
    INTEGER                                    :: ialarm
    INTEGER                                    :: rc
+#ifdef WRF_CHEM
+   INTEGER :: auxinput_step
+   REAL :: real_time
+#endif
    TYPE(WRFU_Time) :: currTime, startTime
 #ifdef HWRF
    INTEGER :: hr, min, sec, ms,julyr,julday
@@ -181,7 +185,19 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
          IF( WRFU_AlarmIsRinging( grid%alarms( ialarm ), rc=rc ) .OR.  &
          ((config_flags%restart) .AND. ( currTime .EQ. startTime ))) THEN
            call wrf_debug(15,' CALL med_read_wrf_chem_emiss ')
+           IF ( config_flags%dyn_opt .EQ. dyn_em_ad ) THEN
+             auxinput_step = INT( real_time ( grid%io_intervals (ialarm) ))
+             CALL domain_clock_set( grid, time_step_seconds=-1*auxinput_step )
+             grid%domain_clock%clockint%CurrTime = ESMF_TimeInc (grid%domain_clock%clockint%CurrTime, &
+                                grid%domain_clock%clockint%TimeStep )
+           ENDIF
            CALL med_read_wrf_chem_emiss ( grid , config_flags )
+           IF ( config_flags%dyn_opt .EQ. dyn_em_ad ) THEN
+             CALL domain_clock_set( grid, time_step_seconds=auxinput_step )
+             grid%domain_clock%clockint%CurrTime = ESMF_TimeInc (grid%domain_clock%clockint%CurrTime, &
+                                grid%domain_clock%clockint%TimeStep )
+             CALL domain_clock_set( grid, time_step_seconds=-1*model_config_rec%time_step )
+           ENDIF
            CALL WRFU_AlarmRingerOff( grid%alarms( ialarm ), rc=rc )
            call wrf_debug(15,' Back from CALL med_read_wrf_chem_emiss ')
          ENDIF
@@ -229,27 +245,61 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
        ENDIF
 #endif
      ELSE IF( WRFU_AlarmIsRinging( grid%alarms( ialarm ), rc=rc ) ) THEN
-       IF ( .NOT. grid%trajectory_io ) THEN
+       IF ( grid%trajectory_io .AND. (ialarm .EQ. auxinput16_only .OR. ialarm .EQ. auxinput17_only)) THEN
+         IF ( ialarm .EQ. auxinput16_only ) THEN ! Read Trajectory only
+           IF ( config_flags%dyn_opt .EQ. dyn_em_ad  ) THEN
+              grid%domain_clock%clockint%CurrTime =  ESMF_TimeInc (grid%domain_clock%clockint%CurrTime, &
+                                grid%domain_clock%clockint%TimeStep )
+           ENDIF
+           CALL domain_clock_get ( grid, current_timestr=message )
+           IF ( config_flags%dyn_opt .EQ. dyn_em_ad ) THEN
+             CALL read_xtraj  ( message )
+           ELSEIF ( config_flags%dyn_opt .EQ. dyn_em_tl ) THEN
+             CALL read_xtraj_reverse  ( message )
+           ENDIF
+         ENDIF
+         IF ( ialarm .EQ. auxinput17_only ) THEN ! Read Adjoint Forcing only
+           CALL domain_clock_get ( grid, current_timestr=message )
+           IF ( config_flags%dyn_opt .EQ. dyn_em_ad ) THEN
+             CALL read_ad_forcing  ( message )
+           ENDIF
+         ENDIF
+       ELSE
           ! For adjoint integration with disk IO, the basic state is one step before the domain time.
-          IF ( config_flags%dyn_opt .EQ. dyn_em_ad .AND. ialarm .EQ. auxinput6_only  ) THEN
+          IF ( config_flags%dyn_opt .EQ. dyn_em_ad .AND. ialarm .EQ. auxinput16_only  ) THEN
              grid%domain_clock%clockint%CurrTime =  ESMF_TimeInc (grid%domain_clock%clockint%CurrTime, &
                                 grid%domain_clock%clockint%TimeStep )
           ENDIF
+#ifdef WRF_CHEM
+          IF ( config_flags%dyn_opt .EQ. dyn_em_ad .AND. ialarm .EQ. auxinput7_only  ) THEN
+             auxinput_step = INT( real_time ( grid%io_intervals (ialarm) ))
+!             CALL nl_get_auxinput7_interval_s ( grid%id, auxinput_step )
+             CALL domain_clock_set( grid, time_step_seconds=-1*auxinput_step )
+             grid%domain_clock%clockint%CurrTime = ESMF_TimeInc (grid%domain_clock%clockint%CurrTime, &
+                                grid%domain_clock%clockint%TimeStep )
+          ENDIF
+          !Disable file I/O for biogenics (6), gocart_bg (8), and SST (4) during adjoint
+          IF ( config_flags%dyn_opt .EQ. dyn_em_ad .AND. (ialarm .EQ. auxinput6_only .OR. & 
+               ialarm .EQ. auxinput8_only .OR. ialarm .EQ. auxinput4_only)  ) then
+             CALL WRFU_AlarmRingerOff( grid%alarms( ialarm ), rc=rc )
+             CYCLE
+          ENDIF        
+#endif
           CALL med_auxinput_in ( grid, ialarm, config_flags )
-          IF ( config_flags%dyn_opt .EQ. dyn_em_ad .AND. ialarm .EQ. auxinput6_only ) THEN
+          IF ( config_flags%dyn_opt .EQ. dyn_em_ad .AND. ialarm .EQ. auxinput16_only ) THEN
              CALL domain_clock_get( grid, current_time=currTime, start_time=startTime, &
                                     current_timestr=timestr )
              WRITE(message, FMT='(A,A)') 'read xtraj from file at time stamp:', TRIM(timestr)
              CALL wrf_debug ( 1 , message )
           ENDIF
-          IF ( config_flags%dyn_opt .EQ. dyn_em_ad .AND. ialarm .EQ. auxinput7_only ) THEN
+          IF ( config_flags%dyn_opt .EQ. dyn_em_ad .AND. ialarm .EQ. auxinput17_only ) THEN
              CALL domain_clock_get( grid, current_time=currTime, start_time=startTime, &
                                     current_timestr=timestr )
              WRITE(message, FMT='(A,A)') 'read ad. forcing from file at time stamp:', TRIM(timestr)
              CALL wrf_debug ( 1 , message )
           ENDIF
           IF ( ( config_flags%dyn_opt .EQ. dyn_em_ad .OR. config_flags%dyn_opt .EQ. dyn_em_tl ) &
-               .AND. ialarm .EQ. auxinput6_only ) THEN
+               .AND. ialarm .EQ. auxinput16_only ) THEN
              CALL get_ijk_from_grid (  grid ,                   &
                                        ids, ide, jds, jde, kds, kde,    &
                                        ims, ime, jms, jme, kms, kme,    &
@@ -293,38 +343,25 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
 
              ENDDO
           ENDIF
-       ELSE
-         IF ( ialarm .EQ. auxinput6_only ) THEN ! Read Trajectory only
-           IF ( config_flags%dyn_opt .EQ. dyn_em_ad  ) THEN
-              grid%domain_clock%clockint%CurrTime =  ESMF_TimeInc (grid%domain_clock%clockint%CurrTime, &
-                                grid%domain_clock%clockint%TimeStep )
-           ENDIF
-           CALL domain_clock_get ( grid, current_timestr=message )
-           IF ( config_flags%dyn_opt .EQ. dyn_em_ad ) THEN
-             CALL read_xtraj  ( message )
-           ELSEIF ( config_flags%dyn_opt .EQ. dyn_em_tl ) THEN
-             CALL read_xtraj_reverse  ( message )
-           ENDIF
-         ENDIF
-         IF ( ialarm .EQ. auxinput7_only ) THEN ! Read Adjoint Forcing only
-           CALL domain_clock_get ( grid, current_timestr=message )
-           IF ( config_flags%dyn_opt .EQ. dyn_em_ad ) THEN
-             CALL read_ad_forcing  ( message )
-           ENDIF
-         ENDIF
-       ENDIF
-       IF ( .NOT. grid%trajectory_io ) THEN
           WRITE ( message , FMT='(A,i3,A,i3)' )  'Input data processed from aux input ' , &
              ialarm - first_auxinput + 1, ' for domain ',grid%id
           CALL wrf_debug ( 1 , message )
        ENDIF
        ! Reverse the current time 
-       IF ( config_flags%dyn_opt .EQ. dyn_em_ad .AND. ialarm .EQ. auxinput6_only  ) THEN
+       IF ( config_flags%dyn_opt .EQ. dyn_em_ad .AND. ialarm .EQ. auxinput16_only  ) THEN
           CALL domain_clock_set( grid, time_step_seconds=model_config_rec%time_step )
           grid%domain_clock%clockint%CurrTime = ESMF_TimeInc (grid%domain_clock%clockint%CurrTime, &
                              grid%domain_clock%clockint%TimeStep )
           CALL domain_clock_set( grid, time_step_seconds=-1*model_config_rec%time_step )
+#ifdef WRF_CHEM
+       ELSE IF ( config_flags%dyn_opt .EQ. dyn_em_ad .AND. ialarm .EQ. auxinput7_only  ) THEN
+          CALL domain_clock_set( grid, time_step_seconds=auxinput_step )
+          grid%domain_clock%clockint%CurrTime = ESMF_TimeInc (grid%domain_clock%clockint%CurrTime, &
+                             grid%domain_clock%clockint%TimeStep )
+          CALL domain_clock_set( grid, time_step_seconds=-1*model_config_rec%time_step )
+#endif
        ENDIF
+
        CALL WRFU_AlarmRingerOff( grid%alarms( ialarm ), rc=rc )
      ENDIF
    ENDDO
@@ -384,9 +421,9 @@ SUBROUTINE med_last_ad_solve_io ( grid , config_flags )
    CHARACTER*256          :: message
    CHARACTER*80           :: timestr
 
-   IF( WRFU_AlarmIsRinging( grid%alarms( AUXINPUT7_ALARM ), rc=rc ) ) THEN
+   IF( WRFU_AlarmIsRinging( grid%alarms( AUXINPUT17_ALARM ), rc=rc ) ) THEN
      IF ( .NOT. grid%trajectory_io ) THEN
-        CALL med_auxinput_in ( grid, AUXINPUT7_ALARM, config_flags )
+        CALL med_auxinput_in ( grid, AUXINPUT17_ALARM, config_flags )
      ELSE
         CALL domain_clock_get ( grid, current_timestr=message )
         CALL read_ad_forcing  ( message )
@@ -398,10 +435,10 @@ SUBROUTINE med_last_ad_solve_io ( grid , config_flags )
         WRITE(message, FMT='(A,A)') 'read ad. forcing from file at time stamp:', TRIM(timestr)
         CALL wrf_debug ( 1 , message )
         WRITE ( message , FMT='(A,i3,A,i3)' )  'Input data processed from aux input ' , &
-             AUXINPUT7_ALARM - first_auxinput + 1, ' for domain ',grid%id
+             AUXINPUT17_ALARM - first_auxinput + 1, ' for domain ',grid%id
         CALL wrf_debug ( 1 , message )
      ENDIF
-     CALL WRFU_AlarmRingerOff( grid%alarms( AUXINPUT7_ALARM ), rc=rc )
+     CALL WRFU_AlarmRingerOff( grid%alarms( AUXINPUT17_ALARM ), rc=rc )
    ENDIF
 
    RETURN

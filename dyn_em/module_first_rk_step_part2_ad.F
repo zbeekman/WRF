@@ -305,7 +305,8 @@ BENCH_START(adj_update_phy_ten_tim)
                            grid%rvblten,grid%a_rvblten,                     &
                            grid%rvcuten,grid%rvshten,                       &
                            grid%rqvblten,grid%a_rqvblten,                   &
-                           grid%rqcblten,grid%rqiblten,                     &
+                           grid%rqcblten,grid%a_rqcblten,                     &
+                           grid%rqiblten,grid%a_rqiblten,                     &
                            grid%rqvcuten,grid%a_rqvcuten,grid%rqccuten,grid%rqrcuten,       &
                            grid%rqicuten,grid%rqscuten,                     &
                            grid%rqvshten,grid%rqcshten,grid%rqrshten,       &

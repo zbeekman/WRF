@@ -24,7 +24,10 @@ SUBROUTINE solve_em_ad ( grid , config_flags  &
    USE module_comm_dm, ONLY : &
                   halo_em_a_sub,halo_em_b_sub,halo_em_c2_sub,halo_em_chem_e_3_sub          &
                  ,halo_em_chem_e_5_sub,halo_em_chem_e_7_sub,halo_em_chem_old_e_5_sub       &
-                 ,halo_em_chem_old_e_7_sub,halo_em_c_sub,halo_em_d2_3_sub                  &
+                 ,halo_em_chem_old_e_7_sub,halo_em_chem_e_3_ad_sub          &
+                 ,halo_em_chem_e_5_ad_sub,halo_em_chem_e_7_ad_sub           &
+                 ,halo_em_chem_old_e_5_ad_sub,halo_em_chem_old_e_7_ad_sub   &
+                 ,halo_em_c_sub,halo_em_d2_3_sub                  &
                  ,halo_em_d2_5_sub,halo_em_d3_3_sub,halo_em_d3_5_sub,halo_em_d_sub         &
                  ,halo_em_e_3_sub,halo_em_e_5_sub,halo_em_hydro_uv_sub                     &
                  ,halo_em_moist_e_3_sub,halo_em_moist_e_5_sub,halo_em_moist_e_7_sub        &
@@ -80,6 +83,7 @@ SUBROUTINE solve_em_ad ( grid , config_flags  &
 !  USE module_diagnostics
 #if (WRF_CHEM==1)
    USE module_input_chem_data
+   USE a_module_input_chem_data
    USE module_input_tracer
    USE module_chem_utilities
 #endif
@@ -188,7 +192,7 @@ SUBROUTINE solve_em_ad ( grid , config_flags  &
 ! urban related variables
    INTEGER :: NUM_ROOF_LAYERS, NUM_WALL_LAYERS, NUM_ROAD_LAYERS   ! urban
 
-   TYPE(WRFU_TimeInterval)                    :: tmpTimeInterval
+   TYPE(WRFU_TimeInterval)                    :: tmpTimeInterval, run_interval
    REAL                                       :: real_time
    LOGICAL                                    :: adapt_step_flag
    LOGICAL                                    :: fill_w_flag
@@ -198,8 +202,10 @@ SUBROUTINE solve_em_ad ( grid , config_flags  &
    REAL                                       :: old_dt
    TYPE(WRFU_Time)                            :: temp_time, CurrTime, restart_time
    INTEGER, PARAMETER                         :: precision = 100
-   INTEGER                                    :: num, den
+   INTEGER                                    :: num, den, runad
    TYPE(WRFU_TimeInterval)                    :: dtInterval, intervaltime,restartinterval
+
+   INTEGER                                    :: temp_itimestep
 
 ! Define benchmarking timers if -DBENCH is compiled
 #include <bench_solve_em_def.h>
@@ -296,6 +302,13 @@ SUBROUTINE solve_em_ad ( grid , config_flags  &
   !
    tmpTimeInterval = domain_get_current_time ( grid ) - domain_get_sim_start_time ( grid )
    curr_secs = real_time(tmpTimeInterval)
+   run_interval = grid%stop_subtime - grid%start_subtime
+   CALL WRFU_TimeIntervalGet( run_interval, S=runad, rc=rc )
+   runad = abs(runad)
+   curr_secs = REAL( runad, 8 ) + curr_secs !- REAL(grid%dt, 8)
+   curr_secs = curr_secs + REAL( 3600*(grid%check_count-1)*grid%checkpoint_interval, 8 )
+   write(message,*)'curr_secs = ',curr_secs
+   CALL wrf_debug(50,TRIM(message))
 
    old_dt = grid%dt   ! store old time step for flux averaging code at end of RK loop
 !-----------------------------------------------------------------------------
@@ -327,7 +340,57 @@ SUBROUTINE solve_em_ad ( grid , config_flags  &
      RETURN
    ENDIF
 
+   temp_itimestep = grid%itimestep
+   grid%itimestep = grid%itimestep + (grid%check_count-1)*grid%checkpoint_interval*3600/grid%dt
+
    IF (config_flags%polar) dclat = 90./REAL(jde-jds) !(0.5 * 180/ny)
+
+#ifdef WRF_CHEM
+
+   kte=min(k_end,kde-1)
+# ifdef DM_PARALLEL
+   if ( num_chem >= PARAM_FIRST_SCALAR ) then
+!-----------------------------------------------------------------------
+! see matching halo calls below for stencils
+!--------------------------------------------------------------
+     CALL wrf_debug ( 200 , ' call HALO_RK_CHEM' )
+     IF      ( config_flags%h_mom_adv_order <= 4 ) THEN
+#      include "HALO_EM_CHEM_E_3.inc"
+       IF( config_flags%progn > 0 ) THEN
+#         include "HALO_EM_SCALAR_E_3.inc"
+       ENDIF
+       IF( config_flags%cu_physics == CAMZMSCHEME ) THEN
+#         include "HALO_EM_SCALAR_E_3.inc"
+       ENDIF
+     ELSE IF ( config_flags%h_mom_adv_order <= 6 ) THEN
+#      include "HALO_EM_CHEM_E_5.inc"
+       IF( config_flags%cu_physics == CAMZMSCHEME ) THEN
+#         include "HALO_EM_SCALAR_E_5.inc"
+       ENDIF
+       IF( config_flags%progn > 0 ) THEN
+#         include "HALO_EM_SCALAR_E_5.inc"
+      ENDIF
+     ELSE
+       WRITE(wrf_err_message,*)'solve_em: invalid h_mom_adv_order = ',config_flags%h_mom_adv_order
+       CALL wrf_error_fatal(TRIM(wrf_err_message))
+     ENDIF
+   ENDIF
+   if ( num_tracer >= PARAM_FIRST_SCALAR ) then
+!-----------------------------------------------------------------------
+! see matching halo calls below for stencils
+!--------------------------------------------------------------
+     CALL wrf_debug ( 200 , ' call HALO_RK_TRACER' )
+     IF      ( config_flags%h_mom_adv_order <= 4 ) THEN
+#      include "HALO_EM_TRACER_E_3.inc"
+     ELSE IF ( config_flags%h_mom_adv_order <= 6 ) THEN
+#      include "HALO_EM_TRACER_E_5.inc"
+     ELSE
+       WRITE(wrf_err_message,*)'solve_em: invalid h_mom_adv_order = ',config_flags%h_mom_adv_order
+       CALL wrf_error_fatal(TRIM(wrf_err_message))
+     ENDIF
+   ENDIF
+# endif
+# endif
 
    rk_order = config_flags%rk_ord
 
@@ -648,12 +711,41 @@ BENCH_END(set_phys_bc_tim)
 !              3D TKE and mixing.
 !<pre>
 !</DESCRIPTION>
+       CALL PUSHREAL8ARRAY ( chem, (ime-ims+1)*(kme-kms+1)*(jme-jms+1)*num_chem )
+
+       CALL PUSHREAL8ARRAY ( grid%rublten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+       CALL PUSHREAL8ARRAY ( grid%rvblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+       CALL PUSHREAL8ARRAY ( grid%rthblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+       CALL PUSHREAL8ARRAY ( grid%rqvblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+       CALL PUSHREAL8ARRAY ( grid%rqcblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1))
+       CALL PUSHREAL8ARRAY ( grid%rqiblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1))
 
        CALL PUSHREAL8ARRAY ( grid%rthcuten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
        CALL PUSHREAL8ARRAY ( grid%rqvcuten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+       CALL PUSHREAL8ARRAY ( grid%rqccuten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1))
+       CALL PUSHREAL8ARRAY ( grid%rqicuten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1))
+
+!!!Added by J. Guerrette 07/11/2014
+       CALL PUSHREAL8ARRAY(grid%ust, (ime-ims+1)*(jme-jms+1))
+       CALL PUSHREAL8ARRAY(grid%ustm, (ime-ims+1)*(jme-jms+1))
+       CALL PUSHREAL8ARRAY(grid%mol, (ime-ims+1)*(jme-jms+1))
+       CALL PUSHREAL8ARRAY(grid%znt, (ime-ims+1)*(jme-jms+1))
+       CALL PUSHREAL8ARRAY(grid%canwat, (ime-ims+1)*(jme-jms+1))
+       CALL PUSHREAL8ARRAY(grid%hfx, (ime-ims+1)*(jme-jms+1))
+       CALL PUSHREAL8ARRAY(grid%qfx, (ime-ims+1)*(jme-jms+1))
+       CALL PUSHREAL8ARRAY(grid%tsk, (ime-ims+1)*(jme-jms+1))
+       CALL PUSHREAL8ARRAY(grid%smois, (ime-ims+1)*(jme-jms+1)*grid%num_soil_layers)
+       CALL PUSHREAL8ARRAY(grid%tslb, (ime-ims+1)*(jme-jms+1)*grid%num_soil_layers)
+
+       CALL PUSHREAL8ARRAY(grid%pblh, (ime-ims+1)*(jme-jms+1))
+!!!
+
        CALL first_rk_step_part1 (    grid, config_flags         &
                              , moist , moist_tend               &
                              , chem  , chem_tend                &
+#ifdef WRF_CHEM
+                             , dvel &
+#endif
                              , tracer, tracer_tend              &
                              , scalar , scalar_tend             &
                              , fdda3d, fdda2d                   &
@@ -667,7 +759,7 @@ BENCH_END(set_phys_bc_tim)
                              , psim , psih , wspd , gz1oz0      &
                              , br , chklowq                     &
                              , cu_act_flag , hol , th_phy       &
-                             , pi_phy , p_phy , grid%t_phy      &
+                             , pi_phy , p_phy  & !, grid%t_phy      &
                              , dz8w , p8w , t8w                 &
                              , ids, ide, jds, jde, kds, kde     &
                              , ims, ime, jms, jme, kms, kme     &
@@ -693,8 +785,16 @@ BENCH_END(set_phys_bc_tim)
        CALL PUSHREAL8ARRAY ( grid%rvblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
        CALL PUSHREAL8ARRAY ( grid%rthblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
        CALL PUSHREAL8ARRAY ( grid%rqvblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+       CALL PUSHREAL8ARRAY ( grid%rqcblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1))
+       CALL PUSHREAL8ARRAY ( grid%rqiblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1))
+
        CALL PUSHREAL8ARRAY ( grid%rthcuten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
        CALL PUSHREAL8ARRAY ( grid%rqvcuten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+       CALL PUSHREAL8ARRAY ( grid%rqccuten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1))
+       CALL PUSHREAL8ARRAY ( grid%rqicuten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1))
+
+!       CALL PUSHREAL8ARRAY ( chem_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1)*num_chem )
+       CALL PUSHREAL8ARRAY ( chem, (ime-ims+1)*(kme-kms+1)*(jme-jms+1)*num_chem )
 
        CALL first_rk_step_part2 (    grid, config_flags         &
                              , moist , moist_tend               &
@@ -811,19 +911,25 @@ BENCH_END(rk_tend_tim)
      ENDIF
 
 BENCH_START(relax_bdy_dry_tim)
-     IF( (config_flags%specified .or. config_flags%nested) .and. rk_step == 1 ) THEN
-       !CALL push4backup (grid%mut, "mut") 
-       !CALL push4backup (grid%ph_2,grid%t_2,grid%w_2, "ph,t,w") 
-       CALL PUSHREAL8ARRAY ( grid%ph_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-       CALL PUSHREAL8ARRAY ( grid%t_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-       CALL PUSHREAL8ARRAY ( grid%w_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-     ENDIF
+!     IF( (config_flags%specified .or. config_flags%nested) .and. rk_step == 1 ) THEN
+!       !CALL push4backup (grid%mut, "mut") 
+!       !CALL push4backup (grid%ph_2,grid%t_2,grid%w_2, "ph,t,w") 
+!       CALL PUSHREAL8ARRAY ( grid%ph_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+!       CALL PUSHREAL8ARRAY ( grid%t_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+!       CALL PUSHREAL8ARRAY ( grid%w_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+!     ENDIF
 
      !$OMP PARALLEL DO &
      !$OMP PRIVATE (ij)
      DO ij = 1 , grid%num_tiles
 
         IF( (config_flags%specified .or. config_flags%nested) .and. rk_step == 1 ) THEN
+         !CALL push4backup (grid%mut, "mut") 
+         !CALL push4backup (grid%ph_2,grid%t_2,grid%w_2, "ph,t,w") 
+         CALL PUSHREAL8ARRAY ( grid%ph_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+         CALL PUSHREAL8ARRAY ( grid%t_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+         CALL PUSHREAL8ARRAY ( grid%w_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+
 
          CALL relax_bdy_dry ( config_flags,                                &
                               grid%u_save, grid%v_save, ph_save, grid%t_save,  &
@@ -926,45 +1032,46 @@ BENCH_END(relax_bdy_dry_tim)
 !</DESCRIPTION>
 
 BENCH_START(small_step_prep_tim)
-    !CALL push4backup (grid%muu,grid%muv,grid%mut, "muu,muv,mut") 
-    IF ( rk_step == 1 ) THEN
-      !CALL push4backup (grid%mu_2, "mu_2")
-      CALL PUSHREAL8ARRAY ( grid%mu_2, (ime-ims+1)*(jme-jms+1) )
-      !CALL push4backup (grid%u_2,grid%v_2,grid%t_2,grid%w_2,grid%p,grid%alt, &
-      !                 "u_2,v_2,t_2,w_2,p,alt") 
-      CALL PUSHREAL8ARRAY ( grid%u_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-      CALL PUSHREAL8ARRAY ( grid%v_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-      CALL PUSHREAL8ARRAY ( grid%t_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-      CALL PUSHREAL8ARRAY ( grid%w_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-      CALL PUSHREAL8ARRAY ( grid%p, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-      CALL PUSHREAL8ARRAY ( grid%alt, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-    ELSE
-      !CALL push4backup (grid%mu_1, "mu_1")
-      CALL PUSHREAL8ARRAY ( grid%mu_1, (ime-ims+1)*(jme-jms+1) )
-      !CALL push4backup (grid%u_1,grid%v_1,grid%t_1,grid%w_1, &
-      !                  grid%u_2,grid%v_2,grid%t_2,grid%w_2,grid%p,grid%alt, &
-      !                  "u_1,v_1,t_1,w_1,u_2,v_2,t_2,w_2,p,alt") 
-      CALL PUSHREAL8ARRAY ( grid%u_1, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-      CALL PUSHREAL8ARRAY ( grid%v_1, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-      CALL PUSHREAL8ARRAY ( grid%t_1, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-      CALL PUSHREAL8ARRAY ( grid%w_1, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-      CALL PUSHREAL8ARRAY ( grid%u_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-      CALL PUSHREAL8ARRAY ( grid%v_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-      CALL PUSHREAL8ARRAY ( grid%t_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-      CALL PUSHREAL8ARRAY ( grid%w_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-      CALL PUSHREAL8ARRAY ( grid%p, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-      CALL PUSHREAL8ARRAY ( grid%alt, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-    END IF 
 
     !$OMP PARALLEL DO   &
     !$OMP PRIVATE ( ij )
     DO ij = 1 , grid%num_tiles
+      !CALL push4backup (grid%muu,grid%muv,grid%mut, "muu,muv,mut") 
+      IF ( rk_step == 1 ) THEN
+        !CALL push4backup (grid%mu_2, "mu_2")
+        CALL PUSHREAL8ARRAY ( grid%mu_2, (ime-ims+1)*(jme-jms+1) )
+        !CALL push4backup (grid%u_2,grid%v_2,grid%t_2,grid%w_2,grid%p,grid%alt, &
+        !                 "u_2,v_2,t_2,w_2,p,alt") 
+        CALL PUSHREAL8ARRAY ( grid%u_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+        CALL PUSHREAL8ARRAY ( grid%v_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+        CALL PUSHREAL8ARRAY ( grid%t_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+        CALL PUSHREAL8ARRAY ( grid%w_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+        CALL PUSHREAL8ARRAY ( grid%p, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+        CALL PUSHREAL8ARRAY ( grid%alt, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+      ELSE
+        !CALL push4backup (grid%mu_1, "mu_1")
+        CALL PUSHREAL8ARRAY ( grid%mu_1, (ime-ims+1)*(jme-jms+1) )
+        !CALL push4backup (grid%u_1,grid%v_1,grid%t_1,grid%w_1, &
+        !                  grid%u_2,grid%v_2,grid%t_2,grid%w_2,grid%p,grid%alt, &
+        !                  "u_1,v_1,t_1,w_1,u_2,v_2,t_2,w_2,p,alt") 
+        CALL PUSHREAL8ARRAY ( grid%u_1, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+        CALL PUSHREAL8ARRAY ( grid%v_1, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+        CALL PUSHREAL8ARRAY ( grid%t_1, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+        CALL PUSHREAL8ARRAY ( grid%w_1, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+        CALL PUSHREAL8ARRAY ( grid%u_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+        CALL PUSHREAL8ARRAY ( grid%v_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+        CALL PUSHREAL8ARRAY ( grid%t_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+        CALL PUSHREAL8ARRAY ( grid%w_2, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+        CALL PUSHREAL8ARRAY ( grid%p, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+        CALL PUSHREAL8ARRAY ( grid%alt, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+      END IF 
 
-    ! Calculate coefficients for the vertically implicit acoustic/gravity wave
-    ! integration.  We only need calculate these for the first pass through -
-    ! the predictor step.  They are reused as is for the corrector step.
-    ! For third-order RK, we need to recompute these after the first
-    ! predictor because we may have changed the small timestep -> grid%dts.
+
+      ! Calculate coefficients for the vertically implicit acoustic/gravity wave
+      ! integration.  We only need calculate these for the first pass through -
+      ! the predictor step.  They are reused as is for the corrector step.
+      ! For third-order RK, we need to recompute these after the first
+      ! predictor because we may have changed the small timestep -> grid%dts.
 
        CALL wrf_debug ( 200 , ' call small_step_prep ' )
 
@@ -1326,6 +1433,7 @@ BENCH_START(advance_mu_t_tim)
                           k_start    , k_end                )
 
 BENCH_END(advance_mu_t_tim)
+
        ENDDO
        !$OMP END PARALLEL DO
 
@@ -1970,6 +2078,8 @@ BENCH_END(small_step_finish_tim)
 ! chem
 
        IF ((config_flags%chem_adv_opt /= ORIGINAL .and. config_flags%chem_adv_opt /= WENO_SCALAR) .and. (rk_step == rk_order)) THEN
+         CALL PUSHREAL8ARRAY ( chem_old, (ime-ims+1)*(kme-kms+1)*(jme-jms+1)*num_chem )
+         CALL PUSHREAL8ARRAY ( chem_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1)*num_chem )
 
          !$OMP PARALLEL DO   &
          !$OMP PRIVATE ( ij )
@@ -2033,13 +2143,12 @@ BENCH_END(small_step_finish_tim)
 
        IF ((config_flags%tracer_adv_opt /= ORIGINAL .and. config_flags%tracer_adv_opt /= WENO_SCALAR) .and. (rk_step == rk_order)) THEN
 
+         CALL PUSHREAL8ARRAY ( tracer_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1)*num_tracer )
          !$OMP PARALLEL DO   &
          !$OMP PRIVATE ( ij )
          DO ij = 1 , grid%num_tiles
            CALL wrf_debug ( 200 , ' call rk_update_scalar_pd' )
            DO im = PARAM_FIRST_SCALAR, num_tracer
-
-             CALL PUSHREAL8ARRAY ( tracer_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1)*num_tracer )
              CALL rk_update_scalar_pd( im, im,                                  &
                                        tracer_old(ims,kms,jms,im),              &
                                        tracer_tend(ims,kms,jms,im),             &
@@ -2203,19 +2312,24 @@ BENCH_END(small_step_finish_tim)
 
            IF (grid%adv_moist_cond .or. im==p_qv ) THEN
 
-             IF ( rk_step == 1 ) CALL push4backup (grid%alt,grid%xkhh, "alt,xkhh")
-             !CALL push4backup (grid%mu_1,grid%muts, "mu_1,muts")
-             !CALL push4backup (grid%ru_m,grid%rv_m,grid%ww_m, "ru_m,rv_m,ww_m")
-             CALL PUSHREAL8ARRAY ( grid%ru_m, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-             CALL PUSHREAL8ARRAY ( grid%rv_m, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-             CALL PUSHREAL8ARRAY ( grid%ww_m, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-             !CALL push4backup (moist(:,:,:,im),moist_old(:,:,:,im), &
-             !                  "moist,moist_old")
-             CALL PUSHREAL8ARRAY ( moist(:,:,:,im), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-             CALL PUSHREAL8ARRAY ( moist_old(:,:,:,im), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
              !$OMP PARALLEL DO   &
              !$OMP PRIVATE ( ij, tenddec )
              moist_tile_loop_1: DO ij = 1 , grid%num_tiles
+!             IF ( rk_step == 1 ) CALL push4backup (grid%alt,grid%xkhh, "alt,xkhh")
+               IF ( rk_step == 1 ) THEN
+                  CALL PUSHREAL8ARRAY (grid%alt, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+                  CALL PUSHREAL8ARRAY (grid%xkhh, (ime-ims+1)*(kme-kms+1)*(jme-jms+1))
+               ENDIF
+
+               !CALL push4backup (grid%mu_1,grid%muts, "mu_1,muts")
+               !CALL push4backup (grid%ru_m,grid%rv_m,grid%ww_m, "ru_m,rv_m,ww_m")
+               CALL PUSHREAL8ARRAY ( grid%ru_m, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+               CALL PUSHREAL8ARRAY ( grid%rv_m, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+               CALL PUSHREAL8ARRAY ( grid%ww_m, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+               !CALL push4backup (moist(:,:,:,im),moist_old(:,:,:,im), &
+               !                  "moist,moist_old")
+               CALL PUSHREAL8ARRAY ( moist(:,:,:,im), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+               CALL PUSHREAL8ARRAY ( moist_old(:,:,:,im), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
 
                CALL wrf_debug ( 200 , ' call rk_scalar_tend' )
                tenddec = .false.
@@ -2288,23 +2402,25 @@ BENCH_END(rlx_bdy_scalar_tim)
              ENDDO moist_tile_loop_1
              !$OMP END PARALLEL DO
 
-             !CALL push4backup ( grid%mu_1,grid%mu_2, "mu_1,mu_2" )
-             IF ( rk_step == 1 ) THEN
-               !CALL push4backup ( moist(:,:,:,im),moist_tend(:,:,:,im),advect_tend, &
-               !                  "moist,moist_tend,advect_tend" ) 
-               CALL PUSHREAL8ARRAY ( moist(:,:,:,im), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-               CALL PUSHREAL8ARRAY ( moist_tend(:,:,:,im), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-               CALL PUSHREAL8ARRAY ( advect_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-             ELSE
-               !CALL push4backup ( moist_old(:,:,:,im),moist_tend(:,:,:,im),advect_tend, &
-               !                  "moist_old,moist_tend,advect_tend" ) 
-               CALL PUSHREAL8ARRAY ( moist_old(:,:,:,im), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-               CALL PUSHREAL8ARRAY ( moist_tend(:,:,:,im), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-               CALL PUSHREAL8ARRAY ( advect_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-             END IF 
+
              !$OMP PARALLEL DO   &
              !$OMP PRIVATE ( ij, tenddec )
              moist_tile_loop_2: DO ij = 1 , grid%num_tiles
+
+               !CALL push4backup ( grid%mu_1,grid%mu_2, "mu_1,mu_2" )
+               IF ( rk_step == 1 ) THEN
+                 !CALL push4backup ( moist(:,:,:,im),moist_tend(:,:,:,im),advect_tend, &
+                 !                  "moist,moist_tend,advect_tend" ) 
+                 CALL PUSHREAL8ARRAY ( moist(:,:,:,im), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+               ELSE
+                 !CALL push4backup ( moist_old(:,:,:,im),moist_tend(:,:,:,im),advect_tend, &
+                 !                  "moist_old,moist_tend,advect_tend" ) 
+                 CALL PUSHREAL8ARRAY ( moist_old(:,:,:,im), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+               END IF 
+               CALL PUSHREAL8ARRAY ( moist_tend(:,:,:,im), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+               CALL PUSHREAL8ARRAY ( advect_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+               CALL PUSHREAL8ARRAY ( h_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+               CALL PUSHREAL8ARRAY ( z_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
 
                CALL wrf_debug ( 200 , ' call rk_update_scalar' )
                tenddec = .false.
@@ -2372,16 +2488,16 @@ BENCH_START(tke_adv_tim)
          ENDIF
 #endif
 
-         !IF ( rk_step == 1 ) CALL push4backup (grid%alt,grid%xkhh, "alt,xkhh")
-         !CALL push4backup (grid%mu_1,grid%muts, "mu_1,muts")
-         !CALL push4backup (grid%ru_m,grid%rv_m,grid%ww_m, "ru_m,rv_m,ww_m")
-         CALL PUSHREAL8ARRAY ( grid%ru_m , (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-         CALL PUSHREAL8ARRAY ( grid%rv_m , (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-         CALL PUSHREAL8ARRAY ( grid%ww_m , (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-         !CALL push4backup (grid%tke_2,grid%tke_1, "tke_2,tke_1")
          !$OMP PARALLEL DO   &
          !$OMP PRIVATE ( ij, tenddec )
          tke_tile_loop_1: DO ij = 1 , grid%num_tiles
+           !IF ( rk_step == 1 ) CALL push4backup (grid%alt,grid%xkhh, "alt,xkhh")
+           !CALL push4backup (grid%mu_1,grid%muts, "mu_1,muts")
+           !CALL push4backup (grid%ru_m,grid%rv_m,grid%ww_m, "ru_m,rv_m,ww_m")
+           CALL PUSHREAL8ARRAY ( grid%ru_m , (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           CALL PUSHREAL8ARRAY ( grid%rv_m , (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           CALL PUSHREAL8ARRAY ( grid%ww_m , (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           !CALL push4backup (grid%tke_2,grid%tke_1, "tke_2,tke_1")
 
            CALL wrf_debug ( 200 , ' call rk_scalar_tend for tke' )
            tenddec = .false.
@@ -2422,6 +2538,9 @@ BENCH_START(tke_adv_tim)
          !$OMP PARALLEL DO   &
          !$OMP PRIVATE ( ij, tenddec )
          tke_tile_loop_2: DO ij = 1 , grid%num_tiles
+           CALL PUSHREAL8ARRAY ( advect_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           CALL PUSHREAL8ARRAY ( h_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           CALL PUSHREAL8ARRAY ( z_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
 
            CALL wrf_debug ( 200 , ' call rk_update_scalar' )
            tenddec = .false.
@@ -2480,11 +2599,21 @@ BENCH_START(chem_adv_tim)
            !$OMP PARALLEL DO   &
            !$OMP PRIVATE ( ij, tenddec )
            chem_tile_loop_1: DO ij = 1 , grid%num_tiles
+             IF ( rk_step == 1 ) THEN
+                CALL PUSHREAL8ARRAY (grid%alt, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+                CALL PUSHREAL8ARRAY (grid%xkhh, (ime-ims+1)*(kme-kms+1)*(jme-jms+1))
+             ENDIF
+             CALL PUSHREAL8ARRAY ( grid%ru_m, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+             CALL PUSHREAL8ARRAY ( grid%rv_m, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+             CALL PUSHREAL8ARRAY ( grid%ww_m, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+             CALL PUSHREAL8ARRAY ( chem(:,:,:,ic), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+             CALL PUSHREAL8ARRAY ( chem_old(:,:,:,ic), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
 
              CALL wrf_debug ( 200 , ' call rk_scalar_tend in chem_tile_loop_1' )
 
              tenddec = (( config_flags%chemdiag == USECHEMDIAG ) .and. &
                         ( adv_ct_indices(ic) >= PARAM_FIRST_SCALAR ))
+
              CALL rk_scalar_tend ( ic, ic, config_flags, tenddec,                &
                               rk_step, dt_rk,                                    &
                               grid%ru_m, grid%rv_m, grid%ww_m,                   &
@@ -2560,6 +2689,16 @@ BENCH_START(chem_adv_tim)
 
            tenddec = (( config_flags%chemdiag == USECHEMDIAG ) .and. &
                       ( adv_ct_indices(ic) >= PARAM_FIRST_SCALAR ))
+           IF ( rk_step == 1 ) THEN
+             CALL PUSHREAL8ARRAY ( chem(:,:,:,ic), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           ELSE
+             CALL PUSHREAL8ARRAY ( chem_old(:,:,:,ic), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           END IF
+           CALL PUSHREAL8ARRAY ( chem_tend(:,:,:,ic), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           CALL PUSHREAL8ARRAY ( advect_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           CALL PUSHREAL8ARRAY ( h_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           CALL PUSHREAL8ARRAY ( z_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+
            CALL rk_update_scalar( scs=ic, sce=ic,                                         &
                                   scalar_1=chem_old(ims,kms,jms,ic),                      &
                                   scalar_2=chem(ims,kms,jms,ic),                          &
@@ -2577,7 +2716,8 @@ BENCH_START(chem_adv_tim)
                                   kts=k_start    , kte=k_end                              )
 
            IF( config_flags%specified  ) THEN
-
+             CALL PUSHREAL8ARRAY ( grid%ru_m, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+             CALL PUSHREAL8ARRAY ( grid%rv_m, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
              CALL flow_dep_bdy_chem( chem(ims,kms,jms,ic),                          &
                                      chem_bxs(jms,kms,1,ic), chem_btxs(jms,kms,1,ic),  &
                                      chem_bxe(jms,kms,1,ic), chem_btxe(jms,kms,1,ic),  &
@@ -2603,6 +2743,7 @@ BENCH_START(chem_adv_tim)
        ENDDO chem_variable_loop
      ENDIF chem_scalar_advance
 BENCH_END(chem_adv_tim)
+
 #endif
 
 !  next the chemical species
@@ -4323,59 +4464,67 @@ BENCH_END(bc_2d_tim)
 ! Start adjoint computations
 !---------------------------------------- 
 ! Reset local adjoint variables
-  a_cqu = 0. 
-  a_cqv = 0. 
-  a_cqw = 0. 
+  a_cqu = 0.D0
+  a_cqv = 0.D0
+  a_cqw = 0.D0
 
-  a_ru_tendf = 0.
-  a_rv_tendf = 0. 
-  a_rw_tendf = 0. 
-  a_ph_tendf = 0. 
-  a_t_tendf = 0. 
-  a_mu_tendf = 0. 
+  a_ru_tendf = 0.D0
+  a_rv_tendf = 0.D0 
+  a_rw_tendf = 0.D0 
+  a_ph_tendf = 0.D0 
+  a_t_tendf = 0.D0 
+  a_mu_tendf = 0.D0 
 
-  a_ph_tend = 0.
-  a_rw_tend = 0.
-  a_mu_tend = 0.
-  a_t_tend = 0.
-  a_moist_tend = 0. 
-  a_tracer_tend = 0. 
-  a_scalar_tend = 0. 
-  a_tke_tend = 0. 
-  a_advect_tend = 0. 
-  a_h_tendency = 0.
-  a_z_tendency = 0.
+  a_ph_tend = 0.D0
+  a_rw_tend = 0.D0
+  a_mu_tend = 0.D0
+  a_t_tend = 0.D0
+  a_moist_tend = 0.D0 
+  a_tracer_tend = 0.D0 
+  a_chem_tend = 0.D0
+  a_scalar_tend = 0.D0 
+  a_tke_tend = 0.D0 
+  a_advect_tend = 0.D0 
+  a_h_tendency = 0.D0
+  a_z_tendency = 0.D0
 
-  a_th_phy = 0. 
-  a_p_phy = 0. 
-  a_pi_phy = 0. 
-  grid%a_t_phy = 0. 
-  grid%a_u_phy = 0. 
-  grid%a_v_phy = 0. 
-  grid%a_rho = 0. 
-  a_dz8w = 0. 
-  a_p8w = 0. 
-  a_t8w = 0. 
+  a_th_phy = 0.D0 
+  a_p_phy = 0.D0 
+  a_pi_phy = 0.D0 
+  grid%a_t_phy = 0.D0 
+  grid%a_u_phy = 0.D0
+  grid%a_v_phy = 0.D0
+  grid%a_rho = 0.D0
+  a_dz8w = 0.D0 
+  a_p8w = 0.D0 
+  a_t8w = 0.D0 
 
-  a_w_save = 0. 
-  a_ph_save = 0. 
-  a_mu_save = 0. 
-  a_t_2save = 0. 
-  a_ww1 = 0. 
-  a_moist_old = 0. 
-  a_tracer_old = 0. 
-  a_scalar_old = 0. 
+  a_w_save = 0.D0 
+  a_ph_save = 0.D0 
+  a_mu_save = 0.D0 
+  a_t_2save = 0.D0 
+  a_ww1 = 0.D0 
+  a_moist_old = 0.D0 
+  a_tracer_old = 0.D0 
+  a_chem_old = 0.D0
+  a_scalar_old = 0.D0 
 
-  a_muus = 0. 
-  a_muvs = 0. 
-  a_muave = 0. 
-  a_c2a = 0. 
-  a_pm1 = 0. 
-  a_a = 0. 
-  a_alpha = 0. 
-  a_gamma = 0. 
+  a_muus = 0.D0 
+  a_muvs = 0.D0 
+  a_muave = 0.D0 
+  a_c2a = 0.D0 
+  a_pm1 = 0.D0 
+  a_a = 0.D0 
+  a_alpha = 0.D0 
+  a_gamma = 0.D0 
 
-! [1] Adjoint of the part after Runge Kutta loop
+  a_wspd = 0.D0
+
+#if (WRF_CHEM == 1)
+  grid%a_dep_vel = 0.D0
+#endif
+
+  ! [1] Adjoint of the part after Runge Kutta loop
 
 #ifdef DM_PARALLEL
    IF ( num_tracer >= PARAM_FIRST_SCALAR ) THEN
@@ -4387,6 +4536,23 @@ BENCH_END(bc_2d_tim)
 #      include "HALO_EM_TRACER_E_3_AD.inc"
      ELSE IF ( config_flags%h_mom_adv_order <= 6 ) THEN
 #      include "HALO_EM_TRACER_E_5_AD.inc"
+     ELSE
+       WRITE(wrf_err_message,*)'solve_em_ad: invalid h_mom_adv_order = ',config_flags%h_mom_adv_order
+       CALL wrf_error_fatal(TRIM(wrf_err_message))
+     ENDIF
+   ENDIF
+#endif
+
+#ifdef DM_PARALLEL
+   IF ( num_chem >= PARAM_FIRST_SCALAR ) THEN
+!-----------------------------------------------------------------------
+! see above
+!--------------------------------------------------------------
+     CALL wrf_debug ( 200 , ' call HALO_RK_CHEM' )
+     IF      ( config_flags%h_mom_adv_order <= 4 ) THEN
+#      include "HALO_EM_CHEM_E_3_AD.inc"
+     ELSE IF ( config_flags%h_mom_adv_order <= 6 ) THEN
+#      include "HALO_EM_CHEM_E_5_AD.inc"
      ELSE
        WRITE(wrf_err_message,*)'solve_em_ad: invalid h_mom_adv_order = ',config_flags%h_mom_adv_order
        CALL wrf_error_fatal(TRIM(wrf_err_message))
@@ -4478,6 +4644,18 @@ BENCH_START(adj_bc_2d_tim)
                                k_start    , k_end                      )
 
      END DO adj_tracer_species_bdy_loop_2
+
+     adj_chem_species_bdy_loop_2 : DO ic = num_3d_c, PARAM_FIRST_SCALAR , -1
+
+       CALL a_set_physical_bc3d( a_chem(ims,kms,jms,ic), 'p', config_flags,  &
+                               ids, ide, jds, jde, kds, kde,            &
+                               ims, ime, jms, jme, kms, kme,            &
+                               ips, ipe, jps, jpe, kps, kpe,            &
+                               grid%i_start(ij), grid%i_end(ij),                  &
+                               grid%j_start(ij), grid%j_end(ij),                  &
+                               k_start    , k_end                      )
+
+     END DO adj_chem_species_bdy_loop_2
 
      adj_moisture_loop_bdy_2 : DO im = num_3d_m,PARAM_FIRST_SCALAR,-1
 
@@ -4646,6 +4824,13 @@ BENCH_START(adj_moist_phys_end_tim)
                       k_start    , k_end                                )
 
        CALL a_microphysics_zero_outa (                                    &
+                      chem , a_chem, num_chem , config_flags ,                   &
+                      ids, ide, jds, jde, kds, kde,                     &
+                      ims, ime, jms, jme, kms, kme,                     &
+                      its, ite, jts, jte,                               &
+                      k_start    , k_end                                )
+
+       CALL a_microphysics_zero_outa (                                    &
                       scalar ,a_scalar, num_scalar , config_flags ,              &
                       ids, ide, jds, jde, kds, kde,                     &
                       ims, ime, jms, jme, kms, kme,                     &
@@ -4669,6 +4854,13 @@ BENCH_START(adj_moist_phys_end_tim)
 
        CALL a_microphysics_zero_outb (                                    &
                       tracer , a_tracer, num_tracer , config_flags ,              &
+                      ids, ide, jds, jde, kds, kde,                     &
+                      ims, ime, jms, jme, kms, kme,                     &
+                      its, ite, jts, jte,                               &
+                      k_start    , k_end                                )
+
+       CALL a_microphysics_zero_outb (                                    &
+                      chem , a_chem, num_chem , config_flags ,                    &
                       ids, ide, jds, jde, kds, kde,                     &
                       ims, ime, jms, jme, kms, kme,                     &
                       its, ite, jts, jte,                               &
@@ -4853,7 +5045,6 @@ BENCH_END(adj_micro_driver_tim)
 
        CALL wrf_debug ( 200 , ' call a_moist_physics_prep' )
 BENCH_START(adj_moist_physics_prep_tim)
-
        CALL a_moist_physics_prep_em( grid%t_2,grid%a_t_2, grid%t_1,            &
                                    t0, grid%rho,grid%a_rho,                              &
                                    grid%al,grid%a_al, grid%alb,                &
@@ -5035,6 +5226,25 @@ BENCH_END(adj_advance_ppt_tim)
            CALL wrf_error_fatal(TRIM(wrf_err_message))
          ENDIF
        ENDIF
+       IF ( num_chem >= PARAM_FIRST_SCALAR ) THEN
+         IF      ( config_flags%h_sca_adv_order <= 4 ) THEN
+           IF ( (config_flags%chem_adv_opt /= ORIGINAL .and. config_flags%chem_adv_opt /= WENO_SCALAR) .and. (rk_step == rk_order-1) ) THEN
+#        include "HALO_EM_CHEM_E_5_AD.inc"
+           ELSE
+#        include "HALO_EM_CHEM_E_3_AD.inc"
+           ENDIF
+         ELSE IF ( config_flags%h_sca_adv_order <= 6 ) THEN
+           IF ( (config_flags%chem_adv_opt /= ORIGINAL .and. config_flags%chem_adv_opt /= WENO_SCALAR) .and. (rk_step == rk_order-1) ) THEN
+#        include "HALO_EM_CHEM_E_7_AD.inc"
+           ELSE
+#        include "HALO_EM_CHEM_E_5_AD.inc"
+           ENDIF
+         ELSE
+           WRITE(wrf_err_message,*)'solve_em_ad: invalid h_sca_adv_order = ',config_flags%h_sca_adv_order
+           CALL wrf_error_fatal(TRIM(wrf_err_message))
+         ENDIF
+       ENDIF
+
 #endif
 
 BENCH_START(adj_bc_end_tim)
@@ -5083,6 +5293,22 @@ BENCH_START(adj_bc_end_tim)
                                      k_start    , k_end-1                    )
 
            END DO adj_tracer_species_bdy_loop_1
+
+         END IF
+
+         IF (num_3d_c >= PARAM_FIRST_SCALAR) THEN
+
+           adj_chem_species_bdy_loop_1 : DO ic = num_3d_c,PARAM_FIRST_SCALAR,-1
+
+             CALL a_set_physical_bc3d( a_chem(ims,kms,jms,ic), 'p', config_flags,   &
+                                     ids, ide, jds, jde, kds, kde,            &
+                                     ims, ime, jms, jme, kms, kme,            &
+                                     ips, ipe, jps, jpe, kps, kpe,            &
+                                     grid%i_start(ij), grid%i_end(ij),                  &
+                                     grid%j_start(ij), grid%j_end(ij),                  &
+                                     k_start    , k_end-1                    )
+
+           END DO adj_chem_species_bdy_loop_1
 
          END IF
 
@@ -5359,7 +5585,7 @@ BENCH_START(a_tracer_adv_tim)
            ELSE
              CALL POPREAL8ARRAY ( advect_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
              CALL POPREAL8ARRAY ( tracer_tend(:,:,:,ic), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-           END IF 
+           END IF
            CALL a_rk_update_scalar( scs=ic, sce=ic,                                       &
                                   scalar_1=tracer_old(ims,kms,jms,ic),                    &
                                   a_scalar_1=a_tracer_old(ims,kms,jms,ic),                &
@@ -5427,6 +5653,131 @@ BENCH_START(a_tracer_adv_tim)
      ENDIF adj_tracer_advance
 BENCH_END(a_tracer_adv_tim)
 
+#ifdef WRF_CHEM
+BENCH_START(a_chem_adv_tim)
+       adj_chem_advance: IF (num_3d_c >= PARAM_FIRST_SCALAR)  THEN
+
+         adj_chem_variable_loop: DO ic = num_3d_c,PARAM_FIRST_SCALAR,-1
+
+         !$OMP PARALLEL DO   &
+         !$OMP PRIVATE ( ij )
+         adj_chem_tile_loop_2: DO ij = 1 , grid%num_tiles
+
+           IF( config_flags%specified  ) THEN
+             CALL POPREAL8ARRAY ( grid%rv_m, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+             CALL POPREAL8ARRAY ( grid%ru_m, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+             CALL a_flow_dep_bdy_chem( chem(ims,kms,jms,ic), a_chem(ims,kms,jms,ic),     &
+                                     chem_bxs(jms,kms,1,ic), a_chem_bxs(jms,kms,1,ic),  &
+                                     chem_btxs(jms,kms,1,ic), a_chem_btxs(jms,kms,1,ic),  &
+                                     chem_bxe(jms,kms,1,ic), a_chem_bxe(jms,kms,1,ic),  &
+                                     chem_btxe(jms,kms,1,ic), a_chem_btxe(jms,kms,1,ic),  &
+                                     chem_bys(ims,kms,1,ic), a_chem_bys(ims,kms,1,ic),  &
+                                     chem_btys(ims,kms,1,ic), a_chem_btys(ims,kms,1,ic),  &
+                                     chem_bye(ims,kms,1,ic), a_chem_bye(ims,kms,1,ic),  &
+                                     chem_btye(ims,kms,1,ic), a_chem_btye(ims,kms,1,ic),  &
+                                     dt_rk+grid%dtbc,                                  &
+                                     config_flags%spec_bdy_width,grid%z,grid%a_z,      &
+                                     grid%have_bcs_chem,      &
+                                     grid%ru_m, grid%rv_m, config_flags,               &
+                                     grid%alt,grid%a_alt,grid%t_1,grid%a_t_1,grid%pb,  &
+                                     grid%p,grid%a_p,t0,p1000mb,rcp,grid%ph_2,grid%phb,g, &
+                                     grid%spec_zone,ic,                  &
+                                     ids,ide, jds,jde, kds,kde,  & ! domain dims
+                                     ims,ime, jms,jme, kms,kme,  & ! memory dims
+                                     ips,ipe, jps,jpe, kps,kpe,  & ! patch  dims
+                                     grid%i_start(ij), grid%i_end(ij),   &
+                                     grid%j_start(ij), grid%j_end(ij),   &
+                                     k_start, k_end                      )
+           ENDIF
+
+           CALL wrf_debug ( 200 , ' call a_rk_update_scalar chem ' )
+
+           tenddec = (( config_flags%chemdiag == USECHEMDIAG ) .and. &
+                      ( adv_ct_indices(ic) >= PARAM_FIRST_SCALAR ))
+
+           CALL POPREAL8ARRAY ( z_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           CALL POPREAL8ARRAY ( h_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           CALL POPREAL8ARRAY ( advect_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           CALL POPREAL8ARRAY ( chem_tend(:,:,:,ic), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           IF ( rk_step == 1 ) THEN
+             CALL POPREAL8ARRAY ( chem(:,:,:,ic), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           ELSE
+             CALL POPREAL8ARRAY ( chem_old(:,:,:,ic), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           END IF
+           CALL a_rk_update_scalar( scs=ic, sce=ic,                                       &
+                                  scalar_1=chem_old(ims,kms,jms,ic),                    &
+                                  a_scalar_1=a_chem_old(ims,kms,jms,ic),                &
+                                  scalar_2=chem(ims,kms,jms,ic),                        &
+                                  a_scalar_2=a_chem(ims,kms,jms,ic),                    &
+                                  sc_tend=chem_tend(ims,kms,jms,ic),                    &
+                                  a_sc_tend=a_chem_tend(ims,kms,jms,ic),                &
+                                  advect_tend=advect_tend,a_advect_tend=a_advect_tend,    &
+                                  h_tendency=h_tendency, a_h_tendency=a_h_tendency,       & 
+                                  z_tendency=z_tendency, a_z_tendency=a_z_tendency,       & 
+                                  msftx=grid%msftx,msfty=grid%msfty,                      &
+                                  mu_old=grid%mu_1, a_mu_old=grid%a_mu_1,                 &
+                                  mu_new=grid%mu_2, a_mu_new=grid%a_mu_2, mu_base=grid%mub,   &
+                                  rk_step=rk_step, dt=dt_rk, spec_zone=grid%spec_zone,    &
+                                  config_flags=config_flags, tenddec=tenddec,             & 
+                                  ids=ids, ide=ide, jds=jds, jde=jde, kds=kds, kde=kde,   &
+                                  ims=ims, ime=ime, jms=jms, jme=jme, kms=kms, kme=kme,   &
+                                  its=grid%i_start(ij), ite=grid%i_end(ij),               &
+                                  jts=grid%j_start(ij), jte=grid%j_end(ij),               &
+                                  kts=k_start    , kte=k_end                              )
+
+         ENDDO adj_chem_tile_loop_2
+         !$OMP END PARALLEL DO
+
+           !$OMP PARALLEL DO   &
+           !$OMP PRIVATE ( ij )
+           adj_chem_tile_loop_1: DO ij = 1 , grid%num_tiles
+             CALL POPREAL8ARRAY ( chem_old(:,:,:,ic), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+             CALL POPREAL8ARRAY ( chem(:,:,:,ic), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+             CALL POPREAL8ARRAY ( grid%ww_m , (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+             CALL POPREAL8ARRAY ( grid%rv_m , (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+             CALL POPREAL8ARRAY ( grid%ru_m , (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+             IF ( rk_step == 1 ) THEN
+                CALL POPREAL8ARRAY (grid%xkhh, (ime-ims+1)*(kme-kms+1)*(jme-jms+1))
+                CALL POPREAL8ARRAY (grid%alt, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+             ENDIF
+
+             CALL wrf_debug ( 15 , ' call a_rk_scalar_tend in adj_chem_tile_loop_1' )
+
+             tenddec = .false.
+             CALL a_rk_scalar_tend ( ic, ic, config_flags, tenddec,                   &
+                             rk_step, dt_rk,         &
+                             grid%ru_m, grid%a_ru_m, &
+                             grid%rv_m, grid%a_rv_m, &
+                             grid%ww_m, grid%a_ww_m, &
+                             grid%muts, grid%a_muts, grid%mub, grid%mu_1, grid%a_mu_1, &
+                             grid%alt, grid%a_alt,                                     &
+                             chem_old(ims,kms,jms,ic), a_chem_old(ims,kms,jms,ic),   &
+                             chem(ims,kms,jms,ic), a_chem(ims,kms,jms,ic),           &
+                             chem_tend(ims,kms,jms,ic), a_chem_tend(ims,kms,jms,ic), &
+                             advect_tend, a_advect_tend, h_tendency,a_h_tendency,        &
+                             z_tendency, a_z_tendency, grid%rqvften, grid%a_rqvften, &
+                             grid%qv_base, .false., grid%fnm, grid%fnp,       &
+                             grid%msfux,grid%msfuy, grid%msfvx, grid%msfvx_inv, &
+                             grid%msfvy, grid%msftx,grid%msfty,               &
+                             grid%rdx, grid%rdy, grid%rdn, grid%rdnw,         &
+                             grid%khdif, grid%kvdif, grid%xkhh,grid%a_xkhh,   &
+                             grid%diff_6th_opt, grid%diff_6th_factor,         &
+                             config_flags%chem_adv_opt,                     &
+                             ids, ide, jds, jde, kds, kde,     &
+                             ims, ime, jms, jme, kms, kme,     &
+                             grid%i_start(ij), grid%i_end(ij), &
+                             grid%j_start(ij), grid%j_end(ij), &
+                             k_start    , k_end               )
+
+         ENDDO adj_chem_tile_loop_1
+         !$OMP END PARALLEL DO
+
+       ENDDO adj_chem_variable_loop
+     ENDIF adj_chem_advance
+BENCH_END(a_chem_adv_tim)
+
+#endif
+
 BENCH_START(adj_tke_adv_tim)
        adj_TKE_advance: IF (config_flags%km_opt .eq. 2) then
 
@@ -5466,6 +5817,10 @@ BENCH_START(adj_tke_adv_tim)
            !                     "tke_1,tke_tend,advect_tend" ) 
            !END IF 
            !CALL pop2restore ( grid%mu_1,grid%mu_2, "mu_1,mu_2" )
+           CALL POPREAL8ARRAY ( z_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           CALL POPREAL8ARRAY ( h_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           CALL POPREAL8ARRAY ( advect_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+
            tenddec = .false.
            CALL a_rk_update_scalar( scs=1,  sce=1,                                        &
                                   scalar_1=grid%tke_1, a_scalar_1=grid%a_tke_1,           & 
@@ -5489,16 +5844,16 @@ BENCH_START(adj_tke_adv_tim)
          ENDDO adj_tke_tile_loop_2
          !$OMP END PARALLEL DO
 
-         !CALL pop2restore (grid%tke_2,grid%tke_1, "tke_2,tke_1")
-         CALL POPREAL8ARRAY ( grid%ww_m , (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-         CALL POPREAL8ARRAY ( grid%rv_m , (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-         CALL POPREAL8ARRAY ( grid%ru_m , (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-         !CALL pop2restore (grid%ru_m,grid%rv_m,grid%ww_m, "ru_m,rv_m,ww_m")
-         !CALL pop2restore (grid%mu_1,grid%muts, "mu_1,muts")
-         !IF ( rk_step == 1 ) CALL pop2restore (grid%alt,grid%xkhh, "alt,xkhh")
          !$OMP PARALLEL DO   &
          !$OMP PRIVATE ( ij )
          adj_tke_tile_loop_1: DO ij = grid%num_tiles,1,-1
+           !CALL pop2restore (grid%tke_2,grid%tke_1, "tke_2,tke_1")
+           CALL POPREAL8ARRAY ( grid%ww_m , (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           CALL POPREAL8ARRAY ( grid%rv_m , (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           CALL POPREAL8ARRAY ( grid%ru_m , (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           !CALL pop2restore (grid%ru_m,grid%rv_m,grid%ww_m, "ru_m,rv_m,ww_m")
+           !CALL pop2restore (grid%mu_1,grid%muts, "mu_1,muts")
+           !IF ( rk_step == 1 ) CALL pop2restore (grid%alt,grid%xkhh, "alt,xkhh")
 
            CALL wrf_debug ( 200 , ' call a_rk_scalar_tend for tke' )
            tenddec = .false.
@@ -5582,18 +5937,18 @@ BENCH_END(adj_flow_depbdy_tim)
                tenddec = .false.
 
 BENCH_START(adj_update_scal_tim)
+               CALL POPREAL8ARRAY ( z_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+               CALL POPREAL8ARRAY ( h_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+               CALL POPREAL8ARRAY ( advect_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+               CALL POPREAL8ARRAY ( moist_tend(:,:,:,im), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
 
                IF ( rk_step == 1 ) THEN
                  !CALL pop2restore ( moist(:,:,:,im),moist_tend(:,:,:,im),advect_tend, &
                  !                   "moist,moist_tend,advect_tend" ) 
-                 CALL POPREAL8ARRAY ( advect_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-                 CALL POPREAL8ARRAY ( moist_tend(:,:,:,im), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
                  CALL POPREAL8ARRAY ( moist(:,:,:,im), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
                ELSE
                  !CALL pop2restore ( moist_old(:,:,:,im),moist_tend(:,:,:,im),advect_tend, &
                  !                   "moist_old,moist_tend,advect_tend" ) 
-                 CALL POPREAL8ARRAY ( advect_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-                 CALL POPREAL8ARRAY ( moist_tend(:,:,:,im), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
                  CALL POPREAL8ARRAY ( moist_old(:,:,:,im), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
                END IF 
                !CALL pop2restore ( grid%mu_1,grid%mu_2, "mu_1,mu_2" )
@@ -5671,12 +6026,6 @@ BENCH_START(adj_rlx_bdy_scalar_tim)
                ENDIF
 BENCH_END(adj_rlx_bdy_scalar_tim)
  
-!        Adjoint of calculating moist tendency of grid points except for those in spec zone
-               CALL wrf_debug ( 200 , ' call a_rk_scalar_tend' )
-               tenddec = .false.
-
-BENCH_START(adj_rk_scalar_tend_tim)
-
                CALL POPREAL8ARRAY ( moist_old(:,:,:,im), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
                CALL POPREAL8ARRAY ( moist(:,:,:,im), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
                !CALL pop2restore (moist(:,:,:,im),moist_old(:,:,:,im), &
@@ -5686,7 +6035,18 @@ BENCH_START(adj_rk_scalar_tend_tim)
                CALL POPREAL8ARRAY ( grid%ru_m, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
                !CALL pop2restore (grid%ru_m,grid%rv_m,grid%ww_m, "ru_m,rv_m,ww_m")
                !CALL pop2restore (grid%mu_1,grid%muts, "mu_1,muts")
-               IF ( rk_step == 1 ) CALL pop2restore (grid%alt,grid%xkhh, "alt,xkhh")
+!               IF ( rk_step == 1 ) CALL pop2restore (grid%alt,grid%xkhh, "alt,xkhh")
+               IF ( rk_step == 1 ) THEN
+                  CALL POPREAL8ARRAY (grid%xkhh, (ime-ims+1)*(kme-kms+1)*(jme-jms+1))
+                  CALL POPREAL8ARRAY (grid%alt, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+               ENDIF
+
+!        Adjoint of calculating moist tendency of grid points except for those in spec zone
+               CALL wrf_debug ( 200 , ' call a_rk_scalar_tend' )
+               tenddec = .false.
+
+BENCH_START(adj_rk_scalar_tend_tim)
+
                CALL a_rk_scalar_tend (  im, im, config_flags, tenddec,       &
                            rk_step, dt_rk,                                   &
                            grid%ru_m, grid%a_ru_m, &
@@ -5817,13 +6177,12 @@ BENCH_END(adj_rk_scalar_tend_tim)
          ENDIF
 #endif
 
+         CALL POPREAL8ARRAY ( tracer_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1)*num_tracer )
          !$OMP PARALLEL DO   &
          !$OMP PRIVATE ( ij )
          DO ij = 1 , grid%num_tiles
            CALL wrf_debug ( 200 , ' call a_rk_update_scalar_pd tracer' )
            DO im = PARAM_FIRST_SCALAR, num_tracer
-
-             CALL POPREAL8ARRAY ( tracer_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1)*num_tracer )
              CALL a_rk_update_scalar_pd( im, im,                                  &
                               tracer_old(ims,kms,jms,im),a_tracer_old(ims,kms,jms,im), &
                               tracer_tend(ims,kms,jms,im),a_tracer_tend(ims,kms,jms,im), &
@@ -5843,6 +6202,68 @@ BENCH_END(adj_rk_scalar_tend_tim)
 
        ENDIF  ! end if for tracer_adv_opt
 
+! chem
+       IF ((config_flags%chem_adv_opt /= ORIGINAL .and. config_flags%chem_adv_opt /= WENO_SCALAR) .and. (rk_step == rk_order)) THEN
+
+         !$OMP PARALLEL DO   &
+         !$OMP PRIVATE ( ij )
+         DO ij = 1 , grid%num_tiles
+           IF (num_3d_c >= PARAM_FIRST_SCALAR) THEN
+             DO im = num_3d_c, PARAM_FIRST_SCALAR , -1
+
+               CALL a_set_physical_bc3d( a_chem_old(ims,kms,jms,im), 'p', config_flags,   & 
+                                        ids, ide, jds, jde, kds, kde,                    &
+                                        ims, ime, jms, jme, kms, kme,                    &
+                                        ips, ipe, jps, jpe, kps, kpe,                    &
+                                        grid%i_start(ij), grid%i_end(ij),                &
+                                        grid%j_start(ij), grid%j_end(ij),                &
+                                        k_start    , k_end                              )
+             END DO
+
+           ENDIF
+         END DO
+         !$OMP END PARALLEL DO
+
+!---------------------- positive definite bc call
+#ifdef DM_PARALLEL
+         IF (config_flags%chem_adv_opt /= ORIGINAL .and. config_flags%chem_adv_opt /= WENO_SCALAR) THEN
+           IF      ( config_flags%h_sca_adv_order <= 4 ) THEN
+#     include "HALO_EM_CHEM_OLD_E_5_AD.inc"
+           ELSE IF ( config_flags%h_sca_adv_order <= 6 ) THEN
+#     include "HALO_EM_CHEM_OLD_E_7_AD.inc"
+           ELSE
+             WRITE(wrf_err_message,*)'solve_em_ad: invalid h_sca_adv_order = ',config_flags%h_sca_adv_order
+             CALL wrf_error_fatal(TRIM(wrf_err_message))
+           ENDIF
+         ENDIF
+#endif
+
+         CALL POPREAL8ARRAY ( chem_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1)*num_chem )
+         CALL POPREAL8ARRAY ( chem_old, (ime-ims+1)*(kme-kms+1)*(jme-jms+1)*num_chem )
+         !$OMP PARALLEL DO   &
+         !$OMP PRIVATE ( ij )
+         DO ij = 1 , grid%num_tiles
+           CALL wrf_debug ( 200 , ' call a_rk_update_scalar_pd chem' )
+           DO im = num_3d_c, PARAM_FIRST_SCALAR, -1
+
+             CALL a_rk_update_scalar_pd( im, im,                                  &
+                              chem_old(ims,kms,jms,im),a_chem_old(ims,kms,jms,im), &
+                              chem_tend(ims,kms,jms,im),a_chem_tend(ims,kms,jms,im), &
+                              grid%mu_1, grid%a_mu_1, grid%mu_1, grid%a_mu_1, grid%mub, &
+                              rk_step, dt_rk, grid%spec_zone,          &
+                              config_flags,                            &
+                              ids, ide, jds, jde, kds, kde,            &
+                              ims, ime, jms, jme, kms, kme,            &
+                              grid%i_start(ij), grid%i_end(ij),        &
+                              grid%j_start(ij), grid%j_end(ij),        &
+                              k_start    , k_end                      )
+
+
+           ENDDO
+         END DO
+         !$OMP END PARALLEL DO
+
+       ENDIF  ! end if for chem_adv_opt
 ! scalars
 
      IF ((config_flags%scalar_adv_opt /= ORIGINAL .and. config_flags%scalar_adv_opt /= WENO_SCALAR) .and. (rk_step == rk_order)) THEN
@@ -6650,6 +7071,7 @@ BENCH_START(adj_small_step_prep_tim)
          CALL POPREAL8ARRAY ( grid%mu_1, (ime-ims+1)*(jme-jms+1) )
          !CALL pop2restore (grid%mu_1, "mu_1")
        END IF 
+
        !CALL pop2restore (grid%muu,grid%muv,grid%mut, "muu,muv,mut") 
        CALL a_small_step_prep( grid%u_1,grid%a_u_1,grid%u_2,grid%a_u_2, &
                                grid%v_1,grid%a_v_1,grid%v_2,grid%a_v_2, &
@@ -6858,8 +7280,16 @@ BENCH_END(adj_rk_tend_tim)
 
      adj_rk_step_is_one : IF (rk_step == 1) THEN ! only need to initialize diffusion tendencies
 
+       CALL POPREAL8ARRAY ( chem, (ime-ims+1)*(kme-kms+1)*(jme-jms+1)*num_chem )
+!       CALL POPREAL8ARRAY ( chem_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1)*num_chem )
+
+       CALL POPREAL8ARRAY ( grid%rqicuten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+       CALL POPREAL8ARRAY ( grid%rqccuten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
        CALL POPREAL8ARRAY ( grid%rqvcuten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
        CALL POPREAL8ARRAY ( grid%rthcuten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+
+       CALL POPREAL8ARRAY ( grid%rqiblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+       CALL POPREAL8ARRAY ( grid%rqcblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
        CALL POPREAL8ARRAY ( grid%rqvblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
        CALL POPREAL8ARRAY ( grid%rthblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
        CALL POPREAL8ARRAY ( grid%rvblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
@@ -6869,7 +7299,8 @@ BENCH_END(adj_rk_tend_tim)
        CALL a_first_rk_step_part2 (   grid , config_flags   &
               , moist ,a_moist , moist_tend ,a_moist_tend   &
 !!!!! USE THE STATEMENTS REMARKED WHEN chem and tracer ARE NEEDED. Ning Pan, 2010-08-20
-              , chem  ,  chem  , chem_tend  ,  chem_tend    &
+              , chem  ,  a_chem  , chem_tend  , a_chem_tend    &
+!              , chem  ,  chem  , chem_tend  , chem_tend    &
               , tracer,  a_tracer, tracer_tend, a_tracer_tend  &
               , scalar,a_scalar, scalar_tend,a_scalar_tend  &
 !!!!! USE THE STATEMENT REMARKED WHEN fdda3d and fdda2d ARE NEEDED. Ning Pan, 2010-08-20
@@ -6886,7 +7317,7 @@ BENCH_END(adj_rk_tend_tim)
 !                gz1oz0 ,a_gz1oz0 , br ,a_br , chklowq,a_chklowq     &
 !              , cu_act_flag , hol ,a_hol, th_phy,a_th_phy           &
 !!!!! REMOVE THE FOLLOWING 3 STATEMENTS WHEN CODING AD OF PHYSICS. Ning Pan, 2010-08-20
-              , psim ,  psim , psih ,  psih , wspd ,  wspd ,        &
+              , psim ,  psim , psih ,  psih , wspd ,  a_wspd ,        &
                 gz1oz0 ,  gz1oz0 , br ,  br , chklowq,  chklowq     &
               , cu_act_flag , hol ,  hol, th_phy,a_th_phy           &
               , pi_phy ,a_pi_phy, p_phy ,a_p_phy , grid%t_phy ,grid%a_t_phy   &
@@ -6903,11 +7334,40 @@ BENCH_END(adj_rk_tend_tim)
               , k_start , k_end                  &
              )
 
+!!!Added by J. Guerrette 11/02/2013
+       CALL POPREAL8ARRAY(grid%pblh, (ime-ims+1)*(jme-jms+1))
+
+       CALL POPREAL8ARRAY(grid%tslb, (ime-ims+1)*(jme-jms+1)*grid%num_soil_layers)
+       CALL POPREAL8ARRAY(grid%smois, (ime-ims+1)*(jme-jms+1)*grid%num_soil_layers)
+       CALL POPREAL8ARRAY(grid%tsk, (ime-ims+1)*(jme-jms+1))
+       CALL POPREAL8ARRAY(grid%qfx, (ime-ims+1)*(jme-jms+1))
+       CALL POPREAL8ARRAY(grid%hfx, (ime-ims+1)*(jme-jms+1))
+       CALL POPREAL8ARRAY(grid%canwat, (ime-ims+1)*(jme-jms+1))
+       CALL POPREAL8ARRAY(grid%znt, (ime-ims+1)*(jme-jms+1))
+       CALL POPREAL8ARRAY(grid%mol, (ime-ims+1)*(jme-jms+1))
+       CALL POPREAL8ARRAY(grid%ustm, (ime-ims+1)*(jme-jms+1))
+       CALL POPREAL8ARRAY(grid%ust, (ime-ims+1)*(jme-jms+1))
+!!!
+       CALL POPREAL8ARRAY ( grid%rqicuten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+       CALL POPREAL8ARRAY ( grid%rqccuten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
        CALL POPREAL8ARRAY ( grid%rqvcuten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
        CALL POPREAL8ARRAY ( grid%rthcuten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+
+       CALL POPREAL8ARRAY ( grid%rqiblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+       CALL POPREAL8ARRAY ( grid%rqcblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+       CALL POPREAL8ARRAY ( grid%rqvblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+       CALL POPREAL8ARRAY ( grid%rthblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+       CALL POPREAL8ARRAY ( grid%rvblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+       CALL POPREAL8ARRAY ( grid%rublten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+
+       CALL POPREAL8ARRAY ( chem, (ime-ims+1)*(kme-kms+1)*(jme-jms+1)*num_chem )
+
        CALL a_first_rk_step_part1 (    grid, config_flags         &
                              , moist , a_moist, moist_tend, a_moist_tend  &
-                             , chem  , chem_tend                &
+                             , chem  , a_chem,   chem_tend,   a_chem_tend     &
+#ifdef WRF_CHEM
+                             , dvel &
+#endif
                              , tracer, a_tracer, tracer_tend, a_tracer_tend   &
                              , scalar , a_scalar, scalar_tend , a_scalar_tend  &
                              , fdda3d, fdda2d                   &
@@ -6918,10 +7378,10 @@ BENCH_END(adj_rk_tend_tim)
                              , tke_tend, a_tke_tend             &
                              , config_flags%use_adaptive_time_step &
                              , curr_secs      &
-                             , psim , psih , wspd , gz1oz0      &
+                             , psim , psih , wspd , a_wspd , gz1oz0      &
                              , br , chklowq                     &
                              , cu_act_flag , hol , th_phy , a_th_phy      &
-                             , pi_phy , a_pi_phy, p_phy , a_p_phy, grid%t_phy , grid%a_t_phy     &
+                             , pi_phy , a_pi_phy, p_phy , a_p_phy  & !, grid%t_phy , grid%a_t_phy  &
                              , dz8w , a_dz8w, p8w , a_p8w, t8w , a_t8w &
                              , ids, ide, jds, jde, kds, kde     &
                              , ims, ime, jms, jme, kms, kme     &
@@ -7051,6 +7511,53 @@ BENCH_END(adj_step_prep_tim)
        ENDIF
      ENDDO
      !$OMP END PARALLEL DO
+
+#ifdef WRF_CHEM
+
+# ifdef DM_PARALLEL
+   if ( num_chem >= PARAM_FIRST_SCALAR ) then
+!-----------------------------------------------------------------------
+! see matching halo calls below for stencils
+!--------------------------------------------------------------
+     CALL wrf_debug ( 200 , ' call HALO_RK_CHEM_AD' )
+     IF      ( config_flags%h_mom_adv_order <= 4 ) THEN
+#      include "HALO_EM_CHEM_E_3_AD.inc"
+!       IF( config_flags%progn > 0 ) THEN
+!#         include "HALO_EM_SCALAR_E_3_AD.inc"
+!       ENDIF
+!       IF( config_flags%cu_physics == CAMZMSCHEME ) THEN
+!#         include "HALO_EM_SCALAR_E_3_AD.inc"
+!       ENDIF
+     ELSE IF ( config_flags%h_mom_adv_order <= 6 ) THEN
+#      include "HALO_EM_CHEM_E_5_AD.inc"
+!       IF( config_flags%cu_physics == CAMZMSCHEME ) THEN
+!#         include "HALO_EM_SCALAR_E_5_AD.inc"
+!       ENDIF
+!       IF( config_flags%progn > 0 ) THEN
+!#         include "HALO_EM_SCALAR_E_5_AD.inc"
+!      ENDIF
+     ELSE
+       WRITE(wrf_err_message,*)'solve_em: invalid h_mom_adv_order = ',config_flags%h_mom_adv_order
+       CALL wrf_error_fatal(TRIM(wrf_err_message))
+     ENDIF
+   ENDIF
+   if ( num_tracer >= PARAM_FIRST_SCALAR ) then
+!-----------------------------------------------------------------------
+! see matching halo calls below for stencils
+!--------------------------------------------------------------
+     CALL wrf_debug ( 200 , ' call HALO_RK_TRACER_AD' )
+     IF      ( config_flags%h_mom_adv_order <= 4 ) THEN
+#      include "HALO_EM_TRACER_E_3_AD.inc"
+     ELSE IF ( config_flags%h_mom_adv_order <= 6 ) THEN
+#      include "HALO_EM_TRACER_E_5_AD.inc"
+     ELSE
+       WRITE(wrf_err_message,*)'solve_em: invalid h_mom_adv_order = ',config_flags%h_mom_adv_order
+       CALL wrf_error_fatal(TRIM(wrf_err_message))
+     ENDIF
+   ENDIF
+# endif
+# endif
+
 
 #ifdef DM_PARALLEL
 !   Use a_u_1, a_v_1 etc as temporary buffers to do the halo exchange for bdy fields
@@ -7269,6 +7776,8 @@ BENCH_END(adj_step_prep_tim)
 #endif
 
 !  Max values of CFL for adaptive time step scheme
+
+   grid%itimestep = temp_itimestep
 
    grid%itimestep = grid%itimestep - 1
 

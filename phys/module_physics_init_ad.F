@@ -40,7 +40,8 @@ CONTAINS
 &    rqscuten, rqicuten, rushten, rvshten, rthshten, rqvshten, rqrshten, &
 &    rqcshten, rqsshten, rqishten, rqgshten, rublten, rubltenb, rvblten, &
 &    rvbltenb, rthblten, rthbltenb, rqvblten, rqvbltenb, rqcblten, &
-&    rqiblten, rthraten, rthratenlw, rthratensw, stepbl, stepra, stepcu, &
+&    rqcbltenb, rqiblten, rqibltenb, rthraten, rthratenlw, rthratensw, &
+&    stepbl, stepra, stepcu, &
 &    w0avg, w0avgb, rainnc, rainncb, rainc, raincb, raincv, raincvb, &
 &    rainncv, rainncvb, snownc, snowncb, snowncv, snowncvb, graupelnc, &
 &    graupelncb, graupelncv, graupelncvb, nca, swrad_scat, cldefi, lowlyr&
@@ -165,7 +166,7 @@ CONTAINS
     REAL, DIMENSION(ims:ime, kms:kme, jms:jme) :: rublten, rvblten, &
 &    rthblten, rqvblten, rqcblten, rqiblten, exch_h, tke_pbl
     REAL, DIMENSION(ims:ime, kms:kme, jms:jme) :: rubltenb, rvbltenb, &
-&    rthbltenb, rqvbltenb
+&    rthbltenb, rqvbltenb, rqcbltenb, rqibltenb
     REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(OUT), OPTIONAL ::&
 &    massflux_edkf, entr_edkf, detr_edkf, thl_up, thv_up, rt_up, rv_up, &
 &    rc_up, u_up, v_up, frac_up
@@ -472,7 +473,8 @@ CONTAINS
 &             jte, kts, kte)
     CALL BL_INIT_B(stepbl, bldt, dt, rublten, rubltenb, rvblten, &
 &             rvbltenb, rthblten, rthbltenb, rqvblten, rqvbltenb, &
-&             rqcblten, rqiblten, tsk, tmn, config_flags, restart, ust, &
+&             rqcblten, rqcbltenb, rqiblten, rqibltenb, &
+&             tsk, tmn, config_flags, restart, ust, &
 &             lowlyr, tslb, zs, dzs, num_soil_layers, tke_pbl, mfshconv, &
 &             massflux_edkf, entr_edkf, detr_edkf, thl_up, thv_up, rt_up&
 &             , rv_up, rc_up, u_up, v_up, frac_up, exch_h, vegfra, snow, &
@@ -538,7 +540,8 @@ CONTAINS
 !Optional oml
   SUBROUTINE BL_INIT_B(stepbl, bldt, dt, rublten, rubltenb, rvblten, &
 &    rvbltenb, rthblten, rthbltenb, rqvblten, rqvbltenb, rqcblten, &
-&    rqiblten, tsk, tmn, config_flags, restart, ust, lowlyr, tslb, zs, &
+&    rqcbltenb, rqiblten, rqibltenb, &
+&    tsk, tmn, config_flags, restart, ust, lowlyr, tslb, zs, &
 &    dzs, num_soil_layers, tke_pbl, mfshconv, massflux_edkf, entr_edkf, &
 &    detr_edkf, thl_up, thv_up, rt_up, rv_up, rc_up, u_up, v_up, frac_up&
 &    , exch_h, vegfra, snow, snowc, canwat, smstav, smstot, sfcrunoff, &
@@ -565,6 +568,7 @@ CONTAINS
 &    h0ml, huml, hvml, tmoml)
 
     USE a_module_bl_surface_drag, ONLY : surface_drag_init_b
+    USE a_module_bl_acm, ONLY : a_acminit
 
     IMPLICIT NONE
 !Optional oml
@@ -593,7 +597,7 @@ CONTAINS
     REAL, DIMENSION(ims:ime, kms:kme, jms:jme) :: rublten, rvblten, &
 &    exch_h, rthblten, rqvblten, rqcblten, rqiblten, tke_pbl
     REAL, DIMENSION(ims:ime, kms:kme, jms:jme) :: rubltenb, rvbltenb, &
-&    rthbltenb, rqvbltenb
+&    rthbltenb, rqvbltenb, rqcbltenb, rqibltenb
     REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(OUT), OPTIONAL ::&
 &    massflux_edkf, entr_edkf, detr_edkf, thl_up, thv_up, rt_up, rv_up, &
 &    rc_up, u_up, v_up, frac_up
@@ -829,6 +833,16 @@ CONTAINS
 &                         restart, ids, ide, jds, jde, kds, kde, ims, ime&
 &                         , jms, jme, kms, kme, its, ite, jts, jte, kts, &
 &                         kte)
+    CASE (acmpblscheme) 
+      CALL A_ACMINIT(rublten, rubltenb, rvblten, rvbltenb, &
+&                         rthblten, rthbltenb, rqvblten, rqvbltenb, &
+&                         rqcblten, rqcbltenb, rqiblten, rqibltenb, &
+&                         p_qi, param_first_scalar, restart,  &
+&                         allowed_to_read, &
+&                         ids, ide, jds, jde, kds, kde, ims, ime&
+&                         , jms, jme, kms, kme, its, ite, jts, jte, kts, &
+&                         kte)
+
     END SELECT
   END SUBROUTINE BL_INIT_B
 !=====================================================================

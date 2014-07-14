@@ -3764,7 +3764,7 @@ SUBROUTINE a_init_zero_tendency(a_ru_tendf, &
                                 a_moist_tendf,  &
 !  NPan - 05/26/10 {
 !  Uncomment the corresponding args when chem or tracer is needed.   
-!                                a_chem_tendf,   &
+                                a_chem_tendf,   &
                                 a_scalar_tendf, &
                                 a_tracer_tendf, &
 !  NPan }
@@ -3798,8 +3798,8 @@ SUBROUTINE a_init_zero_tendency(a_ru_tendf, &
 
 !  NPan - 05/26/10 {
 !  Uncomment the corresponding definations when chem is needed.   
-!   REAL , DIMENSION(ims:ime, kms:kme, jms:jme, n_chem ),INTENT(INOUT)::&
-!                                                          a_chem_tendf
+   REAL , DIMENSION(ims:ime, kms:kme, jms:jme, n_chem ),INTENT(INOUT)::&
+                                                          a_chem_tendf
    REAL , DIMENSION(ims:ime, kms:kme, jms:jme, n_tracer ),INTENT(INOUT)::&
                                                           a_tracer_tendf
    REAL , DIMENSION(ims:ime, kms:kme, jms:jme, n_scalar ),INTENT(INOUT)::&
@@ -3864,12 +3864,12 @@ SUBROUTINE a_init_zero_tendency(a_ru_tendf, &
 !  NPan - 05/26/10 {
 !  Uncomment the corresponding statements when chem is needed.   
 !!   DO ic=PARAM_FIRST_SCALAR,n_chem
-!   DO ic=1,n_chem                       !! make sure first one is zero too
-!      CALL a_zero_tend ( a_chem_tendf(ims,kms,jms,ic), &
-!                         ids, ide, jds, jde, kds, kde, &
-!                         ims, ime, jms, jme, kms, kme, &
-!                         its, ite, jts, jte, kts, kte  )
-!   ENDDO
+   DO ic=1,n_chem                       !! make sure first one is zero too
+      CALL a_zero_tend ( a_chem_tendf(ims,kms,jms,ic), &
+                         ids, ide, jds, jde, kds, kde, &
+                         ims, ime, jms, jme, kms, kme, &
+                         its, ite, jts, jte, kts, kte  )
+   ENDDO
 
 !   DO ic=PARAM_FIRST_SCALAR,n_tracer
    DO ic=1,n_tracer                     !! make sure first one is zero too

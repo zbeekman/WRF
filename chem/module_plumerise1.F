@@ -189,6 +189,20 @@ subroutine plumerise_driver (id,ktau,dtstep,                           &
                ebu(i,kts,j,p_ebu_ch4) = ebu_in(i,1,j,p_ebu_in_ch4)
             enddo
           enddo
+#if ( WRFPLUS == 1 )
+       elseif ( config_flags%biomass_burn_opt == WRFPLUS_BB ) then
+         do j=jts,jte
+            do i=its,ite
+               ebu(i,kts,j,p_ebu_pm25)=ebu_in(i,1,j,p_ebu_in_pm25)
+               ebu(i,kts,j,p_ebu_pm10)=ebu_in(i,1,j,p_ebu_in_pm10)
+!              ebu(i,kts,j,p_ebu_sulf)=ebu_in(i,1,j,p_ebu_in_sulf)
+               ebu(i,kts,j,p_ebu_bc)=ebu_in(i,1,j,p_ebu_in_bc)
+               ebu(i,kts,j,p_ebu_oc)=ebu_in(i,1,j,p_ebu_in_oc)
+               ebu(i,kts,j,p_ebu_so2)=ebu_in(i,1,j,p_ebu_in_so2)
+               ebu(i,kts,j,p_ebu_dms)=ebu_in(i,1,j,p_ebu_in_dms)
+            enddo
+          enddo
+#endif
        endif
 !
        do nv=1,num_ebu

@@ -199,6 +199,7 @@ tile_lon_loop : &
             rad   = gsw(i,j)
             vegfrac = vegfra(i,j)
             pa      = .01*p_phy(i,kts,j)
+
             clwchem = moist(i,kts,j,p_qc)
             ustar = ust(i,j)
             zntt  = znt(i,j)
@@ -1414,6 +1415,7 @@ include 'netcdf.inc'
 !    iland will be zero in deppart, which will try to pull non-exisant
 !    array locations.
 !--------------------------------------------------
+
         call nl_get_sf_surface_physics(id,l)
         if( l == 0 ) &
              call wrf_error_fatal("ERROR: Cannot use dry deposition without using a soil model.")

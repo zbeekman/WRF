@@ -581,6 +581,7 @@ module_physics_init.o : \
 
 module_physics_init_tl.o : \
 		module_bl_surface_drag_tl.o     \
+		module_bl_acm_tl.o              \
 		module_cu_du_tl.o               \
 		module_physics_init.o           \
 		../frame/module_state_description.o \
@@ -590,6 +591,7 @@ module_physics_init_tl.o : \
 
 module_physics_init_ad.o : \
 		module_bl_surface_drag_ad.o     \
+		module_bl_acm_ad.o              \
 		module_cu_du_ad.o               \
 		../frame/module_state_description.o \
 		../frame/module_configure.o \
@@ -710,6 +712,7 @@ module_pbl_driver.o:  \
 
 module_pbl_driver_tl.o:  \
 		module_bl_surface_drag_tl.o \
+		module_bl_acm_tl.o \
 		module_bl_gwdo_tl.o \
 		../frame/module_state_description.o \
 		../frame/module_configure.o \
@@ -719,9 +722,13 @@ module_pbl_driver_ad.o:  \
 		module_bl_surface_drag.o \
 		module_bl_gwdo.o \
 		module_bl_surface_drag_ad.o \
+		module_bl_acm_ad.o \
 		module_bl_gwdo_ad.o \
 		../frame/module_state_description.o \
 		../share/module_model_constants.o 
+
+module_bl_acm_tl.o: module_bl_acm.o
+module_bl_acm_ad.o: module_bl_acm.o
 
 module_data_gocart_dust.o: 
 
@@ -782,6 +789,36 @@ module_surface_driver.o: \
 		../frame/module_state_description.o \
 		../frame/module_configure.o \
 		../frame/module_cpl.o \
+		../share/module_model_constants.o  
+
+module_sf_pxlsm_tl.o: module_sf_pxlsm.o
+module_sf_pxlsm_ad.o: module_sf_pxlsm.o
+
+module_sf_sfclay_tl.o: module_sf_sfclay.o
+module_sf_sfclay_ad.o: module_sf_sfclay.o
+
+module_surface_driver_tl.o: \
+		module_sf_sfclay_tl.o		\
+		module_sf_pxsfclay_tl.o		\
+		module_sf_pxlsm_tl.o		\
+		module_sf_slab_tl.o		\
+		module_sf_sfcdiags.o		\
+		../frame/module_state_description.o \
+		../frame/module_configure.o \
+		../share/module_model_constants.o  
+
+module_surface_driver_ad.o: \
+		module_sf_sfclay_ad.o	        \
+		module_sf_pxsfclay_ad.o	        \
+		module_sf_pxlsm_ad.o	        \
+		module_sf_slab_ad.o		\
+		module_sf_sfclay.o	        \
+		module_sf_pxsfclay.o	        \
+		module_sf_pxlsm.o	        \
+		module_sf_slab.o		\
+		module_sf_sfcdiags.o		\
+		../frame/module_state_description.o \
+		../frame/module_configure.o \
 		../share/module_model_constants.o  
 
 module_sf_ocean_driver.o : \
@@ -927,7 +964,8 @@ module_ra_aerosol.o :\
 
 solve_interface.o: solve_em.int ../frame/module_domain.o ../frame/module_configure.o \
 		../frame/module_timing.o ../frame/module_driver_constants.o \
-		../frame/module_wrf_error.o
+		../frame/module_wrf_error.o mediation_pertmod_io.o \
+                $(ESMF_MOD_DEPENDENCE)
 
 start_domain.o: start_domain_em.int wrf_timeseries.o track_driver.o  ../frame/module_domain.o ../frame/module_configure.o
 

@@ -1493,7 +1493,12 @@ endif
             enddo
          enddo
 
-         CALL chem_init (grid%id,chem,emis_ant,scalar,grid%dt,grid%bioemdt,grid%photdt,     &
+         CALL chem_init (grid%id,chem,emis_ant,scalar,                                   &
+#if ( WRFPLUS == 1 )
+                         grid%scaleant,grid%scaleant_frq,grid%stepscaleant,grid%num_ant_steps,  &
+                         grid%scalebb,grid%scalebb_frq,grid%stepscalebb,grid%num_bb_steps,      &
+#endif
+                         grid%dt,grid%bioemdt,grid%photdt,     &
                          grid%chemdt,                                       &
                          grid%stepbioe,grid%stepphot,grid%stepchem,grid%stepfirepl,      &
                          grid%plumerisefire_frq,z_at_w,grid%xlat,grid%xlong,g,           &

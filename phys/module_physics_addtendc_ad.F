@@ -31,7 +31,8 @@ SUBROUTINE a_update_phy_ten(rph_tendf,rt_tendf,a_rt_tendf,ru_tendf,a_ru_tendf,  
                       RTHRATEN,RTHBLTEN,a_RTHBLTEN,RTHCUTEN,a_RTHCUTEN,RTHSHTEN,       &
                       RUBLTEN,a_RUBLTEN,RUCUTEN,RUSHTEN,                    &
                       RVBLTEN,a_RVBLTEN,RVCUTEN,RVSHTEN,                    &
-                      RQVBLTEN,a_RQVBLTEN,RQCBLTEN,RQIBLTEN,                &
+                      RQVBLTEN,a_RQVBLTEN,RQCBLTEN,a_RQCBLTEN,              &
+                      RQIBLTEN,a_RQIBLTEN,                &
                       RQVCUTEN,a_RQVCUTEN,RQCCUTEN,RQRCUTEN,RQICUTEN,RQSCUTEN,         &
                       RQVSHTEN,RQCSHTEN,RQRSHTEN,RQISHTEN,RQSSHTEN,RQGSHTEN,&
                       RUNDGDTEN,RVNDGDTEN,RTHNDGDTEN,RPHNDGDTEN,            &
@@ -109,6 +110,8 @@ SUBROUTINE a_update_phy_ten(rph_tendf,rt_tendf,a_rt_tendf,ru_tendf,a_ru_tendf,  
                                                       a_RUBLTEN, &
                                                       a_RVBLTEN, &
                                                      a_RQVBLTEN, &
+                                                     a_RQCBLTEN, &
+                                                     a_RQIBLTEN, &
                                                      a_RQVCUTEN
 
    REAL, DIMENSION(ims:ime, jms:jme), INTENT(IN  ) :: RMUNDGDTEN
@@ -137,7 +140,9 @@ SUBROUTINE a_update_phy_ten(rph_tendf,rt_tendf,a_rt_tendf,ru_tendf,a_ru_tendf,  
                       scalar_tendf,adv_moist_cond,             &
                       RTHBLTEN,a_RTHBLTEN,RUBLTEN,a_RUBLTEN,   &
                       RVBLTEN,a_RVBLTEN,                       &
-                      RQVBLTEN,a_RQVBLTEN,RQCBLTEN,RQIBLTEN,   &
+                      RQVBLTEN,a_RQVBLTEN,                     &
+                      RQCBLTEN,a_RQCBLTEN,                     &
+                      RQIBLTEN,a_RQIBLTEN,                     &
                       ids, ide, jds, jde, kds, kde,            &
                       ims, ime, jms, jme, kms, kme,            &
                       its, ite, jts, jte, kts, kte             )
@@ -151,7 +156,9 @@ SUBROUTINE a_phy_bl_ten(config_flags,rk_step,n_moist,n_scalar,     &
                       scalar_tendf,adv_moist_cond,               &
                       RTHBLTEN,a_RTHBLTEN,RUBLTEN,a_RUBLTEN,     &
                       RVBLTEN,a_RVBLTEN,                         & 
-                      RQVBLTEN,a_RQVBLTEN,RQCBLTEN,RQIBLTEN,     &
+                      RQVBLTEN,a_RQVBLTEN,                       &
+                      RQCBLTEN,a_RQCBLTEN,                       &
+                      RQIBLTEN,a_RQIBLTEN,                       &
                       ids, ide, jds, jde, kds, kde,              &
                       ims, ime, jms, jme, kms, kme,              &
                       its, ite, jts, jte, kts, kte               )
@@ -186,7 +193,10 @@ SUBROUTINE a_phy_bl_ten(config_flags,rk_step,n_moist,n_scalar,     &
                                                      a_RTHBLTEN, &
                                                       a_RUBLTEN, &
                                                       a_RVBLTEN, &
-                                                     a_RQVBLTEN
+                                                     a_RQVBLTEN, &
+                                                     a_RQCBLTEN, &
+                                                     a_RQIBLTEN
+
 
    REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(INOUT)::   &
                                                        rt_tendf, &
@@ -204,6 +214,52 @@ SUBROUTINE a_phy_bl_ten(config_flags,rk_step,n_moist,n_scalar,     &
    SELECT CASE(config_flags%bl_pbl_physics)
 
       CASE (SURFDRAGSCHEME)
+
+           if (P_QV .ge. PARAM_FIRST_SCALAR)                                         &
+              CALL a_add_a2a(moist_tendf(ims,kms,jms,P_QV),      &
+                   a_moist_tendf(ims,kms,jms,P_QV),              &
+                   RQVBLTEN, a_RQVBLTEN,                         &
+                   config_flags,                                 &
+                   ids,ide, jds, jde, kds, kde,                  &
+                   ims, ime, jms, jme, kms, kme,                 &
+                   its, ite, jts, jte, kts, kte                  )
+
+           CALL a_add_a2c_v(rv_tendf,a_rv_tendf,                 &
+                RVBLTEN,a_RVBLTEN,config_flags,                  &
+                ids,ide, jds, jde, kds, kde,                     &
+                ims, ime, jms, jme, kms, kme,                    &
+                its, ite, jts, jte, kts, kte                     )
+
+           CALL a_add_a2c_u(ru_tendf,a_ru_tendf,                 &
+                RUBLTEN,a_RUBLTEN,config_flags,                  &
+                ids,ide, jds, jde, kds, kde,                     &
+                ims, ime, jms, jme, kms, kme,                    &
+                its, ite, jts, jte, kts, kte                     )
+
+           CALL a_add_a2a(rt_tendf,a_rt_tendf,                 &
+                RTHBLTEN,a_RTHBLTEN,config_flags,                  &
+                ids,ide, jds, jde, kds, kde,                     &
+                ims, ime, jms, jme, kms, kme,                    &
+                its, ite, jts, jte, kts, kte                     )
+
+      CASE (ACMPBLSCHEME)
+           if (P_QI .ge. PARAM_FIRST_SCALAR)                                         &
+              CALL a_add_a2a(moist_tendf(ims,kms,jms,P_QI),      &
+                   a_moist_tendf(ims,kms,jms,P_QI),              &
+                   RQIBLTEN, a_RQIBLTEN,                         &
+                   config_flags,                                 &
+                   ids,ide, jds, jde, kds, kde,                  &
+                   ims, ime, jms, jme, kms, kme,                 &
+                   its, ite, jts, jte, kts, kte                  )
+
+           if (P_QC .ge. PARAM_FIRST_SCALAR)                                         &
+              CALL a_add_a2a(moist_tendf(ims,kms,jms,P_QC),      &
+                   a_moist_tendf(ims,kms,jms,P_QC),              &
+                   RQCBLTEN, a_RQCBLTEN,                         &
+                   config_flags,                                 &
+                   ids,ide, jds, jde, kds, kde,                  &
+                   ims, ime, jms, jme, kms, kme,                 &
+                   its, ite, jts, jte, kts, kte                  )
 
            if (P_QV .ge. PARAM_FIRST_SCALAR)                                         &
               CALL a_add_a2a(moist_tendf(ims,kms,jms,P_QV),      &

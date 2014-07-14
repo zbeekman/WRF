@@ -8,7 +8,10 @@ SUBROUTINE solve_interface ( grid )
    USE module_driver_constants
    USE module_configure
    USE module_wrf_error
-
+# ifdef WRF_CHEM
+   USE mediation_pertmod_io , ONLY : find_nl_xtraj, read_xtraj
+   USE esmf_timemod, ONLY : ESMF_TimeInc
+#endif
    IMPLICIT NONE
 
    INTERFACE
@@ -27,9 +30,13 @@ SUBROUTINE solve_interface ( grid )
    END INTERFACE
 
    TYPE(domain) , INTENT(INOUT)  :: grid
+# ifdef WRF_CHEM
+!   TYPE(domain) :: grid_check
+   CHARACTER*256          :: message
+# endif
    TYPE (grid_config_rec_type)   :: config_flags
 
-   INTEGER     :: idum1, idum2
+   INTEGER     :: idum1, idum2, ij
 
    CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
    CALL set_scalar_indices_from_config ( grid%id , idum1 , idum2 )
@@ -42,7 +49,44 @@ SUBROUTINE solve_interface ( grid )
 # include <actual_new_args.inc>
 !
                )
+# ifdef WRF_CHEM
+   IF ( config_flags%chem_opt > 0  ) THEN
+     CALL chem_driver_tl  ( grid , config_flags  &
+!
+# include <actual_new_args.inc>
+!
+               )
+   ENDIF
+# endif
+
    ELSE IF ( config_flags%dyn_opt == dyn_em_ad ) THEN
+# ifdef WRF_CHEM
+      IF ( config_flags%chem_opt > 0  ) THEN
+         !Call solve_em to recalculate grid used by chem_driver
+         grid%itimestep = grid%itimestep - 1
+         CALL solve_em  ( grid , config_flags  &
+!
+# include <actual_new_args.inc>
+!
+               )
+
+         CALL chem_driver_ad  ( grid , config_flags  &
+!
+# include <actual_new_args.inc>
+!
+               )
+         grid%domain_clock%clockint%CurrTime =  ESMF_TimeInc (grid%domain_clock%clockint%CurrTime, &
+                                grid%domain_clock%clockint%TimeStep )
+         CALL domain_clock_get ( grid, current_timestr=message )
+         CALL find_nl_xtraj (message) !Points xtraj_pointer to correct time
+         CALL read_xtraj(message) !Reads same time as above, then advances xtraj_pointer
+         CALL domain_clock_set( grid, time_step_seconds=config_flags%time_step )
+         grid%domain_clock%clockint%CurrTime = ESMF_TimeInc (grid%domain_clock%clockint%CurrTime, &
+                            grid%domain_clock%clockint%TimeStep )
+         CALL domain_clock_set( grid, time_step_seconds=-1*config_flags%time_step )
+      ENDIF
+# endif
+
       CALL solve_em_ad  ( grid , config_flags  &
 !
 # include <actual_new_args.inc>
@@ -54,7 +98,6 @@ SUBROUTINE solve_interface ( grid )
 # include <actual_new_args.inc>
 !
                )
-   END IF
 
 # ifdef WRF_CHEM
    IF ( config_flags%chem_opt > 0  ) THEN
@@ -66,6 +109,9 @@ SUBROUTINE solve_interface ( grid )
                )
    ENDIF
 # endif
+
+   END IF
+
 #endif
 #if (NMM_CORE == 1)
    CALL solve_nmm  ( grid , config_flags   &

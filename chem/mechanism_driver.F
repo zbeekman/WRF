@@ -20,10 +20,12 @@
   USE module_state_description
   USE module_data_radm2
   USE module_data_sorgam
-  USE module_radm
   USE module_gocart_chem
+#if (WRFPLUS != 1 )
+  USE module_radm
   USE module_aerosols_sorgam
   USE module_cbmz, only:	cbmz_driver
+#endif
    IMPLICIT NONE
 
    INTEGER,      INTENT(IN   ) :: id,julday,                           &
@@ -120,7 +122,7 @@
        vch2o2_old(its:ite,kts:kte,jts:jte) = &
             max(chem(its:ite,kts:kte,jts:jte,p_h2o2),epsilc)
 
-
+#if (WRFPLUS != 1 )
      CASE (RADM2, RADM2SORG, RADM2SORG_AQ, RADM2SORG_AQCHEM)
        CALL wrf_debug(15,'calling radm2_driver from mechanism_driver')
        if (config_flags%chem_opt /= RADM2) then
@@ -164,7 +166,7 @@
                ids,ide, jds,jde, kds,kde,                              &
                ims,ime, jms,jme, kms,kme,                              &
                its,ite, jts,jte, kts,kte                               )
-
+#endif
      CASE DEFAULT
                                                      
    END SELECT chem_select                              

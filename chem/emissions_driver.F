@@ -16,6 +16,11 @@ CONTAINS
          config_flags,gmt,julday,alt,t_phy,moist,p8w,t8w,u_phy,            &
          v_phy,vvel,e_bio,p_phy,chem,rho_phy,dz8w,ne_area,emis_ant,        &
          emis_vol,tsk,erod,g,emis_seas,emis_dust,tracer,                   &
+#if ( WRFPLUS == 1 )
+         scaleant,scaleant_frq,stepscaleant,num_ant_steps,                 &
+         scalebb,scalebb_frq,stepscalebb,num_bb_steps,                     &
+         check_count, checkpoint_interval,                                 &
+#endif
          ebu, ebu_in,mean_fct_agtf,mean_fct_agef,                          &
          mean_fct_agsv,mean_fct_aggr,firesize_agtf,firesize_agef,          &
          firesize_agsv,firesize_aggr,                                      &
@@ -78,6 +83,7 @@ CONTAINS
   USE module_data_sorgam, only : mw_so4_aer,anthfac,factnumn,factnuma,factnumc
   USE module_model_constants, only : mwdry
   USE module_emissions_anthropogenics
+#if ( WRFPLUS != 1 )
   USE module_bioemi_simple
   USE module_bioemi_beis314
   USE module_bioemi_megan2
@@ -90,13 +96,15 @@ CONTAINS
   USE module_dms_emis
   USE module_mosaic_addemiss
   USE module_add_emis_cptec
+#endif
   USE module_add_emiss_burn
   USE module_plumerise1
+#if ( WRFPLUS != 1 )
   USE module_aerosols_soa_vbs, only: soa_vbs_addemiss
   USE module_ghg_fluxes
   USE module_lightning_nox_driver
   USE module_cam_mam_addemiss, only: cam_mam_addemiss
-  
+#endif  
   IMPLICIT NONE
 
    TYPE(grid_config_rec_type),  INTENT(IN   )    :: config_flags
@@ -122,6 +130,16 @@ CONTAINS
    REAL, DIMENSION( ims:ime, 1:config_flags%kemit, jms:jme,num_emis_ant),&
          INTENT(IN ) ::                                                    &
          emis_ant
+#if ( WRFPLUS == 1 )
+   REAL, DIMENSION( ims:ime, 1:num_ant_steps, jms:jme, num_scaleant),&
+         INTENT(IN ) ::                                   scaleant
+   REAL, DIMENSION( ims:ime, 1:num_bb_steps, jms:jme, num_scalebb ),&
+         INTENT(IN ) ::                                   scalebb
+   INTEGER,      INTENT(IN) :: scaleant_frq,scalebb_frq,                   &
+                               stepscaleant,stepscalebb,                   &
+                               num_ant_steps,num_bb_steps,                 &
+                               check_count, checkpoint_interval
+#endif
    REAL, DIMENSION( ims:ime,  kms:kme, jms:jme,num_emis_vol),              &
          INTENT(INOUT ) ::                                                 &
          emis_vol
@@ -308,8 +326,11 @@ CONTAINS
 !
       INTEGER :: begday,endday,i, j, k, ksub, dust_emiss_active, seasalt_emiss_active,emiss_ash_hgt
       REAL :: conv,conv3,conv4,oconv3,oconv4
-      CHARACTER (LEN=80) :: message
+      CHARACTER*512 :: message
       LOGICAL :: do_bioemiss, do_plumerisefire,do_ex_volcanoe
+#if ( WRFPLUS == 1 )
+      INTEGER :: iant,ibb
+#endif
 
       INTEGER :: imod  ! dust scheme option from namelist
 
@@ -346,6 +367,7 @@ CONTAINS
       gmtm=mod(gmtp,60.)
 !     write(0,*) 'gmtp,gmtm,curr_secs = ',gmtp,gmtm,curr_secs
 !
+#if ( WRFPLUS != 1 )
       if(config_flags%emiss_opt_vol == 1 .or. config_flags%emiss_opt_vol == 2)then
          do_ex_volcanoe = .false.
 !
@@ -590,24 +612,34 @@ CONTAINS
       enddo
       enddo
       ENDIF! config_flags%emiss_opt_vol == 1 .or. config_flags%emiss_opt_vol == 2
+#endif
 !--------------------------------------------------------------------------------------
       do_plumerisefire = .false.
       IF ( config_flags%biomass_burn_opt == BIOMASSB_MOZC .OR. &
            config_flags%biomass_burn_opt == BIOMASSB_MOZ  .OR. &
            config_flags%biomass_burn_opt == BIOMASSB_GHG  .OR. &
-           config_flags%biomass_burn_opt == BIOMASSB ) then
+           config_flags%biomass_burn_opt == BIOMASSB &
+#if ( WRFPLUS == 1 )
+           .OR. config_flags%biomass_burn_opt == WRFPLUS_BB &
+#endif
+            ) then
         IF ( ktau==1 ) then
            do_plumerisefire = .true.
         ELSE IF ( adapt_step_flag ) THEN
+!           IF ( (plumerisefire_frq<=0) .or. &
+!                ( curr_secs+real(dtstep,8)+0.01 >= &
            IF ( (plumerisefire_frq<=0) .or. &
-                ( curr_secs+real(dtstep,8)+0.01 >= &
-                ( INT( curr_secs/real(plumerisefire_frq*60.,8)+1,8 )*real(plumerisefire_frq*60.,8) ) ) &
+                ( curr_secs+0.01 >= &
+                ( FLOOR( (curr_secs - real(dtstep,8))/real(plumerisefire_frq*60.,8)+1.0D0 )*real(plumerisefire_frq*60.,8) ) ) &
                 ) then
               do_plumerisefire = .true.
            ENDIF
         ELSE IF ( (MOD(ktau,stepfirepl)==0) .or. (stepfirepl==1) ) THEN
            do_plumerisefire = .true.
         ENDIF
+#if ( WRFPLUS == 1 )
+        IF(config_flags%dyn_opt == dyn_em_ad) do_plumerisefire = .false.
+#endif
       ENDIF
 
       do_bioemiss = .false.
@@ -623,6 +655,53 @@ CONTAINS
       ELSE IF ( (MOD(ktau,stepbioe)==0) .or. (stepbioe==1) ) THEN
          do_bioemiss = .true.
       ENDIF
+
+#if ( WRFPLUS == 1 )
+      iant=1
+      IF ( stepscaleant .gt. 0 ) THEN
+         IF ( ktau == 1 ) then
+            iant = 1
+         ELSE IF ( adapt_step_flag ) THEN
+            iant = ABS( INT( curr_secs/real(scaleant_frq*60.,8)+1.0, 8))
+         ELSE
+            do k=2,ktau
+               IF ( (MOD(k,stepscaleant) == 0) .or. (stepscaleant==1) ) iant=iant+1
+            enddo
+         ENDIF
+         IF ( check_count .gt. 1 ) then
+            iant=iant+(check_count-1)*checkpoint_interval*60/scaleant_frq
+         ENDIF
+      ENDIF
+      IF(iant .GT. num_ant_steps .OR. iant .LE. 0) THEN
+         write(message,*)'emissions_driver: need to increase num_ant_steps, ktauc,iant,check_count,checkpoint_interval,scaleant_frq,curr_secs = ',ktau,iant,check_count,checkpoint_interval,scaleant_frq,curr_secs
+         CALL wrf_error_fatal( trim(message) )
+      ENDIF
+      ibb=1
+      IF ( stepscalebb .gt. 0 ) THEN
+         IF ( ktau == 1 ) then
+            ibb = 1
+         ELSE IF ( adapt_step_flag ) THEN
+            ibb = ABS( INT( curr_secs/real(scalebb_frq*60.,8)+1.0, 8) )
+         ELSE
+            do k=2,ktau
+               IF ( (MOD(k,stepscalebb) == 0) .or. (stepscalebb==1) ) ibb=ibb+1
+            enddo
+         ENDIF
+         IF ( check_count .gt. 1 ) then
+            ibb=ibb+(check_count-1)*checkpoint_interval*60/scalebb_frq
+         ENDIF
+      ENDIF
+      IF(ibb .GT. num_bb_steps .OR. ibb .LE. 0) THEN
+         write(message,*)'emissions_driver: need to increase num_bb_steps, ktauc,ibb = ',ktau,ibb
+!         CALL wrf_error_fatal( trim(message) )
+         CALL wrf_message(TRIM(message))
+         ibb=(check_count-1)*checkpoint_interval*60/scalebb_frq
+
+
+      ENDIF
+      WRITE(message, *) 'chem_driver_ad, iant,ibb,curr_secs,ktauc = ',iant,ibb,curr_secs,ktau
+      CALL wrf_debug( 16, TRIM(message) )
+#endif
 !
 ! we are doing the plumerise/fire emissions first, they may be needed for chem and tracer arrays
 !
@@ -652,6 +731,9 @@ CONTAINS
        call add_emis_burn(id,dtstep,ktau,dz8w,rho_phy,tracer,&
             julday,gmt,xlat,xlong,t_phy,p_phy,                           &
             ebu,0,config_flags%tracer_opt,config_flags%biomass_burn_opt,     &
+#if ( WRFPLUS == 1 )
+            scalebb(:,ibb,:,:), config_flags%scale_burn_opt, &
+#endif
             num_tracer,ids,ide, jds,jde, kds,kde,                                   &
             ims,ime, jms,jme, kms,kme,                                   &
             its,ite, jts,jte, kts,kte                                    )
@@ -659,6 +741,7 @@ CONTAINS
         CALL wrf_debug(15,'No tracer option selected')
       END SELECT tracer_select
 
+#if ( WRFPLUS != 1 )
 !
 ! Gocart emissions...
 !
@@ -741,12 +824,17 @@ CONTAINS
       CASE DEFAULT 
         CALL wrf_debug(15,'no dms emissions')
       END SELECT dms_select
+#endif
 
     ksub=0
 !!! ***********   FIRE AND CHEM ****************************************
 !
     fire_select:  SELECT CASE(config_flags%biomass_burn_opt)
-     CASE (BIOMASSB,BIOMASSB_MOZC,BIOMASSB_MOZ,BIOMASSB_GHG)
+     CASE (BIOMASSB,BIOMASSB_MOZC,BIOMASSB_MOZ,BIOMASSB_GHG &
+#if ( WRFPLUS == 1 )
+           ,WRFPLUS_BB &
+#endif
+           )
 !      if( do_plumerisefire )then
 !         CALL wrf_debug(15,'fire emissions: calling biomassb')
 !         write(0,*)ktau,stepfirepl
@@ -766,6 +854,9 @@ CONTAINS
        call add_emis_burn(id,dtstep,ktau,dz8w,rho_phy,chem,&
             julday,gmt,xlat,xlong,t_phy,p_phy,                           &
             ebu,config_flags%chem_opt,0,config_flags%biomass_burn_opt,     &
+#if ( WRFPLUS == 1 )
+            scalebb(:,ibb,:,:), config_flags%scale_burn_opt, &
+#endif
             num_chem,ids,ide, jds,jde, kds,kde,                                   &
             ims,ime, jms,jme, kms,kme,                                   &
             its,ite, jts,jte, kts,kte                                    )
@@ -774,6 +865,8 @@ CONTAINS
     END SELECT fire_select
 !!**************** END FIRE, BEGIN BIOGENIC EMISSIONS
 !
+#if ( WRFPLUS != 1 )
+
     bioem_select: SELECT CASE(config_flags%bio_emiss_opt)
      CASE (GUNTHER1)
        if(ktau.eq.1.or.mod(ktau,stepbioe).eq.0)then
@@ -857,10 +950,20 @@ CONTAINS
 !     into CBMZ/MOSAIC.
                                                      
     END SELECT bioem_select
+#endif
 
 !!! **************** END BIOGENICS, ADD EMISSIONS FOR VARIOUS PACKAGES
 !
+#if ( WRFPLUS == 1 )
+      IF(config_flags%scale_emiss_opt /= config_flags%emiss_opt) THEN
+         CALL wrf_error_fatal( &
+           "emissions_driver: scale_emiss_opt /= emiss_opt")
+
+      ENDIF
+#endif
+
     gas_addemiss_select: SELECT CASE(config_flags%chem_opt)
+#if ( WRFPLUS != 1 )
     CASE (RADM2, RADM2_KPP, RADM2SORG, RADM2SORG_AQ, RADM2SORG_AQCHEM, RADM2SORG_KPP, &
           RACM_KPP, RACMPM_KPP, RACM_MIM_KPP, RACMSORG_AQ, RACMSORG_AQCHEM_KPP, RACM_ESRLSORG_AQCHEM_KPP, RACMSORG_KPP, &
           RACM_SOA_VBS_KPP, RACM_ESRLSORG_KPP, MOZART_KPP, MOZCART_KPP, MOZART_MOSAIC_4BIN_VBS0_KPP, CRIMECH_KPP, &
@@ -874,6 +977,9 @@ CONTAINS
        call wrf_debug(15,'emissions_driver calling add_anthropogenics')
        call add_anthropogenics(id,dtstep,dz8w,config_flags,rho_phy,alt, &
             chem, emis_ant,emis_aircraft,                               &
+!#if ( WRFPLUS == 1 )
+            scaleant(:,iant,:,:), &
+!#endif
             ids,ide, jds,jde, kds,kde,                                  &
             ims,ime, jms,jme, kms,kme,                                  &
             its,ite, jts,jte, kts,kte                                   )
@@ -925,6 +1031,9 @@ CONTAINS
 !     endif
 ! 20130725 acd_ck_bugfix end
 
+#endif
+
+#if ( WRFPLUS != 1 )
 !For SAPRC99 need to define SAPRC99_addemiss_anthro and SAPRC99_addemiss_bio
 !so did not add saprcnov packages here
     CASE (CBMZ, CBMZ_BB, CBMZ_BB_KPP, CBMZ_MOSAIC_4BIN, CBMZ_MOSAIC_8BIN, &
@@ -967,7 +1076,9 @@ CONTAINS
             ids,ide, jds,jde, kds,kde,                                  &
             ims,ime, jms,jme, kms,kme,                                  &
             its,ite, jts,jte, kts,kte                                   )
+#endif
 
+#if ( WRFPLUS != 1 )
     CASE (CHEM_TRACER)
        do j=jts,jte  
           do i=its,ite  
@@ -989,6 +1100,9 @@ CONTAINS
           end do
        end do
 !
+#endif
+
+#if ( WRFPLUS != 1 )
     CASE(CO2_TRACER,GHG_TRACER)  ! for ghg_tracer package
 
       ! Update the biospheric CO2 fluxes
@@ -1041,6 +1155,9 @@ CONTAINS
                             dtstep,dz8w,config_flags,rho_phy,   &
                             chem,emis_ant,eghg_bio,ebio_co2oce  )
    END IF
+#endif
+
+#if ( WRFPLUS != 1 )
 !**************************************************************************************************
     CASE (SAPRC99_KPP) !FIX FOR SAPRC07A
      if(config_flags%emiss_opt == 13 ) then
@@ -1159,7 +1276,9 @@ CONTAINS
             ims,ime, jms,jme, kms,kme,                                  &
             its,ite, jts,jte, kts,kte                                   )
       
-                  
+#endif
+
+#if ( WRFPLUS != 1 )                
     CASE (CBMZ_MOSAIC_4BIN_VBS2_KPP) !FIX FOR SAPRC07A
      if(config_flags%emiss_opt == 3 ) then
        IF(config_flags%kemit .GT. kte-ksub) THEN
@@ -1232,6 +1351,9 @@ CONTAINS
           end do
        end do
      endif
+#endif
+
+#if ( WRFPLUS != 1 )
     CASE (SAPRC99_MOSAIC_4BIN_VBS2_KPP) !FIX FOR SAPRC07A
      if(config_flags%emiss_opt == 13 ) then
        do j=jts,jte
@@ -1375,21 +1497,26 @@ CONTAINS
             ids,ide, jds,jde, kds,kde,                                  &
             ims,ime, jms,jme, kms,kme,                                  &
             its,ite, jts,jte, kts,kte                                   )
+#endif
 
     CASE (GOCARTRACM_KPP,GOCARTRADM2,GOCARTRADM2_KPP)
        IF(config_flags%emiss_inpt_opt /= 3 ) then
        IF(config_flags%kemit .GT. kte-ksub) THEN
          k=config_flags%kemit
-         write(message,'(" WARNING: EMISSIONS_DRIVER: KEMIT > KTE ",3i6)') kme,kte-ksub,k
+        write(message,'(" WARNING: EMISSIONS_DRIVER: KEMIT > KTE ",3i6)') kme,kte-ksub,k
          CALL WRF_MESSAGE (message)
        ENDIF
        call wrf_debug(15,'emissions_driver calling add_anthropogenics')
        call add_anthropogenics(id,dtstep,dz8w,config_flags,rho_phy,alt, &
             chem, emis_ant,emis_aircraft,                               &
+#if ( WRFPLUS == 1 )
+            scaleant(:,iant,:,:), &
+#endif
             ids,ide, jds,jde, kds,kde,                                  &
             ims,ime, jms,jme, kms,kme,                                  &
             its,ite, jts,jte, kts,kte                                   )
        call wrf_debug(15,'emissions_driver calling add_biogenics')
+#if ( WRFPLUS != 1 )
        ! Do NOT call add_biogenics if using MEGAN v2.04 biogenic emissions
        ! module
        call add_biogenics(id,dtstep,dz8w,config_flags,rho_phy,chem,     &
@@ -1401,7 +1528,7 @@ CONTAINS
             ids,ide, jds,jde, kds,kde,                                  &
             ims,ime, jms,jme, kms,kme,                                  &
             its,ite, jts,jte, kts,kte                                   )
-
+#endif
        end if ! emiss_inpt_opt /= 3
 
 !
@@ -1412,15 +1539,53 @@ CONTAINS
              do k=kts,min(config_flags%kemit,kte-ksub)
                 conv = 4.828e-4/rho_phy(i,k,j)*dtstep/(dz8w(i,k,j)*60.)
                 chem(i,k,j,p_bc1)  = chem(i,k,j,p_bc1)                     &
-                     +(emis_ant(i,k,j,p_e_eci)+emis_ant(i,k,j,p_e_ecj))*alt(i,k,j)*dtstep/dz8w(i,k,j)
+                     +(emis_ant(i,k,j,p_e_eci) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_eci) &
+#endif
+                       + emis_ant(i,k,j,p_e_ecj) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_ecj) &
+#endif
+                     )* alt(i,k,j)*dtstep/dz8w(i,k,j)
                 chem(i,k,j,p_oc1)  = chem(i,k,j,p_oc1)                     &
-                     +(emis_ant(i,k,j,p_e_orgj)+emis_ant(i,k,j,p_e_orgi))*alt(i,k,j)*dtstep/dz8w(i,k,j)
+                     +(emis_ant(i,k,j,p_e_orgj) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_orgj) &
+#endif
+                       + emis_ant(i,k,j,p_e_orgi) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_orgi) &
+#endif
+                    )*alt(i,k,j)*dtstep/dz8w(i,k,j)
                 chem(i,k,j,p_p25)  = chem(i,k,j,p_p25)                     &
-                     +(emis_ant(i,k,j,p_e_pm25j)+emis_ant(i,k,j,p_e_pm25i) &
-                     + emis_ant(i,k,j,p_e_no3j)+emis_ant(i,k,j,p_e_no3i))  &
-                     *alt(i,k,j)*dtstep/dz8w(i,k,j)
+                     +(emis_ant(i,k,j,p_e_pm25j) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_pm25j) &
+#endif
+                       +emis_ant(i,k,j,p_e_pm25i) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_pm25i) &
+#endif
+                     + emis_ant(i,k,j,p_e_no3j) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_no3j) &
+#endif
+                     + emis_ant(i,k,j,p_e_no3i) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_no3i) &
+#endif
+                     )*alt(i,k,j)*dtstep/dz8w(i,k,j)
                 chem(i,k,j,p_sulf)  = chem(i,k,j,p_sulf)                   &
-                     +(emis_ant(i,k,j,p_e_so4i)+emis_ant(i,k,j,p_e_so4j))*alt(i,k,j)*dtstep/dz8w(i,k,j)*mwdry/mw_so4_aer*1.e-3
+                     +(emis_ant(i,k,j,p_e_so4i) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_so4i) &
+#endif
+                     + emis_ant(i,k,j,p_e_so4j) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_so4j) &
+#endif
+                     )*alt(i,k,j)*dtstep/dz8w(i,k,j)*mwdry/mw_so4_aer*1.e-3
              end do
           end do
        end do
@@ -1432,23 +1597,64 @@ CONTAINS
 !
        if(config_flags%emiss_opt <=  5  ) then
        do j=jts,jte  
-          do i=its,ite  
+          do i=its,ite
              do k=kts,min(config_flags%kemit,kte-ksub)
                 conv = 4.828e-4/rho_phy(i,k,j)*dtstep/(dz8w(i,k,j)*60.)
                 chem(i,k,j,p_so2)  = chem(i,k,j,p_so2)                   &
-                     +emis_ant(i,k,j,p_e_so2)*conv
+                     +emis_ant(i,k,j,p_e_so2) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_so2) &
+#endif
+                     *conv
                 chem(i,k,j,p_bc1)  = chem(i,k,j,p_bc1)                     &
-                     +(emis_ant(i,k,j,p_e_eci)+emis_ant(i,k,j,p_e_ecj))*alt(i,k,j)*dtstep/dz8w(i,k,j)
+                     +(emis_ant(i,k,j,p_e_eci) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_eci) &
+#endif
+                     + emis_ant(i,k,j,p_e_ecj) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_ecj) &
+#endif
+                     )*alt(i,k,j)*dtstep/dz8w(i,k,j)
                 chem(i,k,j,p_oc1)  = chem(i,k,j,p_oc1)                     &
-                     +(emis_ant(i,k,j,p_e_orgj)+emis_ant(i,k,j,p_e_orgi))*alt(i,k,j)*dtstep/dz8w(i,k,j)
-!                    +(emis_ant(i,k,j,p_e_eci)+emis_ant(i,k,j,p_e_ecj))*7.*alt(i,k,j)*dtstep/dz8w(i,k,j)
+                     +(emis_ant(i,k,j,p_e_orgj) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_orgj) &
+#endif
+                     + emis_ant(i,k,j,p_e_orgi) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_orgi) &
+#endif
+                     )*alt(i,k,j)*dtstep/dz8w(i,k,j)
+!                    +(emis_ant(i,k,j,p_e_eci)*scaleant(i,iant,j,p_scant_eci)+emis_ant(i,k,j,p_e_ecj)*scaleant(i,iant,j,p_scant_ecj))*7.*alt(i,k,j)*dtstep/dz8w(i,k,j)
                 chem(i,k,j,p_p25)  = chem(i,k,j,p_p25)                     &
-                     +(emis_ant(i,k,j,p_e_pm25j)+emis_ant(i,k,j,p_e_pm25i) &
-                     +emis_ant(i,k,j,p_e_no3j)+emis_ant(i,k,j,p_e_no3i))   &
-                     *alt(i,k,j)*dtstep/dz8w(i,k,j)
+                     +(emis_ant(i,k,j,p_e_pm25j) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_pm25j) &
+#endif
+                     + emis_ant(i,k,j,p_e_pm25i) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_pm25i) &
+#endif
+                     + emis_ant(i,k,j,p_e_no3j) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_no3j) &
+#endif
+                     + emis_ant(i,k,j,p_e_no3i) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_no3i) &
+#endif
+                     )*alt(i,k,j)*dtstep/dz8w(i,k,j)
                 chem(i,k,j,p_sulf)  = chem(i,k,j,p_sulf)                   &
-                     +(emis_ant(i,k,j,p_e_so4i)+emis_ant(i,k,j,p_e_so4j))  &
-                     *alt(i,k,j)*dtstep/dz8w(i,k,j)*mwdry/mw_so4_aer*1.e-3
+                     +(emis_ant(i,k,j,p_e_so4i) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_so4i) &
+#endif
+                     + emis_ant(i,k,j,p_e_so4j) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_so4j) &
+#endif
+                     )*alt(i,k,j)*dtstep/dz8w(i,k,j)*mwdry/mw_so4_aer*1.e-3
              end do
           end do
        end do
@@ -1462,29 +1668,97 @@ CONTAINS
              do k=kts,min(config_flags%kemit,kte-ksub)
                 conv = 4.828e-4/rho_phy(i,k,j)*dtstep/(dz8w(i,k,j)*60.)
                 chem(i,k,j,p_so2)  = chem(i,k,j,p_so2)                   &
-                     +emis_ant(i,k,j,p_e_so2)*conv
+                     +emis_ant(i,k,j,p_e_so2) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_so2) &
+#endif
+                     *conv
                 chem(i,k,j,p_bc1)  = chem(i,k,j,p_bc1)                     &
-                     +(emis_ant(i,k,j,p_e_bc))*alt(i,k,j)*dtstep/dz8w(i,k,j)
+                     +emis_ant(i,k,j,p_e_bc) &
+#if ( WRFPLUS == 1 )
+                      *scaleant(i,iant,j,p_scant_bc) &
+#endif
+                      *alt(i,k,j)*dtstep/dz8w(i,k,j)
                 chem(i,k,j,p_oc1)  = chem(i,k,j,p_oc1)                     &
-                     +(emis_ant(i,k,j,p_e_oc))*alt(i,k,j)*dtstep/dz8w(i,k,j)
+                     +emis_ant(i,k,j,p_e_oc) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_oc) &
+#endif
+                     *alt(i,k,j)*dtstep/dz8w(i,k,j)
                 chem(i,k,j,p_p25)  = chem(i,k,j,p_p25)                     &
-                     +(emis_ant(i,k,j,p_e_pm_25))   &
-                     *alt(i,k,j)*dtstep/dz8w(i,k,j)
+                     +(emis_ant(i,k,j,p_e_pm_25) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_pm_25) &
+#endif
+                     )*alt(i,k,j)*dtstep/dz8w(i,k,j)
                 chem(i,k,j,p_p10)  = chem(i,k,j,p_p10)                     &
-                     +(emis_ant(i,k,j,p_e_pm_10))   &
-                     *alt(i,k,j)*dtstep/dz8w(i,k,j)
+                     +(emis_ant(i,k,j,p_e_pm_10) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_pm_10) &
+#endif
+                     )*alt(i,k,j)*dtstep/dz8w(i,k,j)
                 chem(i,k,j,p_sulf)  = chem(i,k,j,p_sulf)                   &
-                     +emis_ant(i,k,j,p_e_sulf)*conv
+                     +emis_ant(i,k,j,p_e_sulf) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_sulf) &
+#endif
+                     *conv
              end do
           end do
        end do
        endif
 ! do this here for now, quick and dirty
 
+#if ( WRFPLUS == 1 )
+!Simple emissions scaling from NEI MADE/SORGAM to GOCART
+       if(config_flags%emiss_opt == WRFPLUS_ANT) then
+       do j=jts,jte  
+          do i=its,ite  
+             do k=kts,min(config_flags%kemit,kte-ksub)
+                conv = 4.828e-4/rho_phy(i,k,j)*dtstep/(dz8w(i,k,j)*60.)
+                chem(i,k,j,p_so2)  = chem(i,k,j,p_so2)                   &
+                     +emis_ant(i,k,j,p_e_so2) &
+                     *scaleant(i,iant,j,p_scant_so2) &
+                     *conv
+                chem(i,k,j,p_bc1)  = chem(i,k,j,p_bc1)                     &
+                     +(emis_ant(i,k,j,p_e_eci) &
+                     *scaleant(i,iant,j,p_scant_bc) &
+                     + emis_ant(i,k,j,p_e_ecj) &
+                     *scaleant(i,iant,j,p_scant_bc) &
+                     )*alt(i,k,j)*dtstep/dz8w(i,k,j)
+                chem(i,k,j,p_oc1)  = chem(i,k,j,p_oc1)                     &
+                     +(emis_ant(i,k,j,p_e_orgj) &
+                     *scaleant(i,iant,j,p_scant_oc) &
+                     + emis_ant(i,k,j,p_e_orgi) &
+                     *scaleant(i,iant,j,p_scant_oc) &
+                     )*alt(i,k,j)*dtstep/dz8w(i,k,j)
+                chem(i,k,j,p_p25)  = chem(i,k,j,p_p25)                     &
+                     +(emis_ant(i,k,j,p_e_pm25j) &
+                     *scaleant(i,iant,j,p_scant_pm_25) &
+                     + emis_ant(i,k,j,p_e_pm25i) &
+                     *scaleant(i,iant,j,p_scant_pm_25) &
+                     + emis_ant(i,k,j,p_e_no3j) &
+                     *scaleant(i,iant,j,p_scant_no3) &
+                     + emis_ant(i,k,j,p_e_no3i) &
+                     *scaleant(i,iant,j,p_scant_no3) &
+                     )*alt(i,k,j)*dtstep/dz8w(i,k,j)
+                chem(i,k,j,p_sulf)  = chem(i,k,j,p_sulf)                   &
+                     +(emis_ant(i,k,j,p_e_so4i) &
+                     *scaleant(i,iant,j,p_scant_sulf) &
+                     + emis_ant(i,k,j,p_e_so4j) &
+                     *scaleant(i,iant,j,p_scant_sulf) &
+                     )*alt(i,k,j)*dtstep/dz8w(i,k,j)*mwdry/mw_so4_aer*1.e-3
+             end do
+          end do
+       end do
+       endif
+#endif
     CASE DEFAULT
        call wrf_debug(15,'emissions_driver NOT CALLING gas add_... routines')
 
     END SELECT gas_addemiss_select
+
+#if ( WRFPLUS != 1 )
 !
 ! special treatment for these emissions. They come in only at one time 
 ! (global emissions data set used here), and then a durnal variation is added on in this routine
@@ -1502,7 +1776,9 @@ CONTAINS
     CASE DEFAULT
        call wrf_debug(15,'emissions_driver not calling add_emiss_cptec')
     END SELECT emiss_select
+#endif
 
+#if ( WRFPLUS != 1 )
     aer_addemiss_select: SELECT CASE(config_flags%chem_opt)
 
     CASE (RADM2SORG,RADM2SORG_AQ,RADM2SORG_AQCHEM,RADM2SORG_KPP, &
@@ -1575,7 +1851,9 @@ CONTAINS
        call wrf_debug(15,'emissions_driver NOT CALLING aer add_... routines')
 
     END SELECT aer_addemiss_select
+#endif
 
+#if ( WRFPLUS != 1 )
 ! Lightning NO emission
     CALL lightning_nox_driver ( &
           ! Frequently used prognostics
@@ -1606,6 +1884,7 @@ CONTAINS
             lnox_ic=tracer(:,:,:,p_lnox_ic),             &
             lnox_cg=tracer(:,:,:,p_lnox_cg)          &
           )
+#endif
 
     END subroutine emissions_driver
 

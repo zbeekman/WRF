@@ -4,20 +4,20 @@ MODULE module_sf_pxlsm
   USE module_sf_pxlsm_data
 
   INTEGER, PARAMETER   :: NSOLD=20
-  REAL, PARAMETER      :: RD     = 287.04,   CPD   = 1004.67,             &
-                          CPH2O  = 4.218E+3, CPICE = 2.106E+3,            &
-                          LSUBF  = 3.335E+5, SIGMA = 5.67E-8,             &  
+  REAL, PARAMETER      :: RD     = 287.04D0,   CPD   = 1004.67D0,             &
+                          CPH2O  = 4.218D+3, CPICE = 2.106D+3,            &
+                          LSUBF  = 3.335D+5, SIGMA = 5.67D-8,             &  
                           ROVCP  = RD / CPD
                           
-  REAL, PARAMETER      :: CRANKP = 0.5                    ! CRANK-NIC PARAMETER
-  REAL, PARAMETER      :: RIC    = 0.25                   ! critical Richardson number
-  REAL, PARAMETER      :: DENW   = 1000.0                 ! water density in KG/M3                  
-  REAL, PARAMETER      :: TAUINV = 1.0 / 86400.0          ! 1/1DAY(SEC)
-  REAL, PARAMETER      :: T2TFAC = 1.0 / 10.0             ! Bottom soil temp response factor
-  REAL, PARAMETER      :: PI = 3.1415926
-  REAL, PARAMETER      :: PR0 = 0.95
-  REAL, PARAMETER      :: CZO    = 0.032
-  REAL, PARAMETER      :: OZO    = 1.E-4
+  REAL, PARAMETER      :: CRANKP = 0.5D0                    ! CRANK-NIC PARAMETER
+  REAL, PARAMETER      :: RIC    = 0.25D0                   ! critical Richardson number
+  REAL, PARAMETER      :: DENW   = 1000.0D0                 ! water density in KG/M3                  
+  REAL, PARAMETER      :: TAUINV = 1.0D0 / 86400.0D0          ! 1/1DAY(SEC)
+  REAL, PARAMETER      :: T2TFAC = 1.0D0 / 10.0D0             ! Bottom soil temp response factor
+  REAL, PARAMETER      :: PI = 3.1415926535897932384626433
+  REAL, PARAMETER      :: PR0 = 0.95D0
+  REAL, PARAMETER      :: CZO    = 0.032D0
+  REAL, PARAMETER      :: OZO    = 1.D-4
 
 CONTAINS
 !
@@ -270,7 +270,7 @@ CONTAINS
 
       !----  PARAMETERS
       INTEGER, PARAMETER  :: NSTPS  = 11     ! max. soil types
-      REAL, PARAMETER     :: DTPBLX = 40.0   ! Max PX timestep = 40 sec
+      REAL, PARAMETER     :: DTPBLX = 40.0D0   ! Max PX timestep = 40 sec
 
       
       !----  INTEGERS
@@ -303,8 +303,8 @@ CONTAINS
 !-------------------------------------------------------------------------
 !-------------------------------Executable starts here--------------------
 !
-      ALN10  = ALOG(10.0)
-      G1000  = g*1.0E-3            ! G/1000
+      ALN10  = ALOG(10.0D0)
+      G1000  = g*1.0D-3            ! G/1000
       WEIGHT = 0
       ! Determine Landuse Dataset by the number of categories
       IF (NLCAT == 50) THEN
@@ -338,14 +338,14 @@ CONTAINS
       !-----------------------------------------------------------------------------------
       !--- Compute time relatve to old and new analysis time for timestep interpolation
       IF(PXLSM_SOIL_NUDGE .EQ. 1) THEN
-        DT_FDDA = ANAL_INTERVAL * 1.0    ! Convert DT of Analysis to real 
+        DT_FDDA = ANAL_INTERVAL * 1.0D0    ! Convert DT of Analysis to real 
         TIME_BETWEEN_ANALYSIS = MOD(CURR_SECS,DT_FDDA)
         IF (TIME_BETWEEN_ANALYSIS .EQ. 0.0) THEN   
-          CORB = 1.0       
-          CORE = 0.0    
+          CORB = 1.0D0
+          CORE = 0.0D0
         ELSE    
           CORE = TIME_BETWEEN_ANALYSIS  / DT_FDDA     
-          CORB = 1.0 - CORE  
+          CORB = 1.0D0 - CORE  
         ENDIF 
       ENDIF 
       !-----------------------------------------------------------------------------------
@@ -383,20 +383,20 @@ CONTAINS
           ENDIF
 
           !--  Variables Sub. SURFPX needs
-          SFCPRS = PSFC(i,j) / 1000.0                 ! surface pressure in cb
+          SFCPRS = PSFC(i,j) / 1000.0D0                 ! surface pressure in cb
           TA1    = T3D(i,1,j)                         ! air temperature at first layer
           DENS1  = RHO(I,1,J)                         ! air density at first layer
           QV1    = QV3D(i,1,j)                        ! water vapor mixing ratio at first layer
           QV2    = QV3D(i,2,j)
-          ZLVL   = 0.5 * DZ8W(i,1,j)                  ! thickness of lowest half level
+          ZLVL   = 0.5D0 * DZ8W(i,1,j)                  ! thickness of lowest half level
           ZF1    = DZ8W(i,1,j)
-          ZA2    = ZF1 + 0.5 * DZ8W(i,2,j)
+          ZA2    = ZF1 + 0.5D0 * DZ8W(i,2,j)
 
           LWDN   = GLW(I,J)                           ! longwave radiation
           EMISSI = EMISS(I,J)                         ! emissivity
-          PRECIP = MAX ( 1.0E-3*RAINBL(i,j)/DTBL,0.0) ! accumulated precip. rate during DT (=dtpbl)
+          PRECIP = MAX ( 1.0D-3*RAINBL(i,j)/DTBL,0.0D0) ! accumulated precip. rate during DT (=dtpbl)
                                                       ! convert RAINBL from mm to m for PXLSM
-          WR     = 1.0E-3*CANWAT(I,J)                 ! convert CANWAT from mm to m for PXLSM
+          WR     = 1.0D-3*CANWAT(I,J)                 ! convert CANWAT from mm to m for PXLSM
           THETA1 = TH3D(i,1,j)                  ! potential temp at first layer
           SNOBS  = SNOW(I,J)                          ! Set snow cover to existing model value
                                                       !   this is overwritten below if snow analysis is availiable
@@ -418,14 +418,14 @@ CONTAINS
             SNOBS = CORB * SN_NDG_OLD(I,J) +  CORE * SN_NDG_NEW(I,J)  
           ENDIF
 
-          USTAR  = MAX(UST(I,J),0.005)
+          USTAR  = MAX(UST(I,J),0.005D0)
           
           IF (IFLAND .GT. 1.5) THEN ! if over water                            
             ZNT(I,J) = CZO * UST(I,J) * UST(I,J) / G + OZO
           ENDIF                                                              
           
           Z0     = ZNT(I,J)
-          CPAIR  = CPD * (1.0 + 0.84 * QV1)            ! J/(K KG)
+          CPAIR  = CPD * (1.0D0 + 0.84D0 * QV1)            ! J/(K KG)
 
           !-------------------------------------------------------------
           ! Compute fractional snow area and snow albedo
@@ -440,17 +440,17 @@ CONTAINS
           ! are converted to ice/snow for more reasonable treatment.
           IF( (XICE(I,J).GE.0.5) .OR.   &
               (SST(I,J).LE.270.0.AND.XLAND(I,J).GT.1.50) ) THEN
-              XLAND(I,J) = 1.0
-              IFLAND = 1.0
+              XLAND(I,J) = 1.0D0
+              IFLAND = 1.0D0
               ZNT(I,J) = 0.001  !  Ice
-              SMOIS(I,1,J) = 1.0     ! FWSAT
-              SMOIS(I,2,J) = 1.0     ! FWSAT
-              XICE(I,J) = 1.0
-              ALBEDO(I,J) = 0.7
-              SNOWC(I,J) = 1.0
-              SNOW_FRA = 1.0
-              VEGF_PX(I,J) = 0.0
-              LAI(I,J) = 0.0
+              SMOIS(I,1,J) = 1.0D0     ! FWSAT
+              SMOIS(I,2,J) = 1.0D0     ! FWSAT
+              XICE(I,J) = 1.0D0
+              ALBEDO(I,J) = 0.7D0
+              SNOWC(I,J) = 1.0D0
+              SNOW_FRA = 1.0D0
+              VEGF_PX(I,J) = 0.0D0
+              LAI(I,J) = 0.0D0
           ENDIF
           !-------------------------------------------------------------
 
@@ -459,20 +459,20 @@ CONTAINS
           !-- LAI and Veg are the same                                                     
           T2I = TSLB(I,2,J)                                            
 !         FSEAS = AMAX1(1.0 - 0.0016 * (298.0 - T2I) ** 2,0.0)  ! BATS            
-          FSEAS = AMAX1(1.0 - 0.015625 * (290.0 - T2I) ** 2,0.0) ! JP97            
-          IF (T2I .GE. 290.0) FSEAS = 1.0                                          
+          FSEAS = AMAX1(1.0D0 - 0.015625D0 * (290.0D0 - T2I) ** 2,0.0D0) ! JP97            
+          IF (T2I .GE. 290.0) FSEAS = 1.0D0                                          
           
           LAI(I,J)       = XLAIMN(I,J) + FSEAS*(XLAI(I,J) - XLAIMN(I,J))                 
           VEGF_PX(I,J)   = XVEGMN(I,J) + FSEAS*(XVEG(I,J) - XVEGMN(I,J))                       
           
           ! Ensure veg algorithms not used for water 
           IF (IFLAND .GT. 1.5) THEN                        
-             VEGF_PX(I,J) = 0.0         
+             VEGF_PX(I,J) = 0.0D0
           ENDIF                                                                   
           !-------------------------------------------------------------
 
 
-          SOLDN  = GSW(I,J) / (1.0 - ALBEDO(I,J))     ! downward shortwave radiaton
+          SOLDN  = GSW(I,J) / (1.0D0 - ALBEDO(I,J))     ! downward shortwave radiaton
           ISNOW = SNOWC(I,J)
 
 
@@ -481,35 +481,35 @@ CONTAINS
           IF ( I .LE. 2 .OR. I .GE. (ide-1) ) NUDGE=0
           
           IF ( RMOL(I,J) .GT. 0.0 )  THEN
-              MOLX = AMIN1(1/RMOL(I,J),1000.0)
+              MOLX = AMIN1(1.D0/RMOL(I,J),1000.0D0)
           ELSE IF ( RMOL(I,J) .LT. 0.0 ) THEN
-              MOLX = AMAX1(1/RMOL(I,J),-1000.0)
+              MOLX = AMAX1(1.D0/RMOL(I,J),-1000.0D0)
           ELSE
-              MOLX = 1000
+              MOLX = 1000.D0
           ENDIF   
  
-          ZFUNC = ZF1 * (1.0 - ZF1 / MAX(100.,PBLH(I,J))) ** 2
+          ZFUNC = ZF1 * (1.0D0 - ZF1 / MAX(100.D0,PBLH(I,J))) ** 2
           QST12 = KARMAN * ZFUNC*(QV2-QV1) / (ZA2-ZLVL)
                
 
 !--- LSM sub-time loop too prevent dt > 40 sec       
-          NTSPS = INT(DT / (DTPBLX + 0.000001) + 1.0)                                
+          NTSPS = INT(DT / (DTPBLX + 0.000001D0) + 1.0D0)                                
           DTPBL = DT / NTSPS                                                       
 
           DO IT=1,NTSPS                                                     
           
             !... SATURATION VAPOR PRESSURE (MB) 
             IF ( TSLB(I,1,J) .LE. SVPT0 ) THEN        ! For ground that is below freezing
-              ES = SVP1 * EXP(22.514 - 6.15E3 / TSLB(I,1,J))      ! cb
+              ES = SVP1 * EXP(22.514D0 - 6.15D3 / TSLB(I,1,J))      ! cb
             ELSE
               ES = SVP1 * EXP(SVP2 * (TSLB(I,1,J) - SVPT0) /  (TSLB(I,1,J) - SVP3))
             ENDIF
-            QSS  = ES * 0.622 / (SFCPRS - ES)
+            QSS  = ES * 0.622D0 / (SFCPRS - ES)
           
             !... beta method, Lee & Pielke (JAM,May1992)
-            BETAP = 1.0
+            BETAP = 1.0D0
             IF (IFLAND .LT. 1.5 .AND. ISNOW .LT. 0.5 .AND. SMOIS(I,1,J) .LE. FWFC) THEN       
-              BETAP = 0.25 * (1.0 - COS(SMOIS(I,1,J) / FWFC * PI)) ** 2
+              BETAP = 0.25D0 * (1.0D0 - COS(SMOIS(I,1,J) / FWFC * PI)) ** 2
             ENDIF
             
             !-------------------------------------------------------------------------
@@ -535,7 +535,7 @@ CONTAINS
           END DO                        ! Time internal PX time loop   
 
           TSK(I,J)    = TSLB(I,1,J)     ! Skin temp set to 1 cm soil temperature in PX for now
-          CANWAT(I,J) = WR * 1000.      ! convert WR back to mm for CANWAT
+          CANWAT(I,J) = WR * 1000.D0      ! convert WR back to mm for CANWAT
           
        ENDDO !  END MIAN I LOOP
       ENDDO  !  END MAIN J LOOP
@@ -600,8 +600,8 @@ CONTAINS
       REAL    :: SUMLAI, SUMLMN, SUMRSI, SUMLZ0, SUMVEG, SUMVMN, ALAI, VEGF, SUMSNUP
       REAL    :: VFMX, VFMN, VSEAS, FAREA, FWAT, ZNOTC, SUMALB
       REAL,   DIMENSION( NLCAT )  :: LAIMX, LAIMN, Z0, VEG, VEGMN, SNUP
-      REAL, PARAMETER      :: ZNOTCMN = 5.0  ! CM, MIN Zo FOR CROPS
-      REAL, PARAMETER      :: ZNOTCMX = 15.0 ! CM, MAX Zo FOR CROPS
+      REAL, PARAMETER      :: ZNOTCMN = 5.0D0  ! CM, MIN Zo FOR CROPS
+      REAL, PARAMETER      :: ZNOTCMX = 15.0D0 ! CM, MAX Zo FOR CROPS
 
       REAL, SAVE, DIMENSION(:), POINTER  :: RSMIN, Z00, VEG0, VEGMN0, LAI0, LAIMN0, SNUP0, ALBF
 
@@ -662,13 +662,13 @@ CONTAINS
       !--------------------------------------------------------------------
       DO J = jts,jte
         DO I = its,ite
-          XLAI(I,J)   = 0.0                                                        
-          XLAIMN(I,J) = 0.0                                                     
-          RSTMIN(I,J) = 9999.0                                                    
-          XVEG(I,J)   = 0.0                                                       
-          XVEGMN(I,J) = 0.0
-          XSNUP(I,J)  = 0.0                                                            
-          XALB(I,J)   = 0.0                                                            
+          XLAI(I,J)   = 0.0D0                                                        
+          XLAIMN(I,J) = 0.0D0                                                     
+          RSTMIN(I,J) = 9999.0D0                                                    
+          XVEG(I,J)   = 0.0D0                                                       
+          XVEGMN(I,J) = 0.0D0
+          XSNUP(I,J)  = 0.0D0                                                            
+          XALB(I,J)   = 0.0D0                                                            
         ENDDO   ! END LOOP THROUGH GRID CELLS
       ENDDO     ! END LOOP THROUGH GRID CELLS
       !--------------------------------------------------------------------
@@ -688,15 +688,15 @@ CONTAINS
           ENDDO                                              
 
           !--  INITIALIZE SUMS
-          SUMLAI = 0.0
-          SUMLMN = 0.0
-          SUMRSI = 0.0
-          SUMLZ0 = 0.0
-          SUMVEG = 0.0
-          SUMVMN = 0.0
-          ALAI   = 0.0
-          SUMSNUP= 0.0
-          SUMALB = 0.0
+          SUMLAI = 0.0D0
+          SUMLMN = 0.0D0
+          SUMRSI = 0.0D0
+          SUMLZ0 = 0.0D0
+          SUMVEG = 0.0D0
+          SUMVMN = 0.0D0
+          ALAI   = 0.0D0
+          SUMSNUP= 0.0D0
+          SUMALB = 0.0D0
 
           !--   ESTIMATE CROP EMERGANCE DATE FROM VEGFRAC
           VFMX   = SHDMAX(I,J)
@@ -707,8 +707,8 @@ CONTAINS
           IF(VFMX.GT.0.0.AND.LANDUSEF(I,KWAT,J).LT.1.00) THEN
             VSEAS = VEGF/VFMX
             IF(VSEAS.GT.1.0.OR.VSEAS.LT.0.0) THEN
-              VSEAS = MIN(VSEAS,1.0)
-              VSEAS = MAX(VSEAS,0.0)
+              VSEAS = MIN(VSEAS,1.0D0)
+              VSEAS = MAX(VSEAS,0.0D0)
             ENDIF
 
             ZNOTC = ZNOTCMN * (1-VSEAS) + ZNOTCMX * VSEAS  ! Zo FOR CROPS
@@ -717,61 +717,61 @@ CONTAINS
 
                 !-- USE THE VEGFRAC DATA ONLY FOR CROPS
                 IF (K.EQ.12 .OR. K.EQ.14) THEN
-                   LAIMX(K) = LAIMN0(K) * (1-VSEAS) + LAI0(K) * VSEAS
+                   LAIMX(K) = LAIMN0(K) * (1.D0-VSEAS) + LAI0(K) * VSEAS
                    LAIMN(K) = LAIMX(K)
-                   VEG(K)   = VEGMN0(K) * (1-VSEAS) + VEG0(K) * VSEAS
+                   VEG(K)   = VEGMN0(K) * (1.D0-VSEAS) + VEG0(K) * VSEAS
                    VEGMN(K) = VEG(K)
                    !-- SEASONALLY VARY Zo FOR MODIS DryCrop (k=12)
                    IF (K .EQ. 12) THEN
                       Z0(K) = ZNOTC
                    !-- CrGrM (k=14) USE AVG WITH GRASS AND FOREST
                    ELSE IF (K .EQ.14) THEN
-                      Z0(K)  = 0.5 * (ZNOTC + Z00(K))
+                      Z0(K)  = 0.5D0 * (ZNOTC + Z00(K))
                    ENDIF
                 ENDIF
               ELSE IF (LAND_USE_TYPE == 'NLCD50') THEN
                 !-- USE THE VEGFRAC DATA ONLY FOR CROPS
                 IF (K.EQ.20 .OR. K.EQ.43 .OR. K.EQ.45) THEN
-                   LAIMX(K) = LAIMN0(K) * (1-VSEAS) + LAI0(K) * VSEAS
+                   LAIMX(K) = LAIMN0(K) * (1.D0-VSEAS) + LAI0(K) * VSEAS
                    LAIMN(K) = LAIMX(K)
-                   VEG(K)   = VEGMN0(K) * (1-VSEAS) + VEG0(K) * VSEAS
+                   VEG(K)   = VEGMN0(K) * (1.D0-VSEAS) + VEG0(K) * VSEAS
                    VEGMN(K) = VEG(K)
                    !-- SEASONALLY VARY Zo FOR DryCrop (k=20) OR Irigated Crop (k=43) OR  Mix Crop (k=4)
                    IF (K.EQ.20 .OR. K.EQ.43) THEN
                       Z0(K) = ZNOTC
                    !-- CrNatM (k=45) USE AVG WITH GRASS AND FOREST
                   ELSE IF (K.EQ.45) THEN
-                      Z0(K)  = 0.5 * (ZNOTC + Z00(K))
+                      Z0(K)  = 0.5D0 * (ZNOTC + Z00(K))
                   ENDIF
                 ENDIF
               ELSE IF (LAND_USE_TYPE == 'NLCD40') THEN
                 !-- USE THE VEGFRAC DATA ONLY FOR CROPS
                 IF (K.EQ.12 .OR. K.EQ.14 .OR. K.EQ.38) THEN
-                   LAIMX(K) = LAIMN0(K) * (1-VSEAS) + LAI0(K) * VSEAS
+                   LAIMX(K) = LAIMN0(K) * (1.D0-VSEAS) + LAI0(K) * VSEAS
                    LAIMN(K) = LAIMX(K)
-                   VEG(K)   = VEGMN0(K) * (1-VSEAS) + VEG0(K) * VSEAS
+                   VEG(K)   = VEGMN0(K) * (1.D0-VSEAS) + VEG0(K) * VSEAS
                    VEGMN(K) = VEG(K)
                    !-- SEASONALLY VARY Zo FOR Crop (k=12 for MODIS or 38 for NLCD)
                    IF (K.EQ.12 .OR. K.EQ.38) THEN
                       Z0(K) = ZNOTC
                    !-- CrNatM (k=14) USE AVG WITH GRASS AND FOREST
                    ELSE IF (K.EQ.14) THEN
-                      Z0(K)  = 0.5 * (ZNOTC + Z00(K))
+                      Z0(K)  = 0.5D0 * (ZNOTC + Z00(K))
                   ENDIF
                 ENDIF
               ELSE IF (LAND_USE_TYPE == 'USGS') THEN
                 !-- USE THE VEGFRAC DATA ONLY FOR CROPS 
                 IF (K .GE. 2 .AND. K .LE. 6) THEN
-                   LAIMX(K) = LAIMN0(K) * (1-VSEAS) + LAI0(K) * VSEAS
+                   LAIMX(K) = LAIMN0(K) * (1.D0-VSEAS) + LAI0(K) * VSEAS
                    LAIMN(K) = LAIMX(K)
-                   VEG(K)   = VEGMN0(K) * (1-VSEAS) + VEG0(K) * VSEAS
+                   VEG(K)   = VEGMN0(K) * (1.D0-VSEAS) + VEG0(K) * VSEAS
                    VEGMN(K) = VEG(K)
                    !-- SEASONALLY VARY Zo FOR DryCrop (k=2) OR Irigated Crop (k=3) OR  Mix Crop (k=4)
                    IF (K .GE. 2 .AND. K .LE. 4) THEN
                       Z0(K) = ZNOTC
                    !-- CrGrM (k=5) or CrWdM (k=6) USE AVG WITH GRASS AND FOREST
                    ELSE IF (K .GE.5 .AND. K .LE. 6) THEN
-                      Z0(K)  = 0.5 * (ZNOTC + Z00(K))
+                      Z0(K)  = 0.5D0 * (ZNOTC + Z00(K))
                    ENDIF
                 ENDIF
               END IF
@@ -826,11 +826,11 @@ CONTAINS
             XALB(I,J)= ALBF(KWAT)
           ENDIF
 
-          ZNT(I,J)    = ZNT(I,J) * 0.01           !CONVERT TO M
-          XVEG(I,J)   = XVEG(I,J) * 0.01          !CONVERT TO FRAC
-          XVEGMN(I,J) = XVEGMN(I,J) * 0.01
-          XLAND(I,J)  = 1.0 + FWAT
-          XALB(I,J)   = XALB(I,J) * 0.01
+          ZNT(I,J)    = ZNT(I,J) * 0.01D0           !CONVERT TO M
+          XVEG(I,J)   = XVEG(I,J) * 0.01D0          !CONVERT TO FRAC
+          XVEGMN(I,J) = XVEGMN(I,J) * 0.01D0
+          XLAND(I,J)  = 1.0D0 + FWAT
+          XALB(I,J)   = XALB(I,J) * 0.01D0
         
         ENDDO     ! END LOOP THROUGH GRID CELLS
       ENDDO       ! END LOOP THROUGH GRID CELLS
@@ -969,20 +969,20 @@ CONTAINS
 
 !... Parameters
       REAL        :: ZOBS, GAMAH, BETAH, SIGF, BH, CT_SNOW
-      REAL, PARAMETER :: CV = 8.0E-6   ! K-M2/J
-      PARAMETER (ZOBS  = 1.5)      ! height for observed screen temp., (m)
-      PARAMETER (BH    = 15.7)
-      PARAMETER (GAMAH = 16. )   !11.6)
-      PARAMETER (BETAH = 5.0 )   !8.21)
-      PARAMETER (SIGF  = 0.5)      ! rain interception see LSM (can be 0-1)
+      REAL, PARAMETER :: CV = 8.0D-6   ! K-M2/J
+      PARAMETER (ZOBS  = 1.5D0)      ! height for observed screen temp., (m)
+      PARAMETER (BH    = 15.7D0)
+      PARAMETER (GAMAH = 16.D0 )   !11.6)
+      PARAMETER (BETAH = 5.0D0 )   !8.21)
+      PARAMETER (SIGF  = 0.5D0)      ! rain interception see LSM (can be 0-1)
       !PARAMETER (CT_SNOW  = 5.54E-5)   
 ! New value of CT_SNOW calibrated using multilayer soil model where csnow=6.9E5 J/(m3 K) 
 ! from NCAR CSM                                         
-      PARAMETER (CT_SNOW  = 2.0E-5)  
-      ALN10  = ALOG(10.0)
+      PARAMETER (CT_SNOW  = 2.0D-5)  
+      ALN10  = ALOG(10.0D0)
         RADNET = SOLDN - (EMISSI *(STBOLT *TG **4 - LWDN))        ! NET RADIATION                             
         !--------------------------------------------------------------------
-        CPOT= (100.0 / PSURF) ** ROVCP       ! rcp is global constant(module_model_constants)                            
+        CPOT= (100.0D0 / PSURF) ** ROVCP       ! rcp is global constant(module_model_constants)                            
         THETAG = TG * CPOT
 
         ZOL   = Z1/MOL                                                       
@@ -991,13 +991,13 @@ CONTAINS
 
         !-----------------------------------------------------------------------------------------
         IF (MOL .LT. 0.0) THEN
-          Y      = ( 1.0 - GAMAH * ZOL ) ** 0.5
-          Y0     = ( 1.0 - GAMAH * ZOBOL ) ** 0.5
-          YNT    = ( 1.0 - GAMAH * ZNTOL ) ** 0.5
-          PSIH15 =  2.0 * ALOG((Y + 1.0) / (Y0 + 1.0))
-          PSIH   =  2.0 * ALOG((Y + 1.0) / (YNT + 1.0))
-          PSIOB  =  2.0 * ALOG((Y0 + 1.0) / (YNT + 1.0))
-          PHIH = 1.0 / Y
+          Y      = ( 1.0D0 - GAMAH * ZOL ) ** 0.5D0
+          Y0     = ( 1.0D0 - GAMAH * ZOBOL ) ** 0.5D0
+          YNT    = ( 1.0D0 - GAMAH * ZNTOL ) ** 0.5D0
+          PSIH15 =  2.0D0 * ALOG((Y + 1.0D0) / (Y0 + 1.0D0))
+          PSIH   =  2.0D0 * ALOG((Y + 1.0D0) / (YNT + 1.0D0))
+          PSIOB  =  2.0D0 * ALOG((Y0 + 1.0D0) / (YNT + 1.0D0))
+          PHIH = 1.0D0 / Y
         ELSE
           IF((ZOL-ZNTOL).LE.1.0) THEN                                         
             PSIH = -BETAH*(ZOL-ZNTOL)                                        
@@ -1007,11 +1007,11 @@ CONTAINS
           IF ((ZOBOL - ZNTOL) .LE. 1.0) THEN
             PSIOB = -BETAH * (ZOBOL - ZNTOL)
           ELSE
-            PSIOB = 1.0 - BETAH - (ZOBOL - ZNTOL)
+            PSIOB = 1.0D0 - BETAH - (ZOBOL - ZNTOL)
           ENDIF
           PSIH15 =  PSIH - PSIOB
           IF(ZOL.LE.1.0) THEN
-            PHIH = 1.0 + BETAH * ZOL
+            PHIH = 1.0D0 + BETAH * ZOL
           ELSE
             PHIH = BETAH + ZOL
           ENDIF
@@ -1021,8 +1021,8 @@ CONTAINS
         !... RB FOR HEAT = 5 /UST
         !... RB FOR WATER VAPOR =  5*(0.599/0.709)^2/3 /UST = 4.503/UST
         RA=PR0* ( ALOG(Z1/ZNT) - PSIH )/(KARMAN*UST)
-        RAH = RA + 5.0 / UST
-        RAW = RA + 4.503 / UST
+        RAH = RA + 5.0D0 / UST
+        RAW = RA + 4.503D0 / UST
         !--------------------------------------------------------------------
         !--  COMPUTE MOISTURE FLUX
         CALL QFLUX( DENS1,  QV1,    TA1,  SOLDN,  RAW, QSS,            &
@@ -1037,9 +1037,9 @@ CONTAINS
         ET  = EG + ER + ETR
         QST = -ET / (DENS1 * UST)
  
-        LV  = 2.83E6                         !-- LATENT HEAT OF SUBLIMATION AT 0C FROM STULL(1988)
+        LV  = 2.83D6                         !-- LATENT HEAT OF SUBLIMATION AT 0C FROM STULL(1988)
         IF (ISNOW .LT. 0.5.AND.TG.GT.273.15)                            &                                                                               
-                    LV = (2.501 - 0.00237 * (TG - 273.15)) * 1.E6  !-- FROM STULL(1988) in J/KG
+                    LV = (2.501D0 - 0.00237D0 * (TG - 273.15D0)) * 1.D6  !-- FROM STULL(1988) in J/KG
         
         ! IF (IFLAND .LT. 1.5 )  QFX = ET     !-- Recaculate QFX over land to account for P-X LSM EG, ER and ETR
         QFX = ET
@@ -1050,13 +1050,13 @@ CONTAINS
         ! Surface sensible heat flux
         TST = (THETA1 - THETAG ) / (UST*RAH)
         HF  = UST * TST           
-        HFX = AMAX1(-DENS1 * CPAIR * HF, -250.0)  ! using -250. from MM5                                   
+        HFX = AMAX1(-DENS1 * CPAIR * HF, -250.0D0)  ! using -250. from MM5                                   
         !-----------------------------------------------------------------------------------------
 
         !-----------------------------------------------------------------------------------------
         ! Compute the diagnosed 2m Q and T consistent with PX LSM
-        QST1 = 0.5*(QST+QST12/PHIH)
-        TA2  = (THETAG + TST * (PR0 / KARMAN * (ALOG(ZOBS / ZNT) - PSIOB)+5.))/CPOT
+        QST1 = 0.5D0*(QST+QST12/PHIH)
+        TA2  = (THETAG + TST * (PR0 / KARMAN * (ALOG(ZOBS / ZNT) - PSIOB)+5.D0))/CPOT
         QA2  = QV1 - QST1 * PR0/ KARMAN *  (ALOG(Z1 / ZOBS) - PSIH15)
 
         IF (QA2.LE.0.0) QA2 = QV1
@@ -1068,11 +1068,11 @@ CONTAINS
         !-----------------------------------------------------------------------------------------
         IF (IFLAND .LT. 1.5 ) THEN
           W2CG = AMAX1(W2,WWLT)
-          CG   = CGSAT * 1.0E-6 * (WSAT/ W2CG) **    &  
-                 (0.5 * B / ALN10)
-          CT   = 1./((1-VEGFRC)/CG + VEGFRC/CV)
-          CT   = 1./(SNOW_FRA/CT_SNOW + (1-SNOW_FRA)/CT)
-          CAPG = 1.0/CT          
+          CG   = CGSAT * 1.0D-6 * (WSAT/ W2CG) **    &  
+                 (0.5D0 * B / ALN10)
+          CT   = 1.D0/((1.D0-VEGFRC)/CG + VEGFRC/CV)
+          CT   = 1.D0/(SNOW_FRA/CT_SNOW + (1.D0-SNOW_FRA)/CT)
+          CAPG = 1.0D0/CT          
 
           SOILFLX = 2.0 * PI * TAUINV * (TG - T2)
           GRDFLX  = SOILFLX / CT
@@ -1084,19 +1084,19 @@ CONTAINS
         !-------COMPUTE ASSIMILATION COEFFICIENTS FOR ALL I                            
         IF (IFLAND .LT. 1.5) THEN
           IF (NUDGEX .EQ. 0) THEN                                          !-- NO NUDGING CASE                
-            WGNUDG = 0.0                                                        
-            W2NUDG = 0.0    
-            T2NUD  = 0.0                                    
+            WGNUDG = 0.0D0                                                        
+            W2NUDG = 0.0D0    
+            T2NUD  = 0.0D0                                    
           ELSE                                                               !-- NUDGING CASE        
             
             CALL SMASS (ISTI,  FASS,  SOLDN,   VEGFRC, RA, WWLT, WFC,   &                       
                         ALPH1, ALPH2, BET1, BET2, T2NUDF)                             
 
             !--COMPUTE MODEL RH
-            WGNUDG = ALPH1 * (T2OBS - TA2) + ALPH2 * (RH2OBS - RH2MOD) * 100  
-            W2NUDG = BET1  * (T2OBS - TA2) + BET2  * (RH2OBS - RH2MOD) * 100
-            IF (W2 .GE. WFC)  W2NUDG = AMIN1(W2NUDG,0.0)
-            IF (W2 .LE. WWLT) W2NUDG = AMAX1(W2NUDG,0.0)
+            WGNUDG = ALPH1 * (T2OBS - TA2) + ALPH2 * (RH2OBS - RH2MOD) * 100.D0
+            W2NUDG = BET1  * (T2OBS - TA2) + BET2  * (RH2OBS - RH2MOD) * 100.D0
+            IF (W2 .GE. WFC)  W2NUDG = AMIN1(W2NUDG,0.0D0)
+            IF (W2 .LE. WWLT) W2NUDG = AMAX1(W2NUDG,0.0D0)
             T2NUD = T2NUDF * (T2OBS - TA2)
           !print *, 'T2NUD =',T2NUD,T2NUDF
           ENDIF
@@ -1108,24 +1108,24 @@ CONTAINS
         IF (IFLAND .LT. 1.5) THEN
           !-- SOLVE BY CRANK-NIC --   TENDTS=CT*(RADNET-HFX-QFX)-SOILFLX 
           !-- Calculate the coefficients for implicit calculation of TG
-          CQ1      = (1.0 - 0.622 * LV * CRANKP / (r_d * TG)) * QSS
+          CQ1      = (1.0D0 - 0.622D0 * LV * CRANKP / (r_d * TG)) * QSS
           CQ2      = 0.622 * LV * QSS * CRANKP / (r_d * TG * TG)
-          CQ3      = DENS1 * BETAP * (1.0 - VEGFRC) / RAW
-          COEFFNP1 = 1.0 + DTPBL * CRANKP * (4.0 * EMISSI *  STBOLT * TG ** 3    &
-                     * CT + DENS1 * CPAIR / RAH * CPOT * CT + 2.0 * PI           &
+          CQ3      = DENS1 * BETAP * (1.0D0 - VEGFRC) / RAW
+          COEFFNP1 = 1.0D0 + DTPBL * CRANKP * (4.0D0 * EMISSI *  STBOLT * TG ** 3    &
+                     * CT + DENS1 * CPAIR / RAH * CPOT * CT + 2.0D0 * PI           &
                      * TAUINV ) + DTPBL * (CT * LV * CQ2 * (CQ3 + CQ4))
-          COEFFN   = CT * (GSW + EMISSI * (STBOLT * (4.0 * CRANKP - 1.0)         &
+          COEFFN   = CT * (GSW + EMISSI * (STBOLT * (4.0D0 * CRANKP - 1.0D0)         &
                      * TG*TG*TG*TG + LWDN)                                       & !NET RAD
-                     + DENS1 * CPAIR / RAH * (THETA1 - (1.0 - CRANKP) * THETAG)  &
+                     + DENS1 * CPAIR / RAH * (THETA1 - (1.0D0 - CRANKP) * THETAG)  &
                      - LV * (CQ3 * (CQ1 - QV1) + CQ4 * (CQ1 - QV1)))             & !SFC HEAT FLUX 
-                     - 2.0 * PI * TAUINV * ((1.0 - CRANKP) * TG - T2)              !SOIL FLUX
+                     - 2.0D0 * PI * TAUINV * ((1.0D0 - CRANKP) * TG - T2)              !SOIL FLUX
           TSNEW    = (TG + DTPBL * COEFFN) / COEFFNP1
           !-- FOR SNOW COVERED SURFACE TEMPERATURE IS NOT MORE THAN ZERO
-          IF (XICE1 .GT. 0.5) TSNEW = AMIN1(TSNEW,273.15)                         ! Re-added Jan 2010 to keep ice surface at or below freezing (J. Pleim)
-          TSHLF = 0.5 * ( TSNEW + TG)
-          T2NEW = (T2 + DTPBL * TAUINV * T2TFAC * (TSHLF - (1 - CRANKP) * T2)     &
+          IF (XICE1 .GT. 0.5) TSNEW = AMIN1(TSNEW,273.15D0)                         ! Re-added Jan 2010 to keep ice surface at or below freezing (J. Pleim)
+          TSHLF = 0.5D0 * ( TSNEW + TG)
+          T2NEW = (T2 + DTPBL * TAUINV * T2TFAC * (TSHLF - (1.D0 - CRANKP) * T2)     &
                 + DTPBL*T2NUD)  &              ! Added deep temperature nudging 
-                  / (1.0 + DTPBL * TAUINV * T2TFAC * CRANKP)
+                  / (1.0D0 + DTPBL * TAUINV * T2TFAC * CRANKP)
           !-- REPLACE OLD with NEW Value
           TG = TSNEW
           T2 = T2NEW             
@@ -1136,8 +1136,8 @@ CONTAINS
       ! Compute new subsurface soil and canopy moisture values DENS1. No change required over ocean.
         IF (IFLAND .LT. 1.5.AND. XICE1.LT.0.5) THEN  
           !-- Compute WR
-          ROFF  = 0.0
-          WRMAX = 0.2E-3 * VEGFRC * LAI                     ! max. WRMAX IN m
+          ROFF  = 0.0D0
+          WRMAX = 0.2D-3 * VEGFRC * LAI                     ! max. WRMAX IN m
           
           IF(WRMAX.GT.0.0) THEN
             !--  PC is precip. intercepted by veg.(M/S)
@@ -1154,23 +1154,23 @@ CONTAINS
             ELSE
               COF1    = DENS1 / DENW * VEGFRC * (QSS - QV1) / RAW
               !-- using delta=wr/wrmax
-              CFNP1WR = 1.0 + DTPBL * COF1 * CRANKP / WRMAX  
-              CFNWR   = PC - COF1 * (1.0 - CRANKP) * WR / WRMAX
+              CFNP1WR = 1.0D0 + DTPBL * COF1 * CRANKP / WRMAX  
+              CFNWR   = PC - COF1 * (1.0D0 - CRANKP) * WR / WRMAX
               WRNEW   = (WR + DTPBL * CFNWR) / CFNP1WR
             ENDIF
           ELSE
-            PC=0.0
-            WRNEW=0.0  
+            PC=0.0D0
+            WRNEW=0.0D0  
           ENDIF
           !---------------------------------------------
           !-- Compute W2
           PG     = DENW * (PRECIP - PC)               ! PG is precip. reaching soil (PC already including ROFF)
-          TENDW2 = 1.0 / (DENW * DS2) * (PG - EG - ETR) &
+          TENDW2 = 1.0D0 / (DENW * DS2) * (PG - EG - ETR) &
                    + (W2NUDG + WGNUDG) / DS2                    ! NUDGING
           W2NEW  = W2 + DTPBL * TENDW2
           W2NEW  = AMIN1(W2NEW,WSAT)
-          W2NEW  = AMAX1(W2NEW,0.05)
-          W2HLF  = 0.5 * (W2 + W2NEW)
+          W2NEW  = AMAX1(W2NEW,0.05D0)
+          W2HLF  = 0.5D0 * (W2 + W2NEW)
           !.. new values
           W2     = W2NEW
           WR     = AMIN1(WRMAX,WRNEW)
@@ -1187,24 +1187,24 @@ CONTAINS
           ELSE
             W2REL = W2HLF / WSAT
             IF (WG .GT. WWLT) THEN
-              C1 = C1SAT * (WSAT / WG) ** (0.5 * B + 1.0) 
+              C1 = C1SAT * (WSAT / WG) ** (0.5D0 * B + 1.0D0) 
             ELSE   ! elimilate C1 for wg < wilting point
-              C1 = C1SAT * (WSAT / WWLT) ** (0.5 * B + 1.0)
+              C1 = C1SAT * (WSAT / WWLT) ** (0.5D0 * B + 1.0D0)
             ENDIF
-            C2 = C2R * W2HLF / (WSAT - W2HLF + 1.E-11) 
+            C2 = C2R * W2HLF / (WSAT - W2HLF + 1.D-11) 
             IF (W2HLF .EQ. WSAT) THEN
               WEQ = WSAT
             ELSE
               WEQ = W2HLF - AS * WSAT * W2REL ** JP *         &
-                   (1.0 - W2REL ** (8.0 * JP))
+                   (1.0D0 - W2REL ** (8.0D0 * JP))
             ENDIF
 
             !.... The beta method, Lee & Pielke (JAM, May 1992)
-            CFNP1 = 1.0 + DTPBL * C2 * TAUINV * CRANKP
+            CFNP1 = 1.0D0 + DTPBL * C2 * TAUINV * CRANKP
             CFN   = C1 / (DENW * DS1) * (PG - EG) - C2 * TAUINV *               &
-                    ((1.0 - CRANKP) * WG - WEQ) + WGNUDG/ DS1                                    
+                    ((1.0D0 - CRANKP) * WG - WEQ) + WGNUDG/ DS1                                    
 
-            WGNEW = AMAX1((WG + DTPBL * CFN) / CFNP1,0.001)
+            WGNEW = AMAX1((WG + DTPBL * CFN) / CFNP1,0.001D0)
             !-- NEW VALUES
             WG    = AMIN1(WGNEW,WSAT)
             
@@ -1289,26 +1289,26 @@ CONTAINS
 
 
 !... Parameters
-      REAL, PARAMETER :: RSMAX = 5000.0                ! s/m
-      REAL, PARAMETER :: FTMIN = 0.0000001             ! m/s
-      REAL, PARAMETER :: F3MIN = 0.25
+      REAL, PARAMETER :: RSMAX = 5000.0D0                ! s/m
+      REAL, PARAMETER :: FTMIN = 0.0000001D0             ! m/s
+      REAL, PARAMETER :: F3MIN = 0.25D0
 
 !
 !... for water surface, no canopy evaporation and transpiration
-      ER  = 0.0
-      ETR = 0.0
-      CQ4 = 0.0
+      ER  = 0.0D0
+      ETR = 0.0D0
+      CQ4 = 0.0D0
       
 !... GROUND EVAPORATION (DEPOSITION)
-      IF (QSS .LT. QV1) BETAP = 1.0
-      EG = DENS1 * (1.0 - VEGFRC) * BETAP * (QSS - QV1) / RAW
+      IF (QSS .LT. QV1) BETAP = 1.0D0
+      EG = DENS1 * (1.0D0 - VEGFRC) * BETAP * (QSS - QV1) / RAW
 
       !!---------------------------------------------------------------------
 !... CANOPY
       IF (IFLAND .LT. 1.5 .AND. VEGFRC .GT. 0.0)  THEN
-        WRMAX = 0.2E-3 * VEGFRC * LAI   ! in unit m
+        WRMAX = 0.2D-3 * VEGFRC * LAI   ! in unit m
         IF (WR .LE. 0.0) THEN
-          DELTA = 0.0
+          DELTA = 0.0D0
         ELSE
 !         DELTA = (WR / WRMAX) ** 0.66667
           DELTA = WR / WRMAX           ! referred to SiB model
@@ -1317,7 +1317,7 @@ CONTAINS
         IF (QSS .GE. QV1) THEN
           SIGG = DELTA
         ELSE
-          SIGG = 1.0
+          SIGG = 1.0D0
         ENDIF
 
         ER = DENS1 * VEGFRC * SIGG * (QSS - QV1) / RAW  
@@ -1330,25 +1330,25 @@ CONTAINS
         
         !!!-RADIATION
         IF (RSTMIN .GT. 130.0) THEN
-          RADL = 30.0                                            ! W/M2
+          RADL = 30.0D0                                            ! W/M2
         ELSE
-          RADL = 100.0                                           ! W/M2
+          RADL = 100.0D0                                           ! W/M2
         ENDIF
-        RADF = 1.1 * RG / (RADL * LAI)                  ! NP89 - EQN34
-        F1   = (RSTMIN / RSMAX + RADF) / (1.0 + RADF)
+        RADF = 1.1D0 * RG / (RADL * LAI)                  ! NP89 - EQN34
+        F1   = (RSTMIN / RSMAX + RADF) / (1.0D0 + RADF)
 
         !!!-SOIL MOISTURE
         W2AVAIL = W2 - WWLT
         W2MXAV  = WFC - WWLT
-        F2      = 1.0 / (1.0 + EXP(-5.0 * ( W2AVAIL / W2MXAV -               &
-                  (W2MXAV / 3.0 + WWLT))))    ! according JP, 9/94
+        F2      = 1.0D0 / (1.0D0 + EXP(-5.0D0 * ( W2AVAIL / W2MXAV -               &
+                  (W2MXAV / 3.0D0 + WWLT))))    ! according JP, 9/94
 
         !-AIR TEMP
         !... according to Avissar (1985) and AX 7/95
         IF (TA1 .LE. 302.15) THEN
-          F4 = 1.0 / (1.0 + EXP(-0.41 * (TA1 - 282.05)))
+          F4 = 1.0D0 / (1.0D0 + EXP(-0.41D0 * (TA1 - 282.05D0)))
         ELSE
-          F4 = 1.0 / (1.0 + EXP(0.5 * (TA1 - 314.0)))
+          F4 = 1.0D0 / (1.0D0 + EXP(0.5D0 * (TA1 - 314.0D0)))
         ENDIF
 
         FTOT = LAI * F1 * F2 * F4
@@ -1356,27 +1356,27 @@ CONTAINS
 
       !!---------------------------------------------------------------------
       IF (IFLAND .LT. 1.5 .AND. VEGFRC .GT. 0.0)  THEN
-        FSHELT = 1.0   ! go back to NP89
+        FSHELT = 1.0D0   ! go back to NP89
         GS     = FTOT / (RSTMIN * FSHELT)
-        GA     = 1.0 / RAW
+        GA     = 1.0D0 / RAW
         !-- Compute humidity effect according to RH at leaf surf
-        F3 = 0.5 * (GS - GA + SQRT(GA * GA + GA * GS *                       &
-             (4.0 * QV1 / QSS - 2.0) + GS * GS)) / GS
-        F3 = AMIN1(AMAX1(F3,F3MIN),1.0)
-        RS = 1.0 / (GS * F3)
+        F3 = 0.5D0 * (GS - GA + SQRT(GA * GA + GA * GS *                       &
+             (4.0D0 * QV1 / QSS - 2.0D0) + GS * GS)) / GS
+        F3 = AMIN1(AMAX1(F3,F3MIN),1.0D0)
+        RS = 1.0D0 / (GS * F3)
         
         !--- Compute Assimilation factor for soil moisture nudging - jp 12/94
         !--  Note that the 30 coef is to result in order 1 factor for max
         IF (RG .LT. 0.00001) THEN   ! do not nudge during night
-          FX = 0.0
+          FX = 0.0D0
         ELSE
-          FX = 30.0 * F1 * F4 * LAI / (RSTMIN * FSHELT)
+          FX = 30.0D0 * F1 * F4 * LAI / (RSTMIN * FSHELT)
         ENDIF
 
         FASS = FX
-        ETR = DENS1 * VEGFRC * (1.0 - SIGG) * (QSS - QV1) / (RAW + RS)
+        ETR = DENS1 * VEGFRC * (1.0D0 - SIGG) * (QSS - QV1) / (RAW + RS)
         !..... CQ4 is used for the implicit calculation of TG in SURFACE
-        CQ4 = DENS1 * VEGFRC * ((1.0 - SIGG) / (RAW + RS) + SIGG / RAW)
+        CQ4 = DENS1 * VEGFRC * ((1.0D0 - SIGG) / (RAW + RS) + SIGG / RAW)
       ENDIF         
 
     END SUBROUTINE qflux
@@ -1411,32 +1411,32 @@ CONTAINS
       REAL,    DIMENSION( 1: NSCAT ) :: WFCX, WWLTX
       
 !... Parameters
-      REAL, PARAMETER  :: A1MAX = -10.E-5, A2MAX = 1.E-5  ! m/K, m for 6hr period
-      REAL, PARAMETER  :: B1MAX = -10.E-3, B2MAX = 1.E-3  ! m/K, m (Bouttier et al 1993)
-      REAL, PARAMETER  :: TASSI = 4.6296E-5               ! 1/6hr in 1/sec
-      REAL, PARAMETER  :: RAMIN = 10.0                    ! 0.1 s/cm
+      REAL, PARAMETER  :: A1MAX = -10.D-5, A2MAX = 1.D-5  ! m/K, m for 6hr period
+      REAL, PARAMETER  :: B1MAX = -10.D-3, B2MAX = 1.D-3  ! m/K, m (Bouttier et al 1993)
+      REAL, PARAMETER  :: TASSI = 4.6296D-5               ! 1/6hr in 1/sec
+      REAL, PARAMETER  :: RAMIN = 10.0D0                    ! 0.1 s/cm
 !
 !-- WFC is field capacity (M^3/M^3) (JN90)
-      DATA WFCX   /  0.135, 0.150, 0.195, 0.255, 0.240, 0.255, 0.322,    &
-                    0.325, 0.310, 0.370, 0.367, 0.367, 0.367, 0.367, 0.367, 0.367 /
+      DATA WFCX   /  0.135D0, 0.150D0, 0.195D0, 0.255D0, 0.240D0, 0.255D0, 0.322D0,    &
+                    0.325D0, 0.310D0, 0.370D0, 0.367D0, 0.367D0, 0.367D0, 0.367D0, 0.367D0, 0.367D0 /
 !
 !-- WWLT is wilting point (M^3/M^3) (JN90)
-      DATA WWLTX  /  0.068, 0.075, 0.114, 0.179, 0.155, 0.175, 0.218,    &
-                    0.250, 0.219, 0.283, 0.286, 0.286, 0.286, 0.286, 0.286, 0.286 /
+      DATA WWLTX  /  0.068D0, 0.075D0, 0.114D0, 0.179D0, 0.155D0, 0.175D0, 0.218D0,    &
+                    0.250D0, 0.219D0, 0.283D0, 0.286D0, 0.286D0, 0.286D0, 0.286D0, 0.286D0, 0.286D0 /
 
 !
       FBET  = FASS
-      FALPH = RG / 1370.0
+      FALPH = RG / 1370.0D0
 !--TEXTURE FACTOR NORMALIZED BY LOAM (IST=5)
       FRA   = RAMIN / RA            ! scale by aerodynamic resistance
       FTEXT = TASSI * (WWLT + WFC) / (WWLTX(5) + WFCX(5)) * FRA
 !        write(6,*) ' ftot, fbet=',ftot, fbet,' ftext=',ftext/tassi
 !
-      ALPH1 = A1MAX * FALPH * (1.0 - VEGFRC) * FTEXT
-      ALPH2 = A2MAX * FALPH * (1.0 - VEGFRC) * FTEXT
+      ALPH1 = A1MAX * FALPH * (1.0D0 - VEGFRC) * FTEXT
+      ALPH2 = A2MAX * FALPH * (1.0D0 - VEGFRC) * FTEXT
       BET1  = B1MAX * FBET  *        VEGFRC  * FTEXT
       BET2  = B2MAX * FBET  *        VEGFRC  * FTEXT
-      T2NUDF = 1.0E-5 * MAX((1.0 - 5.0 * FALPH),0.0)   ! T2 Nudging at night
+      T2NUDF = 1.0D-5 * MAX((1.0D0 - 5.0D0 * FALPH),0.0D0)   ! T2 Nudging at night
 
     END SUBROUTINE smass
 !------------------------------------------------------------------------------------------
@@ -1499,65 +1499,65 @@ CONTAINS
 
       REAL,    DIMENSION( 1: NSCATMIN ) ::  SAND, CLAY
 !.......... DATA statement for SOIL PARAMETERS for the 11 soil types
-      DATA SAND /92.5,80.5,61.1,19.6,4.0,40.0,57.1,11.3,26.8,       &
-                 52.0,6.5,10.2,1.0,1.0,1.0,1.0/                                                  
-      DATA CLAY/2.1,4.1,10.9,19.1,7.3,18.8,23.3,32.2,36.6,          &                     
-                43.0,46.2,58.8,1.0,1.0,1.0,1.0/                                                 
+      DATA SAND /92.5D0,80.5D0,61.1D0,19.6D0,4.0D0,40.0D0,57.1D0,11.3D0,26.8D0,       &
+                 52.0D0,6.5D0,10.2D0,1.0D0,1.0D0,1.0D0,1.0D0/                                                  
+      DATA CLAY/2.1D0,4.1D0,10.9D0,19.1D0,7.3D0,18.8D0,23.3D0,32.2D0,36.6D0,          &                     
+                43.0D0,46.2D0,58.8D0,1.0D0,1.0D0,1.0D0,1.0D0/                                                 
       DATA TEXID/'Sand','Lsan','Sloa','Sill','Silt','Loam','Sclo',  &             
                  'Sicl','Cllo','Sacl','Sicy','Clay','Ormt','Wate',  &           
                  'Bedr','Othe'/                                         
 
 !
 !-- WSAT is saturated soil moisture (M^3/M^3) (JN90)
-      DATA WSAT  /  0.395, 0.410, 0.435, 0.485, 0.451, 0.420, 0.477,    &
-                    0.476, 0.426, 0.482, 0.482, 0.482, 0.482, 0.482, 0.482, 0.482 /
+      DATA WSAT  /  0.395D0, 0.410D0, 0.435D0, 0.485D0, 0.451D0, 0.420D0, 0.477D0,    &
+                    0.476D0, 0.426D0, 0.482D0, 0.482D0, 0.482D0, 0.482D0, 0.482D0, 0.482D0, 0.482D0 /
 !
 !-- WFC is field capacity (M^3/M^3) (JN90)
-      DATA WFC   /  0.135, 0.150, 0.195, 0.255, 0.240, 0.255, 0.322,    &
-                    0.325, 0.310, 0.370, 0.367, 0.367, 0.367, 0.367, 0.367, 0.367 /
+      DATA WFC   /  0.135D0, 0.150D0, 0.195D0, 0.255D0, 0.240D0, 0.255D0, 0.322D0,    &
+                    0.325D0, 0.310D0, 0.370D0, 0.367D0, 0.367D0, 0.367D0, 0.367D0, 0.367D0, 0.367D0 /
 !
 !-- WWLT is wilting point (M^3/M^3) (JN90)
-      DATA WWLT  /  0.068, 0.075, 0.114, 0.179, 0.155, 0.175, 0.218,    &
-                    0.250, 0.219, 0.283, 0.286, 0.286, 0.286, 0.286, 0.286, 0.286 /
+      DATA WWLT  /  0.068D0, 0.075D0, 0.114D0, 0.179D0, 0.155D0, 0.175D0, 0.218D0,    &
+                    0.250D0, 0.219D0, 0.283D0, 0.286D0, 0.286D0, 0.286D0, 0.286D0, 0.286D0, 0.286D0 /
 !
 !-- B is slop of the retention curve (NP89)
-      DATA B     /  4.05,  4.38,  4.90,  5.30,  5.39,  7.12,  7.75,     &
-                    8.52, 10.40, 10.40, 11.40, 11.40, 11.40, 11.40, 11.40, 11.40  /
+      DATA B     /  4.05D0,  4.38D0,  4.90D0,  5.30D0,  5.39D0,  7.12D0,  7.75D0,     &
+                    8.52D0, 10.40D0, 10.40D0, 11.40D0, 11.40D0, 11.40D0, 11.40D0, 11.40D0, 11.40D0  /
 !
 !-- CGSAT is soil thermal coef. at saturation (10^-6 K M^2 J^-1) (NP89)
-      DATA CGSAT /  3.222, 3.057, 3.560, 4.418, 4.111, 3.670, 3.593,    &
-                    3.995, 3.058, 3.729, 3.600, 3.600, 3.600, 3.600, 3.600, 3.600 /
+      DATA CGSAT /  3.222D0, 3.057D0, 3.560D0, 4.418D0, 4.111D0, 3.670D0, 3.593D0,    &
+                    3.995D0, 3.058D0, 3.729D0, 3.600D0, 3.600D0, 3.600D0, 3.600D0, 3.600D0, 3.600D0 /
 !
 !-- JP is coefficient of WGEQ formulation (NP89)
       DATA JP    /  4,     4,     4,     6,     6,     6,     8,        &
                    10,     8,    10,    12,    12,    12,    12,    12,    12     /
 !
 !-- AS is coefficient of WGEQ formulation (NP89)
-      DATA AS    /  0.387, 0.404, 0.219, 0.105, 0.148, 0.135, 0.127,    &
-                    0.084, 0.139, 0.075, 0.083, 0.083, 0.083, 0.083, 0.083, 0.083 /
+      DATA AS    /  0.387D0, 0.404D0, 0.219D0, 0.105D0, 0.148D0, 0.135D0, 0.127D0,    &
+                    0.084D0, 0.139D0, 0.075D0, 0.083D0, 0.083D0, 0.083D0, 0.083D0, 0.083D0, 0.083D0 /
 !
 !-- C2R is the value of C2 for W2=0.5WSAT (NP89)
-      DATA C2R   /  3.9,   3.7,   1.8,   0.8,   0.8,   0.8,   0.4,      &
-                    0.6,   0.3,   0.3,   0.3,   0.3,   0.3,   0.3,   0.3,   0.3   /
+      DATA C2R   /  3.9D0,   3.7D0,   1.8D0,   0.8D0,   0.8D0,   0.8D0,   0.4D0,      &
+                    0.6D0,   0.3D0,   0.3D0,   0.3D0,   0.3D0,   0.3D0,   0.3D0,   0.3D0,   0.3D0   /
 !
 !-- C1SAT is the value of C1 at saturation (NP89)
-      DATA C1SAT /  0.082, 0.098, 0.132, 0.153, 0.191, 0.213, 0.385,    &
-                    0.227, 0.421, 0.375, 0.342, 0.342, 0.342, 0.342, 0.342, 0.342 /
+      DATA C1SAT /  0.082D0, 0.098D0, 0.132D0, 0.153D0, 0.191D0, 0.213D0, 0.385D0,    &
+                    0.227D0, 0.421D0, 0.375D0, 0.342D0, 0.342D0, 0.342D0, 0.342D0, 0.342D0, 0.342D0 /
 !   
 !-------------------------------Exicutable starts here--------------------
 
-    IF(WEIGHT.GE.1.0) THEN   !Compute soil characteristics using weighting determined by fractional soil content
-     FWSAT =0
-     FWFC  =0
-     FWWLT =0
-     FB    =0
-     FCGSAT=0
-     FJP   =0
-     FAS   =0
-     FC2R  =0
-     FC1SAT=0
-     TFRACBOT =0
-     CFRAC=0
+    IF(WEIGHT.GE.1) THEN   !Compute soil characteristics using weighting determined by fractional soil content
+     FWSAT =0.D0
+     FWFC  =0.D0
+     FWWLT =0.D0
+     FB    =0.D0
+     FCGSAT=0.D0
+     FJP   =0.D0
+     FAS   =0.D0
+     FC2R  =0.D0
+     FC1SAT=0.D0
+     TFRACBOT =0.D0
+     CFRAC=0.D0
      
      DO S=1,NSCAT
 
@@ -1579,7 +1579,7 @@ CONTAINS
              
      ENDDO
 
-     TFRACBOT = 1/TFRACBOT
+     TFRACBOT = 1.D0/TFRACBOT
      FWSAT =FWSAT   *  TFRACBOT
      FWFC  =FWFC    *  TFRACBOT
      FWWLT =FWWLT   *  TFRACBOT
@@ -1592,10 +1592,10 @@ CONTAINS
     
     ELSE                !Compute soil characteristics by sand and clay fraction
     
-      CFRAC      = 0.0                                                               
-      SUMSND     = 0.0                                                               
-      SUMCLY     = 0.0                                                               
-      TFRACBOT   = 0.0                                                              
+      CFRAC      = 0.0D0                                                               
+      SUMSND     = 0.0D0                                                               
+      SUMCLY     = 0.0D0                                                               
+      TFRACBOT   = 0.0D0                                                              
                                                                                 
       DO S = 1,12                                                         
 
@@ -1613,7 +1613,7 @@ CONTAINS
       IF(TFRACBOT.GT.0.001) THEN                                                  
         AVS = SUMSND / TFRACBOT                                               
         AVC = SUMCLY / TFRACBOT                                           
-        AVSLT = 100 - AVS - AVC                                   
+        AVSLT = 100.D0 - AVS - AVC                                   
         
         IF(AVS.GT.(85.+ 0.5*AVC)) THEN
           AVCLASS= 'Sand'                                                   
@@ -1672,7 +1672,7 @@ CONTAINS
     
     ! Compute W2 using soil moisture availiability if pxlsm_smois_init (in namelist) is not zero
     IF (ITIMESTEP .EQ. 1 .AND. PXLSM_SMOIS_INIT .GT. 0) THEN
-       W2 = FWWLT + (0.5*(FWSAT+FWFC) - FWWLT)  * MAVAIL 
+       W2 = FWWLT + (0.5D0*(FWSAT+FWFC) - FWWLT)  * MAVAIL 
     ENDIF                                                                    
     
     END SUBROUTINE soilprop

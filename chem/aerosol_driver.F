@@ -23,18 +23,18 @@
    USE module_model_constants
 
 ! *** add new modules of schemes here
-
+#if ( WRFPLUS != 1 )
    USE module_aerosols_sorgam
-   USE module_gocart_aerosols
-   USE module_data_sorgam
    USE module_mosaic_driver, only:  mosaic_aerchem_driver
    USE module_aerosols_soa_vbs, only: soa_vbs_driver
-   USE module_data_soa_vbs, only: ldrog_vbs
    USE module_cam_mam_aerchem_driver, only:  cam_mam_aerchem_driver
+#endif
    USE modal_aero_data, only:  ntot_amode_cam_mam => ntot_amode
    USE module_cam_support, only: gas_pcnst => gas_pcnst_modal_aero, &
         gas_pcnst_pos => gas_pcnst_modal_aero_pos
-
+   USE module_gocart_aerosols
+   USE module_data_sorgam
+   USE module_data_soa_vbs, only: ldrog_vbs
    !  This driver calls subroutines for aerosols parameterizations.
    !
    !  1. MADE-SORGAM
@@ -210,6 +210,8 @@
          ids,ide, jds,jde, kds,kde,                                        &
          ims,ime, jms,jme, kms,kme,                                        &
          its,ite, jts,jte, kts,kte                                         )
+
+#if ( WRFPLUS != 1 )
    CASE (RADM2SORG,RADM2SORG_AQ,RADM2SORG_AQCHEM,RADM2SORG_KPP,CBMZSORG,CBMZSORG_AQ)
        CALL wrf_debug(15,'aerosols_driver calling sorgam_driver')
        do ii=its,ite
@@ -298,6 +300,7 @@
             ids,ide, jds,jde, kds,kde,                                  &
             ims,ime, jms,jme, kms,kme,                                  &
             its,ite, jts,jte, kts,kte                                   )
+#endif
 
 
    CASE DEFAULT 
@@ -334,10 +337,12 @@
 
 
    USE module_configure
+#if ( WRFPLUS != 1 )
    USE module_aerosols_sorgam, only: sum_pm_sorgam
    USE module_mosaic_driver, only: sum_pm_mosaic,sum_pm_mosaic_vbs2,sum_pm_mosaic_vbs0,sum_vbs9,sum_vbs2,sum_vbs0
-   USE module_gocart_aerosols, only: sum_pm_gocart
    USE module_aerosols_soa_vbs, only: sum_pm_soa_vbs
+#endif
+   USE module_gocart_aerosols, only: sum_pm_gocart
 
    IMPLICIT NONE
 
@@ -388,9 +393,10 @@
             ids,ide, jds,jde, kds,kde,                                 &
             ims,ime, jms,jme, kms,kme,                                 &
             its,ite, jts,jte, kts,kte                                  )
-
+#if ( WRFPLUS != 1 )
    CASE (RADM2SORG,RADM2SORG_AQ,RADM2SORG_AQCHEM,RACMSORG_AQ,RACMSORG_AQCHEM_KPP,RACM_ESRLSORG_AQCHEM_KPP,RADM2SORG_KPP, &
          RACMSORG_KPP,RACM_ESRLSORG_KPP,CBMZSORG,CBMZSORG_AQ)
+
        CALL wrf_debug(15,'sum_pm_driver: calling sum_pm_sorgam')
        CALL sum_pm_sorgam (                                            &
             alt, chem, h2oaj, h2oai,                                   &
@@ -474,7 +480,7 @@
              ids,ide, jds,jde, kds,kde,                                &
              ims,ime, jms,jme, kms,kme,                                &
              its,ite, jts,jte, kts,kte                                  )
-
+#endif
 
    CASE DEFAULT 
 

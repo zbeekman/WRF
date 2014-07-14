@@ -22,34 +22,40 @@
   USE module_data_radm2
   USE module_data_sorgam
   USE module_radm
-  USE module_dep_simple
-  USE module_bioemi_simple
   USE module_phot_mad
   USE module_ftuv_driver, only : ftuv_timestep_init
+  USE module_data_soa_vbs, only: ldrog_vbs
+#if ( WRFPLUS !=1 )
+  USE module_dep_simple
   USE module_aerosols_sorgam
-  USE module_chem_utilities
   USE module_gocart_so2so4
   USE module_aer_opt_out,only: aer_opt_out
   USE module_ctrans_grell
-  USE module_data_soa_vbs, only: ldrog_vbs
   USE module_dust_load
-  USE module_dry_dep_driver
-  USE module_emissions_driver
-  USE module_input_tracer, only: set_tracer
   USE module_wetscav_driver, only: wetscav_driver
   USE module_wetdep_ls, only:wetdep_ls
+#endif
+  USE module_dry_dep_driver
+
+  USE module_chem_utilities
+  USE module_emissions_driver
+  USE module_bioemi_simple
+  USE module_input_tracer, only: set_tracer
   USE module_input_chem_data, only: last_chem_time, &
 #if (defined(CHEM_DBG_I) && defined(CHEM_DBG_J) && defined(CHEM_DBG_K))
                                      chem_dbg,      &
 #endif
                                      get_last_gas,mozcart_lbc_set
+#if ( WRFPLUS !=1 )
   USE module_upper_bc_driver, only: upper_bc_driver
   USE module_tropopause,      only: tropopause_driver
+  USE module_cu_camzm_driver, only: zm_conv_tend_2
+  USE module_cam_mam_gas_wetdep_driver, only: cam_mam_gas_wetdep_driver
+#endif
   USE modal_aero_data, only: ntot_amode_cam_mam => ntot_amode
   USE module_cam_support, only: gas_pcnst => gas_pcnst_modal_aero,gas_pcnst_pos => gas_pcnst_modal_aero_pos, &
        pcnst =>pcnst_runtime, numgas_mam, cam_mam_aerosols
-  USE module_cu_camzm_driver, only: zm_conv_tend_2
-  USE module_cam_mam_gas_wetdep_driver, only: cam_mam_gas_wetdep_driver
+
 
   IMPLICIT NONE
 
@@ -78,10 +84,12 @@
        
        
        USE module_configure
+#if ( WRFPLUS !=1 )
        USE module_aerosols_sorgam, only: sum_pm_sorgam
        USE module_mosaic_driver, only: sum_pm_mosaic,sum_pm_mosaic_vbs2,sum_pm_mosaic_vbs0,sum_vbs9,sum_vbs2,sum_vbs0
-       USE module_gocart_aerosols, only: sum_pm_gocart
        USE module_aerosols_soa_vbs, only: sum_pm_soa_vbs
+#endif
+       USE module_gocart_aerosols, only: sum_pm_gocart
        
        IMPLICIT NONE
        
@@ -254,8 +262,20 @@
   !always use them with the EM core.
   adapt_step_flag = .TRUE.
   ktau = grid%itimestep
-  tmpTimeInterval = domain_get_time_since_sim_start(grid)
+!  tmpTimeInterval = domain_get_time_since_sim_start(grid)
+  tmpTimeInterval = domain_get_current_time ( grid ) - domain_get_sim_start_time ( grid )
   curr_secs = real_time_r8(tmpTimeInterval)
+#if ( WRFPLUS == 1 )
+  if(grid%checkpoint_interval .gt. 0) then
+     write(msg,*)'ktau,check_count,checkpoint_interval = ',ktau,grid%check_count,grid%checkpoint_interval
+     CALL wrf_debug(16,TRIM(msg))
+
+     curr_secs = curr_secs - REAL( 3600*(grid%check_count-1)*grid%checkpoint_interval, 8 )
+  endif
+#endif
+  write(msg,*)'curr_secs = ',curr_secs
+  CALL wrf_debug(16,TRIM(msg))
+
   ijulian=ifix(grid%julian)
 
   do_photstep = .false.
@@ -583,7 +603,8 @@
          do k=kps,kpe
             do i=ips,min(ide-1,ipe)
               vvel(i,k,j)=grid%w_2(i,k,j)
-              zmid(i,k,j)=grid%z(i,k,j)
+!Moved this line to after chem_prep to make zmid consistent with z_at_w for current time step -JJG
+!              zmid(i,k,j)=grid%z(i,k,j)
             enddo
          enddo
       enddo
@@ -617,7 +638,7 @@
      
 !$OMP PARALLEL DO   &
 !$OMP PRIVATE ( ij, its, ite, jts, jte )
-   chem_tile_loop_1: DO ij = 1 , grid%num_tiles
+   DO ij = 1 , grid%num_tiles
        its = grid%i_start(ij) 
        ite = min(grid%i_end(ij),ide-1)
        jts = grid%j_start(ij)
@@ -641,6 +662,25 @@
                          ims, ime, jms, jme, kms, kme,                                &
                          its,ite,jts,jte,                                             &
                          k_start, k_end                                               )
+   END DO
+!$OMP END PARALLEL DO
+      do j=jps,min(jde-1,jpe)
+         do k=kps,kpe
+            do i=ips,min(ide-1,ipe)
+              zmid(i,k,j)=grid%z(i,k,j)
+            enddo
+         enddo
+      enddo
+
+!$OMP PARALLEL DO &
+!$OMP PRIVATE ( ij, its, ite, jts, jte )
+   chem_tile_loop_1: DO ij = 1 , grid%num_tiles
+       its = grid%i_start(ij)
+       ite = min(grid%i_end(ij),ide-1)
+       jts = grid%j_start(ij)
+       jte = min(grid%j_end(ij),jde-1)
+       kts=k_start
+       kte=min(k_end,kde-1)
 
 #if (defined(CHEM_DBG_I) && defined(CHEM_DBG_J) && defined(CHEM_DBG_K))
        if( (its <= CHEM_DBG_I .and. ite >= CHEM_DBG_I) .and.                          &
@@ -670,6 +710,11 @@
               grid%gmt,ijulian,rri,t_phy,moist,p8w,t8w,u_phy,v_phy,vvel,               &
               grid%e_bio,p_phy,chem,rho,dz8w,grid%ne_area,emis_ant,emis_vol,grid%tsk,      &
               grid%erod,g,emis_seas,emis_dust,tracer, &
+#if ( WRFPLUS == 1 )
+              scaleant,grid%scaleant_frq,grid%stepscaleant,grid%num_ant_steps,        &
+              scalebb,grid%scalebb_frq,grid%stepscalebb,grid%num_bb_steps,            &
+              grid%check_count, grid%checkpoint_interval,                             &
+#endif
               ebu , ebu_in,grid%mean_fct_agtf,grid%mean_fct_agef,grid%mean_fct_agsv,       &
               grid%mean_fct_aggr,grid%firesize_agtf, &
               grid%firesize_agef,grid%firesize_agsv,grid%firesize_aggr,                    &
@@ -727,6 +772,7 @@
               ids,ide, jds,jde, kds,kde,                                                   &
               ims,ime, jms,jme, kms,kme,                                                   &
               its,ite,jts,jte,kts,kte)
+#if ( WRFPLUS !=1 )
               if( config_flags%chem_opt == MOZART_KPP .or. &
                   config_flags%chem_opt == MOZCART_KPP .or. &
                   config_flags%chem_opt == MOZART_MOSAIC_4BIN_VBS0_KPP ) then
@@ -734,7 +780,7 @@
                                        ims, ime, jms, jme, kms, kme,    &                  
                                        its, ite, jts, jte, kts )                           
               end if
-
+#endif
 #if (defined(CHEM_DBG_I) && defined(CHEM_DBG_J) && defined(CHEM_DBG_K))
        if( (its <= CHEM_DBG_I .and. ite >= CHEM_DBG_I) .and.                          &
            (jts <= CHEM_DBG_J .and. jte >= CHEM_DBG_J) .and.                          &
@@ -750,6 +796,7 @@
 #endif 
      endif
 
+#if ( WRFPLUS != 1 )
 !
 ! calculate aerosol optical properities
 !
@@ -786,7 +833,9 @@
               ims,ime, jms,jme, kms,kme,                                              &
               its,ite, jts,jte, kts,kte)
       endif
+#endif
 
+#if ( WRFPLUS != 1 )
 !
 ! calculate photolysis rates
 !
@@ -853,15 +902,19 @@
        end if
 #endif
       endif
+#endif
 
 !
 ! do vertical mixing with dry deposition
 !
 ! save old concentrations for vertical mixing tendencies
+#if ( WRFPLUS != 1 )
+#if (EM_CORE == 1)
    DO nv=PARAM_FIRST_SCALAR,num_chem_ct
      chem_old(its:ite,kts:kte,jts:jte,nv) = chem(its:ite,kts:kte,jts:jte,chem_ct_indices(nv))
    ENDDO
-
+#endif
+#endif
 ! UoC dust scheme option
    scheme_select: SELECT CASE(config_flags%dust_schme)
    CASE (SHAO_2001)
@@ -874,14 +927,18 @@
      imod = 2
    END SELECT scheme_select
 
-      if (config_flags%vertmix_onoff>0) then
+      if (config_flags%vertmix_onoff>0 &
+#if ( WRFPLUS == 1)
+          .and. grid%num_vert_mix.eq.0 &
+#endif
+         ) then
          if (ktau.gt.2) then
             call wrf_debug(15,'calling dry_deposition_driver')
             call dry_dep_driver(grid%id,curr_secs,ktau,grid%dt,config_flags,          &
                  grid%gmt,ijulian,t_phy,moist,scalar,p8w,t8w,vvel,                &
-                 rri,p_phy,chem,tracer,rho,dz8w,rh,grid%exch_h,grid%hfx,grid%dx,      & 
+                 rri,p_phy,chem,tracer,rho,dz8w,grid%exch_h,grid%hfx,grid%dx,      & 
                  grid%cldfra, grid%cldfra_old,grid%raincv_b,seasin,dustin,            &
-	         grid%ccn1, grid%ccn2, grid%ccn3, grid%ccn4, grid%ccn5, grid%ccn6,    &
+                 grid%ccn1, grid%ccn2, grid%ccn3, grid%ccn4, grid%ccn5, grid%ccn6,    &
                  grid%qndropsource,grid%ivgtyp,grid%tsk,grid%gsw,grid%vegfra,pbl_h,   &
                  grid%rmol,grid%ust,grid%znt,grid%xlat,grid%xlong,                    &
                  zmid,z_at_w,grid%xland,grid%ash_fall,                                &
@@ -899,6 +956,7 @@
                  grid%setvel_5, imod,                                                 &                  
                  grid%is_CAMMGMP_used,                                                &
                  grid%dep_vel,grid%num_vert_mix,                                      &
+                 grid%dep_vel,grid%num_vert_mix,grid%dep_vel_bc,                      &
                  ids,ide, jds,jde, kds,kde,                                           &
                  ims,ime, jms,jme, kms,kme,                                           &
                  its,ite,jts,jte,kts,kte)
@@ -914,12 +972,17 @@
          end if
          
 ! accumulate vertical mixing tendencies
+#if ( WRFPLUS != 1 )
+#if (EM_CORE == 1)
    DO nv=PARAM_FIRST_SCALAR,num_chem_ct
       grid%vmix_ct(its:ite,kts:kte,jts:jte,nv) = grid%vmix_ct(its:ite,kts:kte,jts:jte,nv) + &
                                                         (chem(its:ite,kts:kte,jts:jte,chem_ct_indices(nv)) - &
                                                      chem_old(its:ite,kts:kte,jts:jte,nv))
    ENDDO
+#endif
+#endif
 
+#if ( WRFPLUS != 1 )
 #if (defined(CHEM_DBG_I) && defined(CHEM_DBG_J) && defined(CHEM_DBG_K))
        if( (its <= CHEM_DBG_I .and. ite >= CHEM_DBG_I) .and. &
            (jts <= CHEM_DBG_J .and. jte >= CHEM_DBG_J) .and. &
@@ -940,11 +1003,11 @@
                                                                                       )
        end if
 #endif
+#endif
 
       end if
 
-
-
+#if ( WRFPLUS != 1 )
 !
 !   convective transport/wet deposition
 !
@@ -1008,7 +1071,7 @@
 ! Calculate rate of n2o5 hydrolysis 
      call wrf_debug(15,'calling calc_het_n2o5')
 
-
+#endif
 
 !
 ! For the chemistry tracer mode, only emissions and vertical mixing are done.
@@ -1058,6 +1121,7 @@
               its,ite,jts,jte,kts,kte        )
 !
 
+#if ( WRFPLUS != 1 )
 #ifdef WRF_KPP
 
          if( config_flags%chem_opt == CBMZ_MOSAIC_4BIN_VBS2_KPP .or. &
@@ -1129,6 +1193,7 @@ CALL kpp_mechanism_driver (chem,                                                
 
 !
 #endif
+#endif
 #if (defined(CHEM_DBG_I) && defined(CHEM_DBG_J) && defined(CHEM_DBG_K))
        if( (its <= CHEM_DBG_I .and. ite >= CHEM_DBG_I) .and.                          &
            (jts <= CHEM_DBG_J .and. jte >= CHEM_DBG_J) .and.                          &
@@ -1157,6 +1222,8 @@ CALL kpp_mechanism_driver (chem,                                                
                                                         (chem(its:ite,kts:kte,jts:jte,chem_ct_indices(nv)) - &
                                                      chem_old(its:ite,kts:kte,jts:jte,nv))
    ENDDO
+
+#if ( WRFPLUS != 1 )
 if ( cam_mam_aerosols ) &
            del_h2so4_gasprod(:,:,:) = chem(:,:,:,p_sulf) - del_h2so4_gasprod(:,:,:)
 
@@ -1197,8 +1264,9 @@ if ( cam_mam_aerosols ) &
                 its,ite, jts,jte, kts,kte                 )
            
         endif
-        
+#endif
 
+#if ( WRFPLUS != 1 )      
 !
 !   now do cloud chemistry
 !
@@ -1216,7 +1284,7 @@ if ( cam_mam_aerosols ) &
                its,ite, jts,jte, kts,kte                                              )
 
        endif
-
+#endif
 
 !
 !   now do aerosols
@@ -1260,7 +1328,7 @@ if ( cam_mam_aerosols ) &
 #endif
        endif
 
-
+#if ( WRFPLUS != 1 )
 	if (config_flags%wetscav_onoff > 0) then
         call wetscav_driver (grid%id,ktau,grid%dt,grid%ktauc,config_flags,dtstepc,    &
               rri,t_phy,moist,p8w,t8w,                                                &
@@ -1305,8 +1373,11 @@ if ( cam_mam_aerosols ) &
                ims,ime, jms,jme, kms,kme, &
                its,ite, jts,jte, kts,kte)     
        endif
+#endif
 
 end if !Chemistry time step check
+
+#if ( WRFPLUS != 1 )
 !
 ! do so2 to sulf conversion for full volc case
 ! since we do not have h2o2 as a variable, pass in p_h2o2 as zero
@@ -1332,6 +1403,8 @@ end if !Chemistry time step check
                 ims,ime, jms,jme, kms,kme,                               &
                 its,ite, jts,jte, kts,kte                                )
          endif
+#endif
+
 !
 ! Sum up the aerosol mass for radiation and diagnostic purposes. Unlike
 ! aerosol_driver, which is called every dtchem, this must be done every
@@ -1374,6 +1447,8 @@ end if !Chemistry time step check
          enddo
       enddo
       call wrf_debug(15,'done tileloop in chem_driver')
+
+#if ( WRFPLUS != 1 )
    if( grid%OPT_PARS_OUT == 1) then
       call wrf_debug(15,'calculate optical output stuff')
       call aer_opt_out(TAUAER300=grid%tauaer1, TAUAER400=grid%tauaer2                            & 
@@ -1414,10 +1489,10 @@ end if !Chemistry time step check
                                ims,ime, jms,jme, kms,kme,           &
                                its,ite, jts,jte, kts,kte            )
     endif
-
+#endif
 
    END DO chem_tile_loop_1
-
+!$OMP END PARALLEL DO
 !-- Work around for dgnum and dgnumwet not being written to restart files.
    
    grid%dgnum_a1(its:ite, kts:kte, jts:jte) = grid%dgnum4d(its:ite, kts:kte, jts:jte, 1)
