@@ -206,19 +206,18 @@ CONTAINS
 &                k, j, p_e_bc)*scaleant(i, j, p_scant_bc)*conv_rho_aer
             ELSE IF (config_flags%chem_opt .EQ. &
 &                mozart_mosaic_4bin_vbs0_kpp) THEN
-              g_chem(i, k, j, p_voca) = g_chem(i, k, j, p_voca) + &
-&                emis_ant(i, k, j, p_e_voca)*(g_scaleant(i, j, &
-&                p_scant_voca)*conv_rho+scaleant(i, j, p_scant_voca)*&
-&                g_conv_rho)
-              chem(i, k, j, p_voca) = chem(i, k, j, p_voca) + emis_ant(i&
-&                , k, j, p_e_voca)*scaleant(i, j, p_scant_voca)*conv_rho
-              g_chem(i, k, j, p_vocbb) = g_chem(i, k, j, p_vocbb) + &
-&                emis_ant(i, k, j, p_e_vocbb)*(g_scaleant(i, j, &
-&                p_scant_vocbb)*conv_rho+scaleant(i, j, p_scant_vocbb)*&
-&                g_conv_rho)
-              chem(i, k, j, p_vocbb) = chem(i, k, j, p_vocbb) + emis_ant&
-&                (i, k, j, p_e_vocbb)*scaleant(i, j, p_scant_vocbb)*&
-&                conv_rho
+             g_chem(i,k,j,p_voca)  = g_chem(i,k,j,p_voca) + &
+&                         emis_ant(i,k,j,p_e_co_a)*0.04*28./250. &
+&                         *(g_scaleant(i,j,p_scant_co_a)*conv_rho_aer &
+&                         +scaleant(i,j,p_scant_co_a)*g_conv_rho_aer)
+             chem(i,k,j,p_voca)  = chem(i,k,j,p_voca) + emis_ant(i,k,j,p_e_co_a)*0.04*28./250. &
+&                         *scaleant(i,j,p_scant_co_a)*conv_rho_aer
+             g_chem(i,k,j,p_vocbb) = g_chem(i,k,j,p_vocbb) + &
+&                         emis_ant(i,k,j,p_e_co_bb)*0.04*28./250. &
+&                         *(g_scaleant(i,j,p_scant_co_bb)*conv_rho_aer &
+&                         +scaleant(i,j,p_scant_co_bb)*g_conv_rho_aer)
+             chem(i,k,j,p_vocbb) = chem(i,k,j,p_vocbb) + emis_ant(i,k,j,p_e_co_bb)*0.04*28./250. &
+&                         *scaleant(i,j,p_scant_co_bb)*conv_rho_aer
             END IF
           ELSE
             g_chem(i, k, j, p_csl) = g_chem(i, k, j, p_csl) + emis_ant(i&

@@ -467,7 +467,7 @@ BENCH_START(g_pbl_driver_tim)
             DO ij = 1 , grid%num_tiles
                call g_dry_dep_vel(grid%id,curr_secs,grid%itimestep,grid%dt,config_flags,          &
                     grid%gmt,ifix(grid%julian),grid%t_phy,grid%g_t_phy,moist,g_moist,p8w,t8w,                &
-                    grid%alt,p_phy,g_p_phy,chem,rho,dz8w,grid%hfx,grid%dx,      & 
+                    grid%alt,p_phy,g_p_phy,chem,grid%rho,dz8w,grid%hfx,grid%dx,      & 
                     grid%raincv_b,            &
                     grid%ivgtyp,grid%tsk,grid%gsw,grid%vegfra,grid%pblh,grid%g_pblh,   &
                     grid%rmol,grid%g_rmol,grid%ust,grid%g_ust,grid%znt,grid%g_znt,     &
@@ -477,6 +477,9 @@ BENCH_START(g_pbl_driver_tim)
                     grid%ahno3,grid%anh3,grid%cvaro1,grid%cvaro2,grid%cvalk1,grid%cvole1,&
                     grid%cvapi1,grid%cvapi2,grid%cvlim1,grid%cvlim2,     &
                     numgas,current_month,dvel,grid%snowh,  &
+                    grid%dustdrydep_1,grid%dustdrydep_2,grid%dustdrydep_3,               &
+                    grid%dustdrydep_4,grid%dustdrydep_5,                                 &
+                    grid%depvelocity,                                                    &
                     grid%is_CAMMGMP_used,                  & !BSINGH:01/31/2013: Added is_CAMMGMP_used for MAM drydep
                     grid%dep_vel,grid%g_dep_vel,grid%num_vert_mix,                      &
                     ids,ide, jds,jde, kds,kde,                                           &
@@ -524,8 +527,8 @@ BENCH_START(g_pbl_driver_tim)
      &        ,F=grid%f  ,GRDFLX=grid%grdflx      &
      &        ,GZ1OZ0=gz1oz0      ,HFX=grid%hfx ,g_HFX=grid%g_hfx  ,HT=grid%ht      &
      &        ,ID=grid%id         ,ITIMESTEP=grid%itimestep     ,KPBL=grid%kpbl          &
-     &        ,LH=grid%lh ,LOWLYR=grid%lowlyr ,P8W=grid%p_hyd_w, P8WD=grid%g_p_hyd_w   &
-     &        ,PBLH=grid%pblh     ,G_PBLH=grid%g_pblh ,PI_PHY=pi_phy ,PI_PHYD=g_pi_phy ,PSIH=psih &
+     &        ,LH=grid%lh ,LOWLYR=grid%lowlyr ,P8W=grid%p_hyd_w, g_P8W=grid%g_p_hyd_w   &
+     &        ,PBLH=grid%pblh     ,G_PBLH=grid%g_pblh ,PI_PHY=pi_phy ,g_PI_PHY=g_pi_phy ,PSIH=psih &
      &        ,PSIM=psim   ,P_PHY=grid%p_hyd, QFX=grid%qfx ,g_QFX=grid%g_qfx        &
      &        ,QSFC=grid%qsfc          ,QZ0=grid%qz0  ,MIXHT=mixht                  &
      &        ,RA_LW_PHYSICS=config_flags%ra_lw_physics                   &
@@ -542,7 +545,7 @@ BENCH_START(g_pbl_driver_tim)
      &        ,V10=grid%v10 ,VZ0=grid%vz0 ,V_FRAME=grid%v_frame ,V_PHY=grid%v_phy ,g_V_PHY=grid%g_v_phy &
      &        ,T2=grid%t2 &
      &        ,WARM_RAIN=grid%warm_rain ,WSPD=wspd        ,g_WSPD=g_wspd        &
-     &        ,XICE=grid%xice   ,XLAND=grid%xland  ,Z=grid%z ,ZD=grid%g_z      &
+     &        ,XICE=grid%xice   ,XLAND=grid%xland  ,Z=grid%z ,g_Z=grid%g_z      &
      &        ,ZNT=grid%znt                                                    &
 ! paj: topo_wind
      &        ,CTOPO=grid%ctopo,CTOPO2=grid%ctopo2                                   &
@@ -569,7 +572,6 @@ BENCH_START(g_pbl_driver_tim)
      &        ,NUM_TILES=grid%num_tiles                                   &
           ! Variables Required by ACM PBL  - jp
      &        ,ZNU=grid%znu,ZNW=grid%znw,MUT=grid%mut,g_MUT=grid%g_mut,P_TOP=grid%p_top    &
-     &        ,MUTD=grid%g_mut                                           &
           ! Variables required by TEMF PBL - WA 9/9/08
               ,te_temf=grid%te_temf                                 &
               ,kh_temf=grid%kh_temf,km_temf=grid%km_temf            &
@@ -585,7 +587,6 @@ BENCH_START(g_pbl_driver_tim)
               ,exch_temf=exch_temf                      &
           ! optional
      &        ,QV_CURR=moist(ims,kms,jms,P_QV), F_QV=F_QV                 &
-     &        ,QV_CURRD=g_moist(ims,kms,jms,P_QV)                        &
      &        ,QC_CURR=moist(ims,kms,jms,P_QC), F_QC=F_QC                 &
      &        ,QR_CURR=moist(ims,kms,jms,P_QR), F_QR=F_QR                 &
      &        ,QI_CURR=moist(ims,kms,jms,P_QI), F_QI=F_QI                 &

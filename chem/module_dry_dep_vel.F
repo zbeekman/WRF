@@ -22,9 +22,12 @@ CONTAINS
                xland,h2oaj,h2oai,nu3,ac3,cor3,asulf,ahno3,       &
                anh3,cvaro1,cvaro2,   &
                cvalk1,cvole1,cvapi1,cvapi2,cvlim1,cvlim2,      &
-               numgas,current_month,dvel,                &
-               snowh,is_CAMMGMP_used,                                     & !BSINGH:01/31/2013: Added is_CAMMGMP_used for MAM drydep
-               dep_vel,num_vert_mix,dep_vel_bc,                                      &
+               numgas,current_month,dvel,snowh,                &
+               dustdrydep_1,dustdrydep_2,dustdrydep_3,                    &
+               dustdrydep_4,dustdrydep_5,                                 &
+               depvelocity,                                               &
+               is_CAMMGMP_used,                                     & !BSINGH:01/31/2013: Added is_CAMMGMP_used for MAM drydep
+               dep_vel,num_vert_mix,                                      &
                ids,ide, jds,jde, kds,kde,                                 &
                ims,ime, jms,jme, kms,kme,                                 &
                its,ite, jts,jte, kts,kte                                  )
@@ -70,9 +73,6 @@ CONTAINS
 
    REAL, DIMENSION( ims:ime, config_flags%kdepvel, jms:jme, config_flags%ndepvel ), &
          INTENT(INOUT ) ::                                   dep_vel
-   REAL, DIMENSION( ims:ime, config_flags%kdepvel, jms:jme ), &
-         INTENT(INOUT ) ::                                   dep_vel_bc
-
 
    REAL, DIMENSION( ims:ime, config_flags%kdvel, jms:jme, num_dvel ), &
          INTENT(INOUT ) ::                                   dvel
@@ -111,6 +111,10 @@ CONTAINS
                              dtstep,gmt,dx
 
       INTEGER,  INTENT(INOUT) :: num_vert_mix
+
+   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) ::        &
+                dustdrydep_1, dustdrydep_2, dustdrydep_3,       &
+                dustdrydep_4, dustdrydep_5, depvelocity
 !--- deposition and emissions stuff
 ! .. Parameters ..
 ! ..
@@ -148,6 +152,8 @@ CONTAINS
 
    integer :: k_a, k_c, kmax, m_mam
    real, dimension( its:ite, jts:jte ) :: frac_removed
+
+   REAL,  DIMENSION( ims:ime , kms:kme , jms:jme )  :: rh
 
 
 ! ..
@@ -231,6 +237,9 @@ CONTAINS
                   t_phy, moist, p8w, t8w, rmol,aer_res_def,               &
                   p_phy, chem, rho_phy, dz8w, ddvel, xland, hfx,          &
                   ivgtyp, tsk, vegfra, pbl, ust, znt, xlat, xlong,        &
+                  dustdrydep_1,dustdrydep_2,dustdrydep_3,                 &
+                  dustdrydep_4,dustdrydep_5,                              &
+                  depvelocity,                                            &
                   ids,ide, jds,jde, kds,kde,                              &
                   ims,ime, jms,jme, kms,kme,                              &
                   its,ite, jts,jte, kts,kte )
@@ -299,6 +308,9 @@ CONTAINS
                t_phy,moist,p8w,t8w,rmol,aer_res_def,                      &
                p_phy,chem,rho_phy,dz8w,ddvel,xland,hfx,                   &
                ivgtyp,tsk,vegfra,pbl,ust,znt,xlat,xlong,                  &
+               dustdrydep_1,dustdrydep_2,dustdrydep_3,                 &
+               dustdrydep_4,dustdrydep_5,                              &
+               depvelocity,                                            &
                ids,ide, jds,jde, kds,kde,                                 &
                ims,ime, jms,jme, kms,kme,                                 &
                its,ite, jts,jte, kts,kte                                  )
@@ -311,6 +323,9 @@ CONTAINS
                t_phy,moist,p8w,t8w,rmol,aer_res_def,                      &
                p_phy,chem,rho_phy,dz8w,ddvel,xland,hfx,                   &
                ivgtyp,tsk,vegfra,pbl,ust,znt,xlat,xlong,                  &
+               dustdrydep_1,dustdrydep_2,dustdrydep_3,                 &
+               dustdrydep_4,dustdrydep_5,                              &
+               depvelocity,                                            &
                ids,ide, jds,jde, kds,kde,                                 &
                ims,ime, jms,jme, kms,kme,                                 &
                its,ite, jts,jte, kts,kte                                  )
@@ -334,6 +349,9 @@ CONTAINS
                t_phy,moist,p8w,t8w,rmol,aer_res_def,                      &
                p_phy,chem,rho_phy,dz8w,ddvel,xland,hfx,                   &
                ivgtyp,tsk,vegfra,pbl,ust,znt,xlat,xlong,                  &
+               dustdrydep_1,dustdrydep_2,dustdrydep_3,                 &
+               dustdrydep_4,dustdrydep_5,                              &
+               depvelocity,                                            &
                ids,ide, jds,jde, kds,kde,                                 &
                ims,ime, jms,jme, kms,kme,                                 &
                its,ite, jts,jte, kts,kte                                  )
@@ -359,7 +377,7 @@ CONTAINS
                 RACM_ESRLSORG_KPP,RACM_SOA_VBS_KPP, &
                 CBMZSORG,CBMZSORG_AQ)
              aer_mech_id = 1
-          CASE (RACMSORG_AQ,RACMSORG_AQCHEM,RACMSORG_KPP)
+          CASE (RACMSORG_AQ,RACMSORG_AQCHEM_KPP,RACMSORG_KPP)
              aer_mech_id = 2
           CASE ( CBMZ_MOSAIC_4BIN, CBMZ_MOSAIC_KPP, CBMZ_MOSAIC_8BIN, CBMZ_MOSAIC_4BIN_AQ, &
                  CBMZ_MOSAIC_8BIN_AQ,CBMZ_MOSAIC_4BIN_VBS2_KPP,SAPRC99_MOSAIC_4BIN_VBS2_KPP,MOZART_MOSAIC_4BIN_VBS0_KPP,  &
@@ -396,7 +414,7 @@ CONTAINS
                ids,ide, jds,jde, kds,kde,                               &
                ims,ime, jms,jme, kms,kme,                               &
                its,ite, jts,jte, kts,kte                                )
-     CASE (RACMSORG_AQ,RACMSORG_AQCHEM,RACMSORG_KPP)
+     CASE (RACMSORG_AQ,RACMSORG_AQCHEM_KPP,RACMSORG_KPP)
        CALL wrf_debug(15,'DOING DRY DEP VELOCITIES FOR AEROSOLS/RACM')
        call sorgam_depdriver (id,config_flags,ktau,dtstep,              &
                ust,t_phy,moist,p8w,t8w,rmol,znt,pbl,                    &
@@ -423,9 +441,18 @@ CONTAINS
                its,ite, jts,jte, kts,kte                                )
      CASE ( RACM_SOA_VBS_KPP )
        CALL wrf_debug(15,'DOING DRY DEP VELOCITIES FOR SOA_VBS AEROSOLS')
+          do j = jts,jte
+          do k = kts,kte
+          do i = its,ite
+            rh(i,k,j) = max(.1,MIN( .95, moist(i,k,j,p_qv) / &
+                     (3.80*exp(17.27*(t_phy(i,k,j)-273.)/ &
+                     (t_phy(i,k,j)-36.))/(.01*p_phy(i,k,j)))))
+          enddo
+          enddo
+          enddo
        call soa_vbs_depdriver (id,config_flags,ktau,dtstep,             &
                ust,t_phy,moist,p8w,t8w,rmol,znt,pbl,                    &
-               alt,p_phy,chem,rho_phy,dz8w,z,z_at_w,                 &
+               alt,p_phy,chem,rho_phy,dz8w,rh,z,z_at_w,                 &
                h2oaj,h2oai,nu3,ac3,cor3,asulf,ahno3,anh3,               &
                aer_res,ddvel(:,:,numgas+1:num_chem),                    &
                num_chem-numgas,                                         &
@@ -491,14 +518,11 @@ CONTAINS
 ! Add dep_vel here for all aerosol and gas species in the dvel array 
       ll = max( 1, min( config_flags%ndepvel, num_vert_mix ) )
       dep_vel(:,:,:,:) = 0.
-      dep_vel_bc(:,:,:)=0.
-
       do l=1,ll
       do j=jts,jte
       do k=1,config_flags%kdepvel
       do i=its,ite
         dep_vel(i,k,j,l) = ddvel(i,j,l)
-        if(l .eq. p_bc1) dep_vel_bc(i,k,j)=ddvel(i,j,l)
       enddo
       enddo
       enddo

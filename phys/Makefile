@@ -198,7 +198,7 @@ MODULES = \
 	module_sf_pxlsm_tl.o \
 	module_sf_pxlsm_ad.o \
 	module_sf_slab_tl.o \
-	module_sf_slab_ad.o
+	module_sf_slab_ad.o \
 	module_wind_fitch.o \
         module_sf_lake.o \
 	module_diagnostics_driver.o

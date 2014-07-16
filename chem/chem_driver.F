@@ -31,12 +31,11 @@
   USE module_gocart_so2so4
   USE module_aer_opt_out,only: aer_opt_out
   USE module_ctrans_grell
-  USE module_dust_load
   USE module_wetscav_driver, only: wetscav_driver
   USE module_wetdep_ls, only:wetdep_ls
 #endif
   USE module_dry_dep_driver
-
+  USE module_dust_load
   USE module_chem_utilities
   USE module_emissions_driver
   USE module_bioemi_simple
@@ -746,7 +745,7 @@
               grid%soilctop, grid%ust_t, grid%rough_cor, grid%smois_cor,                  &              
               grid%ebio_c5h8,grid%ebio_apinene,grid%ebio_bpinene,grid%ebio_toluene,        &
               grid%ebio_ch3cho,grid%ebio_ch3co2h,grid%ebio_tbut2ene,                      &
-              grid%ebio_c2h5cho,grid%ebio_nc4h10,					                      &
+              grid%ebio_c2h5cho,grid%ebio_nc4h10,                                         &
               grid%T2,grid%swdown,                                                         &
               grid%nmegan,grid%EFmegan,                                                    &
               grid%msebio_isop,                                                            &
@@ -936,7 +935,7 @@
             call wrf_debug(15,'calling dry_deposition_driver')
             call dry_dep_driver(grid%id,curr_secs,ktau,grid%dt,config_flags,          &
                  grid%gmt,ijulian,t_phy,moist,scalar,p8w,t8w,vvel,                &
-                 rri,p_phy,chem,tracer,rho,dz8w,grid%exch_h,grid%hfx,grid%dx,      & 
+                 rri,p_phy,chem,tracer,rho,dz8w,rh,grid%exch_h,grid%hfx,grid%dx,      & 
                  grid%cldfra, grid%cldfra_old,grid%raincv_b,seasin,dustin,            &
                  grid%ccn1, grid%ccn2, grid%ccn3, grid%ccn4, grid%ccn5, grid%ccn6,    &
                  grid%qndropsource,grid%ivgtyp,grid%tsk,grid%gsw,grid%vegfra,pbl_h,   &
@@ -956,7 +955,6 @@
                  grid%setvel_5, imod,                                                 &                  
                  grid%is_CAMMGMP_used,                                                &
                  grid%dep_vel,grid%num_vert_mix,                                      &
-                 grid%dep_vel,grid%num_vert_mix,grid%dep_vel_bc,                      &
                  ids,ide, jds,jde, kds,kde,                                           &
                  ims,ime, jms,jme, kms,kme,                                           &
                  its,ite,jts,jte,kts,kte)
@@ -1429,14 +1427,15 @@ end if !Chemistry time step check
            ids,ide, jds,jde, kds,kde,                                                 &
            ims,ime, jms,jme, kms,kme,                                                 &
            its,ite, jts,jte, kts,kte                                                  )
-             
+
+!#if ( WRFPLUS != 1 )            
      call dust_load_driver ( config_flags,                                            &
            rri, chem, dz8w, grid%dustload_1, grid%dustload_2, grid%dustload_3,        &
            grid%dustload_4, grid%dustload_5,                                          &
            ids,ide, jds,jde, kds,kde,                                                 &
            ims,ime, jms,jme, kms,kme,                                                 &
            its,ite, jts,jte, kts, kte                                                 )
-
+!#endif
 
 ! Fill top level to prevent spurious interpolation results (no extrapolation)
       do nv=1,num_chem

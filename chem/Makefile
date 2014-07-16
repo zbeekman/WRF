@@ -96,9 +96,9 @@ MODULES =                                 \
         module_gocart_chem_tl.o           \
         module_gocart_chem_ad.o           \
         module_input_tracer.o             \
-	module_lightning_nox_driver.o     \
-	module_lightning_nox_ott.o        \
-	module_lightning_nox_decaria.o    \
+        module_lightning_nox_driver.o     \
+        module_lightning_nox_ott.o        \
+        module_lightning_nox_decaria.o    \
         module_mixactivate_wrappers.o     \
         module_mosaic_driver.o            \
         module_optical_averaging.o        \
@@ -164,6 +164,7 @@ OBJS    =                           \
         aerosol_driver.o            \
         aerosol_driver_tl.o         \
         aerosol_driver_ad.o
+
 
 LIBTARGET    =  chemics
 TARGETDIR    =  ./

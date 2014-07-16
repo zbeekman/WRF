@@ -28,7 +28,11 @@ CONTAINS
 &    vegfra, pbl, a_pbl, rmol, a_rmol, ust, a_ust, znt, a_znt, xlat, &
 &    xlong, z, z_at_w, a_z_at_w, xland, h2oaj, h2oai, nu3, ac3, cor3, &
 &    asulf, ahno3, anh3, cvaro1, cvaro2, cvalk1, cvole1, cvapi1, cvapi2, &
-&    cvlim1, cvlim2, numgas, current_month, dvel, snowh, is_cammgmp_used&
+&    cvlim1, cvlim2, numgas, current_month, dvel, snowh,                &
+               dustdrydep_1,dustdrydep_2,dustdrydep_3,                    &
+               dustdrydep_4,dustdrydep_5,                                 &
+               depvelocity,                                               &
+               is_cammgmp_used&
 &    , dep_vel, a_dep_vel, num_vert_mix, ids, ide, jds, jde, kds, kde, &
 &    ims, ime, jms, jme, kms, kme, its, ite, jts, jte, kts, kte)
     USE module_model_constants
@@ -74,6 +78,9 @@ CONTAINS
     REAL, DIMENSION(ims:ime, jms:jme), INTENT(INOUT) :: a_pbl
     REAL, INTENT(IN) :: dtstep, gmt, dx
     INTEGER, INTENT(INOUT) :: num_vert_mix
+   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) ::        &
+                dustdrydep_1, dustdrydep_2, dustdrydep_3,       &
+                dustdrydep_4, dustdrydep_5, depvelocity
 !--- deposition and emissions stuff
 ! .. Parameters ..
 ! ..
@@ -196,7 +203,11 @@ CONTAINS
 &                              aer_res_def, a_aer_res_def, p_phy, chem, &
 &                              rho_phy, dz8w, ddvel, a_ddvel, xland, hfx&
 &                              , ivgtyp, tsk, vegfra, pbl, a_pbl, ust, &
-&                              a_ust, znt, a_znt, xlat, xlong, ids, ide, &
+&                              a_ust, znt, a_znt, xlat, xlong, &
+                               dustdrydep_1,dustdrydep_2,dustdrydep_3,                 &
+                               dustdrydep_4,dustdrydep_5,                              &
+                               depvelocity,                                            &
+                               ids, ide, &
 &                              jds, jde, kds, kde, ims, ime, jms, jme, &
 &                              kms, kme, its, ite, jts, jte, kts, kte)
         CALL POPREAL8ARRAY(rmol, (ime-ims+1)*(jme-jms+1))
@@ -215,7 +226,11 @@ CONTAINS
 &                              aer_res_def, a_aer_res_def, p_phy, chem, &
 &                              rho_phy, dz8w, ddvel, a_ddvel, xland, hfx&
 &                              , ivgtyp, tsk, vegfra, pbl, a_pbl, ust, &
-&                              a_ust, znt, a_znt, xlat, xlong, ids, ide, &
+&                              a_ust, znt, a_znt, xlat, xlong, &
+                               dustdrydep_1,dustdrydep_2,dustdrydep_3,                 &
+                               dustdrydep_4,dustdrydep_5,                              &
+                               depvelocity,                                            &
+                               ids, ide, &
 &                              jds, jde, kds, kde, ims, ime, jms, jme, &
 &                              kms, kme, its, ite, jts, jte, kts, kte)
 !Can't set these to zero because sensitivites cascade back to other subroutines -JJG
@@ -230,7 +245,11 @@ CONTAINS
 &                            a_aer_res_def, p_phy, chem, rho_phy, dz8w, &
 &                            ddvel, a_ddvel, xland, hfx, ivgtyp, tsk, &
 &                            vegfra, pbl, a_pbl, ust, a_ust, znt, a_znt, &
-&                            xlat, xlong, ids, ide, jds, jde, kds, kde, &
+&                            xlat, xlong, &
+                             dustdrydep_1,dustdrydep_2,dustdrydep_3,                 &
+                             dustdrydep_4,dustdrydep_5,                              &
+                             depvelocity,                                            &
+                             ids, ide, jds, jde, kds, kde, &
 &                            ims, ime, jms, jme, kms, kme, its, ite, jts&
 &                            , jte, kts, kte)
       CALL POPREAL8ARRAY(rmol, (ime-ims+1)*(jme-jms+1))

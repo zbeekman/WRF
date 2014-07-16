@@ -262,7 +262,7 @@ CONTAINS
 #endif
                          *conv_rho_aer
 
-             chem(i,k,j,p_vocbb) = chem(i,k,j,p_vocbb) + emis_ant(i,k,j,p_e_co_bb)*0.04*28./250.
+             chem(i,k,j,p_vocbb) = chem(i,k,j,p_vocbb) + emis_ant(i,k,j,p_e_co_bb)*0.04*28./250. &
 #if ( WRFPLUS == 1 )
                          *scaleant(i,j,p_scant_co_bb) &
 #endif

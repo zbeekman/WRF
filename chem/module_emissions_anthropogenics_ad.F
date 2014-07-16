@@ -165,18 +165,15 @@ CONTAINS
               a_conv_rho = 0.0_8
               GOTO 100
             ELSE
-              temp1b25 = emis_ant(i, k, j, p_e_voca)*a_chem(i, k, j, &
-&                p_voca)
-              conv_rho = 4.828e-4/rho_phy(i, k, j)*dtstep/(dz8w(i, k, j)&
-&                *60.)
-              temp1b24 = emis_ant(i, k, j, p_e_vocbb)*a_chem(i, k, j, &
-&                p_vocbb)
-              a_scaleant(i, j, p_scant_vocbb) = a_scaleant(i, j, &
-&                p_scant_vocbb) + conv_rho*temp1b24
-              a_conv_rho = scaleant(i, j, p_scant_voca)*temp1b25 + &
-&                scaleant(i, j, p_scant_vocbb)*temp1b24
-              a_scaleant(i, j, p_scant_voca) = a_scaleant(i, j, &
-&                p_scant_voca) + conv_rho*temp1b25
+              conv_rho_aer = alt(i, k, j)*dtstep/dz8w(i, k, j)
+              temp1b25 = emis_ant(i, k, j, p_e_co_a)*0.04*28./250.*a_chem(i, k, j, p_voca)
+              temp1b24 = emis_ant(i, k, j, p_e_co_bb)*0.04*28./250.*a_chem(i, k, j, p_vocbb)
+              a_scaleant(i, j, p_scant_co_bb) = a_scaleant(i, j, &
+&                p_scant_co_bb) + conv_rho_aer*temp1b24
+              a_conv_rho_aer = scaleant(i, j, p_scant_co_a)*temp1b25 + &
+&                scaleant(i, j, p_scant_co_bb)*temp1b24
+              a_scaleant(i, j, p_scant_co_a) = a_scaleant(i, j, &
+&                p_scant_co_a) + conv_rho_aer*temp1b25
             END IF
           ELSE IF (branch .EQ. 2) THEN
             a_conv_rho = 0.0_8

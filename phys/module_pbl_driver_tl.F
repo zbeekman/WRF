@@ -399,7 +399,8 @@ SUBROUTINE G_PBL_DRIVER(itimestep, dt, u_frame, v_frame, bldt, curr_secs&
 ! to determine at run-time whether a particular tracer is in
 ! use or not.
 !
-    LOGICAL, INTENT(IN), OPTIONAL :: f_qv, f_qc, f_qr, f_qi, f_qs, f_qg
+    LOGICAL, INTENT(IN), OPTIONAL :: f_qv, f_qc, f_qr, f_qi, f_qs, f_qg, &
+&  f_qnc, f_qni
 ! optional moisture tracers
 ! 2 time levels; if only one then use CURR
     REAL, DIMENSION(ims:ime, kms:kme, jms:jme), OPTIONAL, INTENT(INOUT) &
@@ -420,12 +421,12 @@ SUBROUTINE G_PBL_DRIVER(itimestep, dt, u_frame, v_frame, bldt, curr_secs&
     REAL, DIMENSION(ims:ime, kms:kme, jms:jme), OPTIONAL, INTENT(INOUT) &
 &    :: dtaux3d, dtauy3d
     REAL, DIMENSION(ims:ime, kms:kme, jms:jme), OPTIONAL, INTENT(INOUT) ::&
-&    dtaux3dd, dtauy3dd
+&    g_dtaux3d, g_dtauy3d
 !
     REAL, DIMENSION(ims:ime, jms:jme), OPTIONAL, INTENT(INOUT) :: dusfcg&
 &    , dvsfcg
-    REAL, DIMENSION(ims:ime, jms:jme), OPTIONAL, INTENT(INOUT) :: dusfcgd&
-&    , dvsfcgd
+    REAL, DIMENSION(ims:ime, jms:jme), OPTIONAL, INTENT(INOUT) :: g_dusfcg&
+&    , g_dvsfcg
 !
     REAL, DIMENSION(ims:ime, jms:jme), OPTIONAL, INTENT(IN) :: var2d, &
 &    oc12d, oa1, oa2, oa3, oa4, ol1, ol2, ol3, ol4
@@ -751,11 +752,11 @@ SUBROUTINE G_PBL_DRIVER(itimestep, dt, u_frame, v_frame, bldt, curr_secs&
             CALL wrf_debug(100,'in g_SURFDRAG scheme')
 
             CALL G_SURFACE_DRAG(                                   &
-              RUBLTEN=rublten,RVBLTEN=rvblten                      &  !
-             ,g_RUBLTEN=g_rublten,g_RVBLTEN=g_rvblten              &  !
-             ,U_PHY=u_phy, V_PHY=v_phy, Z=z                        &  !
-             ,g_U_PHY=g_u_phy, g_V_PHY=g_v_phy, g_Z=g_z            &  !
-             ,XLAND=xland, HT=ht                                   &  !
+              RUBLTEN=rublten,RVBLTEN=rvblten                      &
+             ,RUBLTEND=g_rublten,RVBLTEND=g_rvblten                &
+             ,U_PHY=u_phy, V_PHY=v_phy, Z=z                        &
+             ,U_PHYD=g_u_phy, V_PHYD=g_v_phy, ZD=g_z               &
+             ,XLAND=xland, HT=ht, kpbl2d=kpbl                      &  
              ,IDS=ids,IDE=ide,JDS=jds,JDE=jde,KDS=kds,KDE=kde      &
              ,IMS=ims,IME=ime,JMS=jms,JME=jme,KMS=kms,KME=kme      &
              ,ITS=its,ITE=ite,JTS=jts,JTE=jte,KTS=kts,KTE=kte      &
@@ -769,16 +770,16 @@ SUBROUTINE G_PBL_DRIVER(itimestep, dt, u_frame, v_frame, bldt, curr_secs&
           IF (PRESENT(dtaux3d)) THEN
             IF (gwd_opt .EQ. 1) CALL G_GWDO(u3d=u_phytmp, u3dd=g_u_phytmp, &
 &                                    v3d=v_phytmp, v3dd=g_v_phytmp, t3d=&
-&                                    t_phy, t3dd=t_phyd, qv3d=qv_curr, &
+&                                    t_phy, t3dd=g_t_phy, qv3d=qv_curr, &
 &                                    qv3dd=g_qv_curr, p3d=p_phy, p3di=p8w&
-&                                    , p3did=p8wd, pi3d=pi_phy, pi3dd=&
-&                                    pi_phyd, z=z, zd=g_z, rublten=rublten&
+&                                    , p3did=g_p8w, pi3d=pi_phy, pi3dd=&
+&                                    g_pi_phy, z=z, zd=g_z, rublten=rublten&
 &                                    , rubltend=g_rublten, rvblten=rvblten&
 &                                    , rvbltend=g_rvblten, dtaux3d=dtaux3d&
-&                                    , dtaux3dd=dtaux3dd, dtauy3d=dtauy3d&
-&                                    , dtauy3dd=dtauy3dd, dusfcg=dusfcg, &
-&                                    dusfcgd=dusfcgd, dvsfcg=dvsfcg, &
-&                                    dvsfcgd=dvsfcgd, var2d=var2d, oc12d=&
+&                                    , dtaux3dd=g_dtaux3d, dtauy3d=dtauy3d&
+&                                    , dtauy3dd=g_dtauy3d, dusfcg=dusfcg, &
+&                                    dusfcgd=g_dusfcg, dvsfcg=dvsfcg, &
+&                                    dvsfcgd=g_dvsfcg, var2d=var2d, oc12d=&
 &                                    oc12d, oa2d1=oa1, oa2d2=oa2, oa2d3=&
 &                                    oa3, oa2d4=oa4, ol2d1=ol1, ol2d2=ol2&
 &                                    , ol2d3=ol3, ol2d4=ol4, znu=znu, znw&

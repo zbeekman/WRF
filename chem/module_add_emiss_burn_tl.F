@@ -239,7 +239,7 @@ CONTAINS
       END DO
     CASE (RADM2SORG, RACMSORG_KPP, RADM2SORG_KPP, RACM_ESRLSORG_KPP, &
 &    racm_soa_vbs_kpp, radm2sorg_aq, radm2sorg_aqchem, racmsorg_aq, &
-&    racmsorg_aqchem) 
+&    racmsorg_aqchem_kpp) 
       DO j=jts,jte
         DO i=its,ite
           DO k=kts,kte

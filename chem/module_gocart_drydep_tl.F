@@ -11,7 +11,10 @@ CONTAINS
   SUBROUTINE G_GOCART_DRYDEP_DRIVER(dtstep, config_flags, numgas, t_phy&
 &    , moist, p8w, t8w, rmol, g_rmol, aer_res, g_aer_res, p_phy, chem, &
 &    rho_phy, dz8w, ddvel, g_ddvel, xland, hfx, ivgtyp, tsk, vegfra, pbl&
-&    , g_pbl, ust, g_ust, znt, g_znt, xlat, xlong, ids, ide, jds, jde, &
+&    , g_pbl, ust, g_ust, znt, g_znt, xlat, xlong, &
+               dustdrydep_1,dustdrydep_2,dustdrydep_3,         &
+               dustdrydep_4,dustdrydep_5,                      &
+               depvelocity, ids, ide, jds, jde, &
 &    kds, kde, ims, ime, jms, jme, kms, kme, its, ite, jts, jte, kts, kte&
 &  )
     USE module_model_constants
@@ -36,6 +39,9 @@ CONTAINS
 &    g_rmol, g_znt
     REAL, DIMENSION(its:ite, jts:jte), INTENT(IN) :: aer_res
     REAL, DIMENSION(its:ite, jts:jte), INTENT(IN) :: g_aer_res
+   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) ::        &
+                dustdrydep_1, dustdrydep_2, dustdrydep_3,       &
+                dustdrydep_4, dustdrydep_5, depvelocity
 !! .. Local Scalars ..
     INTEGER :: iland, iprt, iseason, jce, jcs, n, nr, ipr, jpr, nvr, &
 &    idrydep_onoff, imx, jmx, lmx

@@ -280,7 +280,7 @@ SUBROUTINE A_PBL_DRIVER(itimestep, dt, u_frame, v_frame, bldt, curr_secs&
 !
     REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(IN) :: p_phy, &
 &    pi_phy, p8w, rho, t_phy, u_phy, v_phy, dz8w, z, th_phy
-    REAL, DIMENSION(ims:ime, kms:kme, jms:jme) :: a_pi_phyb, a_p8w, &
+    REAL, DIMENSION(ims:ime, kms:kme, jms:jme) :: a_pi_phy, a_p8w, &
 &    a_rho, a_t_phy, a_u_phy, a_v_phy, a_dz8w, a_z, a_th_phy
 !1D variables required for CAMUWPBL scheme
     REAL, DIMENSION(kms:kme), INTENT(IN), OPTIONAL :: fnm, fnp
@@ -407,7 +407,8 @@ SUBROUTINE A_PBL_DRIVER(itimestep, dt, u_frame, v_frame, bldt, curr_secs&
 ! to determine at run-time whether a particular tracer is in
 ! use or not.
 !
-    LOGICAL, INTENT(IN), OPTIONAL :: f_qv, f_qc, f_qr, f_qi, f_qs, f_qg
+    LOGICAL, INTENT(IN), OPTIONAL :: f_qv, f_qc, f_qr, f_qi, f_qs, f_qg, &
+&  f_qnc, f_qni
 ! optional moisture tracers
 ! 2 time levels; if only one then use CURR
     REAL, DIMENSION(ims:ime, kms:kme, jms:jme), OPTIONAL, INTENT(INOUT) &
@@ -746,9 +747,9 @@ SUBROUTINE A_PBL_DRIVER(itimestep, dt, u_frame, v_frame, bldt, curr_secs&
             IF (gwd_opt .EQ. 1) THEN
             CALL GWDO_B(u3d=u_phytmp, u3db=a_u_phytmp, v3d=v_phytmp, v3db&
 &                  =a_v_phytmp, t3d=t_phy, t3db=a_t_phy, qv3d=qv_curr, &
-&                  qv3db=a_qv_curr, p3d=p_phy, p3di=p8w, a_p3dib=p8w, pi3d=&
+&                  qv3db=a_qv_curr, p3d=p_phy, p3di=p8w, p3dib=a_p8w, pi3d=&
 &                  pi_phy, pi3db=a_pi_phy, z=z, zb=a_z, rublten=rublten, &
-&                  rubltenb=a_rublten, rvblten=rvblten, rvbltenb=rvbltenb&
+&                  rubltenb=a_rublten, rvblten=rvblten, rvbltenb=a_rvblten&
 &                  , dtaux3d=dtaux3d, dtaux3db=a_dtaux3d, dtauy3d=dtauy3d&
 &                  , dtauy3db=a_dtauy3d, dusfcg=dusfcg, dusfcgb=a_dusfcg, &
 &                  dvsfcg=dvsfcg, dvsfcgb=a_dvsfcg, var2d=var2d, oc12d=&
@@ -800,14 +801,14 @@ SUBROUTINE A_PBL_DRIVER(itimestep, dt, u_frame, v_frame, bldt, curr_secs&
             END IF
           CASE (surfdragscheme)
             CALL POPINTEGER4ARRAY(kpbl, (ime-ims+1)*(jme-jms+1))
-            CALL SURFACE_DRAG_B(rublten=rublten, a_rublten=a_rublten, &
-&                          rvblten=rvblten, a_rvblten=a_rvblten, u_phy=u_phy&
-&                          , a_u_phy=a_u_phy, v_phy=v_phy, a_v_phy=a_v_phy, &
-&                          xland=xland, z=z, a_z=a_z, ht=ht, ids=ids, ide=ide&
-&                          , jds=jds, jde=jde, kds=kds, kde=kde, ims=ims, &
-&                          ime=ime, jms=jms, jme=jme, kms=kms, kme=kme, its&
-&                          =its, ite=ite, jts=jts, jte=jte, kts=kts, kte=&
-&                          kte)
+            CALL SURFACE_DRAG_B(rublten=rublten, rubltenb=a_rublten, &
+&                          rvblten=rvblten, rvbltenb=a_rvblten, u_phy=u_phy&
+&                          , u_phyb=a_u_phy, v_phy=v_phy, v_phyb=a_v_phy, &
+&                          xland=xland, z=z, zb=a_z, ht=ht, kpbl2d=kpbl,  &
+&                          ids=ids, ide=ide, jds=jds, jde=jde, kds=kds,   &
+&                          kde=kde, ims=ims, ime=ime, jms=jms, jme=jme,   &
+&                          kms=kms, kme=kme, its=its, ite=ite, jts=jts,   &
+&                          jte=jte, kts=kts, kte=kte)
           CASE DEFAULT
           END SELECT
         END DO

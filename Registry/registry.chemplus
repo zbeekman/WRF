@@ -151,8 +151,8 @@ state    real  scant_mek          i{ant}jf     scaleant     1         -      i0{
 state    real  scant_toluene      i{ant}jf     scaleant     1         -      i0{12}rh    "scant_toluene"    "EMISSIONS scale factor TOLUENE"           ""
 state    real  scant_isop         i{ant}jf     scaleant     1         -      i0{12}rh    "scant_isop"       "EMISSIONS scale factor ISOP"              ""
 state    real  scant_c10h16       i{ant}jf     scaleant     1         -      i0{12}rh    "scant_c10h16"     "EMISSIONS scale factor C10H16"            ""
-state   real    scant_co_a          i{ant}jf    scaleant        1       -       i0{12}rh     "scant_co_a"        "CO_A emissions scale factor"        ""
-state   real    scant_co_bb         i{ant}jf    scaleant        1       -       i0{12}rh     "scant_vocbb"       "CO_BB emissions scale factor"        ""
+state   real    scant_voca          i{ant}jf    scaleant        1       -       i0{12}rh     "scant_voca"        "VOCA emissions scale factor"        ""
+state   real    scant_vocbb         i{ant}jf    scaleant        1       -       i0{12}rh     "scant_vocbb"       "VOCBB emissions scale factor"        ""
 
 # Additional CBMZ and MOSAIC emission variables...
 state    real  scant_no2          i{ant}jf     scaleant     1         -      i0{12}rh    "scant_no2"                "EMISSIONS scale factor NO2"                 ""

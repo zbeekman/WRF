@@ -281,9 +281,9 @@ SUBROUTINE chem_driver_tl(grid, config_flags &
              'calling radm2sorg_aqchem aerosols driver from chem_driver'&
             )
     haveaer = .true.
-  CASE (RACMSORG_AQCHEM) 
+  CASE (RACMSORG_AQCHEM_KPP) 
     CALL WRF_DEBUG(15, &
-             'calling racmsorg_aqchem aerosols driver from chem_driver')
+             'calling racmsorg_aqchem_kpp aerosols driver from chem_driver')
     haveaer = .true.
   CASE (RACM_KPP) 
     CALL WRF_DEBUG(15, 'calling racm_kpp from chem_driver')
@@ -473,7 +473,7 @@ as (check chemics_init.F),', ' numgas_mam=', numgas_mam, ' and numgas='&
   END DO
   SELECT CASE  (config_flags%chem_opt) 
   CASE (RADM2SORG, RADM2SORG_AQ, RADM2SORG_AQCHEM, RADM2SORG_KPP, &
-  RACM_ESRLSORG_KPP, RACMSORG_AQ, RACMSORG_KPP, RACMSORG_AQCHEM, &
+  RACM_ESRLSORG_KPP, RACMSORG_AQ, RACMSORG_KPP, RACMSORG_AQCHEM_KPP, &
   RACM_SOA_VBS_KPP) 
     DO j=jps,jpe
       DO k=kps,kpe

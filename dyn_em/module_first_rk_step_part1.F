@@ -773,7 +773,7 @@ BENCH_START(surf_driver_tim)
      &        ,ch=grid%ch,tsq=grid%tsq,qsq=grid%qsq,cov=grid%cov          & !MYNN - MP
      &        ,Sh3d=grid%sh3d,EL_PBL=grid%el_pbl                          & !JOE- MYNN cloudpdf
      &        ,bl_mynn_cloudpdf=config_flags%bl_mynn_cloudpdf             & !JOE- MYNN cloudpdf
-     &        ,fgdp=grid%fgdp,dfgdp=grid%dfgdp,vdfg=grid%vdfg             & !Katata - fogdes                                                                                                 
+     &        ,fgdp=grid%fgdp,dfgdp=grid%dfgdp,vdfg=grid%vdfg             & !Katata - fogdes
      &        ,grav_settling=config_flags%grav_settling                   & !Katata - fogdes
      &        ,OM_TMP=grid%om_tmp, OM_S=grid%om_s, OM_U=grid%om_u, OM_V=grid%om_v   & !cyl:3DPWP
      &        ,OM_DEPTH=grid%om_depth, OM_ML=grid%OM_ML, OM_LON=grid%om_lon         & !cyl:3DPWP
@@ -843,8 +843,11 @@ BENCH_START(pbl_driver_tim)
                     grid%ahno3,grid%anh3,grid%cvaro1,grid%cvaro2,grid%cvalk1,grid%cvole1,&
                     grid%cvapi1,grid%cvapi2,grid%cvlim1,grid%cvlim2,     &
                     numgas,current_month,dvel,grid%snowh,  &
+                    grid%dustdrydep_1,grid%dustdrydep_2,grid%dustdrydep_3,               &
+                    grid%dustdrydep_4,grid%dustdrydep_5,                                 &
+                    grid%depvelocity,                                                    &
                     grid%is_CAMMGMP_used,                  & !BSINGH:01/31/2013: Added is_CAMMGMP_used for MAM drydep
-                    grid%dep_vel,grid%num_vert_mix,grid%dep_vel_bc,                      &
+                    grid%dep_vel,grid%num_vert_mix,                      &
                     ids,ide, jds,jde, kds,kde,                                           &
                     ims,ime, jms,jme, kms,kme,                                           &
                     grid%i_start(ij), grid%i_end(ij), &
@@ -1207,7 +1210,7 @@ BENCH_END(cu_driver_tim)
       DO ij = 1 , grid%num_tiles
            call convtrans_prep(grid%gd_cloud,grid%gd_cloud2,grid%gd_cloud_a,&
      &          grid%QC_CU,grid%raincv,grid%raincv_a,grid%raincv_b,     &
-     &          grid%gd_cldfr,moist,p_QV,p_QC,p_qi,T_PHY,P_PHY,num_moist,    &
+     &          grid%gd_cldfr,moist,p_QV,p_QC,p_qi,grid%T_PHY,P_PHY,num_moist,    &
      &          grid%gd_cloud2_a,grid%QI_CU,grid%convtrans_avglen_m,&
      &          adapt_step_flag,curr_secs,                &
      &          grid%itimestep,grid%dt,                                      &

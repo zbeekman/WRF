@@ -1263,21 +1263,8 @@ END SUBROUTINE add_forcing_to_ad
 SUBROUTINE add_forcing_to_ad_chem ( grid, config_flags )
    USE module_domain, ONLY : domain , get_ijk_from_grid
    USE module_configure, ONLY : grid_config_rec_type
-   USE module_state_description !, ONLY: p_bc1, p_bc2
-
-!USE module_state_description, ONLY : PARAM_FIRST_SCALAR, num_moist, num_tracer, &
-!#ifdef WRF_CHEM
-!                                     num_chem,&
-!#endif
-!                                     num_scalar
-!#ifdef DM_PARALLEL
-!USE module_dm, ONLY : local_communicator, mytask, ntasks, ntasks_x, ntasks_y
-!USE module_comm_dm, ONLY : halo_em_chem_e_3_ad_sub, halo_em_chem_e_5_ad_sub
-!#endif
-
-#ifdef DM_PARALLEL
-USE module_dm, ONLY : wrf_dm_sum_real 
-#endif
+   USE module_state_description
+ 
    IMPLICIT NONE
 
    TYPE(domain), INTENT(INOUT)             :: grid
@@ -1285,7 +1272,7 @@ USE module_dm, ONLY : wrf_dm_sum_real
 
    INTEGER :: iobs, itime, iloc, jloc, kloc, ij
    INTEGER :: its, ite, jts, jte
-   REAL :: YCHEM, ALT, H_BC, FORCING, dummy_BC, dummy_FORCING
+   REAL :: YCHEM, ALT, H_BC, FORCING
 
    INTEGER       :: ids , ide , jds , jde , kds , kde , &
                     ims , ime , jms , jme , kms , kme , &
@@ -1313,8 +1300,6 @@ USE module_dm, ONLY : wrf_dm_sum_real
             ALT = 0.D0
             H_BC = 0.D0
             FORCING = 0.D0
-!            dummy_BC = 0.D0
-!            dummy_FORCING = 0.D0
             !$OMP PARALLEL DO   &
             !$OMP PRIVATE ( ij, iobs, its, ite, jts, jte, iloc, jloc, kloc, ALT, H_BC, FORCING )
             surf_tile_loop: DO ij = 1 , grid%num_tiles
@@ -1322,7 +1307,6 @@ USE module_dm, ONLY : wrf_dm_sum_real
                ite = min(grid%i_end(ij),ide-1)
                jts = max(grid%j_start(ij),jds)
                jte = min(grid%j_end(ij),jde-1)
-
 ! In the future will need to replace these 3 ijk roundings with calculation of interpolation coefficients for 8 surrounding grid cells (only 4 for surface obs).  These will be the coefficients of the observation operator vector.
                iloc = INT(grid%i_surf(iobs) + 0.5D0)
                jloc = INT(grid%j_surf(iobs) + 0.5D0)
@@ -1335,8 +1319,6 @@ USE module_dm, ONLY : wrf_dm_sum_real
                   ) THEN
 
                   ALT    = grid%alt(iloc,kloc,jloc)
-!                  H_BC   = (grid%chem(iloc,kloc,jloc,p_bc1) + grid%chem(iloc,kloc,jloc,p_bc2)) / ALT
-!                  H_BC    = grid%IMPROVE_H_BC(iobs)
                   IF ( grid%num_surf_hx .GE. config_flags%p_surf_bc ) THEN
                      H_BC   = grid%surf_hx(itime,config_flags%p_surf_bc)
                      FORCING = ( H_BC - grid%BC_surf(iobs) ) / ALT /&
@@ -1353,11 +1335,6 @@ USE module_dm, ONLY : wrf_dm_sum_real
                ENDIF
             ENDDO surf_tile_loop
             !$OMP END PARALLEL DO 
-
-!            dummy_BC   = wrf_dm_sum_real (H_BC)
-!            dummy_FORCING = wrf_dm_sum_real (FORCING)
-!WRITE(603,FMT='(4(I7),3(D16.7),I4)') itime,iloc,jloc,kloc, dummy_BC, dummy_FORCING, grid%BC_surf(iobs), iobs
-
          END IF
       END DO
    ENDIF
@@ -1386,16 +1363,13 @@ USE module_dm, ONLY : wrf_dm_sum_real
                ) THEN
 ! In the future will need to replace these 3 ijk roundings with calculation of interpolation coefficients for 8 surrounding grid cells (only 4 for surface obs).  These will be the coefficients of the observation operator vector.
                ALT    = grid%alt(iloc,kloc,jloc)
-!               H_BC   = grid%ARCTAS_H_BC(itime)
                IF ( grid%num_acft_hx .GE. config_flags%p_acft_bc ) THEN
                   H_BC   = grid%acft_hx(itime,config_flags%p_acft_bc)
 
       IF(config_flags%chem_obs_type .EQ. 1) then
                   FORCING = ( H_BC - grid%BC_acft_avg(itime) ) / ALT
-!               grid%J(iloc,kloc,jloc) = grid%J(iloc,kloc,jloc) + (H_BC - grid%BC_acft_avg(itime))**2
       ELSEIF(config_flags%chem_obs_type .EQ. 2) then
                   FORCING = 1.D0 / ALT
-!               grid%J(iloc,kloc,jloc) = grid%J(iloc,kloc,jloc) + H_BC
       ENDIF
                ENDIF
                grid%a_chem(iloc,kloc,jloc,p_bc1) = &
@@ -1405,17 +1379,8 @@ USE module_dm, ONLY : wrf_dm_sum_real
             ENDIF
          ENDDO acft_tile_loop
          !$OMP END PARALLEL DO
-!         dummy_BC   = wrf_dm_sum_real (H_BC)
-!         dummy_FORCING = wrf_dm_sum_real (FORCING)
-!
-!WRITE(602,FMT='(4(I7),3(D16.7),I4)') itime,iloc,jloc,kloc, dummy_BC, dummy_FORCING, grid%BC_acft_avg(itime), grid%acft_obs_count(itime)
-
       ENDIF
    ENDIF
-
-!!Should not need these HALO comms as chem_driver (next call after this) is a column model and there are
-! HALO comms at the beginning of solve_em_ad adjoint code (next call after that).
-
 #endif
 
 END SUBROUTINE add_forcing_to_ad_chem
@@ -1424,18 +1389,8 @@ END SUBROUTINE add_forcing_to_ad_chem
 SUBROUTINE calc_chem_hx ( grid, config_flags )
    USE module_domain, ONLY : domain , get_ijk_from_grid
    USE module_configure, ONLY : grid_config_rec_type
-   USE module_state_description  !, ONLY: p_bc1, p_bc2
-
-!USE module_state_description, ONLY : PARAM_FIRST_SCALAR, num_moist, num_tracer, &
-!#ifdef WRF_CHEM
-!                                     num_chem,&
-!#endif
-!                                     num_scalar
-!#ifdef DM_PARALLEL
-!USE module_dm, ONLY : local_communicator, mytask, ntasks, ntasks_x, ntasks_y
-!USE module_comm_dm, ONLY : halo_em_chem_e_3_ad_sub, halo_em_chem_e_5_ad_sub
-!#endif
-
+   USE module_state_description
+ 
    IMPLICIT NONE
 
    TYPE(domain), INTENT(INOUT)             :: grid
@@ -1454,8 +1409,8 @@ SUBROUTINE calc_chem_hx ( grid, config_flags )
                              ims, ime, jms, jme, kms, kme,    &
                              ips, ipe, jps, jpe, kps, kpe )
 
-   !!This subroutine is only called during forward pass (not checkpoints), 
-   !! so grid%itimestep is accurate
+   !!grid%itimestep is accurate because this subroutine is only 
+   !! called during forward pass (not checkpoints)
    itime = grid%itimestep + 1
 
 #ifdef WRF_CHEM
@@ -1471,7 +1426,6 @@ SUBROUTINE calc_chem_hx ( grid, config_flags )
                ite = min(grid%i_end(ij),ide-1)
                jts = max(grid%j_start(ij),jds)
                jte = min(grid%j_end(ij),jde-1)
-
 ! In the future will need to replace these 3 ijk roundings with calculation of interpolation coefficients for 8 surrounding grid cells (only 4 for surface obs).  These will be the coefficients of the observation operator vector.
                iloc = INT(grid%i_surf(iobs) + 0.5D0)
                jloc = INT(grid%j_surf(iobs) + 0.5D0)
@@ -1483,14 +1437,11 @@ SUBROUTINE calc_chem_hx ( grid, config_flags )
                   jloc .LE. jte &
                   ) THEN
                   ALT    = grid%alt(iloc,kloc,jloc)
-!                  grid%IMPROVE_H_BC(iobs) = grid%IMPROVE_H_BC(iobs) + &
-!                           (grid%chem(iloc,kloc,jloc,p_bc1) + &
-!                            grid%chem(iloc,kloc,jloc,p_bc2)) / ALT / &
-!                           (24.D0 * 3600.D0 / grid%dt)
                   IF ( grid%num_surf_hx .GE. config_flags%p_surf_bc ) &
-                  grid%surf_hx(iobs,config_flags%p_surf_bc) = grid%surf_hx(iobs,config_flags%p_surf_bc) + &
+                    grid%surf_hx(iobs,config_flags%p_surf_bc) = &
+                           grid%surf_hx(iobs,config_flags%p_surf_bc) + &
                            (grid%chem(iloc,kloc,jloc,p_bc1) + &
-                            grid%chem(iloc,kloc,jloc,p_bc2)) / ALT / &
+                           grid%chem(iloc,kloc,jloc,p_bc2)) / ALT / &
                            (24.D0 * 3600.D0 / grid%dt)
 
                ENDIF
@@ -1503,7 +1454,6 @@ SUBROUTINE calc_chem_hx ( grid, config_flags )
    ENDIF
 
    IF(config_flags%num_acft_obs .GT. 0) THEN
-
       ALT = 0.D0
       IF( grid%acft_obs_count(itime) .GE. 1 ) THEN
          iloc = INT(grid%i_acft_avg(itime) + 0.5D0)
@@ -1523,7 +1473,6 @@ SUBROUTINE calc_chem_hx ( grid, config_flags )
                ) THEN
 ! In the future will need to replace these 3 ijk roundings with calculation of interpolation coefficients for 8 surrounding grid cells (only 4 for surface obs).  These will be the coefficients of the observation operator vector.
                ALT    = grid%alt(iloc,kloc,jloc)
-!               grid%ARCTAS_H_BC(itime) = (grid%chem(iloc,kloc,jloc,p_bc1) + grid%chem(iloc,kloc,jloc,p_bc2)) / ALT
                IF ( grid%num_acft_hx .GE. config_flags%p_acft_bc ) &
                grid%acft_hx(itime,config_flags%p_acft_bc)    = (grid%chem(iloc,kloc,jloc,p_bc1) + grid%chem(iloc,kloc,jloc,p_bc2)) / ALT 
 

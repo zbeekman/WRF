@@ -558,7 +558,7 @@ SUBROUTINE sum_pm_soa_vbs (                                         &
 
 SUBROUTINE     soa_vbs_depdriver (id,config_flags,ktau,dtstep,                        &
                ust,t_phy,moist,p8w,t8w,rmol,znt,pbl,                    &
-               alt,p_phy,chem,rho_phy,dz8w,z,z_at_w,                    &
+               alt,p_phy,chem,rho_phy,dz8w,rh,z,z_at_w,                    &
                h2oaj,h2oai,nu3,ac3,cor3,asulf,ahno3,anh3,               &
 
 ! the vapors are part of chem array
@@ -606,6 +606,7 @@ SUBROUTINE     soa_vbs_depdriver (id,config_flags,ktau,dtstep,                  
                                                       alt,      &
                                                       p_phy,    &
                                                       dz8w,     &
+                                                        rh,     & 
                                                          z,     &
                                               t8w,p8w,z_at_w ,  &
                                                     rho_phy
@@ -650,7 +651,7 @@ SUBROUTINE     soa_vbs_depdriver (id,config_flags,ktau,dtstep,                  
                     !bs
       REAL relhum
                     ! rel. humidity (0,1)   
-      REAL ::  p(kts:kte),t(kts:kte)!,rh0(kts:kte)
+      REAL ::  p(kts:kte),t(kts:kte),rh0(kts:kte)
 
 !...molecular weights                   ciarev02
 
@@ -777,7 +778,7 @@ INTEGER :: i,j,k,l
             do k=kts,kte
                t(k) = t_phy(i,k,j)
                p(k) = .001*p_phy(i,k,j)
-!               rh0(k) = rh(i,k,j)
+               rh0(k) = rh(i,k,j)
             end do
 
             k=kts

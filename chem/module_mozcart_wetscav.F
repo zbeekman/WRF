@@ -1795,9 +1795,13 @@ function DEMPIRICAL( CWATER, RRATE )
         BETA  = THETA/const1
         ALPHA = exp( FOURR8*(BETA - 3.5_8) )
         BEE   = const0*BETA - ONER8
+#if ( WRFPLUS ==1 )
+        GAMTHETA = GAMMA( THETA )
+        GAMBETA  = GAMMA( BETA + ONE )
+#else
         GAMTHETA = real( GAMMA( real(THETA,kind=4) ),kind=8 )
         GAMBETA  = real( GAMMA( real(BETA + ONER8,kind=4) ),kind=8 )
-
+#endif
         numer = WX*ETA*GAMTHETA
         denom = 1.0e6_8*ALPHA*PHI*GAMBETA
         diameter = ((numer/denom)**(-oner8/BEE))*10._8

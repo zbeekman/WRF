@@ -537,7 +537,9 @@
                       grid%mass_flux,                              &
                       grid%rthften, grid%rqvften,                       &
                       grid%cldfra,                                      &
-#if (WRF_CHEM!=1)
+#if (WRF_CHEM == 1)
+                      grid%cldfra_old,                                  &
+#else
                       cldfra_old,                                  &
 #endif
                       grid%glw,grid%gsw,grid%emiss,grid%embck,            &

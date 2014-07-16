@@ -296,9 +296,9 @@ SUBROUTINE chem_driver_ad(grid, config_flags &
              'calling radm2sorg_aqchem aerosols driver from chem_driver'&
             )
     haveaer = .true.
-  CASE (RACMSORG_AQCHEM)
+  CASE (RACMSORG_AQCHEM_KPP)
     CALL WRF_DEBUG(15, &
-             'calling racmsorg_aqchem aerosols driver from chem_driver')
+             'calling racmsorg_aqchem_kpp aerosols driver from chem_driver')
     haveaer = .true.
   CASE (RACM_KPP)
     CALL WRF_DEBUG(15, 'calling racm_kpp from chem_driver')
@@ -483,7 +483,7 @@ and subgrid transport chem_driver')
   END DO
   SELECT CASE  (config_flags%chem_opt) 
   CASE (radm2sorg, radm2sorg_aq, radm2sorg_aqchem, radm2sorg_kpp, &
-&  racm_esrlsorg_kpp, racmsorg_aq, racmsorg_kpp, racmsorg_aqchem, &
+&  racm_esrlsorg_kpp, racmsorg_aq, racmsorg_kpp, racmsorg_aqchem_kpp, &
 &  racm_soa_vbs_kpp) 
     DO j=jps,jpe
       DO k=kps,kpe
@@ -811,6 +811,10 @@ chem_tile_loop_ad:DO ij=1,grid%num_tiles
               grid%ebio_cco_oh, grid%ebio_rco_oh, &
               grid%clayfrac,grid%sandfrac,grid%dust_alpha,grid%dust_gamma,grid%dust_smtune,&
               grid%snowh,grid%zs, &
+              grid%soilctop, grid%ust_t, grid%rough_cor, grid%smois_cor,                  &
+              grid%ebio_c5h8,grid%ebio_apinene,grid%ebio_bpinene,grid%ebio_toluene,        &
+              grid%ebio_ch3cho,grid%ebio_ch3co2h,grid%ebio_tbut2ene,                      &
+              grid%ebio_c2h5cho,grid%ebio_nc4h10,                                         &
               grid%T2,grid%swdown, &
               grid%nmegan,grid%EFmegan, &
               grid%msebio_isop, &
