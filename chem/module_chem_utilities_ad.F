@@ -208,8 +208,6 @@ CONTAINS
         END DO
       END DO
     END DO
-!!!WARNING: These 0 initializations may need to be commented/deleted/moved to chem_driver -JJG
-!    a_moist = 0.0_8
     DO j=j_end,j_start,-1
       DO k=k_end,k_start,-1
         DO i=i_end,i_start,-1
@@ -258,8 +256,6 @@ CONTAINS
         END DO
       END DO
     END DO
-!!!WARNING: These 0 initializations may need to be commented/deleted/moved to chem_driver -JJG
-!    a_ph = 0.0_8
     DO j=j_end,j_start,-1
       DO k=kte,k_start,-1
         DO i=i_end,i_start,-1
@@ -288,12 +284,6 @@ CONTAINS
         a_p_phy(i, k_end, j) = a_p_phy(i, k_end, j) + tmpb
       END DO
     END DO
-!!!WARNING: These 0 initializations may need to be commented/deleted/moved to chem_driver -JJG
-!    a_p = 0.0_8
-!    a_t = 0.0_8
-!    a_u = 0.0_8
-!    a_v = 0.0_8
-!    a_alt = 0.0_8
     DO j=j_end,j_start,-1
       DO k=k_end,k_start,-1
         DO i=i_end,i_start,-1

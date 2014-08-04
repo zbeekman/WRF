@@ -213,6 +213,10 @@ use module_scalar_tables
 !       !$OMP END PARALLEL DO            
 !BENCH_END(init_zero_tend_tim)
 
+#ifdef DM_PARALLEL
+#     include "HALO_EM_PHYS_A.inc"
+#endif
+
       CALL PUSHREAL8ARRAY(grid%rublten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1))
       CALL PUSHREAL8ARRAY(grid%rvblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1))
       CALL PUSHREAL8ARRAY(grid%rthblten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1))
@@ -227,13 +231,6 @@ use module_scalar_tables
       CALL PUSHREAL8ARRAY(grid%rqccuten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1))
       CALL PUSHREAL8ARRAY(grid%rqicuten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1))
 !      CALL PUSHREAL8ARRAY(grid%rqscuten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1))
-
-#ifdef DM_PARALLEL
-#     include "HALO_EM_PHYS_A.inc"
-#endif
-
-      CALL PUSHREAL8ARRAY ( grid%rthcuten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-      CALL PUSHREAL8ARRAY ( grid%rqvcuten, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
 
       !$OMP PARALLEL DO   &
       !$OMP PRIVATE ( ij )

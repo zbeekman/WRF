@@ -963,10 +963,11 @@ SUBROUTINE G_SURFACE_DRIVER(hydro_dt, &
         g_cpm = 0.0_8
         g_chs = 0.0_8
         g_zol = 0.0_8
-!        g_ust = 0.0_8 !Needs to propogate from previous time step -JJG
-!        g_mol = 0.0_8 !Needs to propogate from previous time step -JJG
-!        g_ustm = 0.0_8 !Needs to propogate from previous time step -JJG
-!        g_znt = 0.0_8 !Needs to propogate from previous time step -JJG
+!Need to propogate from previous time step -JJG
+!        g_ust = 0.0_8
+!        g_mol = 0.0_8
+!        g_ustm = 0.0_8
+!        g_znt = 0.0_8
 !$OMP PARALLEL DO   &
 !$OMP PRIVATE ( ij, i, j, k )
         DO ij=1,num_tiles
@@ -1067,9 +1068,9 @@ SUBROUTINE G_SURFACE_DRIVER(hydro_dt, &
         IF (isfflx .NE. 0) THEN
           g_lai = 0.0_8
           g_capg = 0.0_8
-!          g_tslb = 0.0_8 !Needs to propogate from previous time step -JJG
           g_vegf_px = 0.0_8
           g_tsk = 0.0_8
+!          g_tslb = 0.0_8 !Need to propogate from previous time step -JJG
 !          g_smois = 0.0_8
 !          g_canwat = 0.0_8
 !$OMP PARALLEL DO   &

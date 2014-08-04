@@ -154,10 +154,6 @@ CONTAINS
           END DO
         END DO
       END DO
-!!!WARNING: These 0 initializations may need to be commented/deleted/moved to chem_driver -JJG
-!      a_t_phy = 0.0_8
-!      a_rho_phy = 0.0_8
-!!!!!!!!!!!!!!!!!!!!!!!!!!
       a_h2o2 = 0.0_8
       a_tmp = 0.0_8
       a_airden = 0.0_8
@@ -322,10 +318,6 @@ CONTAINS
           END DO
         END DO
       END DO
-!!!WARNING: These 0 initializations may need to be commented/deleted/moved to chem_driver -JJG
-!      a_t_phy = 0.0_8
-!      a_rho_phy = 0.0_8
-!!!!!!!!!!!!!
       a_h2o2 = 0.0_8
       a_xno3 = 0.0_8
       a_oh = 0.0_8
@@ -417,10 +409,6 @@ CONTAINS
         END DO
       END DO
     CASE DEFAULT
-!!!WARNING: These will overwrite sensitivities accumulated from other subroutines or timesteps -JJG
-!!!Possible insert debug message to that effect
-      a_t_phy = 0.0_8
-      a_rho_phy = 0.0_8
     END SELECT
   END SUBROUTINE a_gocart_chem_driver
 

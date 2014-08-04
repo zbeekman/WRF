@@ -118,15 +118,8 @@ tile_lon_loop:DO i=its,ite
         ta = tsk(i, j)
         rad = gsw(i, j)
         vegfrac = vegfra(i, j)
-!        IF (500.d0 .LT. 0.01*p_phy(i, kts, j)) THEN
-          g_pa = 0.01*g_p_phy(i, kts, j)
-          pa = 0.01*p_phy(i, kts, j)
-!        ELSE
-!          pa = 500.d0
-!          g_pa = 0.0_8
-!        END IF
-!        g_pa = 0.01*g_p_phy(i, kts, j)
-!        pa = 0.01*p_phy(i, kts, j)
+        g_pa = 0.01*g_p_phy(i, kts, j)
+        pa = 0.01*p_phy(i, kts, j)
         clwchem = moist(i, kts, j, p_qc)
         g_ustar = g_ust(i, j)
         ustar = ust(i, j)

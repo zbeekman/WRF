@@ -1971,15 +1971,6 @@ a_vci=0.D0
         a_densx(i, 1) = a_densx(i, 1) + pstari(i)*temp2b8
         a_pstari(i) = a_pstari(i) + densx(i, 1)*temp2b8
         a_fs(l, i) = 0.0_8
-
-!DELETE-JJG
-!        temp2b4 = -(pstari(i)*chem(i, 1, l-nsp)*a_fs(l, i))
-!        a_vd(i, 1, l-nsp) = a_vd(i, 1, l-nsp) + densx(i, 1)*temp2b4
-!        a_densx(i, 1) = a_densx(i, 1) + vd(i, 1, l-nsp)*temp2b4
-!        a_chem(i, 1, l-nsp) = a_chem(i, 1, l-nsp) - pstari(i)*vd(i, 1, l&
-!&          -nsp)*densx(i, 1)*a_fs(l, i)
-!        a_fs(l, i) = 0.0_8
-!DELETE-JJG
       END DO
 #endif
       a_fs(6, i) = 0.0_8
@@ -2016,21 +2007,6 @@ a_vci=0.D0
 &        temp2b4 + densx(i, 1)*temp2b2
       a_tst(i) = a_tst(i) + ust(i)*temp2b6
       a_fs(1, i) = 0.0_8
-
-!DELETE-JJG
-!      a_vs(i, 1) = a_vs(i, 1) + 2*vs(i, 1)*temp2b1
-!      a_ustm(i) = a_ustm(i) - densx(i, 1)*pstari(i)*2*ustm(i)*a_fm
-!      a_densx(i, 1) = a_densx(i, 1) - pstari(i)*ust(i)*qst(i)*a_fs(2, i)&
-!&        - pstari(i)*ustm(i)**2*a_fm
-!      temp2b2 = -(pstari(i)*densx(i, 1)*a_fs(2, i))
-!      a_qst(i) = a_qst(i) + ust(i)*temp2b2
-!      a_fs(2, i) = 0.0_8
-!      temp2b3 = -(pstari(i)*densx(i, 1)*a_fs(1, i))
-!      a_ust(i) = a_ust(i) + tst(i)*temp2b3 + qst(i)*temp2b2
-!      a_tst(i) = a_tst(i) + ust(i)*temp2b3
-!      a_densx(i, 1) = a_densx(i, 1) - pstari(i)*ust(i)*tst(i)*a_fs(1, i)
-!      a_fs(1, i) = 0.0_8
-!DELETE-JJG
     END DO
     DO k=kl,kts,-1
       DO i=ilx,its,-1
@@ -2102,6 +2078,7 @@ a_vci=0.D0
     END DO
     DEALLOCATE(vci)
     DEALLOCATE(a_vci)
+    DEALLOCATE(bcbotn)
     DEALLOCATE(fs)
     DEALLOCATE(a_fs)
     DEALLOCATE(ui)

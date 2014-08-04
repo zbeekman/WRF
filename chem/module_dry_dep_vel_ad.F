@@ -233,11 +233,6 @@ CONTAINS
                                ids, ide, &
 &                              jds, jde, kds, kde, ims, ime, jms, jme, &
 &                              kms, kme, its, ite, jts, jte, kts, kte)
-!Can't set these to zero because sensitivites cascade back to other subroutines -JJG
-!        a_t_phy = 0.0_8
-!        a_p_phy = 0.0_8
-!        a_moist = 0.0_8
-!        a_z_at_w = 0.0_8
       END IF
     ELSE IF (branch .EQ. 2) THEN
       CALL A_GOCART_DRYDEP_DRIVER(dtstep, config_flags, numgas, t_phy, &
@@ -262,23 +257,6 @@ CONTAINS
 &                     z_at_w, a_z_at_w, snowh, numgas, ids, ide, jds, jde&
 &                     , kds, kde, ims, ime, jms, jme, kms, kme, its, ite&
 &                     , jts, jte, kts, kte)
-!Can't set these to zero because sensitivites cascade back to other subroutines -JJG
-!    ELSE IF (branch .EQ. 3) THEN
-!      a_ust = 0.0_8
-!      a_t_phy = 0.0_8
-!      a_znt = 0.0_8
-!      a_p_phy = 0.0_8
-!      a_moist = 0.0_8
-!      a_pbl = 0.0_8
-!      a_z_at_w = 0.0_8
-!    ELSE
-!      a_ust = 0.0_8
-!      a_t_phy = 0.0_8
-!      a_znt = 0.0_8
-!      a_p_phy = 0.0_8
-!      a_moist = 0.0_8
-!      a_pbl = 0.0_8
-!      a_z_at_w = 0.0_8
     END IF
     a_dep_vel = 0.0_8
   END SUBROUTINE A_DRY_DEP_VEL

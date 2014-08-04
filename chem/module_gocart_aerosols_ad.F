@@ -216,8 +216,6 @@ CONTAINS
         END DO
       END DO
     END DO
-!!!WARNING: These 0 initializations may need to be commented/deleted/moved to chem_driver -JJG
-!    a_alt = 0.0_8
     DO j=jte,jts,-1
       DO k=kte,kts,-1
         DO i=ite,its,-1

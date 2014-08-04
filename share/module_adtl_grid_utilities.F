@@ -22,7 +22,7 @@ REAL, ALLOCATABLE :: s_tke_2(:,:,:)
 
 REAL, ALLOCATABLE :: s_p(:,:,:), s_al(:,:,:), s_h_diabatic(:,:,:)
 REAL, ALLOCATABLE :: s_ustm(:,:), s_hfx(:,:), s_qfx(:,:)
-REAL, ALLOCATABLE :: s_ust(:,:), s_znt(:,:), s_rmol(:,:), s_mol(:,:), s_pblh(:,:), s_canwat(:,:)
+REAL, ALLOCATABLE :: s_ust(:,:), s_znt(:,:), s_rmol(:,:), s_mol(:,:), s_pblh(:,:), s_canwat(:,:), s_tsk(:,:)
 REAL, ALLOCATABLE :: s_tslb(:,:,:), s_smois(:,:,:)
 
 REAL, ALLOCATABLE :: s_dtaux3d(:,:,:), s_dtauy3d(:,:,:)
@@ -213,6 +213,11 @@ CONTAINS
    IF (ierr.NE.0) THEN
      CALL wrf_error_fatal ( &
      'share/module_adtl_grid_utilities.f: Failed to allocate s_canwat(sm31:em31, sm33:em33). ')
+   ENDIF
+   ALLOCATE ( s_tsk(sm31:em31, sm33:em33), STAT=ierr )
+   IF (ierr.NE.0) THEN
+     CALL wrf_error_fatal ( &
+     'share/module_adtl_grid_utilities.f: Failed to allocate s_tsk(sm31:em31, sm33:em33). ')
    ENDIF
 
    ALLOCATE ( s_tslb(sm31:em31, num_soil_layers, sm33:em33), STAT=ierr )
@@ -1440,22 +1445,87 @@ CONTAINS
    ENDDO
    ENDDO
 
-   s_tke_2 = grid%tke_2
-   s_p = grid%p
-   s_al = grid%al
-   s_h_diabatic = grid%h_diabatic
-   s_ustm = grid%ustm
-   s_hfx = grid%hfx
-   s_qfx = grid%qfx
+   s_tke_2 = 0.D0
+   DO j = jts,MIN(jte,jde-1)
+   DO k = kts,kte-1
+   DO i = its,ite
+      s_tke_2(i,k,j) = grid%tke_2(i,k,j)
+   ENDDO
+   ENDDO
+   ENDDO
 
-   s_ust = grid%ust
-   s_znt = grid%znt
-   s_rmol = grid%rmol
-   s_mol = grid%mol
-   s_pblh = grid%pblh
-   s_canwat = grid%canwat
-   s_tslb = grid%tslb
-   s_smois = grid%smois
+   s_p = 0.D0
+   DO j = jts,MIN(jte,jde-1)
+   DO k = kts,kte-1
+   DO i = its,ite
+      s_p(i,k,j) = grid%p(i,k,j)
+   ENDDO
+   ENDDO
+   ENDDO
+
+   s_al = 0.D0
+   DO j = jts,MIN(jte,jde-1)
+   DO k = kts,kte-1
+   DO i = its,ite
+      s_al(i,k,j) = grid%al(i,k,j)
+   ENDDO
+   ENDDO
+   ENDDO
+
+   s_h_diabatic = 0.D0
+   DO j = jts,MIN(jte,jde-1)
+   DO k = kts,kte-1
+   DO i = its,ite
+      s_h_diabatic(i,k,j) = grid%h_diabatic(i,k,j)
+   ENDDO
+   ENDDO
+   ENDDO
+
+   s_ustm = 0.D0
+   DO j = jts,MIN(jte,jde-1)
+   DO i = its,ite
+      s_ustm(i,j) = grid%ustm(i,j)
+   ENDDO
+   ENDDO
+
+   s_hfx = 0.D0
+   s_qfx = 0.D0
+   DO j = jts,MIN(jte,jde-1)
+   DO i = its,ite
+      s_hfx(i,j) = grid%hfx(i,j)
+      s_qfx(i,j) = grid%qfx(i,j)
+   ENDDO
+   ENDDO
+
+   s_ust = 0.D0
+   s_znt = 0.D0
+   s_rmol = 0.D0
+   s_mol = 0.D0
+   s_pblh = 0.D0
+   s_canwat = 0.D0
+   s_tsk = 0.D0
+   DO j = jts,MIN(jte,jde-1)
+   DO i = its,ite
+      s_ust(i,j) = grid%ust(i,j)
+      s_znt(i,j) = grid%znt(i,j)
+      s_rmol(i,j) = grid%rmol(i,j)
+      s_mol(i,j) = grid%mol(i,j)
+      s_pblh(i,j) = grid%pblh(i,j)
+      s_canwat(i,j) = grid%canwat(i,j)
+      s_tsk(i,j) = grid%tsk(i,j)
+   ENDDO
+   ENDDO
+
+   s_tslb = 0.D0
+   s_smois = 0.D0
+   DO j = jts,MIN(jte,jde-1)
+   DO k = 1,num_soil_layers
+   DO i = its,ite
+      s_tslb(i,k,j) = grid%tslb(i,k,j)
+      s_smois(i,k,j) = grid%smois(i,k,j)
+   ENDDO
+   ENDDO
+   ENDDO
 
 !!BLTEN 
 !   grid%a_rthblten = 0.0D0
@@ -1576,6 +1646,10 @@ CONTAINS
    grid%canwat = s_canwat
    grid%tslb = s_tslb
    grid%smois = s_smois
+   grid%tsk = s_tsk
+
+!grid%p_hys = s_p_hyd
+!PSFC?
 
    IF ( gwd_opt .EQ. 1 ) THEN
       grid%dtaux3d = s_dtaux3d
@@ -3395,7 +3469,6 @@ CONTAINS
 !      grid%a_scalebb(i,t,j,mm) = factor(6+mm+num_moist+num_tracer+num_chem+num_scaleant)
 !   ENDDO
 #endif
-
   END SUBROUTINE spot_force_ad
 
 
@@ -3546,6 +3619,7 @@ CONTAINS
    REAL, INTENT(OUT)                  :: num
    INTEGER                            :: mm
 
+
    num = 0.0D0
    num = (grid%u_2(i,k,j) - b_u_2(i,k,j)) * factor(1) + num
    num = (grid%v_2(i,k,j) - b_v_2(i,k,j)) * factor(2) + num
@@ -3601,6 +3675,8 @@ CONTAINS
       den = nl_pert * s_scalebb(i,t,j,mm) * factor(6+mm+num_moist+num_tracer+num_chem+num_scaleant) + den
    ENDDO
 #endif
+IF(abs(den) .LE. 1.d-9) den = 1.D0
+
 
   END SUBROUTINE extract_nl_den
 
@@ -3758,6 +3834,41 @@ CONTAINS
    IF (ierr.NE.0) THEN
      CALL wrf_error_fatal ( &
      'share/module_adtl_grid_utilities.f: Failed to deallocate s_qfx. ')
+   ENDIF
+   DEALLOCATE ( s_ust, STAT=ierr )
+   IF (ierr.NE.0) THEN
+     CALL wrf_error_fatal ( &
+     'share/module_adtl_grid_utilities.f: Failed to deallocate s_ust. ')
+   ENDIF
+   DEALLOCATE ( s_znt, STAT=ierr )
+   IF (ierr.NE.0) THEN
+     CALL wrf_error_fatal ( &
+     'share/module_adtl_grid_utilities.f: Failed to deallocate s_znt. ')
+   ENDIF
+   DEALLOCATE ( s_rmol, STAT=ierr )
+   IF (ierr.NE.0) THEN
+     CALL wrf_error_fatal ( &
+     'share/module_adtl_grid_utilities.f: Failed to deallocate s_rmol. ')
+   ENDIF
+   DEALLOCATE ( s_mol, STAT=ierr )
+   IF (ierr.NE.0) THEN
+     CALL wrf_error_fatal ( &
+     'share/module_adtl_grid_utilities.f: Failed to deallocate s_mol. ')
+   ENDIF
+   DEALLOCATE ( s_pblh, STAT=ierr )
+   IF (ierr.NE.0) THEN
+     CALL wrf_error_fatal ( &
+     'share/module_adtl_grid_utilities.f: Failed to deallocate s_pblh. ')
+   ENDIF
+   DEALLOCATE ( s_canwat, STAT=ierr )
+   IF (ierr.NE.0) THEN
+     CALL wrf_error_fatal ( &
+     'share/module_adtl_grid_utilities.f: Failed to deallocate s_canwat. ')
+   ENDIF
+   DEALLOCATE ( s_tsk, STAT=ierr )
+   IF (ierr.NE.0) THEN
+     CALL wrf_error_fatal ( &
+     'share/module_adtl_grid_utilities.f: Failed to deallocate s_tsk. ')
    ENDIF
 
    IF ( gwd_opt .EQ. 1 ) THEN

@@ -2419,8 +2419,8 @@ BENCH_END(rlx_bdy_scalar_tim)
                END IF 
                CALL PUSHREAL8ARRAY ( moist_tend(:,:,:,im), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
                CALL PUSHREAL8ARRAY ( advect_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-               CALL PUSHREAL8ARRAY ( h_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-               CALL PUSHREAL8ARRAY ( z_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+               !CALL PUSHREAL8ARRAY ( h_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+               !CALL PUSHREAL8ARRAY ( z_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
 
                CALL wrf_debug ( 200 , ' call rk_update_scalar' )
                tenddec = .false.
@@ -2539,8 +2539,8 @@ BENCH_START(tke_adv_tim)
          !$OMP PRIVATE ( ij, tenddec )
          tke_tile_loop_2: DO ij = 1 , grid%num_tiles
            CALL PUSHREAL8ARRAY ( advect_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-           CALL PUSHREAL8ARRAY ( h_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-           CALL PUSHREAL8ARRAY ( z_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           !CALL PUSHREAL8ARRAY ( h_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           !CALL PUSHREAL8ARRAY ( z_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
 
            CALL wrf_debug ( 200 , ' call rk_update_scalar' )
            tenddec = .false.
@@ -2696,8 +2696,8 @@ BENCH_START(chem_adv_tim)
            END IF
            CALL PUSHREAL8ARRAY ( chem_tend(:,:,:,ic), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
            CALL PUSHREAL8ARRAY ( advect_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-           CALL PUSHREAL8ARRAY ( h_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-           CALL PUSHREAL8ARRAY ( z_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           !CALL PUSHREAL8ARRAY ( h_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           !CALL PUSHREAL8ARRAY ( z_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
 
            CALL rk_update_scalar( scs=ic, sce=ic,                                         &
                                   scalar_1=chem_old(ims,kms,jms,ic),                      &
@@ -5558,11 +5558,11 @@ BENCH_END(adj_calc_p_rho_tim)
 BENCH_START(a_tracer_adv_tim)
        adj_tracer_advance: IF (num_tracer >= PARAM_FIRST_SCALAR)  THEN
 
-         adj_tracer_variable_loop: DO ic = PARAM_FIRST_SCALAR, num_tracer
+         adj_tracer_variable_loop: DO ic = num_tracer,PARAM_FIRST_SCALAR,-1
 
          !$OMP PARALLEL DO   &
          !$OMP PRIVATE ( ij )
-         adj_tracer_tile_loop_2: DO ij = 1 , grid%num_tiles
+         adj_tracer_tile_loop_2: DO ij = grid%num_tiles,1,-1
 
            IF( config_flags%specified  ) THEN
              CALL a_flow_dep_bdy  ( a_tracer(ims,kms,jms,ic),     &
@@ -5617,7 +5617,7 @@ BENCH_START(a_tracer_adv_tim)
            CALL POPREAL8ARRAY ( grid%ru_m , (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
            !$OMP PARALLEL DO   &
            !$OMP PRIVATE ( ij )
-           adj_tracer_tile_loop_1: DO ij = 1 , grid%num_tiles
+           adj_tracer_tile_loop_1: DO ij = grid%num_tiles,1,-1
 
              CALL wrf_debug ( 15 , ' call a_rk_scalar_tend in adj_tracer_tile_loop_1' )
 
@@ -5662,7 +5662,7 @@ BENCH_START(a_chem_adv_tim)
 
          !$OMP PARALLEL DO   &
          !$OMP PRIVATE ( ij )
-         adj_chem_tile_loop_2: DO ij = 1 , grid%num_tiles
+         adj_chem_tile_loop_2: DO ij = grid%num_tiles,1,-1
 
            IF( config_flags%specified  ) THEN
              CALL POPREAL8ARRAY ( grid%rv_m, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
@@ -5696,8 +5696,8 @@ BENCH_START(a_chem_adv_tim)
            tenddec = (( config_flags%chemdiag == USECHEMDIAG ) .and. &
                       ( adv_ct_indices(ic) >= PARAM_FIRST_SCALAR ))
 
-           CALL POPREAL8ARRAY ( z_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-           CALL POPREAL8ARRAY ( h_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           !CALL POPREAL8ARRAY ( z_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           !CALL POPREAL8ARRAY ( h_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
            CALL POPREAL8ARRAY ( advect_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
            CALL POPREAL8ARRAY ( chem_tend(:,:,:,ic), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
            IF ( rk_step == 1 ) THEN
@@ -5731,7 +5731,7 @@ BENCH_START(a_chem_adv_tim)
 
            !$OMP PARALLEL DO   &
            !$OMP PRIVATE ( ij )
-           adj_chem_tile_loop_1: DO ij = 1 , grid%num_tiles
+           adj_chem_tile_loop_1: DO ij = grid%num_tiles,1,-1
              CALL POPREAL8ARRAY ( chem_old(:,:,:,ic), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
              CALL POPREAL8ARRAY ( chem(:,:,:,ic), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
              CALL POPREAL8ARRAY ( grid%ww_m , (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
@@ -5818,8 +5818,8 @@ BENCH_START(adj_tke_adv_tim)
            !                     "tke_1,tke_tend,advect_tend" ) 
            !END IF 
            !CALL pop2restore ( grid%mu_1,grid%mu_2, "mu_1,mu_2" )
-           CALL POPREAL8ARRAY ( z_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-           CALL POPREAL8ARRAY ( h_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           !CALL POPREAL8ARRAY ( z_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+           !CALL POPREAL8ARRAY ( h_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
            CALL POPREAL8ARRAY ( advect_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
 
            tenddec = .false.
@@ -5938,8 +5938,8 @@ BENCH_END(adj_flow_depbdy_tim)
                tenddec = .false.
 
 BENCH_START(adj_update_scal_tim)
-               CALL POPREAL8ARRAY ( z_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
-               CALL POPREAL8ARRAY ( h_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+               !CALL POPREAL8ARRAY ( z_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
+               !CALL POPREAL8ARRAY ( h_tendency, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
                CALL POPREAL8ARRAY ( advect_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
                CALL POPREAL8ARRAY ( moist_tend(:,:,:,im), (ime-ims+1)*(kme-kms+1)*(jme-jms+1) )
 
@@ -6147,7 +6147,7 @@ BENCH_END(adj_rk_scalar_tend_tim)
 
          !$OMP PARALLEL DO   &
          !$OMP PRIVATE ( ij )
-         DO ij = 1 , grid%num_tiles
+         DO ij = grid%num_tiles,1,-1
            IF (num_tracer >= PARAM_FIRST_SCALAR) THEN
              DO im = PARAM_FIRST_SCALAR , num_tracer
 
@@ -6181,7 +6181,7 @@ BENCH_END(adj_rk_scalar_tend_tim)
          CALL POPREAL8ARRAY ( tracer_tend, (ime-ims+1)*(kme-kms+1)*(jme-jms+1)*num_tracer )
          !$OMP PARALLEL DO   &
          !$OMP PRIVATE ( ij )
-         DO ij = 1 , grid%num_tiles
+         DO ij = grid%num_tiles,1,-1
            CALL wrf_debug ( 200 , ' call a_rk_update_scalar_pd tracer' )
            DO im = PARAM_FIRST_SCALAR, num_tracer
              CALL a_rk_update_scalar_pd( im, im,                                  &
@@ -6208,7 +6208,7 @@ BENCH_END(adj_rk_scalar_tend_tim)
 
          !$OMP PARALLEL DO   &
          !$OMP PRIVATE ( ij )
-         DO ij = 1 , grid%num_tiles
+         DO ij = grid%num_tiles,1,-1
            IF (num_3d_c >= PARAM_FIRST_SCALAR) THEN
              DO im = num_3d_c, PARAM_FIRST_SCALAR , -1
 
@@ -6243,7 +6243,7 @@ BENCH_END(adj_rk_scalar_tend_tim)
          CALL POPREAL8ARRAY ( chem_old, (ime-ims+1)*(kme-kms+1)*(jme-jms+1)*num_chem )
          !$OMP PARALLEL DO   &
          !$OMP PRIVATE ( ij )
-         DO ij = 1 , grid%num_tiles
+         DO ij = grid%num_tiles,1,-1
            CALL wrf_debug ( 200 , ' call a_rk_update_scalar_pd chem' )
            DO im = num_3d_c, PARAM_FIRST_SCALAR, -1
 

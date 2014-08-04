@@ -409,10 +409,6 @@ CONTAINS
           CALL PUSHINTEGER4(k - 1)
         END DO
       END DO
-!!!WARNING: These 0 initializations may need to be commented/deleted/moved to chem_driver -JJG
-!      a_scaleant = 0.0_8
-!      a_alt = 0.0_8
-!      a_dz8w = 0.0_8
       DO j=jte,jts,-1
         DO i=ite,its,-1
           CALL POPINTEGER4(ad_to)
@@ -537,11 +533,6 @@ CONTAINS
             CALL PUSHINTEGER4(k - 1)
           END DO
         END DO
-!!!WARNING: These 0 initializations may need to be commented/deleted/moved to chem_driver -JJG
-!        a_scaleant = 0.0_8
-!        a_alt = 0.0_8
-!        a_rho_phy = 0.0_8
-!        a_dz8w = 0.0_8
         DO j=jte,jts,-1
           DO i=ite,its,-1
             CALL POPINTEGER4(ad_to2)
@@ -766,17 +757,9 @@ CONTAINS
         END DO
       END IF
     CASE DEFAULT
-!!!WARNING: These will overwrite sensitivities accumulated from other subroutines or timesteps -JJG
-!!!Possible insert debug message to that effect
-!      a_scaleant = 0.0_8
-!      a_alt = 0.0_8
-!      a_rho_phy = 0.0_8
-!      a_dz8w = 0.0_8
     END SELECT
     CALL POPCONTROL1B(branch)
     IF (branch .EQ. 0) THEN
-!!!WARNING: These 0 initializations may need to be commented/deleted/moved to chem_driver -JJG
-!      a_scalebb = 0.0_8
       CALL WRF_DEBUG(15, 'fire emissions: adding biomassb emissions adjoint')
       CALL A_ADD_EMIS_BURN(id, dtstep, ktau, dz8w, a_dz8w, rho_phy, &
 &                     a_rho_phy, chem, a_chem, julday, gmt, xlat, xlong, &
@@ -786,10 +769,6 @@ CONTAINS
 &                     scale_burn_opt, num_chem, ids, ide, jds, jde, kds, &
 &                     kde, ims, ime, jms, jme, kms, kme, its, ite, jts, &
 &                     jte, kts, kte)
-!    ELSE
-!!!WARNING: These will overwrite sensitivities accumulated from other subroutines or timesteps -JJG
-!!!Possible insert debug message to that effect
-!      a_scalebb = 0.0_8
     END IF
     CALL POPCONTROL1B(branch)
       CALL WRF_DEBUG(15, 'fire emissions: adding biomassb emissions adjoint')

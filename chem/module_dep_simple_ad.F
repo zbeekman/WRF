@@ -123,16 +123,8 @@ tile_lon_loop:DO i=its,ite
 !--
         ta = tsk(i, j)
         rad = gsw(i, j)
-!        IF (500.d0 .LT. 0.01D0*p_phy(i, kts, j)) THEN
-          CALL PUSHREAL8(pa)
-          pa = 0.01D0*p_phy(i, kts, j)
-!          CALL PUSHCONTROL1B(0)
-!        ELSE
-!          CALL PUSHREAL8(pa)
-!          pa = 500.d0
-!          CALL PUSHCONTROL1B(1)
-!        END IF
-!        pa = 0.01*p_phy(i, kts, j)
+        CALL PUSHREAL8(pa)
+        pa = 0.01D0*p_phy(i, kts, j)
         clwchem = moist(i, kts, j, p_qc)
         ustar = ust(i, j)
         CALL PUSHBOOLEAN(rainflag)
@@ -252,11 +244,6 @@ tile_lon_loop:DO i=its,ite
         END DO
       END DO
     END IF
-!Can't set these to zero because sensitivites are nonzero from CUMULUS and/or PBL -JJG
-!    a_t_phy = 0.0_8
-!    a_p_phy = 0.0_8
-!    a_moist = 0.0_8
-!    a_z_at_w = 0.0_8
     a_srfres = 0.0_8
     DO j=jte,jts,-1
       DO i=ite,its,-1
@@ -307,15 +294,6 @@ tile_lon_loop:DO i=its,ite
           CALL POPREAL8(rhchem)
           a_y1 = 0.0_8
         END IF
-
-
-!ERROR BELOW?
-!        pa = 0.01D0*p_phy(i, kts, j)
-!ERROR ABOVE? -JJG -->Comment it out?
-
-
-
-
         temp2 = t_phy(i, kts, j) - 36.D0
         temp = (t_phy(i, kts, j)-273.D0)/temp2
         temp1 = 3.80D0*EXP(17.27D0*temp)
@@ -333,13 +311,8 @@ tile_lon_loop:DO i=its,ite
         a_z_at_w(i, kts, j) = a_z_at_w(i, kts, j) - a_z1
         a_znt(i, j) = a_znt(i, j) + a_zntt
         a_ust(i, j) = a_ust(i, j) + a_ustar
-!        CALL POPCONTROL1B(branch)
-!        IF (branch .EQ. 0) THEN
-          CALL POPREAL8(pa)
-          a_p_phy(i, kts, j) = a_p_phy(i, kts, j) + 0.01D0*a_pa
-!        ELSE
-!          CALL POPREAL8(pa)
-!        END IF
+        CALL POPREAL8(pa)
+        a_p_phy(i, kts, j) = a_p_phy(i, kts, j) + 0.01D0*a_pa
       END DO
     END DO
   END SUBROUTINE A_WESELY_DRIVER

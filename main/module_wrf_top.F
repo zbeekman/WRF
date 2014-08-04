@@ -40,7 +40,7 @@ MODULE module_wrf_top
 #endif
 
 #ifdef DM_PARALLEL
-   USE module_dm, ONLY : wrf_dm_initialize, wrf_dm_sum_real
+   USE module_dm, ONLY : wrf_dm_initialize, wrf_dm_sum_real, local_communicator
 #endif
 
    USE module_date_time, ONLY : current_date, start_date
@@ -825,7 +825,13 @@ ENDIF
 ! 
 !</DESCRIPTION>
 
-   REAL :: alpha_m, val_l, val_a, save_l, val_n, coef, nl_num, nl_den
+#ifdef DM_PARALLEL
+#ifndef STUBMPI
+      INCLUDE 'mpif.h'
+#endif
+#endif
+
+   REAL :: alpha_m, val_l, val_a, save_l, val_n, coef, nl_num, nl_den, dummy_der
    REAL, DIMENSION(:,:), ALLOCATABLE :: factors
    REAL, DIMENSION(:,:,:), ALLOCATABLE :: ad_derivative, tl_derivative
    REAL, DIMENSION(:,:,:,:), ALLOCATABLE :: nl_derivative
@@ -875,7 +881,7 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
    ENDDO
 
    CALL       wrf_message ( "wrf: calling nonlinear integrate" )
-   model_config_rec%dyn_opt = dyn_em
+   !model_config_rec%dyn_opt = dyn_em
 
    ! Set up basic states output
    CALL nl_get_time_step ( head_grid%id, time_step )
@@ -968,9 +974,6 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
    DO nsc = 1, num_moist
       vars_count = vars_count + 1
    ENDDO
-   DO nsc = 1, num_tracer
-      vars_count = vars_count + 1
-   ENDDO
 #ifdef WRF_CHEM
    DO nsc = 1, num_chem
       vars_count = vars_count + 1
@@ -981,8 +984,11 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
    DO nsc = 1, num_scalebb
       vars_count = vars_count + 1
    ENDDO
-
 #endif
+   DO nsc = 1, num_tracer
+      vars_count = vars_count + 1
+   ENDDO
+
    ALLOCATE(factors(vars_count,2))
    ALLOCATE(scenario_matrix(vars_count,vars_count))
    scenario_matrix = 0
@@ -1009,7 +1015,7 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
       ELSE
          WRITE(check_name(6+nsc+num_moist),FMT='(A,I2.1)')'TRACER',nsc-PARAM_FIRST_SCALAR+1
       ENDIF
-   ENDDO  
+   ENDDO 
 #ifdef WRF_CHEM
    DO nsc = 1, num_chem
       IF( nsc .LT. PARAM_FIRST_SCALAR ) THEN
@@ -1031,8 +1037,9 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
       ELSE
          WRITE(check_name(6+nsc+num_moist+num_tracer+num_chem+num_scaleant),FMT='(A,I2.1)')'SCALEBB',nsc-PARAM_FIRST_SCALAR+1
       ENDIF
-   ENDDO  
+   ENDDO 
 #endif
+
    CALL wrf_message("AVAILABLE CONTROL VARIABLES FOR VALIDATION")
    DO nvar = 1, vars_count
       WRITE(wrf_msg, FMT='(I2,A,A)') nvar,'  ',check_name(nvar)
@@ -1089,7 +1096,6 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
                 head_grid%j_start(ij) .le. jloc_f .AND. &
                 head_grid%j_end(ij)  .ge. jloc_f ) THEN
                 CALL spot_force_ad( head_grid, iloc_f, jloc_f , kloc_f, factors(:,1), vars_count ) 
-                exit adforce
             ENDIF
          ENDDO adforce
          !$OMP END PARALLEL DO
@@ -1119,11 +1125,11 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
          CALL Setup_Timekeeping ( head_grid )
 
          head_grid%itimestep = 0
-         gradient_out=.TRUE.
-         CALL wrf_run_ad
+         !gradient_out=.TRUE.
          model_config_rec%dyn_opt = dyn_em_check
+         CALL wrf_run_ad
 
-         gradient_out=.FALSE.
+         !gradient_out=.FALSE.
 
          ! Turn off auxinput16 reading
          CALL nl_set_auxinput16_interval_s (head_grid%id, 0 )
@@ -1160,22 +1166,23 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
                CALL wrf_message(TRIM(wrf_msg))
   
                CALL wrf_message("Extracting the AD sensitivity")
+               dummy_der = 0.D0
                !Store the AD derivative
                !$OMP PARALLEL DO    &
                !$OMP PRIVATE ( ij ) &
-               !$OMP REDUCTION (+: ad_derivative(iter,nnumer,ndenom)) 
+               !$OMP REDUCTION (+: dummy_der) 
                adextract: DO ij = 1 , head_grid%num_tiles
                   IF( head_grid%i_start(ij) .le. iloc_i .AND. &
                      head_grid%i_end(ij)  .ge. iloc_i .AND. &
                      head_grid%j_start(ij) .le. jloc_i .AND. &
                      head_grid%j_end(ij)  .ge. jloc_i ) THEN
-                     CALL extract_ad_der( head_grid, ad_derivative(iter,nnumer,ndenom), iloc_i, jloc_i, kloc_i, 1, factors (:,2), vars_count)
-                     exit adextract
+                     CALL extract_ad_der( head_grid, dummy_der, iloc_i, jloc_i, kloc_i, 1, factors (:,2), vars_count)
                   ENDIF
                END DO adextract
                !$OMP END PARALLEL DO
 #ifdef DM_PARALLEL
-               ad_derivative(iter,nnumer,ndenom) = wrf_dm_sum_real ( ad_derivative(iter,nnumer,ndenom) )
+               CALL mpi_barrier(local_communicator, ierr)
+               ad_derivative(iter,nnumer,ndenom) = wrf_dm_sum_real ( dummy_der )
 #endif
 
             ENDDO denom_vars_Loop1
@@ -1215,14 +1222,13 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
                          head_grid%j_start(ij) .le. jloc_i .AND. &
                          head_grid%j_end(ij)  .ge. jloc_i ) THEN 
                          CALL spot_force_nl( head_grid, iloc_i, jloc_i, kloc_i, 1, &
-                                             factors(:,2), vars_count, REAL(psign,8) * config_flags%nl_pert)
-                         exit nlforce 
+                                             factors(:,2), vars_count, REAL(psign,8) * REAL(config_flags%nl_pert, 8))
                      ENDIF
                   ENDDO nlforce
                   !$OMP END PARALLEL DO
   
                   CALL wrf_message ( "wrf: calling nonlinear integrate" )
-                  model_config_rec%dyn_opt = dyn_em
+                  !model_config_rec%dyn_opt = dyn_em
                   CALL domain_clock_get( head_grid, start_timestr=timestr )
                   CALL domain_clock_set( head_grid, current_timestr=timestr )
    
@@ -1230,11 +1236,29 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
                   CALL WRFU_AlarmRingerOff( head_grid%alarms( HISTORY_ALARM ), rc=rc )
                   ! Force to turn off boundary input as it was perturbated in add_grid.
                   CALL nl_set_io_form_boundary( head_grid%id, 0 )
-   
+
+                  !Setup_Timekeeping re-establishes correct auxinput reading
+                  IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
+                    IF ( head_grid%domain_clock_created ) THEN
+                      CALL WRFU_ClockDestroy( head_grid%domain_clock )
+                      head_grid%domain_clock_created = .FALSE.
+                    ENDIF
+                  ENDIF
+                  IF ( ASSOCIATED( head_grid%alarms ) .AND. &
+                       ASSOCIATED( head_grid%alarms_created ) ) THEN
+                    DO alarmid = 1, MAX_WRF_ALARMS
+                      IF ( head_grid%alarms_created( alarmid ) ) THEN
+                        CALL WRFU_AlarmDestroy( head_grid%alarms( alarmid ) )
+                        head_grid%alarms_created( alarmid ) = .FALSE.
+                      ENDIF
+                    ENDDO
+                  ENDIF
+                  CALL Setup_Timekeeping ( head_grid )
+
                   head_grid%dtbc = 0
                   head_grid%itimestep = 0
-                  CALL wrf_run
                   model_config_rec%dyn_opt = dyn_em_check
+                  CALL wrf_run
 
                   CALL wrf_message( "wrf: back from nonlinear integrate" ) 
                   numer_vars_Loop2: DO nnumer = 1, vars_count
@@ -1262,11 +1286,11 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
                            CALL extract_nl_num( head_grid, nl_num, &
                                                 iloc_f, jloc_f, kloc_f, &
                                                 factors(:,1), vars_count)
-                           exit numextract
                         ENDIF
                      END DO numextract
                      !$OMP END PARALLEL DO
 #ifdef DM_PARALLEL
+                     CALL mpi_barrier(local_communicator, ierr)
                      nl_num = wrf_dm_sum_real ( nl_num )
 #endif
 
@@ -1280,20 +1304,21 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
                            head_grid%j_end(ij)  .ge. jloc_i ) THEN
                            CALL extract_nl_den( nl_den, &
                                                 iloc_i, jloc_i, kloc_i, 1, &
-                                                factors(:,2), vars_count, REAL(psign,8)*config_flags%nl_pert)
-                           exit denextract
+                                                factors(:,2), vars_count, REAL(psign,8)*REAL(config_flags%nl_pert, 8))
                         ENDIF
                      END DO denextract
                      !$OMP END PARALLEL DO
 #ifdef DM_PARALLEL
+                     CALL mpi_barrier(local_communicator, ierr)
                      nl_den = wrf_dm_sum_real ( nl_den )
 #endif
 
                      nl_derivative(iter,2+psign,nnumer,ndenom) = nl_num / nl_den
                   ENDDO numer_vars_Loop2
-
                ENDDO nonlinearLoop
-               nl_derivative(iter,2,nnumer,ndenom) = (nl_derivative(iter,1,nnumer,ndenom) + nl_derivative(iter,3,nnumer,ndenom)) * 0.5
+!!!               DO nnumer = 1, vars_count
+!!!                  nl_derivative(iter,2,nnumer,ndenom) = (nl_derivative(iter,1,nnumer,ndenom) + nl_derivative(iter,3,nnumer,ndenom)) * 0.5
+!!!               ENDDO
             ENDIF
 
             IF ( head_grid%check_TL ) THEN
@@ -1311,7 +1336,6 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
                      head_grid%j_start(ij) .le. jloc_i .AND. &
                      head_grid%j_end(ij)  .ge. jloc_i ) THEN
                      CALL spot_force_tl( head_grid, iloc_i, jloc_i, kloc_i, 1, factors(:,2), vars_count) 
-                     exit tlforce
                   ENDIF
                ENDDO tlforce
                !$OMP END PARALLEL DO
@@ -1339,11 +1363,11 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
                  ENDDO
                ENDIF
                CALL Setup_Timekeeping ( head_grid )
-               gradient_out=.TRUE.
-               CALL wrf_run_tl
+               !gradient_out=.TRUE.
                model_config_rec%dyn_opt = dyn_em_check
+               CALL wrf_run_tl
 
-               gradient_out=.FALSE.
+               !gradient_out=.FALSE.
   
                ! Turn off auxinput16 reading
                CALL nl_set_auxinput16_interval_s (head_grid%id, 0 )
@@ -1372,23 +1396,24 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
                                TRIM(check_name(nnumer)),']/d[',TRIM(check_name(ndenom)),']'
                   CALL wrf_message(TRIM(wrf_msg))
     
-                  CALL wrf_message("Extracting the TL sensitivity")    
+                  CALL wrf_message("Extracting the TL sensitivity")
+                  dummy_der = 0.D0
                   !Store the TL derivative
                   !$OMP PARALLEL DO    &
                   !$OMP PRIVATE ( ij ) &
-                  !$OMP REDUCTION (+: tl_derivative(iter,nnumer,ndenom))
+                  !$OMP REDUCTION (+: dummy_der)
                   tlextract: DO ij = 1 , head_grid%num_tiles
                      IF( head_grid%i_start(ij) .le. iloc_f .AND. &
                         head_grid%i_end(ij)  .ge. iloc_f .AND. &
                         head_grid%j_start(ij) .le. jloc_f .AND. &
                         head_grid%j_end(ij)  .ge. jloc_f ) THEN
-                        CALL extract_tl_der( head_grid, tl_derivative(iter,nnumer,ndenom), iloc_f, jloc_f, kloc_f, factors(:,1), vars_count)
-                        exit tlextract
+                        CALL extract_tl_der( head_grid, dummy_der, iloc_f, jloc_f, kloc_f, factors(:,1), vars_count)
                      ENDIF
                   END DO tlextract
                   !$OMP END PARALLEL DO
 #ifdef DM_PARALLEL
-                  tl_derivative(iter,nnumer,ndenom) = wrf_dm_sum_real ( tl_derivative(iter,nnumer,ndenom) )
+                  CALL mpi_barrier(local_communicator, ierr)
+                  tl_derivative(iter,nnumer,ndenom) = wrf_dm_sum_real ( dummy_der )
 #endif
 
                ENDDO numer_vars_Loop3
@@ -2137,10 +2162,10 @@ ENDIF
 
 #ifdef WRF_CHEM
 !!!Temporary Fix - These need to be read in from file
-IF(model_config_rec%dyn_opt .ne. dyn_em_check) then
-   head_grid%scaleant = 1.0D0
-   head_grid%scalebb = 1.0D0
-ENDIF
+   IF(model_config_rec%dyn_opt .ne. dyn_em_check) then
+      head_grid%scaleant = 1.0D0
+      head_grid%scalebb = 1.0D0
+   ENDIF
 #endif
 
    model_config_rec%dyn_opt = dyn_em

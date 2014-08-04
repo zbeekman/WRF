@@ -54,7 +54,7 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
   ! Local
    INTEGER                                    :: ialarm
    INTEGER                                    :: rc
-#ifdef WRF_CHEM
+#if ( WRF_CHEM == 1 )
    INTEGER :: auxinput_step
    REAL :: real_time
 #endif
@@ -211,7 +211,19 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
        IF( config_flags%biomass_burn_opt /= 0 ) THEN
          IF( WRFU_AlarmIsRinging( grid%alarms( ialarm ), rc=rc ) .OR.  &
          ((config_flags%restart) .AND. ( currTime .EQ. startTime ))) THEN
+           IF ( config_flags%dyn_opt .EQ. dyn_em_ad ) THEN
+             auxinput_step = INT( real_time ( grid%io_intervals (ialarm) ))
+             CALL domain_clock_set( grid, time_step_seconds=-1*auxinput_step )
+             grid%domain_clock%clockint%CurrTime = ESMF_TimeInc (grid%domain_clock%clockint%CurrTime, &
+                                grid%domain_clock%clockint%TimeStep )
+           ENDIF
            CALL med_auxinput_in ( grid, ialarm, config_flags )
+           IF ( config_flags%dyn_opt .EQ. dyn_em_ad ) THEN
+             CALL domain_clock_set( grid, time_step_seconds=auxinput_step )
+             grid%domain_clock%clockint%CurrTime = ESMF_TimeInc (grid%domain_clock%clockint%CurrTime, &
+                                grid%domain_clock%clockint%TimeStep )
+             CALL domain_clock_set( grid, time_step_seconds=-1*model_config_rec%time_step )
+           ENDIF
            WRITE ( message , FMT='(A,i3,A,i3)') 'Input data processed for aux input ',&
                   ialarm - first_auxinput + 1, ' for domain ',grid%id
            CALL wrf_debug ( 15 , message )
@@ -270,14 +282,14 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
              grid%domain_clock%clockint%CurrTime =  ESMF_TimeInc (grid%domain_clock%clockint%CurrTime, &
                                 grid%domain_clock%clockint%TimeStep )
           ENDIF
-#ifdef WRF_CHEM
-          IF ( config_flags%dyn_opt .EQ. dyn_em_ad .AND. ialarm .EQ. auxinput7_only  ) THEN
-             auxinput_step = INT( real_time ( grid%io_intervals (ialarm) ))
-!             CALL nl_get_auxinput7_interval_s ( grid%id, auxinput_step )
-             CALL domain_clock_set( grid, time_step_seconds=-1*auxinput_step )
-             grid%domain_clock%clockint%CurrTime = ESMF_TimeInc (grid%domain_clock%clockint%CurrTime, &
-                                grid%domain_clock%clockint%TimeStep )
-          ENDIF
+#if ( WRF_CHEM == 1 )
+!          IF ( config_flags%dyn_opt .EQ. dyn_em_ad .AND. ialarm .EQ. auxinput7_only  ) THEN
+!             auxinput_step = INT( real_time ( grid%io_intervals (ialarm) ))
+!!             CALL nl_get_auxinput7_interval_s ( grid%id, auxinput_step )
+!             CALL domain_clock_set( grid, time_step_seconds=-1*auxinput_step )
+!             grid%domain_clock%clockint%CurrTime = ESMF_TimeInc (grid%domain_clock%clockint%CurrTime, &
+!                                grid%domain_clock%clockint%TimeStep )
+!          ENDIF
           !Disable file I/O for biogenics (6), gocart_bg (8), and SST (4) during adjoint
           IF ( config_flags%dyn_opt .EQ. dyn_em_ad .AND. (ialarm .EQ. auxinput6_only .OR. & 
                ialarm .EQ. auxinput8_only .OR. ialarm .EQ. auxinput4_only)  ) then
@@ -353,13 +365,13 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
           grid%domain_clock%clockint%CurrTime = ESMF_TimeInc (grid%domain_clock%clockint%CurrTime, &
                              grid%domain_clock%clockint%TimeStep )
           CALL domain_clock_set( grid, time_step_seconds=-1*model_config_rec%time_step )
-#ifdef WRF_CHEM
-       ELSE IF ( config_flags%dyn_opt .EQ. dyn_em_ad .AND. ialarm .EQ. auxinput7_only  ) THEN
-          CALL domain_clock_set( grid, time_step_seconds=auxinput_step )
-          grid%domain_clock%clockint%CurrTime = ESMF_TimeInc (grid%domain_clock%clockint%CurrTime, &
-                             grid%domain_clock%clockint%TimeStep )
-          CALL domain_clock_set( grid, time_step_seconds=-1*model_config_rec%time_step )
-#endif
+!#if ( WRF_CHEM == 1 )
+!       ELSE IF ( config_flags%dyn_opt .EQ. dyn_em_ad .AND. ialarm .EQ. auxinput7_only  ) THEN
+!          CALL domain_clock_set( grid, time_step_seconds=auxinput_step )
+!          grid%domain_clock%clockint%CurrTime = ESMF_TimeInc (grid%domain_clock%clockint%CurrTime, &
+!                             grid%domain_clock%clockint%TimeStep )
+!          CALL domain_clock_set( grid, time_step_seconds=-1*model_config_rec%time_step )
+!#endif
        ENDIF
 
        CALL WRFU_AlarmRingerOff( grid%alarms( ialarm ), rc=rc )

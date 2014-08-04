@@ -130,8 +130,6 @@ CONTAINS
         CALL PUSHINTEGER4(k - 1)
       END DO
     END DO
-!!!WARNING: These 0 initializations may need to be commented/deleted/moved to chem_driver -JJG
-!    a_rho_phy = 0.0_8
     DO j=jte,jts,-1
       DO i=ite,its,-1
         CALL POPINTEGER4(ad_to)

@@ -927,20 +927,6 @@ SUBROUTINE A_SURFACE_DRIVER(hydro_dt, &
         END DO
 !$OMP END PARALLEL DO
         IF (isfflx .NE. 0) THEN
-! -JJG
-!        IF (isfflx .EQ. 0) THEN
-!          a_th_phy = 0.0_8
-!          a_qv_curr = 0.0_8
-!          a_t_phy = 0.0_8
-!          a_psfc = 0.0_8
-!          a_znt = 0.0_8
-!          a_flqc = 0.0_8
-!          a_p_phy = 0.0_8
-!          a_rho = 0.0_8
-!          a_flhc = 0.0_8
-!          a_dz8w = 0.0_8
-!        ELSE
-
 !Internal
           a_lai = 0.0_8
           a_capg = 0.0_8
@@ -949,8 +935,7 @@ SUBROUTINE A_SURFACE_DRIVER(hydro_dt, &
           a_psfc = 0.0_8
           a_flhc = 0.0_8
           a_flqc = 0.0_8
-
-!I/O -JJG
+!I/O should not be overwritten to zero -JJG
 !!          a_th_phy = 0.0_8
 !!          a_qv_curr = 0.0_8
 !!          a_t_phy = 0.0_8

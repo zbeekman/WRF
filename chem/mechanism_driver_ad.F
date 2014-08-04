@@ -78,9 +78,5 @@ SUBROUTINE a_mechanism_driver(id, curr_secs, ktau, dtstep, ktauc, &
 &                        kde, ims, ime, jms, jme, kms, kme, its, ite, jts&
 &                        , jte, kts, kte)
 !  CASE DEFAULT
-!!!WARNING: These will overwrite sensitivities accumulated from other subroutines or timesteps -JJG
-!!!Possible insert debug message to that effect
-!    a_t_phy = 0.0_8
-!    a_rho_phy = 0.0_8
   END SELECT
 END SUBROUTINE a_mechanism_driver

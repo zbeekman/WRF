@@ -863,11 +863,6 @@ j, xtime, dtpbl, sigmaf, sigmah, dsigfi, dsighi, &
         g_eddyz(i, k) = dtpbl*dsigfi(k)*1.d-6*(g_eddyz(i, k)*densf**2*g**&
 &          2/pstar(i)**2+eddyz(i, k)*2.D0*densf*g*(g*g_densf*pstar(i)-densf*&
 &          g*g_pstar(i))/pstar(i)**3)
-
-!DELETE-JJG
-!        g_eddyz(i, k) = dtpbl*dsigfi(k)*1e-6*(g_eddyz(i, k)*densf**2*g**&
-!&          2/pstar(i)**2+eddyz(i, k)*2*densf*g**2*g_densf/pstar(i)**2)
-!DELETE-JJG
         eddyz(i, k) = eddyz(i, k)*(densf*g/pstar(i))**2*dtpbl*dsigfi(k)*&
 &          1.d-6
       END DO
@@ -1116,18 +1111,6 @@ j, xtime, dtpbl, sigmaf, sigmah, dsigfi, dsighi, &
       fs(2, i) = -(ust(i)*qst(i)*densx(i, 1)*pstari(i))
       g_fm = -((g_ustm(i)*ustm(i)+ustm(i)*g_ustm(i))*densx(i, 1)*pstari(&
 &        i)+ustm(i)**2*(g_densx(i, 1)*pstari(i)+densx(i, 1)*g_pstari(i)))
-
-!DELETE-JJG
-!      g_fs(1, i) = -(pstari(i)*((g_ust(i)*tst(i)+ust(i)*g_tst(i))*densx(&
-!&        i, 1)+ust(i)*tst(i)*g_densx(i, 1)))
-!      fs(1, i) = -(ust(i)*tst(i)*densx(i, 1)*pstari(i))
-!      g_fs(2, i) = -(pstari(i)*((g_ust(i)*qst(i)+ust(i)*g_qst(i))*densx(&
-!&        i, 1)+ust(i)*qst(i)*g_densx(i, 1)))
-!      fs(2, i) = -(ust(i)*qst(i)*densx(i, 1)*pstari(i))
-!      g_fm = -(pstari(i)*((g_ustm(i)*ustm(i)+ustm(i)*g_ustm(i))*densx(i&
-!&        , 1)+ustm(i)**2*g_densx(i, 1)))
-!DELETE-JJG
-
       fm = -(ustm(i)*ustm(i)*densx(i, 1)*pstari(i))
       g_arg1 = g_us(i, 1)*us(i, 1) + us(i, 1)*g_us(i, 1) + g_vs(i, 1)*vs&
 &        (i, 1) + vs(i, 1)*g_vs(i, 1)
@@ -1157,11 +1140,6 @@ j, xtime, dtpbl, sigmaf, sigmah, dsigfi, dsighi, &
 &          nsp)*g_chem(i, 1, l-nsp))*densx(i, 1)*pstari(i)+vd(i, 1, l-nsp&
 &          )*chem(i, 1, l-nsp)*(g_densx(i, 1)*pstari(i)+densx(i, 1)*&
 &          g_pstari(i)))
-!DELETE-JJG
-!        g_fs(l, i) = -(pstari(i)*((g_vd(i, 1, l-nsp)*densx(i, 1)+vd(i, 1&
-!&          , l-nsp)*g_densx(i, 1))*chem(i, 1, l-nsp)+vd(i, 1, l-nsp)*&
-!&          densx(i, 1)*g_chem(i, 1, l-nsp)))
-!DELETE-JJG
         fs(l, i) = -(vd(i, 1, l-nsp)*chem(i, 1, l-nsp)*densx(i, 1)*&
 &          pstari(i))
       END DO
