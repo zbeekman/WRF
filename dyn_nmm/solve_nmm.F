@@ -841,8 +841,8 @@
 !-----------------------------------------------------------------------
 #ifdef HWRF
 #ifdef HRD_MULTIPLE_STORMS
-      write(message,*)' No Ocean Coupling Run'
-      call wrf_message(trim(message))
+       write(message,*)' No Ocean Coupling Run 111'
+       call wrf_message(trim(message))
 #else
 ! Coupling insertion:->
       btimx=now_time()
@@ -1720,8 +1720,8 @@
 !*** GET SSTs FROM DMITRY's COUPLER ON TO THE PARENT AND NESTED GRID
 !-------------------------------------------------------------------------------------
 #ifdef HRD_MULTIPLE_STORMS
-      write(message,*)' No Ocean Coupling Run'
-      call wrf_message(trim(message))
+     write(message,*)' No Ocean Coupling Run 2222'
+     call wrf_message(trim(message))
 #else
 ! Coupling insertion:->
         btimx=now_time()
@@ -1823,7 +1823,7 @@
 !
 
 #ifdef HRD_MULTIPLE_STORMS
-      write(message,*)' No Ocean Coupling Run'
+      write(message,*)' No Ocean Coupling Run 3333'
       call wrf_message(trim(message))
 #else
 ! Coupling insertion:->
@@ -2658,7 +2658,7 @@
 !
 !
 #ifdef HRD_MULTIPLE_STORMS
-      write(message,*)' No Ocean Coupling Run'
+      write(message,*)' No Ocean Coupling Run 4444'
       call wrf_message(trim(message))
 #else
 ! Coupling insertion:->

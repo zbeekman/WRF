@@ -22,6 +22,7 @@ MODULE module_dm
 
    INTEGER ntasks, ntasks_y, ntasks_x, mytask, mytask_x, mytask_y
    INTEGER local_communicator, local_communicator_periodic, local_iocommunicator
+   INTEGER intercomm_communicator
    INTEGER local_communicator_x, local_communicator_y ! subcommunicators for rows and cols of mesh
    LOGICAL :: dm_debug_flag = .FALSE.
 
@@ -1642,10 +1643,13 @@ CONTAINS
 #  if defined(_OPENMP) && defined(MPI2_THREAD_SUPPORT)
       INTEGER thread_support_provided, thread_support_requested
 #endif
-      INTEGER i, j
+      INTEGER i, j, k
       INTEGER, ALLOCATABLE :: icolor(:)
       INTEGER tasks_per_split
-      NAMELIST /namelist_split/ tasks_per_split
+      INTEGER nest_pes_x(20)
+      INTEGER nest_pes_y(20)
+      NAMELIST /namelist_split/ tasks_per_split, nest_pes_x, nest_pes_y
+      INTEGER ndoms
 
       CALL MPI_INITIALIZED( mpi_inited, ierr )
       IF ( .NOT. mpi_inited ) THEN
@@ -1682,6 +1686,8 @@ CONTAINS
       IF ( mytask .EQ. 0 ) THEN
         OPEN ( unit=27, file="namelist.input", form="formatted", status="old" )
         tasks_per_split = ntasks
+        nest_pes_x = 0
+        nest_pes_y = 0
         READ ( 27 , NML = namelist_split, IOSTAT=io_status )
         CLOSE ( 27 )
       ENDIF
@@ -1690,25 +1696,59 @@ CONTAINS
           RETURN ! just ignore and return
       ENDIF
       CALL mpi_bcast( tasks_per_split, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
-      IF ( tasks_per_split .GT. ntasks .OR. tasks_per_split .LE. 0 ) RETURN
-      IF ( mod( ntasks, tasks_per_split ) .NE. 0 ) THEN
-        CALL wrf_message( 'WARNING: tasks_per_split does not evenly divide ntasks. Some tasks will be wasted.' )
-      ENDIF
-
-      ALLOCATE( icolor(ntasks) )
-      j = 0
-      DO WHILE ( j .LT. ntasks / tasks_per_split ) 
-        DO i = 1, tasks_per_split
-          icolor( i + j * tasks_per_split ) = j 
-        ENDDO
-        j = j + 1
+      CALL mpi_bcast( nest_pes_x, 20 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+      CALL mpi_bcast( nest_pes_y, 20 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+      ndoms = 0
+      DO i = 1, 20
+        IF ( nest_pes_x .gt. 0 .and. nest_pes_y .gt. 0 ) ndoms = ndoms + 1
       ENDDO
-
-      CALL MPI_Comm_dup(mpi_comm_here,comdup,ierr)
-      CALL MPI_Comm_split(comdup,icolor(mytask+1),mytask,mpi_comm_local,ierr)
-      CALL wrf_set_dm_communicator( mpi_comm_local )
-
-      DEALLOCATE( icolor )
+      IF ( ndoms .GT. 0 ) THEN
+!jm Additional code here to set up communicator for this domain and tables
+!jm mapping individual domain task IDs to the original local communicator
+!jm that is unsplit over nest domains.  from now on what we are calling
+!jm local_communicator will be the communicator that is used by the local
+!jm nests. The communicator that spans all the nests will be renamed to
+!jm intercomm_communicator.  
+!jm Design note: explored the idea of using MPI intercommunicators but they 
+!jm only work in pairs so we'd have a lot of intercommunicators to set up 
+!jm and keep around. We'd also have to have additional communicator arguments 
+!jm to all the nesting routines in and around the RSL nesting parts.
+!jm Instead, decided it would be easier to explicitly manage the mapping of 
+!jm local_communicators for different domains Either way, the TASK_FOR_POINT 
+!jm mechanism will have to be updated to handle mappings.
+        CALL MPI_Comm_rank ( mpi_comm_here, mytask, ierr ) ;
+        CALL mpi_comm_size ( mpi_comm_here, ntasks, ierr ) ;
+        ALLOCATE( icolor(ntasks) )
+        k = 0
+        nest_task_offsets = 0
+        DO i = 1, ndoms
+           do j = 1, nest_pes_x(i)*nest_pes_y(i) 
+             icolor(k+j) = k
+           enddo
+           k = k + nest_pes_x(i)*nest_pes_y(i)
+           if ( i < ndoms) nest_task_offsets[i+1] = nest_pes_x(i)*nest_pes_y(i)
+        ENDIF
+        CALL MPI_Comm_dup(mpi_comm_here,comdup,ierr)
+        CALL MPI_Comm_split(comdup,icolor(mytask+1),mytask,mpi_comm_local,ierr)
+        CALL wrf_set_dm_communicator( mpi_comm_local )
+        DEALLOCATE( icolor )
+      ELSE IF ( ( tasks_per_split .LE. ntasks .AND. tasks_per_split .LE. 0 ) ) THEN
+        IF ( mod( ntasks, tasks_per_split ) .NE. 0 ) THEN
+          CALL wrf_message( 'WARNING: tasks_per_split does not evenly divide ntasks. Some tasks will be wasted.' )
+        ENDIF
+        ALLOCATE( icolor(ntasks) )
+        j = 0
+        DO WHILE ( j .LT. ntasks / tasks_per_split ) 
+          DO i = 1, tasks_per_split
+            icolor( i + j * tasks_per_split ) = j 
+          ENDDO
+          j = j + 1
+        ENDDO
+        CALL MPI_Comm_dup(mpi_comm_here,comdup,ierr)
+        CALL MPI_Comm_split(comdup,icolor(mytask+1),mytask,mpi_comm_local,ierr)
+        CALL wrf_set_dm_communicator( mpi_comm_local )
+        DEALLOCATE( icolor )
+      ENDIF
 #endif
    END SUBROUTINE split_communicator
 
