@@ -235,6 +235,7 @@ CONTAINS
                                         K,                              &
                                         KM
 
+     logical :: lpr
 
         DATA MAXSMC/0.339, 0.421, 0.434, 0.476, 0.476, 0.439,  &
                     0.404, 0.464, 0.465, 0.406, 0.468, 0.468,  &
@@ -250,6 +251,7 @@ CONTAINS
       DATA IGPVS/0/
       save igpvs
 
+    lpr=.true.
 
    if(igpvs.eq.0) then
 !     call readzo(glat,glon,6,ims,ime,jms,jme,its,ite,jts,jte,z00)
@@ -421,6 +423,17 @@ CONTAINS
         BR(i,j)=rib(i)
         CHS(I,J)=CH(I)*wspd (i,j)
         CHS2(I,J)=USTAR(I)*KARMAN/FH2(I)
+
+!!!2014-0922  cap CHS over land points
+         if (xland(i,j) .lt. 1.9) then
+           CHS(I,J)=amin1(CHS(I,J), 0.10)
+           CHS2(I,J)=amin1(CHS2(I,J), 0.10)
+           if (chs2(i,j) < 0) chs2(i,j)=1.0e-6
+         endif
+!!! 
+   
+
+
         CPM(I,J)=CP*(1.+0.8*QV3D(i,kts,j))
         esat = fpvs(t1(i))
         QGH(I,J)=ep2*esat/(1000.*ps(i)-esat)
@@ -516,6 +529,35 @@ CONTAINS
 !       write(0,*) 'U10',U10(100,100)
 !       write(0,*) 'V10',V10(100,100)
 !      endif 
+
+         if (lpr) then
+          write(0,*)'in SF_GFDL,ust(i,j)=',ust((its+ite)/2,(jts+jte)/2)
+          write(0,*)'in SF_GFDL,znt(i,j)=',znt((its+ite)/2,(jts+jte)/2)
+          write(0,*)'in SF_GFDL,mznt(i,j)=',mznt((its+ite)/2,(jts+jte)/2)
+          write(0,*)'in SF_GFDL,xland(i,j)=',xland((its+ite)/2,(jts+jte)/2)
+          write(0,*)'in SF_GFDL,ISLTYP(i,j)=',ISLTYP((its+ite)/2,(jts+jte)/2)
+
+         write(0,*)'hfx(i,j)=',hfx((its+ite)/2,jts:jte)
+         write(0,*)'chs(i,j)=',chs((its+ite)/2,jts:jte)
+         write(0,*)'netural chs(i,j)=',ust((its+ite)/2,jts:jte)*0.4/gz1oz0((its+ite)/2,jts:jte)
+         write(0,*)'min,max hfx=',minval(hfx(its:ite,jts:jte)),maxval(hfx(its:ite,jts:jte))
+         write(0,*)'min,max qfx=',minval(qfx(its:ite,jts:jte)),maxval(qfx(its:ite,jts:jte))
+         write(0,*)'min,max chs=',minval(chs(its:ite,jts:jte)),maxval(chs(its:ite,jts:jte))
+         write(0,*)'min,max chs2=',minval(chs2(its:ite,jts:jte)),maxval(chs2(its:ite,jts:jte))
+         write(0,*)'min,max ust=',minval(ust(its:ite,jts:jte)),maxval(ust(its:ite,jts:jte))
+         write(0,*)'min,max wspd=',minval(wspd(its:ite,jts:jte)),maxval(wspd(its:ite,jts:jte))
+         write(0,*)'min,max znt=',minval(znt(its:ite,jts:jte)),maxval(znt(its:ite,jts:jte))
+         write(0,*)'min,max br=',minval(br(its:ite,jts:jte)),maxval(br(its:ite,jts:jte))
+
+         write(0,*)'ust=',ust(its:ite,jts:jte)
+         write(0,*)'tsk=',tsk(its:ite,jts:jte)
+         write(0,*)'wspd=',wspd(its:ite,jts:jte)
+         write(0,*)'chs=',chs(its:ite,jts:jte)
+         write(0,*)'chs2=',chs2(its:ite,jts:jte)
+         write(0,*)'br=',br(its:ite,jts:jte)
+        endif
+
+
 
 
    END SUBROUTINE SF_GFDL
