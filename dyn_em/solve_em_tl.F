@@ -273,7 +273,7 @@ SUBROUTINE solve_em_tl ( grid , config_flags  &
    curr_secs  = real_time(tmpTimeInterval)
    curr_secs2 = real_time(tmpTimeInterval2)
 
-     write(message,*)'itimestep,check_count,checkpoint_interval = ',grid%itimestep,grid%check_count,grid%checkpoint_interval
+     write(message,*)'itimestep,check_count,checkpoint_interval,curr_secs = ',grid%itimestep,grid%check_count,grid%checkpoint_interval,curr_secs
      CALL wrf_debug(50,TRIM(message))
 
 !  IF(grid%check_count .GT. 1) THEN

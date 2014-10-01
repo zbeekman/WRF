@@ -1161,12 +1161,17 @@ ENDIF ghg_block
        call wrf_debug( 15, "Setting last_chem_time from restart file" )
 ! Do not know if I need the following nl_gets.
 ! domain_get_sim_start_time uses them for simulation_start_...
-!          CALL nl_get_start_year   ( 1, last_chem_time_year   )
-!          CALL nl_get_start_month  ( 1, last_chem_time_month  )
-!          CALL nl_get_start_day    ( 1, last_chem_time_day    )
-!          CALL nl_get_start_hour   ( 1, last_chem_time_hour   )
-!          CALL nl_get_start_minute ( 1, last_chem_time_minute )
-!          CALL nl_get_start_second ( 1, last_chem_time_second )
+#if ( WRFPLUS == 1 )
+! ...do need them for checkpointed AD/TL runs
+    IF (grid%check_count .GT. 1) THEN
+          CALL nl_get_start_year   ( 1, last_chem_time_year   )
+          CALL nl_get_start_month  ( 1, last_chem_time_month  )
+          CALL nl_get_start_day    ( 1, last_chem_time_day    )
+          CALL nl_get_start_hour   ( 1, last_chem_time_hour   )
+          CALL nl_get_start_minute ( 1, last_chem_time_minute )
+          CALL nl_get_start_second ( 1, last_chem_time_second )
+    ENDIF
+#endif
        call WRFU_TimeSet( last_chem_time(id),         &
                           YY = last_chem_time_year,   &
                           MM = last_chem_time_month,  &

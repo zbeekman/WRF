@@ -166,6 +166,15 @@ SUBROUTINE chem_driver_tl(grid, config_flags &
 !  tmptimeinterval = DOMAIN_GET_TIME_SINCE_SIM_START(grid)
   tmpTimeInterval = domain_get_current_time ( grid ) - domain_get_sim_start_time ( grid )
   curr_secs = REAL_TIME_R8(tmptimeinterval)
+  if(grid%checkpoint_interval .gt. 0) then
+     write(msg,*)'ktau,check_count,checkpoint_interval = ',ktau,grid%check_count,grid%checkpoint_interval
+     CALL wrf_debug(16,TRIM(msg))
+
+!     curr_secs = curr_secs - REAL( 3600*(grid%check_count-1)*grid%checkpoint_interval, 8 )
+  endif
+  write(msg,*)'curr_secs = ',curr_secs
+  CALL wrf_debug(16,TRIM(msg))
+
   ijulian = IFIX(grid%julian)
   do_photstep = .false.
   IF (ktau .EQ. 1) THEN

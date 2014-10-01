@@ -307,7 +307,9 @@ SUBROUTINE solve_em_ad ( grid , config_flags  &
    runad = abs(runad)
    curr_secs = REAL( runad, 8 ) + curr_secs !- REAL(grid%dt, 8)
    curr_secs = curr_secs + REAL( 3600*(grid%check_count-1)*grid%checkpoint_interval, 8 )
-   write(message,*)'curr_secs = ',curr_secs
+!   write(message,*)'curr_secs = ',curr_secs
+   write(message,*)'itimestep,check_count,runad,curr_secs = ',grid%itimestep,grid%check_count,runad,curr_secs
+
    CALL wrf_debug(50,TRIM(message))
 
    old_dt = grid%dt   ! store old time step for flux averaging code at end of RK loop

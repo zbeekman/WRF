@@ -46,27 +46,25 @@ rconfig   integer chem_obs_type    namelist,perturbation         1   1       r  
 
 
 # chem observation arrays
-state    real  i_surf  {nsurf}  misc           1         -      rh      "i_surf"        "surf_obs grid location"             ""
-state    real  j_surf  {nsurf}  misc           1         -      rh      "j_surf"        "surf_obs grid location"             ""
-state    real  k_surf  {nsurf}  misc           1         -      rh      "k_surf"        "surf_obs grid location"             ""
-state    real  ti_surf {nsurf}  misc           1         -      rh      "ti_surf"        "surf_obs start itime"             ""
-state    real  tf_surf {nsurf}  misc           1         -      rh      "tf_surf"        "surf_obs end itime"             ""
-state    real  BC_surf {nsurf}  misc           1         -      rh      "BC_surf"        "surf_obs black carbon"             "ug/m^3"
+state    real  i_surf  {nsurf}  misc           1         -      h{17}      "i_surf"        "surf_obs grid location"             ""
+state    real  j_surf  {nsurf}  misc           1         -      h{17}      "j_surf"        "surf_obs grid location"             ""
+state    real  k_surf  {nsurf}  misc           1         -      h{17}      "k_surf"        "surf_obs grid location"             ""
+state    real  ti_surf {nsurf}  misc           1         -      h{17}      "ti_surf"        "surf_obs start itime"             ""
+state    real  tf_surf {nsurf}  misc           1         -      h{17}      "tf_surf"        "surf_obs end itime"             ""
+state    real  BC_surf {nsurf}  misc           1         -      h{17}      "BC_surf"        "surf_obs black carbon"             "ug/m^3"
 
-#state    real  IMPROVE_H_BC {nsurf}  misc           1         -      rh      "BC_surf_hx"        "surf_hx black carbon"             "ug/m^3"
+
 state    real    surf_hx    {nsurf}{nst}  misc       1         -     h{17}       "surf_hx" "surf_hx" "multiple"
 rconfig  integer p_surf_bc  namelist,chem            1         1     -       "p_surf_bc" "index for surface_hx black carbon" "ug/m^3"
 
-#state    real   surf_bc  surf_hx {ni}{nsurf}{nj}f    1         -      rh      "surf_BC"        "surf_hx black carbon"             "ug/m^3"
+
+state    real     i_acft_avg     {ntim}  misc           1         -      h{17}      "i_acft_avg"        "acft_obs grid location"             ""
+state    real     j_acft_avg     {ntim}  misc           1         -      h{17}      "j_acft_avg"        "acft_obs grid location"             ""
+state    real     k_acft_avg     {ntim}  misc           1         -      h{17}      "k_acft_avg"        "acft_obs grid location"             ""
+state    integer  acft_obs_count {ntim}  misc           1         -      h{17}      "acft_obs_count" "acft_obs count"             ""
+state    real     BC_acft_avg    {ntim}  misc           1         -      h{17}      "BC_acft_avg"        "acft_obs black carbon"             "ug/m^3"
 
 
-state    real     i_acft_avg     {ntim}  misc           1         -      rh      "i_acft_avg"        "acft_obs grid location"             ""
-state    real     j_acft_avg     {ntim}  misc           1         -      rh      "j_acft_avg"        "acft_obs grid location"             ""
-state    real     k_acft_avg     {ntim}  misc           1         -      rh      "k_acft_avg"        "acft_obs grid location"             ""
-state    integer  acft_obs_count {ntim}  misc           1         -      rh      "acft_obs_count" "acft_obs count"             ""
-state    real     BC_acft_avg    {ntim}  misc           1         -      rh      "BC_acft_avg"        "acft_obs black carbon"             "ug/m^3"
-
-#state    real     ARCTAS_H_BC      {ntim}  misc           1         -      rh      "BC_air_hx"        "air_hx black carbon"             "ug/m^3"
 state    real    acft_hx    {ntim}{nat}  misc       1         -     h{17}       "acft_hx" "aircraft_hx" "multiple"
 rconfig  integer p_acft_bc    namelist,chem           1         1     -       "p_acft_bc" "index for aircraft_hx black carbon"              "ug/m^3"
 rconfig  integer p_acft_sulf  namelist,chem           1         2     -       "p_acft_sulf" "index for aircraft_hx sulfate"                 "ppmv"
@@ -75,21 +73,13 @@ rconfig  integer p_acft_t_phy namelist,chem           1         4     -       "p
 rconfig  integer p_acft_wspd  namelist,chem           1         5     -       "p_acft_wspd" "index for aircraft_hx Windspeed"               "m/s"
 rconfig  integer p_acft_qv    namelist,chem           1         6     -       "p_acft_qv" "index for aircraft_hx Water vapor mixing ratio"  "kg kg^-1"
 
-#state    real   acft_bc     acft_hx {ni}{ntim}{nj}f    1         -      rh      "acft_BC"          "acft_hx black carbon"           "ug/m^3"
-#state    real   acft_sulf   acft_hx {ni}{ntim}{nj}f    1         -      rh      "acft_SULF"        "acft_hx sulfate"                "ppm"
-#state    real   acft_pblh   acft_hx {ni}{ntim}{nj}f    1         -      rh      "acft_PBLH"        "acft_hx PBLH"                   "m"
-#state    real   acft_t_phy  acft_hx {ni}{ntim}{nj}f    1         -      rh      "acft_T_PHY"        "acft_hx Temperature"           "K"
-#state    real   acft_wspd   acft_hx {ni}{ntim}{nj}f    1         -      rh      "acft_WSPD"        "acft_hx Windspeed"              "m/s"
-#state    real   acft_qv     acft_hx {ni}{ntim}{nj}f    1         -      rh      "acft_QV"        "acft_hx Water vapor mixing ratio" "kg kg-1"
 
-
-
-state    real  i_acft  {nacft}  misc           1         -      rh      "i_acft"        "acft_obs grid location"             ""
-state    real  j_acft  {nacft}  misc           1         -      rh      "j_acft"        "acft_obs grid location"             ""
-state    real  k_acft  {nacft}  misc           1         -      rh      "k_acft"        "acft_obs grid location"             ""
-state    real  ti_acft {nacft}  misc           1         -      rh      "ti_acft"        "acft_obs start itime"             ""
-state    real  tf_acft {nacft}  misc           1         -      rh      "tf_acft"        "acft_obs end itime"             ""
-state    real  BC_acft {nacft}  misc           1         -      rh      "BC_acft"        "acft_obs black carbon"             "ug/m^3"
+state    real  i_acft  {nacft}  misc           1         -      h{17}      "i_acft"        "acft_obs grid location"             ""
+state    real  j_acft  {nacft}  misc           1         -      h{17}      "j_acft"        "acft_obs grid location"             ""
+state    real  k_acft  {nacft}  misc           1         -      h{17}      "k_acft"        "acft_obs grid location"             ""
+state    real  ti_acft {nacft}  misc           1         -      h{17}      "ti_acft"        "acft_obs start itime"             ""
+state    real  tf_acft {nacft}  misc           1         -      h{17}      "tf_acft"        "acft_obs end itime"             ""
+state    real  BC_acft {nacft}  misc           1         -      h{17}      "BC_acft"        "acft_obs black carbon"             "ug/m^3"
 
 # deposition velocities
 #

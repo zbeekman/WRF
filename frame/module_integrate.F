@@ -363,11 +363,9 @@ RECURSIVE SUBROUTINE integrate ( grid )
             IF ( config_flags%chem_ad_forcing) THEN
                IF ( config_flags%dyn_opt .EQ. dyn_em_ad ) THEN
                  CALL add_forcing_to_ad_chem ( grid, config_flags )
-               ELSEIF ( config_flags%dyn_opt .EQ. dyn_em) THEN
-!                 IF ( grid%io_intervals( AUXHIST6_ALARM ) .EQ. 0 ) THEN
-                 IF ( config_flags%auxhist6_interval_s .EQ. 0 ) THEN
-                    CALL calc_chem_hx ( grid, config_flags )
-                 ENDIF
+               ELSEIF ( config_flags%dyn_opt .EQ. dyn_em .AND. &
+                        config_flags%auxhist6_interval_s .EQ. 0 ) THEN
+                 CALL calc_chem_hx ( grid, config_flags )
                ENDIF
             ENDIF
 #endif

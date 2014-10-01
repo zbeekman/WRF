@@ -706,7 +706,7 @@ CONTAINS
 ! we are doing the plumerise/fire emissions first, they may be needed for chem and tracer arrays
 !
        if( do_plumerisefire )then
-          CALL wrf_debug(15,'fire emissions: calling biomassb')
+          CALL wrf_debug(15, 'fire emissions: calling plumerise')
           write(0,*)ktau,stepfirepl
           call plumerise_driver (id,ktau,dtstep,                           &
            ebu,ebu_in,                                                     &

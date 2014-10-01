@@ -66,6 +66,8 @@ MODULE module_wrf_top
 
    INTEGER :: max_dom , domain_id , fid , oid , idum1 , idum2 , ierr
    INTEGER :: debug_level, alarmid
+   INTEGER :: xtraj_boundary_form=2
+
    LOGICAL :: input_from_file
 
 #ifdef DM_PARALLEL
@@ -840,6 +842,7 @@ ENDIF
               ninverse, nforward, firatio, iter, check_type, psign, &
               iloc_f, jloc_f, kloc_f, iloc_i, jloc_i, kloc_i, &
               vars_count, nnumer, ndenom
+   INTEGER :: original_restart_interval, original_checkpt_int
    CHARACTER*10, DIMENSION(:), ALLOCATABLE :: check_name !large for expectation of many future chem variables
    CHARACTER*256 :: timestr
    CHARACTER*5000 :: wrf_msg
@@ -868,6 +871,8 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
    CALL allocate_grid ( )
 
 #ifdef WRF_CHEM
+   !Need to remove this once scaleant and scalebb are added to wrfinput or another stream
+   ! This step is necessary to do 4DVAR -JJG 9-23-2014
    head_grid%scaleant = 1.0D0
    head_grid%scalebb = 1.0D0
 #endif
@@ -883,11 +888,34 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
    CALL       wrf_message ( "wrf: calling nonlinear integrate" )
    !model_config_rec%dyn_opt = dyn_em
 
-   ! Set up basic states output
-   CALL nl_get_time_step ( head_grid%id, time_step )
-   CALL nl_set_auxhist6_interval_s ( head_grid%id, time_step )
-   CALL nl_set_io_form_auxhist6 ( head_grid%id, 2 )
-   CALL nl_set_frames_per_auxhist6 ( head_grid%id, 1 )
+  IF (head_grid%checkpoint_interval .EQ. 0) THEN
+      IF ( head_grid%check_AD .OR. head_grid%check_TL) THEN
+         ! Set up basic states output
+         CALL nl_get_time_step ( head_grid%id, time_step )
+         CALL nl_set_auxhist6_interval_s ( head_grid%id, time_step )
+         CALL nl_set_io_form_auxhist6 ( head_grid%id, 2 )
+         CALL nl_set_frames_per_auxhist6 ( head_grid%id, 1 )
+      ENDIF
+      ! Force to turn off trajectory boundary update
+      xtraj_boundary_form=0
+   ELSE
+      call nl_get_restart_interval_h ( head_grid%id, original_restart_interval)
+      call nl_set_restart_interval_h ( head_grid%id, head_grid%checkpoint_interval)
+      call nl_set_io_form_restart ( head_grid%id, 2 )
+      call nl_set_rst_outname ( head_grid%id, &
+                         "wrf_checkpoint_d<domain>_<date>")
+      call nl_set_restart_begin_h( head_grid%id, 0)
+      IF (.not. head_grid%boundary_io ) xtraj_boundary_form=0
+      IF ( model_config_rec%interval_seconds .ne. 3600*head_grid%checkpoint_interval) THEN
+         ! Force to turn off boundary input for trajectory calculation
+         xtraj_boundary_form = 0
+         CALL wrf_message ("WARNING: interval_seconds must equal 3600*checkpoint_interval to use boundary updating in a tangent linear or adjoint simulation. Turning off boundary updating.")
+      ENDIF
+   ENDIF
+   ! Set trajectory boundary form
+   CALL nl_set_io_form_boundary( head_grid%id, xtraj_boundary_form )
+
+
    IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
      IF ( head_grid%domain_clock_created ) THEN
        CALL WRFU_ClockDestroy( head_grid%domain_clock )
@@ -919,14 +947,24 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
    IF ( config_flags%sf_sfclay_physics.NE.SFCLAYSCHEME .AND. config_flags%sf_sfclay_physics.NE.PXSFCSCHEME) CALL nl_set_sf_sfclay_physics (head_grid%id, 0)
    IF ( config_flags%sf_surface_physics.NE.SLABSCHEME .AND. config_flags%sf_surface_physics.NE.PXLSMSCHEME) CALL nl_set_sf_surface_physics (head_grid%id, 0)
 
-   ! Force to turn off boundary input as we can only perturb the initial boundary condition.
-   CALL nl_set_io_form_boundary( head_grid%id, 0 )
-
    CALL wrf_run
 
-   ! Turn off basic states output
-   CALL nl_set_io_form_auxhist6 ( head_grid%id, 0 )
-   CALL nl_set_auxhist6_interval_s ( head_grid%id, 0 )
+   IF (head_grid%checkpoint_interval .EQ. 0) THEN
+      ! Turn off basic states output
+      CALL nl_set_io_form_auxhist6 ( head_grid%id, 0 )
+      CALL nl_set_auxhist6_interval_s ( head_grid%id, 0 )
+   ELSE
+     call nl_set_restart_interval_h ( head_grid%id, original_restart_interval)
+     call nl_set_io_form_restart ( head_grid%id, 0 )
+     call nl_set_rst_outname ( head_grid%id, "wrfrst_d<domain>_<date>")
+     call nl_set_restart_begin_h( head_grid%id, original_restart_interval)
+   ENDIF
+   IF ( xtraj_boundary_form .gt. 0 ) THEN
+      ! Close boundary file, as it will be read again from start later
+      CALL close_dataset ( head_grid%lbc_fid , config_flags , &
+                           "DATASET=BOUNDARY" )
+   ENDIF
+
    if ( .not. head_grid%trajectory_io ) CALL nl_set_inputout_interval_s ( head_grid%id, 0 )
    IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
      IF ( head_grid%domain_clock_created ) THEN
@@ -1078,7 +1116,6 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
       factors(:,1) = 0.0D0
       factors(nnumer,1) = 1.0D0
    
-   
       iter = 0
    
       DO nf = 1, ninverse
@@ -1100,56 +1137,11 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
          ENDDO adforce
          !$OMP END PARALLEL DO
 
-         ! Set the file names and interval for reading basic states.
-         model_config_rec%auxinput16_inname = &
-                                          "auxhist6_d<domain>_<date>"
-         CALL nl_get_time_step ( head_grid%id, time_step )
-         CALL nl_set_auxinput16_interval_s (head_grid%id, time_step )
-         CALL nl_set_io_form_auxinput16 ( head_grid%id, 2 )
-         CALL nl_set_frames_per_auxinput16 ( head_grid%id, 1 )
-         IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
-           IF ( head_grid%domain_clock_created ) THEN
-             CALL WRFU_ClockDestroy( head_grid%domain_clock )
-             head_grid%domain_clock_created = .FALSE.
-           ENDIF
-         ENDIF
-         IF ( ASSOCIATED( head_grid%alarms ) .AND. &
-              ASSOCIATED( head_grid%alarms_created ) ) THEN
-           DO alarmid = 1, MAX_WRF_ALARMS
-             IF ( head_grid%alarms_created( alarmid ) ) THEN
-               CALL WRFU_AlarmDestroy( head_grid%alarms( alarmid ) )
-               head_grid%alarms_created( alarmid ) = .FALSE.
-             ENDIF
-           ENDDO
-         ENDIF
-         CALL Setup_Timekeeping ( head_grid )
-
-         head_grid%itimestep = 0
          !gradient_out=.TRUE.
          model_config_rec%dyn_opt = dyn_em_check
-         CALL wrf_run_ad
-
+         CALL wrf_run_ad_checkpt
          !gradient_out=.FALSE.
 
-         ! Turn off auxinput16 reading
-         CALL nl_set_auxinput16_interval_s (head_grid%id, 0 )
-         IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
-           IF ( head_grid%domain_clock_created ) THEN
-             CALL WRFU_ClockDestroy( head_grid%domain_clock )
-             head_grid%domain_clock_created = .FALSE.
-           ENDIF
-         ENDIF
-         IF ( ASSOCIATED( head_grid%alarms ) .AND. &
-              ASSOCIATED( head_grid%alarms_created ) ) THEN
-           DO alarmid = 1, MAX_WRF_ALARMS
-             IF ( head_grid%alarms_created( alarmid ) ) THEN
-               CALL WRFU_AlarmDestroy( head_grid%alarms( alarmid ) )
-               head_grid%alarms_created( alarmid ) = .FALSE.
-             ENDIF
-           ENDDO
-         ENDIF
-         CALL Setup_Timekeeping ( head_grid )
-   
          DO ni = 1,firatio
             iter = iter + 1
             iloc_i = locations_i(iter,1)
@@ -1212,8 +1204,41 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
             ! Do Finite Difference test of nonlinear model
             IF ( head_grid%check_NL ) THEN
                nonlinearLoop: DO psign=-1,1,2
-                  CALL restore_grid ( head_grid )
+                  CALL wrf_message ( "wrf: calling nonlinear integrate" ) 
 
+                  original_checkpt_int = model_config_rec%checkpoint_interval
+                  model_config_rec%checkpoint_interval = 0
+                  head_grid%dtbc = 0
+                  head_grid%itimestep = 0
+
+                  CALL domain_clock_get( head_grid, start_timestr=timestr )
+                  CALL domain_clock_set( head_grid, current_timestr=timestr )
+
+                  IF ( head_grid%checkpoint_interval .eq. 0 ) THEN !This line used for debugging only
+                     CALL restore_grid ( head_grid )
+                  ELSE
+                     !Read initial conditions
+                     model_config_rec%restart = .false.
+                     head_grid%restart = .false.
+                     CALL nl_set_restart ( head_grid%id, .false. )
+                     CALL model_to_grid_config_rec ( head_grid%id , model_config_rec , config_flags )
+
+!#ifdef DM_PARALLEL
+!                     CALL get_config_as_buffer( configbuf, configbuflen, nbytes )
+!                     CALL wrf_dm_bcast_bytes( configbuf, nbytes )
+!                     CALL set_config_as_buffer( configbuf, configbuflen )
+!#endif
+
+                     CALL med_initialdata_input( head_grid , config_flags )
+#ifdef WRF_CHEM
+                     !Need to remove this once scaleant and scalebb are added to wrfinput or another stream
+                     ! This step is necessary to do 4DVAR -JJG 9-23-2014
+                     head_grid%scaleant = 1.0D0
+                     head_grid%scalebb = 1.0D0
+#endif
+                  ENDIF
+
+      IF ( head_grid%check_scaleant) THEN !This line used for debugging only
                   !$OMP PARALLEL DO    &
                   !$OMP PRIVATE ( ij )
                   nlforce: DO ij = 1 , head_grid%num_tiles
@@ -1226,18 +1251,15 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
                      ENDIF
                   ENDDO nlforce
                   !$OMP END PARALLEL DO
-  
-                  CALL wrf_message ( "wrf: calling nonlinear integrate" )
-                  !model_config_rec%dyn_opt = dyn_em
-                  CALL domain_clock_get( head_grid, start_timestr=timestr )
-                  CALL domain_clock_set( head_grid, current_timestr=timestr )
-   
-                  ! Force to turn off history output in this case
-                  CALL WRFU_AlarmRingerOff( head_grid%alarms( HISTORY_ALARM ), rc=rc )
-                  ! Force to turn off boundary input as it was perturbated in add_grid.
-                  CALL nl_set_io_form_boundary( head_grid%id, 0 )
+      ENDIF
 
-                  !Setup_Timekeeping re-establishes correct auxinput reading
+                  ! Set trajectory boundary form
+                  CALL nl_set_io_form_boundary( head_grid%id, xtraj_boundary_form )
+
+                  model_config_rec%io_form_restart = 0
+                  model_config_rec%dyn_opt = dyn_em_check
+
+                  !Setup clock and I/O alarms
                   IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
                     IF ( head_grid%domain_clock_created ) THEN
                       CALL WRFU_ClockDestroy( head_grid%domain_clock )
@@ -1254,11 +1276,20 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
                     ENDDO
                   ENDIF
                   CALL Setup_Timekeeping ( head_grid )
+                  head_grid%start_subtime = domain_get_start_time ( head_grid )
+                  head_grid%stop_subtime = domain_get_stop_time ( head_grid )
 
-                  head_grid%dtbc = 0
-                  head_grid%itimestep = 0
-                  model_config_rec%dyn_opt = dyn_em_check
+                  ! Force to turn off history output in this case
+                  CALL WRFU_AlarmRingerOff( head_grid%alarms( HISTORY_ALARM ), rc=rc )
+
                   CALL wrf_run
+
+                  model_config_rec%checkpoint_interval = original_checkpt_int
+                  IF ( xtraj_boundary_form .gt. 0 ) THEN
+                     ! Close boundary file, as it will be read again from start later
+                     CALL close_dataset ( head_grid%lbc_fid , config_flags , &
+                                          "DATASET=BOUNDARY" )
+                  ENDIF
 
                   CALL wrf_message( "wrf: back from nonlinear integrate" ) 
                   numer_vars_Loop2: DO nnumer = 1, vars_count
@@ -1340,53 +1371,11 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
                ENDDO tlforce
                !$OMP END PARALLEL DO
 
-               ! Set up basic states reading
-               model_config_rec%auxinput16_inname = &
-                                          "auxhist6_d<domain>_<date>"
-               CALL nl_get_time_step ( head_grid%id, time_step )
-               CALL nl_set_auxinput16_interval_s (head_grid%id, time_step )
-               CALL nl_set_io_form_auxinput16 ( head_grid%id, 2 )
-               CALL nl_set_frames_per_auxinput16 ( head_grid%id, 1 )
-               IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
-                 IF ( head_grid%domain_clock_created ) THEN
-                   CALL WRFU_ClockDestroy( head_grid%domain_clock )
-                   head_grid%domain_clock_created = .FALSE.
-                 ENDIF
-               ENDIF
-               IF ( ASSOCIATED( head_grid%alarms ) .AND. &
-                    ASSOCIATED( head_grid%alarms_created ) ) THEN
-                 DO alarmid = 1, MAX_WRF_ALARMS
-                   IF ( head_grid%alarms_created( alarmid ) ) THEN
-                     CALL WRFU_AlarmDestroy( head_grid%alarms( alarmid ) )
-                     head_grid%alarms_created( alarmid ) = .FALSE.
-                   ENDIF
-                 ENDDO
-               ENDIF
-               CALL Setup_Timekeeping ( head_grid )
                !gradient_out=.TRUE.
                model_config_rec%dyn_opt = dyn_em_check
-               CALL wrf_run_tl
-
+               CALL wrf_run_tl_checkpt
                !gradient_out=.FALSE.
   
-               ! Turn off auxinput16 reading
-               CALL nl_set_auxinput16_interval_s (head_grid%id, 0 )
-               IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
-                 IF ( head_grid%domain_clock_created ) THEN
-                   CALL WRFU_ClockDestroy( head_grid%domain_clock )
-                   head_grid%domain_clock_created = .FALSE.
-                 ENDIF
-               ENDIF
-               IF ( ASSOCIATED( head_grid%alarms ) .AND. &
-                    ASSOCIATED( head_grid%alarms_created ) ) THEN
-                 DO alarmid = 1, MAX_WRF_ALARMS
-                   IF ( head_grid%alarms_created( alarmid ) ) THEN
-                     CALL WRFU_AlarmDestroy( head_grid%alarms( alarmid ) )
-                     head_grid%alarms_created( alarmid ) = .FALSE.
-                   ENDIF
-                 ENDDO
-               ENDIF
-               CALL Setup_Timekeeping ( head_grid )
                numer_vars_Loop3: DO nnumer = 1, vars_count
                   IF( scenario_matrix(nnumer,ndenom) .EQ. 0 ) CYCLE numer_vars_Loop3
                   factors(:,1) = 0.0D0
@@ -1442,9 +1431,9 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
             kloc_f = locations_f(nf,3)
 
 !            WRITE(wrf_msg, FMT='(A,6(1x,I8))')&
-            WRITE(90456, FMT='(A,6(1x,I8))')&
+            WRITE(90456, FMT='(I6,6(1x,I8))')&
 
-                         'REPORT:',&
+                         iter,&
                          iloc_f,&
                          jloc_f,&
                          kloc_f,&
@@ -1458,14 +1447,14 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
       DO ndenom = 1, vars_count
          IF( scenario_matrix(nnumer,ndenom) .EQ. 0) CYCLE
 !         WRITE(wrf_msg, FMT='(5(A))') 'REPORT: ------check_type = d[',&
-         WRITE(90456, FMT='(5(A))') 'REPORT: ------check_type = d[',&
+         WRITE(90456, FMT='(5(A))') '        ------check_type = d[',&
 
                            TRIM(check_name(nnumer)),']/d[',TRIM(check_name(ndenom)),']------'
 !         CALL wrf_message(TRIM(wrf_msg))
 
          IF ( head_grid%check_NL ) THEN
 !            WRITE(wrf_msg, FMT='(A,2(A3),4(1x,A17))') 'REPORT:','i','f','TL','AD','NL_BD','NL_FD'
-            WRITE(90456, FMT='(A,2(A3),4(1x,A17))') 'REPORT:','i','f','TL','AD','NL_BD','NL_FD'
+            WRITE(90456, FMT='(A,2(A3),4(1x,A17))') '      ','i','f','TL','AD','NL_BD','NL_FD'
 !            CALL wrf_message(TRIM(wrf_msg))
 
             iter = 0
@@ -1474,8 +1463,8 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
                   iter = iter+1
    
 !                  WRITE(wrf_msg, FMT='(A,2(I3),4(D25.16))')&
-                  WRITE(90456, FMT='(A,2(I3),4(D25.16))')&
-                               'REPORT:',ni,nf,&
+                  WRITE(90456, FMT='(I6,2(I5),4(D25.16))')&
+                               iter,ni,nf,&
                                tl_derivative(iter,nnumer,ndenom), &
                                ad_derivative(iter,nnumer,ndenom), &
                                nl_derivative(iter,1,nnumer,ndenom), &
@@ -1484,8 +1473,8 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
                ENDDO
             ENDDO
          ELSE
-!            WRITE(wrf_msg, FMT='(A,2(A3),2(1x,A17))') 'REPORT:  ','i','f','TL','AD'
-            WRITE(90456, FMT='(A,2(A3),2(1x,A17))') 'REPORT:  ','i','f','TL','AD'
+!            WRITE(wrf_msg, FMT='(A,2(A3),2(1x,A17))') '         ','i','f','TL','AD'
+            WRITE(90456, FMT='(A,2(A3),2(1x,A17))') '         ','i','f','TL','AD'
 
 !            CALL wrf_message(TRIM(wrf_msg))
 
@@ -1494,8 +1483,8 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
                DO ni = 1, firatio
                   iter = iter+1
 !                  WRITE(wrf_msg, FMT='(A,2(I3),2(D25.16))')&
-                  WRITE(90456, FMT='(A,2(I3),2(D25.16))')&
-                               'REPORT:',ni,nf,&
+                  WRITE(90456, FMT='(I6,2(I5),2(D25.16))')&
+                               iter,ni,nf,&
                                tl_derivative(iter,nnumer,ndenom), &
                                ad_derivative(iter,nnumer,ndenom)
 !                  CALL wrf_message(TRIM(wrf_msg))
@@ -1527,7 +1516,6 @@ ENDIF
    CALL wrf_finalize
    STOP
    END SUBROUTINE wrf_adtl_check_spot
-
 
    SUBROUTINE wrf_run_tl( )
 !<DESCRIPTION>
@@ -1627,12 +1615,510 @@ ENDIF
    CALL construct_filename2a ( bdyname , config_flags%bdy_inname , head_grid%id , 2 , 'dummydate' )
    CALL wrf_inquire_opened(head_grid%lbc_fid , TRIM(bdyname) , open_status , ierr ) 
    IF ( open_status .EQ. WRF_FILE_OPENED_FOR_READ ) THEN
-      CALL close_dataset ( head_grid%lbc_fid , config_flags , "DATASET=BOUNDARY" )
+      CALL close_dataset ( head_grid%lbc_fid , config_flags ,&
+                           "DATASET=BOUNDARY" )
    ENDIF
 
    CALL       wrf_message ( "wrf: back from tangent linear integrate" )
 
    END SUBROUTINE wrf_run_tl
+
+
+   SUBROUTINE wrf_run_tl_checkpt( )
+!<DESCRIPTION>
+!     WRF tangent linear run routine.
+!</DESCRIPTION>
+
+!<DESCRIPTION>
+! Once the top-level domain has been allocated, configured, and
+! initialized, the model time integration is ready to proceed.  The start
+! and stop times for the domain are set to the start and stop time of the
+! model run, and then <a href=integrate.html>integrate</a> is called to
+! advance the domain forward through that specified time interval.  On
+! return, the simulation is completed.  
+! 
+!</DESCRIPTION>
+
+   CHARACTER*256 :: timestr
+   INTEGER       :: rc
+   INTEGER       :: io_auxh7
+   CHARACTER (LEN=80)      :: bdyname
+   INTEGER                 :: open_status
+
+!checkpoint variables
+   INTEGER                 :: timestep
+   integer                           :: icheck
+   integer                           :: run_days, run_hours
+   character(len=256)                :: STOPtimestr, STARTtimestr, checkstart_timestr
+   character(len=256)                :: debugstr
+   character(len=1000)               :: msg 
+   integer                           :: checkpoint_interval_h, checkpoint_interval_d, ncheck
+   INTEGER :: start_year,start_month,start_day,start_hour
+   INTEGER :: end_year,end_month,end_day,end_hour
+   integer :: start_year0,start_month0,start_day0,start_hour0
+   integer :: end_year0,end_month0,end_day0,end_hour0
+   integer , dimension(12) :: days_in_month = (/31,28,31,30,31,30,31,31,30,31,30,31/)
+
+   !  The forecast integration for the most coarse grid is now started.  The
+   !  integration is from the first step (1) to the last step of the simulation.
+
+   CALL       wrf_message ( "wrf: calling tangent linear integrate" )
+
+   IF ( model_config_rec%bl_pbl_physics(head_grid%id) .EQ. SURFDRAGSCHEME ) THEN
+      head_grid%rublten = 0.0D0
+      head_grid%rvblten = 0.0D0
+      head_grid%rthblten = 0.0D0
+      head_grid%rqvblten = 0.0D0
+   ELSEIF ( model_config_rec%bl_pbl_physics(head_grid%id) .EQ. ACMPBLSCHEME ) THEN
+      head_grid%rublten = 0.0D0
+      head_grid%rvblten = 0.0D0
+      head_grid%rthblten = 0.0D0
+      head_grid%rqvblten = 0.0D0
+      head_grid%rqcblten = 0.0D0
+      head_grid%rqiblten = 0.0D0
+   ENDIF
+   IF ( model_config_rec%mp_physics(head_grid%id) .EQ. LSCONDSCHEME ) THEN
+      head_grid%h_diabatic = 0.0D0
+      head_grid%rainnc = 0.0D0
+      head_grid%rainncv = 0.0D0
+   ENDIF
+   IF ( model_config_rec%mp_physics(head_grid%id) .EQ. MKESSLERSCHEME ) THEN
+      head_grid%h_diabatic = 0.0
+      head_grid%rainnc = 0.0
+      head_grid%rainncv = 0.0
+   ENDIF
+   IF ( model_config_rec%cu_physics(head_grid%id) .EQ. DUCUSCHEME ) THEN
+      head_grid%rthcuten = 0.0D0
+      head_grid%rqvcuten = 0.0D0
+      head_grid%rainc = 0.0D0
+      head_grid%raincv = 0.0D0
+      head_grid%pratec = 0.0
+   ENDIF
+
+   IF ( .NOT. config_flags%trajectory_io ) THEN
+      CALL nl_get_io_form_auxhist7( head_grid%id, io_auxh7 )
+      CALL nl_set_io_form_auxhist7( head_grid%id, 0 )
+   ENDIF
+
+   CALL nl_get_time_step ( head_grid%id, timestep)  
+
+   IF(head_grid%checkpoint_interval > 0) then
+!BEGIN TLM CHECKPOINTING
+      CALL       wrf_message ( "wrf: using multiple checkpoint windows" )
+      model_config_rec%rst_inname = "wrf_checkpoint_d<domain>_<date>"
+
+      if(head_grid%checkpoint_interval > 3) then
+         CALL wrf_message("WARNING: large checkpoint_interval may overload memory.  If program crashes, consider reducing checkpoint_interval and/or number of processors.")
+      end if
+
+      start_year = model_config_rec%start_year(head_grid%id)
+      start_month = model_config_rec%start_month(head_grid%id)
+      start_day = model_config_rec%start_day(head_grid%id)
+      start_hour = model_config_rec%start_hour(head_grid%id)
+
+      end_year = model_config_rec%end_year(head_grid%id)
+      end_month = model_config_rec%end_month(head_grid%id)
+      end_day = model_config_rec%end_day(head_grid%id)
+      end_hour = model_config_rec%end_hour(head_grid%id)
+
+      ! Store original time keeping variables
+      CALL nl_get_run_days  (grid%id,run_days)
+      CALL nl_get_run_hours (grid%id,run_hours)
+      ncheck = (run_hours + 24 * run_days)
+
+      IF (ncheck .lt. head_grid%checkpoint_interval) THEN
+         CALL wrf_error_fatal(&
+                    'Need to set total run_hours >= checkpoint_interval')
+      ENDIF
+      ncheck = ncheck / head_grid%checkpoint_interval
+
+      end_year0  = end_year
+      end_month0 = end_month
+      end_day0   = end_day
+      end_hour0  = end_hour
+
+      start_year0 = start_year
+      start_month0 = start_month
+      start_day0 = start_day
+      start_hour0 = start_hour
+
+      checkpoint_interval_h = mod(head_grid%checkpoint_interval,24)
+      checkpoint_interval_d = (head_grid%checkpoint_interval - checkpoint_interval_h) / 24
+
+      CALL domain_clock_get (head_grid, stop_timestr=STOPtimestr)
+      CALL domain_clock_get (head_grid, start_timestr=STARTtimestr)
+      checkstart_timestr=STARTtimestr
+   
+      model_config_rec%run_days = checkpoint_interval_d
+      model_config_rec%run_hours = checkpoint_interval_h   
+
+      !!Assuming all forcing has already been calculated read/write settings are in place
+
+! Need to add this subroutine to calculate the forcing for 
+! first checkpoint window only.  This will be necessary when the forcing
+! isn't calculated outside this subroutine (e.g. in WRF-4DVar or 
+! wrf_adtl_check_spot
+      !CALL calculate_tl_forcing( head_grid, model_config_rec ) !(Doesn't exist yet.)
+
+      DO icheck = 1,ncheck,1
+         head_grid%check_count = icheck
+         write(msg,FMT='(A,I5,A,I5)')'WRF TLM: Simulating checkpoint',head_grid%check_count,' of ',ncheck
+         CALL wrf_debug(1,TRIM(msg))
+
+         !Set clock to checkpoint initial condition time stamp for I/O
+         CALL domain_clock_set (head_grid, current_timestr=checkstart_timestr )
+         CALL domain_clock_set (head_grid, time_step_seconds=3600*head_grid%checkpoint_interval)
+         CALL domain_clockadvance (head_grid)
+         CALL domain_clock_get (head_grid, current_timestr=checkstart_timestr)
+         CALL domain_clock_set (head_grid, stop_timestr=checkstart_timestr)
+         CALL domain_clock_set (head_grid, time_step_seconds=-3600*head_grid%checkpoint_interval)
+         CALL domain_clockadvance (head_grid)
+         CALL domain_clock_set (head_grid, time_step_seconds=timestep)
+         CALL domain_clockprint(150, head_grid, &
+                                'get CurrTime from clock,')
+
+         !Read initial conditions
+         if ( icheck .eq. 1 ) then
+            model_config_rec%restart = .false.
+            head_grid%restart = .false.
+            call nl_set_restart ( head_grid%id, .false. )
+            model_config_rec%io_form_restart = 0
+            head_grid%itimestep = 0
+         else
+            model_config_rec%restart = .true.
+            head_grid%restart = .true.
+            call nl_set_restart ( head_grid%id, .true. )
+            model_config_rec%io_form_restart = 2
+            head_grid%itimestep = 1
+         endif
+
+         CALL model_to_grid_config_rec ( head_grid%id , model_config_rec , config_flags )
+
+!#ifdef DM_PARALLEL
+!         CALL get_config_as_buffer( configbuf, configbuflen, nbytes )
+!         CALL wrf_dm_bcast_bytes( configbuf, nbytes )
+!         CALL set_config_as_buffer( configbuf, configbuflen )
+!#endif
+
+         CALL med_initialdata_input( head_grid , config_flags )
+         model_config_rec%io_form_restart = 0
+#ifdef WRF_CHEM
+         !Need to remove this once scaleant and scalebb are added to wrfinput or another stream
+         ! This step is necessary to do 4DVAR -JJG 9-23-2014
+         head_grid%scaleant = 1.0D0
+         head_grid%scalebb = 1.0D0
+#endif
+
+         ! Set time keeping variables to checkpoint values
+         model_config_rec%start_year(head_grid%id) = start_year
+         model_config_rec%start_month(head_grid%id) = start_month
+         model_config_rec%start_day(head_grid%id) = start_day
+         model_config_rec%start_hour(head_grid%id) = start_hour
+
+         if (start_hour + checkpoint_interval_h > 23) then
+            end_hour = start_hour + checkpoint_interval_h - 24
+            end_day  = start_day  + 1
+         else
+            end_hour = start_hour + checkpoint_interval_h
+            end_day  = start_day
+         end if
+
+         end_year  = start_year
+         end_month = start_month
+
+         !Account for leap years
+         if(start_month .eq. 2 .and. end_day > 24) then  !Assuming the checkpoint interval < 5 days
+            if ( mod(end_year,4) .eq. 0 )then
+               if ( mod(end_year,100) .eq. 0 ) then
+                  if ( mod(end_year,400) .eq. 0 ) then
+                     days_in_month(2) = 29
+                  else
+                     days_in_month(2) = 28
+                  end if
+               else
+                  days_in_month(2) = 29
+               end if
+            else
+               days_in_month(2) = 28
+            end if
+         end if
+
+         if (end_day + checkpoint_interval_d > days_in_month(start_month)) then
+            if(start_month + 1 > 12) then
+               end_month = 1
+               end_year  = start_year + 1
+            else
+               end_month = start_month + 1
+            end if
+            end_day = end_day + checkpoint_interval_d - days_in_month(start_month)
+         else
+            end_day = end_day + checkpoint_interval_d
+         end if
+
+         model_config_rec%end_year(head_grid%id) = end_year
+         model_config_rec%end_month(head_grid%id) = end_month
+         model_config_rec%end_day(head_grid%id) = end_day
+         model_config_rec%end_hour(head_grid%id) = end_hour
+
+! Get nonlinear model trajectory
+         CALL wrf_message ( "wrf: calculating checkpoint trajectory" )
+
+         ! Release linked list for trajectory
+         CALL xtraj_io_initialize
+
+         ! Set trajectory boundary form
+         CALL nl_set_io_form_boundary( head_grid%id, xtraj_boundary_form )  
+
+         !CALL nl_set_restart_interval_h ( head_grid%id, (ncheck+1)*head_grid%checkpoint_interval)
+         CALL nl_set_restart_interval_h ( head_grid%id, 0)
+
+         CALL nl_set_auxhist6_interval_s ( head_grid%id, timestep )
+         CALL nl_set_io_form_auxhist6 ( head_grid%id, 2 )
+         CALL nl_set_frames_per_auxhist6 ( head_grid%id, 1 )
+
+         model_config_rec%dyn_opt = dyn_em_check
+
+         IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
+           IF ( head_grid%domain_clock_created ) THEN
+             CALL WRFU_ClockDestroy( head_grid%domain_clock )
+             head_grid%domain_clock_created = .FALSE.
+           ENDIF
+         ENDIF
+         IF ( ASSOCIATED( head_grid%alarms ) .AND. &
+              ASSOCIATED( head_grid%alarms_created ) ) THEN
+           DO alarmid = 1, MAX_WRF_ALARMS
+             IF ( head_grid%alarms_created( alarmid ) ) THEN
+               CALL WRFU_AlarmDestroy( head_grid%alarms( alarmid ) )
+               head_grid%alarms_created( alarmid ) = .FALSE.
+             ENDIF
+           ENDDO
+         ENDIF
+         CALL Setup_Timekeeping ( head_grid )
+         head_grid%start_subtime = domain_get_start_time ( head_grid )
+         head_grid%stop_subtime = domain_get_stop_time ( head_grid )
+
+         ! Force to turn off history output in this case
+         CALL WRFU_AlarmRingerOff( head_grid%alarms( HISTORY_ALARM ), rc=rc )
+
+         CALL domain_clock_get( head_grid, start_timestr=timestr )
+         CALL domain_clock_set( head_grid, current_timestr=timestr )
+
+         CALL wrf_run
+
+         ! Turn off basic states output
+         CALL nl_set_io_form_auxhist6 ( head_grid%id, 0 )
+         CALL nl_set_auxhist6_interval_s ( head_grid%id, 0 )
+
+!NOW THE TLM
+         CALL wrf_message( "wrf: running TLM" )
+
+         head_grid%itimestep = 0
+#ifdef WRF_CHEM
+         head_grid%ktauc = head_grid%itimestep
+#endif
+
+         !Read initial conditions
+         if ( icheck .eq. 1 ) then
+            !Set clock to simulation initial condition time stamp for I/O
+            CALL domain_clock_set (head_grid, current_timestr=STARTtimestr )
+            model_config_rec%restart = .false.
+            head_grid%restart = .false.
+            CALL nl_set_restart ( head_grid%id, .false. )
+            CALL model_to_grid_config_rec ( head_grid%id , model_config_rec , config_flags )
+
+!#ifdef DM_PARALLEL
+!            CALL get_config_as_buffer( configbuf, configbuflen, nbytes )
+!            CALL wrf_dm_bcast_bytes( configbuf, nbytes )
+!            CALL set_config_as_buffer( configbuf, configbuflen )
+!#endif
+
+            CALL med_initialdata_input( head_grid , config_flags )
+#ifdef WRF_CHEM
+            !Need to remove this once scaleant and scalebb are added to wrfinput or another stream
+            ! This step is necessary to do 4DVAR -JJG 9-23-2014
+            head_grid%scaleant = 1.0D0
+            head_grid%scalebb = 1.0D0
+#endif
+!!!         else
+!!!            model_config_rec%restart = .true.
+         endif
+
+         model_config_rec%dyn_opt = dyn_em_tl
+
+         ! Force to turn off boundary input during derivative model
+         CALL nl_set_io_form_boundary( head_grid%id, 0 ) 
+
+         CALL nl_set_auxinput16_interval_s (head_grid%id, timestep )
+         CALL nl_set_io_form_auxinput16 ( head_grid%id, 2 )
+         CALL nl_set_frames_per_auxinput16 ( head_grid%id, 1 )
+
+         IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
+           IF ( head_grid%domain_clock_created ) THEN
+             CALL WRFU_ClockDestroy( head_grid%domain_clock )
+             head_grid%domain_clock_created = .FALSE.
+           ENDIF
+         ENDIF
+         IF ( ASSOCIATED( head_grid%alarms ) .AND. &
+              ASSOCIATED( head_grid%alarms_created ) ) THEN
+           DO alarmid = 1, MAX_WRF_ALARMS
+             IF ( head_grid%alarms_created( alarmid ) ) THEN
+               CALL WRFU_AlarmDestroy( head_grid%alarms( alarmid ) )
+               head_grid%alarms_created( alarmid ) = .FALSE.
+             ENDIF
+           ENDDO
+         ENDIF
+         CALL Setup_Timekeeping ( head_grid )
+         head_grid%start_subtime = domain_get_start_time ( head_grid )
+         head_grid%stop_subtime = domain_get_stop_time ( head_grid )
+
+         ! Force to turn off history output in this case
+         CALL WRFU_AlarmRingerOff( head_grid%alarms( HISTORY_ALARM ), rc=rc )
+
+         CALL domain_clock_get( head_grid, start_timestr=timestr )
+         CALL domain_clock_set( head_grid, current_timestr=timestr )
+
+         IF ( config_flags%mp_physics .NE. 0 .and. config_flags%mp_physics .NE. 99 .and. &
+              config_flags%mp_physics .NE. 98 ) CALL nl_set_mp_physics (head_grid%id, config_flags%mp_physics_ad)
+         IF ( config_flags%bl_pbl_physics .NE. ACMPBLSCHEME .AND. config_flags%bl_pbl_physics .GT. 0 ) CALL nl_set_bl_pbl_physics (head_grid%id, 98)
+         IF ( config_flags%cu_physics .GT. 0 ) THEN
+            CALL nl_set_cu_physics (head_grid%id, 98)
+            head_grid%cudt = 0
+         ENDIF
+         CALL nl_set_ra_lw_physics (head_grid%id, 0)
+         CALL nl_set_ra_sw_physics (head_grid%id, 0)
+         IF ( config_flags%sf_sfclay_physics.NE.SFCLAYSCHEME .AND. config_flags%sf_sfclay_physics.NE.PXSFCSCHEME) CALL nl_set_sf_sfclay_physics (head_grid%id, 0)
+         IF ( config_flags%sf_surface_physics.NE.SLABSCHEME .AND. config_flags%sf_surface_physics.NE.PXLSMSCHEME) CALL nl_set_sf_surface_physics (head_grid%id, 0)
+
+         IF (icheck .EQ. 1) THEN
+            CALL start_domain ( head_grid , .TRUE. )
+         ENDIF
+       
+         IF ( ASSOCIATED(xtraj_tail) ) xtraj_pointer => xtraj_tail
+         CALL integrate ( head_grid )
+
+         CALL nl_set_auxinput16_interval_s (head_grid%id, 0 )
+
+         start_year = end_year
+         start_month = end_month
+         start_day = end_day
+         start_hour = end_hour
+      ENDDO
+      ! Release linked list for trajectory
+      CALL xtraj_io_initialize
+
+      model_config_rec%run_days = run_days
+      model_config_rec%run_hours = run_hours
+
+      model_config_rec%end_year(head_grid%id) = end_year0
+      model_config_rec%end_month(head_grid%id) = end_month0
+      model_config_rec%end_day(head_grid%id) = end_day0
+      model_config_rec%end_hour(head_grid%id) = end_hour0
+
+      model_config_rec%start_year(head_grid%id) = start_year0
+      model_config_rec%start_month(head_grid%id) = start_month0
+      model_config_rec%start_day(head_grid%id) = start_day0
+      model_config_rec%start_hour(head_grid%id) = start_hour0
+
+      model_config_rec%rst_inname = "wrfrst_d<domain>_<date>"
+      !model_config_rec%interval_seconds = 3600*(run_hours + 24*run_days)
+      ncheck = 1
+      head_grid%check_count = 1
+
+      IF ( xtraj_boundary_form .gt. 0 ) THEN
+         ! Close boundary file, as it will be read again from start later
+         CALL close_dataset ( head_grid%lbc_fid , config_flags , &
+                                                  "DATASET=BOUNDARY" )
+      ENDIF
+      model_config_rec%restart = .false.
+      head_grid%restart = .false.
+      call nl_set_restart ( head_grid%id, .false. )
+      model_config_rec%io_form_restart = 0
+
+!END TLM CHECKPOINTING
+   ELSE
+      ! Setting for TL model
+      model_config_rec%dyn_opt = dyn_em_tl
+
+      CALL nl_set_auxinput16_interval_s (head_grid%id, timestep )
+      CALL nl_set_io_form_auxinput16 ( head_grid%id, 2 )
+      CALL nl_set_frames_per_auxinput16 ( head_grid%id, 1 )
+
+      IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
+        IF ( head_grid%domain_clock_created ) THEN
+          CALL WRFU_ClockDestroy( head_grid%domain_clock )
+          head_grid%domain_clock_created = .FALSE.
+        ENDIF
+      ENDIF
+      IF ( ASSOCIATED( head_grid%alarms ) .AND. &
+           ASSOCIATED( head_grid%alarms_created ) ) THEN
+        DO alarmid = 1, MAX_WRF_ALARMS
+          IF ( head_grid%alarms_created( alarmid ) ) THEN
+            CALL WRFU_AlarmDestroy( head_grid%alarms( alarmid ) )
+            head_grid%alarms_created( alarmid ) = .FALSE.
+          ENDIF
+        ENDDO
+      ENDIF
+      CALL Setup_Timekeeping ( head_grid )
+      head_grid%start_subtime = domain_get_start_time ( head_grid )
+      head_grid%stop_subtime = domain_get_stop_time ( head_grid )
+
+      ! Force to turn off history output in this case
+      CALL WRFU_AlarmRingerOff( head_grid%alarms( HISTORY_ALARM ), rc=rc )
+
+      ! Force to turn off boundary input
+      CALL nl_set_io_form_boundary( head_grid%id, 0 )
+
+      CALL domain_clock_get( head_grid, start_timestr=timestr )
+      CALL domain_clock_set( head_grid, current_timestr=timestr )
+
+      head_grid%itimestep = 0
+#ifdef WRF_CHEM
+         head_grid%ktauc = head_grid%itimestep
+#endif
+
+      CALL start_domain ( head_grid , .TRUE. )
+
+      IF ( ASSOCIATED(xtraj_tail) ) xtraj_pointer => xtraj_tail
+      CALL integrate ( head_grid )
+
+   ENDIF
+
+   CALL nl_set_auxinput16_interval_s (head_grid%id, 0 )
+
+   IF ( .NOT. config_flags%trajectory_io ) THEN
+      CALL nl_set_io_form_auxhist7( head_grid%id, io_auxh7 )
+   ENDIF
+
+   IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
+     IF ( head_grid%domain_clock_created ) THEN
+       CALL WRFU_ClockDestroy( head_grid%domain_clock )
+       head_grid%domain_clock_created = .FALSE.
+     ENDIF
+   ENDIF
+   IF ( ASSOCIATED( head_grid%alarms ) .AND. &
+        ASSOCIATED( head_grid%alarms_created ) ) THEN
+     DO alarmid = 1, MAX_WRF_ALARMS
+       IF ( head_grid%alarms_created( alarmid ) ) THEN
+         CALL WRFU_AlarmDestroy( head_grid%alarms( alarmid ) )
+         head_grid%alarms_created( alarmid ) = .FALSE.
+       ENDIF
+     ENDDO
+   ENDIF
+   CALL Setup_Timekeeping ( head_grid )
+   head_grid%start_subtime = domain_get_start_time ( head_grid )
+   head_grid%stop_subtime = domain_get_stop_time ( head_grid )
+
+
+   ! Close boundary file, as it will be read again from start
+   CALL construct_filename2a ( bdyname , config_flags%bdy_inname , head_grid%id , 2 , 'dummydate' )
+   CALL wrf_inquire_opened(head_grid%lbc_fid , TRIM(bdyname) , open_status , ierr ) 
+   IF ( open_status .EQ. WRF_FILE_OPENED_FOR_READ ) THEN
+      CALL close_dataset ( head_grid%lbc_fid , config_flags , "DATASET=BOUNDARY" )
+   ENDIF
+
+   CALL       wrf_message ( "wrf: back from tangent linear integrate" )
+
+   END SUBROUTINE wrf_run_tl_checkpt
 
    SUBROUTINE wrf_run_tl_standalone( )
 !<DESCRIPTION>
@@ -1960,12 +2446,535 @@ ENDIF
    CALL construct_filename2a ( bdyname , config_flags%bdy_inname , head_grid%id , 2 , 'dummydate' )
    CALL wrf_inquire_opened(head_grid%lbc_fid , TRIM(bdyname) , open_status , ierr )
    IF ( open_status .EQ. WRF_FILE_OPENED_FOR_READ ) THEN
-      CALL close_dataset ( head_grid%lbc_fid , config_flags , "DATASET=BOUNDARY" )
+      CALL close_dataset ( head_grid%lbc_fid , config_flags , &
+                           "DATASET=BOUNDARY" )
    ENDIF
 
    CALL       wrf_message ( "wrf: back from adjoint integrate" )
 
    END SUBROUTINE wrf_run_ad
+
+   SUBROUTINE wrf_run_ad_checkpt( )
+!<DESCRIPTION>
+!     WRF adjoint run routine.
+!</DESCRIPTION>
+
+!<DESCRIPTION>
+! Once the top-level domain has been allocated, configured, and
+! initialized, the model time integration is ready to proceed.  The start
+! and stop times for the domain are set to the start and stop time of the
+! model run, and then <a href=integrate.html>integrate</a> is called to
+! advance the domain forward through that specified time interval.  On
+! return, the simulation is completed.  
+! 
+!</DESCRIPTION>
+
+   CHARACTER*256 :: timestr, timestr1
+   INTEGER :: start_year,start_month,start_day,start_hour,start_minute,start_second
+   INTEGER :: end_year,end_month,end_day,end_hour,end_minute,end_second
+   INTEGER :: rc, runad
+   INTEGER    :: timestep
+   TYPE(WRFU_TimeInterval) :: run_interval
+   INTEGER       :: io_auxh8
+   CHARACTER (LEN=80)      :: bdyname
+   INTEGER                 :: open_status
+
+!checkpoint variables
+   integer                           :: icheck
+   integer                           :: run_days, run_hours
+   character(len=256)                :: STOPtimestr, STARTtimestr, checkend_timestr
+   character(len=256)                :: debugstr
+   character(len=1000)               :: msg 
+   integer                           :: checkpoint_interval_h, checkpoint_interval_d, ncheck
+   integer :: start_year0,start_month0,start_day0,start_hour0
+   integer :: end_year0,end_month0,end_day0,end_hour0
+   integer , dimension(12) :: days_in_month = (/31,28,31,30,31,30,31,31,30,31,30,31/)
+
+   !  The forecast integration for the most coarse grid is now started.  The
+   !  integration is from the first step (1) to the last step of the simulation.
+
+   CALL       wrf_message ( "wrf: calling adjoint integrate" )
+
+   start_year = model_config_rec%start_year(head_grid%id)
+   start_month = model_config_rec%start_month(head_grid%id)
+   start_day = model_config_rec%start_day(head_grid%id)
+   start_hour = model_config_rec%start_hour(head_grid%id)
+   start_minute = model_config_rec%start_minute(head_grid%id)
+   start_second = model_config_rec%start_second(head_grid%id)
+
+   end_year = model_config_rec%end_year(head_grid%id)
+   end_month = model_config_rec%end_month(head_grid%id)
+   end_day = model_config_rec%end_day(head_grid%id)
+   end_hour = model_config_rec%end_hour(head_grid%id)
+   end_minute = model_config_rec%end_minute(head_grid%id)
+   end_second = model_config_rec%end_second(head_grid%id)
+
+   IF ( .NOT. config_flags%trajectory_io ) THEN
+      CALL nl_get_io_form_auxhist8( head_grid%id, io_auxh8 )
+      CALL nl_set_io_form_auxhist8( head_grid%id, 0 )
+   ENDIF
+
+   CALL nl_get_time_step ( head_grid%id, timestep)  
+
+   IF(head_grid%checkpoint_interval > 0) then
+!BEGIN ADM CHECKPOINTING
+      CALL       wrf_message ( "wrf: using multiple checkpoint windows" )
+      model_config_rec%rst_inname = "wrf_checkpoint_d<domain>_<date>"
+
+      if(head_grid%checkpoint_interval > 3) then
+         CALL wrf_message("WARNING: large checkpoint_interval may overload memory.  If program crashes, consider reducing checkpoint_interval and/or number of processors.")
+      end if
+
+      ! Store original time keeping variables
+      CALL nl_get_run_days  (grid%id,run_days)
+      CALL nl_get_run_hours (grid%id,run_hours)
+      ncheck = (run_hours + 24 * run_days)
+      IF (ncheck .lt. head_grid%checkpoint_interval) THEN
+         CALL wrf_error_fatal(&
+                    'Need to set total run_hours >= checkpoint_interval')
+      ENDIF
+      ncheck = ncheck / head_grid%checkpoint_interval
+
+      end_year0  = end_year
+      end_month0 = end_month
+      end_day0   = end_day
+      end_hour0  = end_hour
+
+      start_year0 = start_year
+      start_month0 = start_month
+      start_day0 = start_day
+      start_hour0 = start_hour
+
+      checkpoint_interval_h = mod(head_grid%checkpoint_interval,24)
+      checkpoint_interval_d = (head_grid%checkpoint_interval - checkpoint_interval_h) / 24
+
+      CALL domain_clock_get (head_grid, stop_timestr=STOPtimestr)
+      CALL domain_clock_get (head_grid, start_timestr=STARTtimestr)
+      checkend_timestr=STOPtimestr
+   
+      model_config_rec%run_days = checkpoint_interval_d
+      model_config_rec%run_hours = checkpoint_interval_h
+   
+      !!Assuming all forcing has already been calculated read/write settings are in place
+
+      DO icheck = 1,ncheck,1
+         head_grid%check_count = ncheck - icheck + 1
+         write(msg,FMT='(A,I5,A,I5)')'WRF ADM: Simulating checkpoint',head_grid%check_count,' of ',ncheck
+         CALL wrf_debug(1,TRIM(msg))
+
+         !Set clock to checkpoint initial condition time stamp for I/O
+         CALL domain_clock_set (head_grid, current_timestr=checkend_timestr )
+         CALL domain_clock_set (head_grid, stop_timestr=checkend_timestr)
+         CALL domain_clock_set (head_grid, time_step_seconds=-3600*head_grid%checkpoint_interval)
+         CALL domain_clockadvance (head_grid)
+         CALL domain_clock_get (head_grid, current_timestr=checkend_timestr)
+         CALL domain_clock_set (head_grid, time_step_seconds=timestep)
+         CALL domain_clockprint(150, head_grid, &
+                                'get CurrTime from clock,')
+
+         !Read initial conditions
+         if ( icheck .eq. ncheck ) then
+            model_config_rec%restart = .false.
+            head_grid%restart = .false.
+            call nl_set_restart ( head_grid%id, .false. )
+            model_config_rec%io_form_restart = 0
+            head_grid%itimestep = 0
+         else
+            model_config_rec%restart = .true.
+            head_grid%restart = .true.
+            call nl_set_restart ( head_grid%id, .true. )
+            model_config_rec%io_form_restart = 2
+            head_grid%itimestep = 1
+         endif
+
+         CALL model_to_grid_config_rec ( head_grid%id , model_config_rec , config_flags )
+
+!#ifdef DM_PARALLEL
+!         CALL get_config_as_buffer( configbuf, configbuflen, nbytes )
+!         CALL wrf_dm_bcast_bytes( configbuf, nbytes )
+!         CALL set_config_as_buffer( configbuf, configbuflen )
+!#endif
+
+         CALL med_initialdata_input( head_grid , config_flags )
+         model_config_rec%io_form_restart = 0
+#ifdef WRF_CHEM
+         !Need to remove this once scaleant and scalebb are added to wrfinput or another stream
+         ! This step is necessary to do 4DVAR -JJG 9-23-2014
+         head_grid%scaleant = 1.0D0
+         head_grid%scalebb = 1.0D0
+#endif
+
+         ! Set time keeping variables to checkpoint values
+         model_config_rec%end_year(head_grid%id) = end_year
+         model_config_rec%end_month(head_grid%id) = end_month
+         model_config_rec%end_day(head_grid%id) = end_day
+         model_config_rec%end_hour(head_grid%id) = end_hour
+
+         if (end_hour - checkpoint_interval_h < 0) then
+            start_hour = end_hour - checkpoint_interval_h + 24
+            start_day  = end_day  - 1
+         else
+            start_hour = end_hour - checkpoint_interval_h
+            start_day  = end_day
+         end if
+
+         start_year  = end_year
+         start_month = end_month
+
+         !Account for leap years
+         if(end_month .eq. 3 .and. end_day < 5) then  !Assuming the checkpoint interval < 5 days
+            if ( mod(end_year,4) .eq. 0 )then
+               if ( mod(end_year,100) .eq. 0 ) then
+                  if ( mod(end_year,400) .eq. 0 ) then
+                     days_in_month(2) = 29
+                  else
+                     days_in_month(2) = 28
+                  end if
+               else
+                  days_in_month(2) = 29
+               end if
+            else
+               days_in_month(2) = 28
+            end if
+         end if
+
+         if (start_day - checkpoint_interval_d < 1) then
+            if(end_month - 1 < 1) then
+               start_month = 12
+               start_year  = end_year - 1
+            else
+               start_month = end_month - 1
+            end if
+            start_day = start_day - checkpoint_interval_d + days_in_month(start_month)
+         else
+            start_day = start_day - checkpoint_interval_d
+         end if
+
+         model_config_rec%start_year(head_grid%id) = start_year
+         model_config_rec%start_month(head_grid%id) = start_month
+         model_config_rec%start_day(head_grid%id) = start_day
+         model_config_rec%start_hour(head_grid%id) = start_hour
+
+! Get nonlinear model trajectory
+         CALL wrf_message ( "wrf: calculating checkpoint trajectory" )
+
+         ! Release linked list for trajectory
+         CALL xtraj_io_initialize
+
+         ! Set trajectory boundary form
+         CALL nl_set_io_form_boundary( head_grid%id, xtraj_boundary_form )  
+
+         !CALL nl_set_restart_interval_h ( head_grid%id, (ncheck+1)*head_grid%checkpoint_interval)
+         CALL nl_set_restart_interval_h ( head_grid%id, 0)
+
+         CALL nl_set_auxhist6_interval_s ( head_grid%id, timestep )
+         CALL nl_set_io_form_auxhist6 ( head_grid%id, 2 )
+         CALL nl_set_frames_per_auxhist6 ( head_grid%id, 1 )
+
+         model_config_rec%dyn_opt = dyn_em_check
+
+         IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
+           IF ( head_grid%domain_clock_created ) THEN
+             CALL WRFU_ClockDestroy( head_grid%domain_clock )
+             head_grid%domain_clock_created = .FALSE.
+           ENDIF
+         ENDIF
+         IF ( ASSOCIATED( head_grid%alarms ) .AND. &
+              ASSOCIATED( head_grid%alarms_created ) ) THEN
+           DO alarmid = 1, MAX_WRF_ALARMS
+             IF ( head_grid%alarms_created( alarmid ) ) THEN
+               CALL WRFU_AlarmDestroy( head_grid%alarms( alarmid ) )
+               head_grid%alarms_created( alarmid ) = .FALSE.
+             ENDIF
+           ENDDO
+         ENDIF
+         CALL Setup_Timekeeping ( head_grid )
+         head_grid%start_subtime = domain_get_start_time ( head_grid )
+         head_grid%stop_subtime = domain_get_stop_time ( head_grid )
+
+         ! Force to turn off history output in this case
+         CALL WRFU_AlarmRingerOff( head_grid%alarms( HISTORY_ALARM ), rc=rc )
+
+         CALL domain_clock_get( head_grid, start_timestr=timestr )
+         CALL domain_clock_set( head_grid, current_timestr=timestr )
+
+         CALL wrf_run
+
+         ! Turn off basic states output
+         CALL nl_set_io_form_auxhist6 ( head_grid%id, 0 )
+         CALL nl_set_auxhist6_interval_s ( head_grid%id, 0 )
+
+
+!NOW THE ADM
+         CALL wrf_message( "wrf: running ADM" )
+
+! Need to add this subroutine to calculate the forcing for 
+! each checkpoint window.  This will be necessary when the forcing
+! depends on the trajectory (nonlinear cost function), and the forcing
+! isn't calculated online (during each time step).  Currently, that
+! is the case for WRF-4DVar forcing.
+         !CALL calculate_ad_forcing( head_grid, model_config_rec ) !(Doesn't exist yet.)
+
+         ! Reverse timing variables
+         model_config_rec%run_days = -1 * model_config_rec%run_days
+         model_config_rec%run_hours = -1 * model_config_rec%run_hours
+
+         model_config_rec%start_year(head_grid%id)  = end_year
+         model_config_rec%start_month(head_grid%id)  = end_month
+         model_config_rec%start_day(head_grid%id)  = end_day
+         model_config_rec%start_hour(head_grid%id)  = end_hour
+
+         model_config_rec%end_year(head_grid%id)    = start_year
+         model_config_rec%end_month(head_grid%id)    = start_month
+         model_config_rec%end_day(head_grid%id)    = start_day
+         model_config_rec%end_hour(head_grid%id)    = start_hour
+
+         model_config_rec%dyn_opt = dyn_em_ad
+
+         ! Force to turn off boundary input during derivative model
+         CALL nl_set_io_form_boundary( head_grid%id, 0 ) 
+
+         CALL nl_set_auxinput16_interval_s (head_grid%id, timestep )
+         CALL nl_set_io_form_auxinput16 ( head_grid%id, 2 )
+         CALL nl_set_frames_per_auxinput16 ( head_grid%id, 1 )
+
+         IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
+           IF ( head_grid%domain_clock_created ) THEN
+             CALL WRFU_ClockDestroy( head_grid%domain_clock )
+             head_grid%domain_clock_created = .FALSE.
+           ENDIF
+         ENDIF
+         IF ( ASSOCIATED( head_grid%alarms ) .AND. &
+              ASSOCIATED( head_grid%alarms_created ) ) THEN
+           DO alarmid = 1, MAX_WRF_ALARMS
+             IF ( head_grid%alarms_created( alarmid ) ) THEN
+               CALL WRFU_AlarmDestroy( head_grid%alarms( alarmid ) )
+               head_grid%alarms_created( alarmid ) = .FALSE.
+             ENDIF
+           ENDDO
+         ENDIF
+         CALL Setup_Timekeeping ( head_grid )
+         head_grid%start_subtime = domain_get_start_time ( head_grid )
+         head_grid%stop_subtime = domain_get_stop_time ( head_grid )
+
+         ! Force to turn off history output in this case
+         CALL WRFU_AlarmRingerOff( head_grid%alarms( HISTORY_ALARM ), rc=rc )
+
+         CALL domain_clock_get( head_grid, start_timestr=timestr )
+         CALL domain_clock_set( head_grid, current_timestr=timestr )
+         CALL domain_clock_set( head_grid, time_step_seconds=-1*timestep )
+
+         IF ( ASSOCIATED(xtraj_head) ) xtraj_pointer => xtraj_head%next
+
+         ! head_grid%itimestep should be the last
+         !run_interval = head_grid%stop_subtime - head_grid%start_subtime
+         !CALL WRFU_TimeIntervalGet( run_interval, S=runad, rc=rc )
+         !runad = abs(runad)
+         !head_grid%itimestep = ceiling(real(runad)/real(timestep))
+         head_grid%itimestep = real(head_grid%checkpoint_interval*3600/timestep)
+#ifdef WRF_CHEM
+         head_grid%ktauc = head_grid%itimestep
+#endif
+
+         IF ( config_flags%mp_physics .NE. 0 .and. config_flags%mp_physics .NE. 99 .and. &
+              config_flags%mp_physics .NE. 98 ) CALL nl_set_mp_physics (head_grid%id, config_flags%mp_physics_ad)
+         IF ( config_flags%bl_pbl_physics .NE. ACMPBLSCHEME .AND. config_flags%bl_pbl_physics .GT. 0 ) CALL nl_set_bl_pbl_physics (head_grid%id, 98)
+         IF ( config_flags%cu_physics .GT. 0 ) THEN
+            CALL nl_set_cu_physics (head_grid%id, 98)
+            head_grid%cudt = 0
+         ENDIF
+         CALL nl_set_ra_lw_physics (head_grid%id, 0)
+         CALL nl_set_ra_sw_physics (head_grid%id, 0)
+         IF ( config_flags%sf_sfclay_physics.NE.SFCLAYSCHEME .AND. config_flags%sf_sfclay_physics.NE.PXSFCSCHEME) CALL nl_set_sf_sfclay_physics (head_grid%id, 0)
+         IF ( config_flags%sf_surface_physics.NE.SLABSCHEME .AND. config_flags%sf_surface_physics.NE.PXLSMSCHEME) CALL nl_set_sf_surface_physics (head_grid%id, 0)
+
+         CALL integrate ( head_grid )
+
+         CALL nl_set_auxinput16_interval_s (head_grid%id, 0 )
+
+         model_config_rec%run_days = -1 * model_config_rec%run_days
+         model_config_rec%run_hours = -1 * model_config_rec%run_hours
+
+         end_year = start_year
+         end_month = start_month
+         end_day = start_day
+         end_hour = start_hour
+      ENDDO
+      ! Release linked list for trajectory
+      CALL xtraj_io_initialize
+
+      model_config_rec%run_days = run_days
+      model_config_rec%run_hours = run_hours
+
+      model_config_rec%end_year(head_grid%id) = end_year0
+      model_config_rec%end_month(head_grid%id) = end_month0
+      model_config_rec%end_day(head_grid%id) = end_day0
+      model_config_rec%end_hour(head_grid%id) = end_hour0
+
+      model_config_rec%start_year(head_grid%id) = start_year0
+      model_config_rec%start_month(head_grid%id) = start_month0
+      model_config_rec%start_day(head_grid%id) = start_day0
+      model_config_rec%start_hour(head_grid%id) = start_hour0
+
+      model_config_rec%rst_inname = "wrfrst_d<domain>_<date>"
+      !model_config_rec%interval_seconds = 3600*(run_hours + 24*run_days)
+      ncheck = 1
+      head_grid%check_count = 1
+      IF ( xtraj_boundary_form .gt. 0 ) THEN
+         ! Close boundary file, as it will be read again from start later
+         CALL close_dataset ( head_grid%lbc_fid , config_flags , &
+                                                  "DATASET=BOUNDARY" )
+      ENDIF
+      model_config_rec%restart = .false.
+      head_grid%restart = .false.
+      call nl_set_restart ( head_grid%id, .false. )
+      model_config_rec%io_form_restart = 0
+
+!END ADM CHECKPOINTING
+   ELSE
+
+      ! Setting for AD model
+      model_config_rec%dyn_opt = dyn_em_ad
+
+      model_config_rec%run_days = -1 * model_config_rec%run_days
+      model_config_rec%run_hours = -1 * model_config_rec%run_hours
+      model_config_rec%run_minutes = -1 * model_config_rec%run_minutes
+      model_config_rec%run_seconds = -1 * model_config_rec%run_seconds
+
+      model_config_rec%start_year(head_grid%id)  = end_year
+      model_config_rec%start_month(head_grid%id)  = end_month
+      model_config_rec%start_day(head_grid%id)  = end_day
+      model_config_rec%start_hour(head_grid%id)  = end_hour
+      model_config_rec%start_minute(head_grid%id)  = end_minute
+      model_config_rec%start_second(head_grid%id)  = end_second
+
+      model_config_rec%end_year(head_grid%id)    = start_year
+      model_config_rec%end_month(head_grid%id)    = start_month
+      model_config_rec%end_day(head_grid%id)    = start_day
+      model_config_rec%end_hour(head_grid%id)    = start_hour
+      model_config_rec%end_minute(head_grid%id)    = start_minute
+      model_config_rec%end_second(head_grid%id)    = start_second
+
+      CALL nl_set_auxinput16_interval_s (head_grid%id, timestep )
+      CALL nl_set_io_form_auxinput16 ( head_grid%id, 2 )
+      CALL nl_set_frames_per_auxinput16 ( head_grid%id, 1 )
+
+      IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
+        IF ( head_grid%domain_clock_created ) THEN
+          CALL WRFU_ClockDestroy( head_grid%domain_clock )
+          head_grid%domain_clock_created = .FALSE.
+        ENDIF
+      ENDIF
+      IF ( ASSOCIATED( head_grid%alarms ) .AND. &
+           ASSOCIATED( head_grid%alarms_created ) ) THEN
+        DO alarmid = 1, MAX_WRF_ALARMS
+          IF ( head_grid%alarms_created( alarmid ) ) THEN
+            CALL WRFU_AlarmDestroy( head_grid%alarms( alarmid ) )
+            head_grid%alarms_created( alarmid ) = .FALSE.
+          ENDIF
+        ENDDO
+      ENDIF
+      CALL Setup_Timekeeping ( head_grid )
+      head_grid%start_subtime = domain_get_start_time ( head_grid )
+      head_grid%stop_subtime = domain_get_stop_time ( head_grid )
+
+      ! Force to turn off history output in this case
+      CALL WRFU_AlarmRingerOff( head_grid%alarms( HISTORY_ALARM ), rc=rc )
+
+      ! Force to turn off boundary input
+      CALL nl_set_io_form_boundary( head_grid%id, 0 )
+
+      CALL domain_clock_get( head_grid, start_timestr=timestr )
+      CALL domain_clock_set( head_grid, current_timestr=timestr )
+      CALL domain_clock_set( head_grid, time_step_seconds=-1*model_config_rec%time_step )
+
+      IF ( ASSOCIATED(xtraj_head) ) xtraj_pointer => xtraj_head%next
+
+      ! head_grid%itimestep should be the last
+!      IF ( head_grid%itimestep .EQ. 0 ) THEN
+         run_interval = head_grid%stop_subtime - head_grid%start_subtime
+         CALL WRFU_TimeIntervalGet( run_interval, S=runad, rc=rc )
+         runad = abs(runad)
+         head_grid%itimestep = ceiling(real(runad)/real(timestep))
+!      ENDIF
+#ifdef WRF_CHEM
+         head_grid%ktauc = head_grid%itimestep
+#endif
+
+      CALL integrate ( head_grid )
+
+      model_config_rec%run_days = -1 * model_config_rec%run_days
+      model_config_rec%run_hours = -1 * model_config_rec%run_hours
+      model_config_rec%run_minutes = -1 * model_config_rec%run_minutes
+      model_config_rec%run_seconds = -1 * model_config_rec%run_seconds
+
+      model_config_rec%start_year(head_grid%id)  = start_year
+      model_config_rec%start_month(head_grid%id)  = start_month
+      model_config_rec%start_day(head_grid%id)  = start_day
+      model_config_rec%start_hour(head_grid%id)  = start_hour
+      model_config_rec%start_minute(head_grid%id)  = start_minute
+      model_config_rec%start_second(head_grid%id)  = start_second
+
+      model_config_rec%end_year(head_grid%id)    = end_year
+      model_config_rec%end_month(head_grid%id)    = end_month
+      model_config_rec%end_day(head_grid%id)    = end_day
+      model_config_rec%end_hour(head_grid%id)    = end_hour
+      model_config_rec%end_minute(head_grid%id)    = end_minute
+      model_config_rec%end_second(head_grid%id)    = end_second
+
+   ENDIF
+
+   head_grid%itimestep = 0
+   CALL start_domain ( head_grid , .TRUE. )
+
+   IF ( .NOT. config_flags%trajectory_io .OR. gradient_out ) THEN
+      config_flags%auxhist17_outname = "gradient_wrfplus_d<domain>_<date>"
+      config_flags%io_form_auxhist17 = 2
+      CALL nl_set_io_form_auxhist17 ( head_grid%id, 2 )
+      CALL  med_hist_out ( head_grid , AUXHIST17_ALARM , config_flags )
+      CALL nl_set_io_form_auxhist17 ( head_grid%id, 0 )
+      CALL  wrf_debug ( 0 , 'Output gradient in WRFPLUS (not including LBC gradient)' )
+   ENDIF
+
+   IF ( .NOT. config_flags%trajectory_io ) THEN
+      CALL nl_set_io_form_auxhist8( head_grid%id, io_auxh8 )
+   ENDIF
+
+   CALL nl_set_auxinput16_interval_s (head_grid%id, 0 )
+
+!  Recover to NL model 
+   model_config_rec%dyn_opt = dyn_em
+
+   IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
+     IF ( head_grid%domain_clock_created ) THEN
+       CALL WRFU_ClockDestroy( head_grid%domain_clock )
+       head_grid%domain_clock_created = .FALSE.
+     ENDIF
+   ENDIF
+   IF ( ASSOCIATED( head_grid%alarms ) .AND. &
+        ASSOCIATED( head_grid%alarms_created ) ) THEN
+     DO alarmid = 1, MAX_WRF_ALARMS
+       IF ( head_grid%alarms_created( alarmid ) ) THEN
+         CALL WRFU_AlarmDestroy( head_grid%alarms( alarmid ) )
+         head_grid%alarms_created( alarmid ) = .FALSE.
+       ENDIF
+     ENDDO
+   ENDIF
+   CALL Setup_Timekeeping ( head_grid )
+   head_grid%start_subtime = domain_get_start_time ( head_grid )
+   head_grid%stop_subtime = domain_get_stop_time ( head_grid )
+   CALL domain_clock_set( head_grid, time_step_seconds=model_config_rec%time_step )
+
+   ! Close boundary file, as it will be read again from start
+   CALL construct_filename2a ( bdyname , config_flags%bdy_inname , head_grid%id , 2 , 'dummydate' )
+   CALL wrf_inquire_opened(head_grid%lbc_fid , TRIM(bdyname) , open_status , ierr )
+   IF ( open_status .EQ. WRF_FILE_OPENED_FOR_READ ) THEN
+      CALL close_dataset ( head_grid%lbc_fid , config_flags , "DATASET=BOUNDARY" )
+   ENDIF
+
+   CALL       wrf_message ( "wrf: back from adjoint integrate" )
+
+   END SUBROUTINE wrf_run_ad_checkpt
 
    SUBROUTINE wrf_run_ad_standalone( )
 !<DESCRIPTION>
@@ -2099,7 +3108,8 @@ ENDIF
    head_grid%g_pm2_5_dry_ec = 0.0D0
    head_grid%g_pm10 = 0.0D0
 
-!!!Temporary Fix - These need to be read in from file
+   !Need to remove this once scaleant and scalebb are added to wrfinput or another stream
+   ! This step is necessary to do 4DVAR -JJG 9-23-2014
    head_grid%scaleant = 1.0D0
    head_grid%scalebb = 1.0D0
 #endif
@@ -2161,7 +3171,8 @@ ENDIF
 #if (WRFPLUS == 1)
 
 #ifdef WRF_CHEM
-!!!Temporary Fix - These need to be read in from file
+   !Need to remove this once scaleant and scalebb are added to wrfinput or another stream
+   ! This step is necessary to do 4DVAR -JJG 9-23-2014
    IF(model_config_rec%dyn_opt .ne. dyn_em_check) then
       head_grid%scaleant = 1.0D0
       head_grid%scalebb = 1.0D0
@@ -2199,14 +3210,20 @@ ENDIF
       head_grid%raincv = 0.0D0
    ENDIF
 
-
    CALL nl_get_io_form_auxhist7( head_grid%id, io_auxh7 )
    CALL nl_get_io_form_auxhist8( head_grid%id, io_auxh8 )
    CALL nl_set_io_form_auxhist7( head_grid%id, 0 )
    CALL nl_set_io_form_auxhist8( head_grid%id, 0 )
 
    head_grid%itimestep = 0
-   CALL start_domain ( head_grid , .TRUE. )
+#ifdef WRF_CHEM
+   head_grid%ktauc = head_grid%itimestep
+#endif
+
+
+   !!IF ( head_grid%check_count .EQ. 1 ) THEN
+      CALL start_domain ( head_grid , .TRUE. )
+   !!ENDIF
 #endif
    CALL integrate ( head_grid )
 

@@ -96,6 +96,7 @@
  surface_input_source                = 1,
  num_soil_layers                     = 2,
  mp_zero_out                         = 2,
+ cu_rad_feedback                     = .false.,
  sst_update                          = 0,
  /
 
@@ -157,8 +158,9 @@
 
  &perturbation
  trajectory_io=.true.,
- check_TL = .true.,
- check_AD = .true.,
+ boundary_io=.true.,
+ check_TL = .false.,
+ check_AD = .false.,
  check_NL = .false.,
  check_u = .true.,
  check_v = .true.,
@@ -216,8 +218,8 @@
  aer_op_opt                          = 0,
  opt_pars_out                        = 0,
  diagnostic_chem                     = 0,
- num_ant_steps                       = 60,
- num_bb_steps                        = 60,
+ num_ant_steps                       = 10,
+ num_bb_steps                        = 10,
  scaleant_frq                        = 1440,
  scalebb_frq                         = 1440,
  scale_emiss_opt                     = 98,

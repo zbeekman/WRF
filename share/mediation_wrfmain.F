@@ -161,7 +161,15 @@ use module_io
 #if (EM_CORE == 1)
      grid%press_adj = .FALSE.
 #endif
+#if (WRFPLUS == 1)
+     ! if calling start_domain here, we always want it be called as NLM
+     save_dyn_opt = model_config_rec%dyn_opt
+     model_config_rec%dyn_opt = dyn_em
+#endif
      CALL start_domain ( grid , .TRUE. )
+#if (WRFPLUS == 1)
+     model_config_rec%dyn_opt = save_dyn_opt
+#endif
    ENDIF
 
    RETURN
