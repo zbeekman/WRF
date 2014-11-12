@@ -1,8 +1,25 @@
 !!MODULE module_ra_rrtmg_sw
                 
-      module parrrsw
+!  --------------------------------------------------------------------------
+! |                                                                          |
+! |  Copyright 2002-2013, Atmospheric & Environmental Research, Inc. (AER).  |
+! |  This software may be used, copied, or redistributed as long as it is    |
+! |  not sold and this copyright notice is reproduced on each copy made.     |
+! |  This model is provided as is without any express or implied warranties. |
+! |                       (http://www.rtweb.aer.com/)                        |
+! |                                                                          |
+!  --------------------------------------------------------------------------
 
-      use parkind ,only : im => kind_im, rb => kind_rb
+! Uncomment to use GPU, or comment to use CPU
+#define _CUDA
+
+#ifdef _CUDA
+#define gpu_device ,device
+#else
+#define gpu_device 
+#endif
+
+      module parrrsw
 
 !     implicit none
       save
@@ -26,99 +43,99 @@
 ! ngsNN  :  integer: cumulative number of g-intervals per band
 !------------------------------------------------------------------
 
-      integer(kind=im), parameter :: mxlay  = 203    !jplay, klev
-      integer(kind=im), parameter :: mg     = 16     !jpg
-      integer(kind=im), parameter :: nbndsw = 14     !jpsw, ksw
-      integer(kind=im), parameter :: naerec  = 6     !jpaer
-      integer(kind=im), parameter :: mxmol  = 38
-      integer(kind=im), parameter :: nstr   = 2
-      integer(kind=im), parameter :: nmol   = 7
+      integer , parameter :: mxlay  = 100   !jplay, klev
+      integer , parameter :: mg     = 16     !jpg
+      integer , parameter :: nbndsw = 14     !jpsw, ksw
+      integer , parameter :: naerec  = 6     !jpaer
+      integer , parameter :: mxmol  = 38
+      integer , parameter :: nstr   = 2
+      integer , parameter :: nmol   = 7
 ! Use for 112 g-point model   
-      integer(kind=im), parameter :: ngptsw = 112    !jpgpt
+      integer , parameter :: ngptsw = 112    !jpgpt
 ! Use for 224 g-point model   
-!      integer(kind=im), parameter :: ngptsw = 224   !jpgpt
+!      integer , parameter :: ngptsw = 224   !jpgpt
 
 ! may need to rename these - from v2.6
-      integer(kind=im), parameter :: jpband   = 29
-      integer(kind=im), parameter :: jpb1     = 16   !istart
-      integer(kind=im), parameter :: jpb2     = 29   !iend
+      integer , parameter :: jpband   = 29
+      integer , parameter :: jpb1     = 16   !istart
+      integer , parameter :: jpb2     = 29   !iend
 
-      integer(kind=im), parameter :: jmcmu    = 32
-      integer(kind=im), parameter :: jmumu    = 32
-      integer(kind=im), parameter :: jmphi    = 3
-      integer(kind=im), parameter :: jmxang   = 4
-      integer(kind=im), parameter :: jmxstr   = 16
+      integer , parameter :: jmcmu    = 32
+      integer , parameter :: jmumu    = 32
+      integer , parameter :: jmphi    = 3
+      integer , parameter :: jmxang   = 4
+      integer , parameter :: jmxstr   = 16
+! ^
 
 ! Use for 112 g-point model   
-      integer(kind=im), parameter :: ng16 = 6
-      integer(kind=im), parameter :: ng17 = 12
-      integer(kind=im), parameter :: ng18 = 8
-      integer(kind=im), parameter :: ng19 = 8
-      integer(kind=im), parameter :: ng20 = 10
-      integer(kind=im), parameter :: ng21 = 10
-      integer(kind=im), parameter :: ng22 = 2
-      integer(kind=im), parameter :: ng23 = 10
-      integer(kind=im), parameter :: ng24 = 8
-      integer(kind=im), parameter :: ng25 = 6
-      integer(kind=im), parameter :: ng26 = 6
-      integer(kind=im), parameter :: ng27 = 8
-      integer(kind=im), parameter :: ng28 = 6
-      integer(kind=im), parameter :: ng29 = 12
+      integer , parameter :: ng16 = 6
+      integer , parameter :: ng17 = 12
+      integer , parameter :: ng18 = 8
+      integer , parameter :: ng19 = 8
+      integer , parameter :: ng20 = 10
+      integer , parameter :: ng21 = 10
+      integer , parameter :: ng22 = 2
+      integer , parameter :: ng23 = 10
+      integer , parameter :: ng24 = 8
+      integer , parameter :: ng25 = 6
+      integer , parameter :: ng26 = 6
+      integer , parameter :: ng27 = 8
+      integer , parameter :: ng28 = 6
+      integer , parameter :: ng29 = 12
 
-      integer(kind=im), parameter :: ngs16 = 6
-      integer(kind=im), parameter :: ngs17 = 18
-      integer(kind=im), parameter :: ngs18 = 26
-      integer(kind=im), parameter :: ngs19 = 34
-      integer(kind=im), parameter :: ngs20 = 44
-      integer(kind=im), parameter :: ngs21 = 54
-      integer(kind=im), parameter :: ngs22 = 56
-      integer(kind=im), parameter :: ngs23 = 66
-      integer(kind=im), parameter :: ngs24 = 74
-      integer(kind=im), parameter :: ngs25 = 80
-      integer(kind=im), parameter :: ngs26 = 86
-      integer(kind=im), parameter :: ngs27 = 94
-      integer(kind=im), parameter :: ngs28 = 100
-      integer(kind=im), parameter :: ngs29 = 112
+      integer , parameter :: ngs16 = 6
+      integer , parameter :: ngs17 = 18
+      integer , parameter :: ngs18 = 26
+      integer , parameter :: ngs19 = 34
+      integer , parameter :: ngs20 = 44
+      integer , parameter :: ngs21 = 54
+      integer , parameter :: ngs22 = 56
+      integer , parameter :: ngs23 = 66
+      integer , parameter :: ngs24 = 74
+      integer , parameter :: ngs25 = 80
+      integer , parameter :: ngs26 = 86
+      integer , parameter :: ngs27 = 94
+      integer , parameter :: ngs28 = 100
+      integer , parameter :: ngs29 = 112
 
 ! Use for 224 g-point model   
-!      integer(kind=im), parameter :: ng16 = 16
-!      integer(kind=im), parameter :: ng17 = 16
-!      integer(kind=im), parameter :: ng18 = 16
-!      integer(kind=im), parameter :: ng19 = 16
-!      integer(kind=im), parameter :: ng20 = 16
-!      integer(kind=im), parameter :: ng21 = 16
-!      integer(kind=im), parameter :: ng22 = 16
-!      integer(kind=im), parameter :: ng23 = 16
-!      integer(kind=im), parameter :: ng24 = 16
-!      integer(kind=im), parameter :: ng25 = 16
-!      integer(kind=im), parameter :: ng26 = 16
-!      integer(kind=im), parameter :: ng27 = 16
-!      integer(kind=im), parameter :: ng28 = 16
-!      integer(kind=im), parameter :: ng29 = 16
+!      integer , parameter :: ng16 = 16
+!      integer , parameter :: ng17 = 16
+!      integer , parameter :: ng18 = 16
+!      integer , parameter :: ng19 = 16
+!      integer , parameter :: ng20 = 16
+!      integer , parameter :: ng21 = 16
+!      integer , parameter :: ng22 = 16
+!      integer , parameter :: ng23 = 16
+!      integer , parameter :: ng24 = 16
+!      integer , parameter :: ng25 = 16
+!      integer , parameter :: ng26 = 16
+!      integer , parameter :: ng27 = 16
+!      integer , parameter :: ng28 = 16
+!      integer , parameter :: ng29 = 16
 
-!      integer(kind=im), parameter :: ngs16 = 16
-!      integer(kind=im), parameter :: ngs17 = 32
-!      integer(kind=im), parameter :: ngs18 = 48
-!      integer(kind=im), parameter :: ngs19 = 64
-!      integer(kind=im), parameter :: ngs20 = 80
-!      integer(kind=im), parameter :: ngs21 = 96
-!      integer(kind=im), parameter :: ngs22 = 112
-!      integer(kind=im), parameter :: ngs23 = 128
-!      integer(kind=im), parameter :: ngs24 = 144
-!      integer(kind=im), parameter :: ngs25 = 160
-!      integer(kind=im), parameter :: ngs26 = 176
-!      integer(kind=im), parameter :: ngs27 = 192
-!      integer(kind=im), parameter :: ngs28 = 208
-!      integer(kind=im), parameter :: ngs29 = 224
+!      integer , parameter :: ngs16 = 16
+!      integer , parameter :: ngs17 = 32
+!      integer , parameter :: ngs18 = 48
+!      integer , parameter :: ngs19 = 64
+!      integer , parameter :: ngs20 = 80
+!      integer , parameter :: ngs21 = 96
+!      integer , parameter :: ngs22 = 112
+!      integer , parameter :: ngs23 = 128
+!      integer , parameter :: ngs24 = 144
+!      integer , parameter :: ngs25 = 160
+!      integer , parameter :: ngs26 = 176
+!      integer , parameter :: ngs27 = 192
+!      integer , parameter :: ngs28 = 208
+!      integer , parameter :: ngs29 = 224
 
 ! Source function solar constant
-      real(kind=rb), parameter :: rrsw_scon = 1.36822e+03     ! W/m2
+      real , parameter :: rrsw_scon = 1.36822e+03     ! W/m2
  
       end module parrrsw
 
       module rrsw_aer
 
-      use parkind, only : im => kind_im, rb => kind_rb
       use parrrsw, only : nbndsw, naerec
 
 !     implicit none
@@ -170,15 +187,13 @@
 ! rsrasya : real   : average asymmetry parameter (unitless)
 !------------------------------------------------------------------
 
-      real(kind=rb) :: rsrtaua(nbndsw,naerec)
-      real(kind=rb) :: rsrpiza(nbndsw,naerec)
-      real(kind=rb) :: rsrasya(nbndsw,naerec)
+      real  :: rsrtaua(nbndsw,naerec)
+      real  :: rsrpiza(nbndsw,naerec)
+      real  :: rsrasya(nbndsw,naerec)
 
       end module rrsw_aer
 
       module rrsw_cld
-
-      use parkind, only : im => kind_im, rb => kind_rb
 
 !     implicit none
       save
@@ -211,17 +226,15 @@
 !                    Ebert and Curry, jgr, 97, 3831-3836, 1992.
 !------------------------------------------------------------------
 
-      real(kind=rb) :: extliq1(58,16:29), ssaliq1(58,16:29), asyliq1(58,16:29)
-      real(kind=rb) :: extice2(43,16:29), ssaice2(43,16:29), asyice2(43,16:29)
-      real(kind=rb) :: extice3(46,16:29), ssaice3(46,16:29), asyice3(46,16:29)
-      real(kind=rb) :: fdlice3(46,16:29)
-      real(kind=rb) :: abari(5),bbari(5),cbari(5),dbari(5),ebari(5),fbari(5)
+      real  :: extliq1(58,16:29), ssaliq1(58,16:29), asyliq1(58,16:29)
+      real  :: extice2(43,16:29), ssaice2(43,16:29), asyice2(43,16:29)
+      real  :: extice3(46,16:29), ssaice3(46,16:29), asyice3(46,16:29)
+      real  :: fdlice3(46,16:29)
+      real  :: abari(5),bbari(5),cbari(5),dbari(5),ebari(5),fbari(5)
 
       end module rrsw_cld
 
       module rrsw_con
-
-      use parkind, only : im => kind_im, rb => kind_rb
 
 !     implicit none
       save
@@ -252,18 +265,17 @@
 !  secdy :  real   : seconds per day
 !------------------------------------------------------------------
 
-      real(kind=rb) :: fluxfac, heatfac
-      real(kind=rb) :: oneminus, pi, grav
-      real(kind=rb) :: planck, boltz, clight
-      real(kind=rb) :: avogad, alosmt, gascon
-      real(kind=rb) :: radcn1, radcn2
-      real(kind=rb) :: sbcnst, secdy
+      real  :: fluxfac, heatfac
+      real  :: oneminus, pi, grav
+      real  :: planck, boltz, clight
+      real  :: avogad, alosmt, gascon
+      real  :: radcn1, radcn2
+      real  :: sbcnst, secdy
 
       end module rrsw_con
 
       module rrsw_kg16
 
-      use parkind ,only : im => kind_im, rb => kind_rb
       use parrrsw, only : ng16
 
 !     implicit none
@@ -287,15 +299,15 @@
 !sfluxrefo: real     
 !-----------------------------------------------------------------
 
-      integer(kind=im), parameter :: no16 = 16
+      integer , parameter :: no16 = 16
 
-      real(kind=rb) :: kao(9,5,13,no16)
-      real(kind=rb) :: kbo(5,13:59,no16)
-      real(kind=rb) :: selfrefo(10,no16), forrefo(3,no16)
-      real(kind=rb) :: sfluxrefo(no16)
+      real  :: kao(9,5,13,no16)
+      real  :: kbo(5,13:59,no16)
+      real  :: selfrefo(10,no16), forrefo(3,no16)
+      real  :: sfluxrefo(no16)
 
-      integer(kind=im) :: layreffr
-      real(kind=rb) :: rayl, strrat1
+      integer :: layreffr
+      real  :: rayl, strrat1
 
 !-----------------------------------------------------------------
 ! rrtmg_sw COMBINED abs. coefficients for interval 16
@@ -317,10 +329,10 @@
 ! sfluxref: real     
 !-----------------------------------------------------------------
 
-      real(kind=rb) :: ka(9,5,13,ng16) , absa(585,ng16)
-      real(kind=rb) :: kb(5,13:59,ng16), absb(235,ng16)
-      real(kind=rb) :: selfref(10,ng16), forref(3,ng16)
-      real(kind=rb) :: sfluxref(ng16)
+      real  :: ka(9,5,13,ng16) , absa(585,ng16)
+      real  :: kb(5,13:59,ng16), absb(235,ng16)
+      real  :: selfref(10,ng16), forref(3,ng16)
+      real  :: sfluxref(ng16)
 
       equivalence (ka(1,1,1,1),absa(1,1)), (kb(1,13,1),absb(1,1))
 
@@ -328,7 +340,6 @@
 
       module rrsw_kg17
 
-      use parkind ,only : im => kind_im, rb => kind_rb
       use parrrsw, only : ng17
 
 !     implicit none
@@ -352,15 +363,15 @@
 !sfluxrefo: real     
 !-----------------------------------------------------------------
 
-      integer(kind=im), parameter :: no17 = 16
+      integer , parameter :: no17 = 16
 
-      real(kind=rb) :: kao(9,5,13,no17)
-      real(kind=rb) :: kbo(5,5,13:59,no17)
-      real(kind=rb) :: selfrefo(10,no17), forrefo(4,no17)
-      real(kind=rb) :: sfluxrefo(no17,5)
+      real  :: kao(9,5,13,no17)
+      real  :: kbo(5,5,13:59,no17)
+      real  :: selfrefo(10,no17), forrefo(4,no17)
+      real  :: sfluxrefo(no17,5)
 
-      integer(kind=im) :: layreffr
-      real(kind=rb) :: rayl, strrat
+      integer :: layreffr
+      real  :: rayl, strrat
 
 !-----------------------------------------------------------------
 ! rrtmg_sw COMBINED abs. coefficients for interval 17
@@ -382,10 +393,10 @@
 ! sfluxref: real     
 !-----------------------------------------------------------------
 
-      real(kind=rb) :: ka(9,5,13,ng17) , absa(585,ng17)
-      real(kind=rb) :: kb(5,5,13:59,ng17), absb(1175,ng17)
-      real(kind=rb) :: selfref(10,ng17), forref(4,ng17)
-      real(kind=rb) :: sfluxref(ng17,5)
+      real  :: ka(9,5,13,ng17) , absa(585,ng17)
+      real  :: kb(5,5,13:59,ng17), absb(1175,ng17)
+      real  :: selfref(10,ng17), forref(4,ng17)
+      real  :: sfluxref(ng17,5)
 
       equivalence (ka(1,1,1,1),absa(1,1)), (kb(1,1,13,1),absb(1,1))
 
@@ -393,7 +404,6 @@
 
       module rrsw_kg18
 
-      use parkind ,only : im => kind_im, rb => kind_rb
       use parrrsw, only : ng18
 
 !     implicit none
@@ -417,15 +427,15 @@
 !sfluxrefo: real     
 !-----------------------------------------------------------------
 
-      integer(kind=im), parameter :: no18 = 16
+      integer , parameter :: no18 = 16
 
-      real(kind=rb) :: kao(9,5,13,no18)
-      real(kind=rb) :: kbo(5,13:59,no18)
-      real(kind=rb) :: selfrefo(10,no18), forrefo(3,no18)
-      real(kind=rb) :: sfluxrefo(no18,9)
+      real  :: kao(9,5,13,no18)
+      real  :: kbo(5,13:59,no18)
+      real  :: selfrefo(10,no18), forrefo(3,no18)
+      real  :: sfluxrefo(no18,9)
 
-      integer(kind=im) :: layreffr
-      real(kind=rb) :: rayl, strrat
+      integer :: layreffr
+      real  :: rayl, strrat
 
 !-----------------------------------------------------------------
 ! rrtmg_sw COMBINED abs. coefficients for interval 18
@@ -447,10 +457,10 @@
 ! sfluxref: real     
 !-----------------------------------------------------------------
 
-      real(kind=rb) :: ka(9,5,13,ng18), absa(585,ng18)
-      real(kind=rb) :: kb(5,13:59,ng18), absb(235,ng18)
-      real(kind=rb) :: selfref(10,ng18), forref(3,ng18)
-      real(kind=rb) :: sfluxref(ng18,9)
+      real  :: ka(9,5,13,ng18), absa(585,ng18)
+      real  :: kb(5,13:59,ng18), absb(235,ng18)
+      real  :: selfref(10,ng18), forref(3,ng18)
+      real  :: sfluxref(ng18,9)
 
       equivalence (ka(1,1,1,1),absa(1,1)), (kb(1,13,1),absb(1,1))
 
@@ -458,7 +468,6 @@
 
       module rrsw_kg19
 
-      use parkind ,only : im => kind_im, rb => kind_rb
       use parrrsw, only : ng19
 
 !     implicit none
@@ -482,15 +491,15 @@
 !sfluxrefo: real     
 !-----------------------------------------------------------------
 
-      integer(kind=im), parameter :: no19 = 16
+      integer , parameter :: no19 = 16
 
-      real(kind=rb) :: kao(9,5,13,no19)
-      real(kind=rb) :: kbo(5,13:59,no19)
-      real(kind=rb) :: selfrefo(10,no19), forrefo(3,no19)
-      real(kind=rb) :: sfluxrefo(no19,9)
+      real  :: kao(9,5,13,no19)
+      real  :: kbo(5,13:59,no19)
+      real  :: selfrefo(10,no19), forrefo(3,no19)
+      real  :: sfluxrefo(no19,9)
 
-      integer(kind=im) :: layreffr
-      real(kind=rb) :: rayl, strrat
+      integer :: layreffr
+      real  :: rayl, strrat
 
 !-----------------------------------------------------------------
 ! rrtmg_sw COMBINED abs. coefficients for interval 19
@@ -512,10 +521,10 @@
 ! sfluxref: real     
 !-----------------------------------------------------------------
 
-      real(kind=rb) :: ka(9,5,13,ng19), absa(585,ng19)
-      real(kind=rb) :: kb(5,13:59,ng19), absb(235,ng19)
-      real(kind=rb) :: selfref(10,ng19), forref(3,ng19)
-      real(kind=rb) :: sfluxref(ng19,9)
+      real  :: ka(9,5,13,ng19), absa(585,ng19)
+      real  :: kb(5,13:59,ng19), absb(235,ng19)
+      real  :: selfref(10,ng19), forref(3,ng19)
+      real  :: sfluxref(ng19,9)
 
       equivalence (ka(1,1,1,1),absa(1,1)), (kb(1,13,1),absb(1,1))
 
@@ -523,7 +532,6 @@
 
       module rrsw_kg20
 
-      use parkind ,only : im => kind_im, rb => kind_rb
       use parrrsw, only : ng20
 
 !     implicit none
@@ -548,16 +556,16 @@
 ! absch4o : real     
 !-----------------------------------------------------------------
 
-      integer(kind=im), parameter :: no20 = 16
+      integer , parameter :: no20 = 16
 
-      real(kind=rb) :: kao(5,13,no20)
-      real(kind=rb) :: kbo(5,13:59,no20)
-      real(kind=rb) :: selfrefo(10,no20), forrefo(4,no20)
-      real(kind=rb) :: sfluxrefo(no20)
-      real(kind=rb) :: absch4o(no20)
+      real  :: kao(5,13,no20)
+      real  :: kbo(5,13:59,no20)
+      real  :: selfrefo(10,no20), forrefo(4,no20)
+      real  :: sfluxrefo(no20)
+      real  :: absch4o(no20)
 
-      integer(kind=im) :: layreffr
-      real(kind=rb) :: rayl 
+      integer :: layreffr
+      real  :: rayl 
 
 !-----------------------------------------------------------------
 ! rrtmg_sw COMBINED abs. coefficients for interval 20
@@ -580,11 +588,11 @@
 ! absch4  : real     
 !-----------------------------------------------------------------
 
-      real(kind=rb) :: ka(5,13,ng20), absa(65,ng20)
-      real(kind=rb) :: kb(5,13:59,ng20), absb(235,ng20)
-      real(kind=rb) :: selfref(10,ng20), forref(4,ng20)
-      real(kind=rb) :: sfluxref(ng20)
-      real(kind=rb) :: absch4(ng20)
+      real  :: ka(5,13,ng20), absa(65,ng20)
+      real  :: kb(5,13:59,ng20), absb(235,ng20)
+      real  :: selfref(10,ng20), forref(4,ng20)
+      real  :: sfluxref(ng20)
+      real  :: absch4(ng20)
 
       equivalence (ka(1,1,1),absa(1,1)), (kb(1,13,1),absb(1,1))
 
@@ -592,7 +600,6 @@
 
       module rrsw_kg21
 
-      use parkind ,only : im => kind_im, rb => kind_rb
       use parrrsw, only : ng21
 
 !     implicit none
@@ -616,15 +623,15 @@
 !sfluxrefo: real     
 !-----------------------------------------------------------------
 
-      integer(kind=im), parameter :: no21 = 16
+      integer , parameter :: no21 = 16
 
-      real(kind=rb) :: kao(9,5,13,no21)
-      real(kind=rb) :: kbo(5,5,13:59,no21)
-      real(kind=rb) :: selfrefo(10,no21), forrefo(4,no21)
-      real(kind=rb) :: sfluxrefo(no21,9)
+      real  :: kao(9,5,13,no21)
+      real  :: kbo(5,5,13:59,no21)
+      real  :: selfrefo(10,no21), forrefo(4,no21)
+      real  :: sfluxrefo(no21,9)
 
-      integer(kind=im) :: layreffr
-      real(kind=rb) :: rayl, strrat
+      integer :: layreffr
+      real  :: rayl, strrat
 
 !-----------------------------------------------------------------
 ! rrtmg_sw COMBINED abs. coefficients for interval 21
@@ -646,10 +653,10 @@
 ! sfluxref: real     
 !-----------------------------------------------------------------
 
-      real(kind=rb) :: ka(9,5,13,ng21), absa(585,ng21)
-      real(kind=rb) :: kb(5,5,13:59,ng21), absb(1175,ng21)
-      real(kind=rb) :: selfref(10,ng21), forref(4,ng21)
-      real(kind=rb) :: sfluxref(ng21,9)
+      real  :: ka(9,5,13,ng21), absa(585,ng21)
+      real  :: kb(5,5,13:59,ng21), absb(1175,ng21)
+      real  :: selfref(10,ng21), forref(4,ng21)
+      real  :: sfluxref(ng21,9)
 
       equivalence (ka(1,1,1,1),absa(1,1)), (kb(1,1,13,1),absb(1,1))
 
@@ -657,7 +664,6 @@
 
       module rrsw_kg22
 
-      use parkind ,only : im => kind_im, rb => kind_rb
       use parrrsw, only : ng22
 
 !     implicit none
@@ -681,15 +687,15 @@
 !sfluxrefo: real     
 !-----------------------------------------------------------------
 
-      integer(kind=im), parameter :: no22 = 16
+      integer , parameter :: no22 = 16
 
-      real(kind=rb) :: kao(9,5,13,no22)
-      real(kind=rb) :: kbo(5,13:59,no22)
-      real(kind=rb) :: selfrefo(10,no22), forrefo(3,no22)
-      real(kind=rb) :: sfluxrefo(no22,9)
+      real  :: kao(9,5,13,no22)
+      real  :: kbo(5,13:59,no22)
+      real  :: selfrefo(10,no22), forrefo(3,no22)
+      real  :: sfluxrefo(no22,9)
 
-      integer(kind=im) :: layreffr
-      real(kind=rb) :: rayl, strrat
+      integer :: layreffr
+      real  :: rayl, strrat
 
 !-----------------------------------------------------------------
 ! rrtmg_sw COMBINED abs. coefficients for interval 22
@@ -711,10 +717,10 @@
 ! sfluxref: real     
 !-----------------------------------------------------------------
 
-      real(kind=rb) :: ka(9,5,13,ng22), absa(585,ng22)
-      real(kind=rb) :: kb(5,13:59,ng22), absb(235,ng22)
-      real(kind=rb) :: selfref(10,ng22), forref(3,ng22)
-      real(kind=rb) :: sfluxref(ng22,9)
+      real  :: ka(9,5,13,ng22), absa(585,ng22)
+      real  :: kb(5,13:59,ng22), absb(235,ng22)
+      real  :: selfref(10,ng22), forref(3,ng22)
+      real  :: sfluxref(ng22,9)
 
       equivalence (ka(1,1,1,1),absa(1,1)), (kb(1,13,1),absb(1,1))
 
@@ -722,7 +728,6 @@
 
       module rrsw_kg23
 
-      use parkind ,only : im => kind_im, rb => kind_rb
       use parrrsw, only : ng23
 
 !     implicit none
@@ -746,15 +751,15 @@
 !sfluxrefo: real     
 !-----------------------------------------------------------------
 
-      integer(kind=im), parameter :: no23 = 16
+      integer , parameter :: no23 = 16
 
-      real(kind=rb) :: kao(5,13,no23)
-      real(kind=rb) :: selfrefo(10,no23), forrefo(3,no23)
-      real(kind=rb) :: sfluxrefo(no23)
-      real(kind=rb) :: raylo(no23)
+      real  :: kao(5,13,no23)
+      real  :: selfrefo(10,no23), forrefo(3,no23)
+      real  :: sfluxrefo(no23)
+      real  :: raylo(no23)
 
-      integer(kind=im) :: layreffr
-      real(kind=rb) :: givfac
+      integer :: layreffr
+      real :: givfac
 
 !-----------------------------------------------------------------
 ! rrtmg_sw COMBINED abs. coefficients for interval 23
@@ -776,9 +781,9 @@
 ! sfluxref: real     
 !-----------------------------------------------------------------
 
-      real(kind=rb) :: ka(5,13,ng23), absa(65,ng23)
-      real(kind=rb) :: selfref(10,ng23), forref(3,ng23)
-      real(kind=rb) :: sfluxref(ng23), rayl(ng23)
+      real  :: ka(5,13,ng23), absa(65,ng23)
+      real  :: selfref(10,ng23), forref(3,ng23)
+      real  :: sfluxref(ng23), rayl(ng23)
 
       equivalence (ka(1,1,1),absa(1,1))
 
@@ -786,7 +791,6 @@
 
       module rrsw_kg24
 
-      use parkind ,only : im => kind_im, rb => kind_rb
       use parrrsw, only : ng24
 
 !     implicit none
@@ -814,17 +818,17 @@
 ! raylbo  : real     
 !-----------------------------------------------------------------
 
-      integer(kind=im), parameter :: no24 = 16
+      integer , parameter :: no24 = 16
 
-      real(kind=rb) :: kao(9,5,13,no24)
-      real(kind=rb) :: kbo(5,13:59,no24)
-      real(kind=rb) :: selfrefo(10,no24), forrefo(3,no24)
-      real(kind=rb) :: sfluxrefo(no24,9)
-      real(kind=rb) :: abso3ao(no24), abso3bo(no24)
-      real(kind=rb) :: raylao(no24,9), raylbo(no24)
+      real  :: kao(9,5,13,no24)
+      real  :: kbo(5,13:59,no24)
+      real  :: selfrefo(10,no24), forrefo(3,no24)
+      real  :: sfluxrefo(no24,9)
+      real  :: abso3ao(no24), abso3bo(no24)
+      real  :: raylao(no24,9), raylbo(no24)
 
-      integer(kind=im) :: layreffr
-      real(kind=rb) :: strrat
+      integer :: layreffr
+      real :: strrat
 
 !-----------------------------------------------------------------
 ! rrtmg_sw COMBINED abs. coefficients for interval 24
@@ -850,12 +854,12 @@
 ! raylb   : real     
 !-----------------------------------------------------------------
 
-      real(kind=rb) :: ka(9,5,13,ng24), absa(585,ng24)
-      real(kind=rb) :: kb(5,13:59,ng24), absb(235,ng24)
-      real(kind=rb) :: selfref(10,ng24), forref(3,ng24)
-      real(kind=rb) :: sfluxref(ng24,9)
-      real(kind=rb) :: abso3a(ng24), abso3b(ng24)
-      real(kind=rb) :: rayla(ng24,9), raylb(ng24)
+      real  :: ka(9,5,13,ng24), absa(585,ng24)
+      real  :: kb(5,13:59,ng24), absb(235,ng24)
+      real  :: selfref(10,ng24), forref(3,ng24)
+      real  :: sfluxref(ng24,9)
+      real  :: abso3a(ng24), abso3b(ng24)
+      real  :: rayla(ng24,9), raylb(ng24)
 
       equivalence (ka(1,1,1,1),absa(1,1)), (kb(1,13,1),absb(1,1))
 
@@ -863,7 +867,6 @@
 
       module rrsw_kg25
 
-      use parkind ,only : im => kind_im, rb => kind_rb
       use parrrsw, only : ng25
 
 !     implicit none
@@ -887,14 +890,14 @@
 ! raylo   : real     
 !-----------------------------------------------------------------
 
-      integer(kind=im), parameter :: no25 = 16
+      integer , parameter :: no25 = 16
 
-      real(kind=rb) :: kao(5,13,no25)
-      real(kind=rb) :: sfluxrefo(no25)
-      real(kind=rb) :: abso3ao(no25), abso3bo(no25)
-      real(kind=rb) :: raylo(no25)
+      real  :: kao(5,13,no25)
+      real  :: sfluxrefo(no25)
+      real  :: abso3ao(no25), abso3bo(no25)
+      real  :: raylo(no25)
 
-      integer(kind=im) :: layreffr
+      integer :: layreffr
 
 !-----------------------------------------------------------------
 ! rrtmg_sw COMBINED abs. coefficients for interval 25
@@ -915,10 +918,10 @@
 ! rayl    : real     
 !-----------------------------------------------------------------
 
-      real(kind=rb) :: ka(5,13,ng25), absa(65,ng25)
-      real(kind=rb) :: sfluxref(ng25)
-      real(kind=rb) :: abso3a(ng25), abso3b(ng25)
-      real(kind=rb) :: rayl(ng25)
+      real  :: ka(5,13,ng25), absa(65,ng25)
+      real  :: sfluxref(ng25)
+      real  :: abso3a(ng25), abso3b(ng25)
+      real  :: rayl(ng25)
 
       equivalence (ka(1,1,1),absa(1,1))
 
@@ -926,7 +929,6 @@
 
       module rrsw_kg26
 
-      use parkind ,only : im => kind_im, rb => kind_rb
       use parrrsw, only : ng26
 
 !     implicit none
@@ -947,10 +949,10 @@
 ! raylo   : real     
 !-----------------------------------------------------------------
 
-      integer(kind=im), parameter :: no26 = 16
+      integer , parameter :: no26 = 16
 
-      real(kind=rb) :: sfluxrefo(no26)
-      real(kind=rb) :: raylo(no26)
+      real  :: sfluxrefo(no26)
+      real  :: raylo(no26)
 
 !-----------------------------------------------------------------
 ! rrtmg_sw COMBINED abs. coefficients for interval 26
@@ -967,14 +969,13 @@
 ! rayl    : real     
 !-----------------------------------------------------------------
 
-      real(kind=rb) :: sfluxref(ng26)
-      real(kind=rb) :: rayl(ng26)
+      real  :: sfluxref(ng26)
+      real  :: rayl(ng26)
 
       end module rrsw_kg26
 
       module rrsw_kg27
 
-      use parkind ,only : im => kind_im, rb => kind_rb
       use parrrsw, only : ng27
 
 !     implicit none
@@ -997,15 +998,15 @@
 ! raylo   : real     
 !-----------------------------------------------------------------
 
-      integer(kind=im), parameter :: no27 = 16
+      integer , parameter :: no27 = 16
 
-      real(kind=rb) :: kao(5,13,no27)
-      real(kind=rb) :: kbo(5,13:59,no27)
-      real(kind=rb) :: sfluxrefo(no27)
-      real(kind=rb) :: raylo(no27)
+      real  :: kao(5,13,no27)
+      real  :: kbo(5,13:59,no27)
+      real  :: sfluxrefo(no27)
+      real  :: raylo(no27)
 
-      integer(kind=im) :: layreffr
-      real(kind=rb) :: scalekur
+      integer :: layreffr
+      real :: scalekur
 
 !-----------------------------------------------------------------
 ! rrtmg_sw COMBINED abs. coefficients for interval 27
@@ -1026,10 +1027,10 @@
 ! rayl    : real     
 !-----------------------------------------------------------------
 
-      real(kind=rb) :: ka(5,13,ng27), absa(65,ng27)
-      real(kind=rb) :: kb(5,13:59,ng27), absb(235,ng27)
-      real(kind=rb) :: sfluxref(ng27)
-      real(kind=rb) :: rayl(ng27)
+      real  :: ka(5,13,ng27), absa(65,ng27)
+      real  :: kb(5,13:59,ng27), absb(235,ng27)
+      real  :: sfluxref(ng27)
+      real  :: rayl(ng27)
 
       equivalence (ka(1,1,1),absa(1,1)), (kb(1,13,1),absb(1,1))
 
@@ -1037,7 +1038,6 @@
 
       module rrsw_kg28
 
-      use parkind ,only : im => kind_im, rb => kind_rb
       use parrrsw, only : ng28
 
 !     implicit none
@@ -1059,14 +1059,14 @@
 !sfluxrefo: real     
 !-----------------------------------------------------------------
 
-      integer(kind=im), parameter :: no28 = 16
+      integer , parameter :: no28 = 16
 
-      real(kind=rb) :: kao(9,5,13,no28)
-      real(kind=rb) :: kbo(5,5,13:59,no28)
-      real(kind=rb) :: sfluxrefo(no28,5)
+      real  :: kao(9,5,13,no28)
+      real  :: kbo(5,5,13:59,no28)
+      real  :: sfluxrefo(no28,5)
 
-      integer(kind=im) :: layreffr
-      real(kind=rb) :: rayl, strrat
+      integer :: layreffr
+      real  :: rayl, strrat
 
 !-----------------------------------------------------------------
 ! rrtmg_sw COMBINED abs. coefficients for interval 28
@@ -1084,9 +1084,9 @@
 ! sfluxref: real     
 !-----------------------------------------------------------------
 
-      real(kind=rb) :: ka(9,5,13,ng28), absa(585,ng28)
-      real(kind=rb) :: kb(5,5,13:59,ng28), absb(1175,ng28)
-      real(kind=rb) :: sfluxref(ng28,5)
+      real  :: ka(9,5,13,ng28), absa(585,ng28)
+      real  :: kb(5,5,13:59,ng28), absb(1175,ng28)
+      real  :: sfluxref(ng28,5)
 
       equivalence (ka(1,1,1,1),absa(1,1)), (kb(1,1,13,1),absb(1,1))
 
@@ -1094,7 +1094,6 @@
 
       module rrsw_kg29
 
-      use parkind ,only : im => kind_im, rb => kind_rb
       use parrrsw, only : ng29
 
 !     implicit none
@@ -1120,16 +1119,16 @@
 ! absco2o : real     
 !-----------------------------------------------------------------
 
-      integer(kind=im), parameter :: no29 = 16
+      integer , parameter :: no29 = 16
 
-      real(kind=rb) :: kao(5,13,no29)
-      real(kind=rb) :: kbo(5,13:59,no29)
-      real(kind=rb) :: selfrefo(10,no29), forrefo(4,no29)
-      real(kind=rb) :: sfluxrefo(no29)
-      real(kind=rb) :: absh2oo(no29), absco2o(no29)
+      real  :: kao(5,13,no29)
+      real  :: kbo(5,13:59,no29)
+      real  :: selfrefo(10,no29), forrefo(4,no29)
+      real  :: sfluxrefo(no29)
+      real  :: absh2oo(no29), absco2o(no29)
 
-      integer(kind=im) :: layreffr
-      real(kind=rb) :: rayl
+      integer :: layreffr
+      real  :: rayl
 
 !-----------------------------------------------------------------
 ! rrtmg_sw COMBINED abs. coefficients for interval 29
@@ -1151,11 +1150,11 @@
 ! absco2  : real     
 !-----------------------------------------------------------------
 
-      real(kind=rb) :: ka(5,13,ng29), absa(65,ng29)
-      real(kind=rb) :: kb(5,13:59,ng29), absb(235,ng29)
-      real(kind=rb) :: selfref(10,ng29), forref(4,ng29)
-      real(kind=rb) :: sfluxref(ng29)
-      real(kind=rb) :: absh2o(ng29), absco2(ng29)
+      real  :: ka(5,13,ng29), absa(65,ng29)
+      real  :: kb(5,13:59,ng29), absb(235,ng29)
+      real  :: selfref(10,ng29), forref(4,ng29)
+      real  :: sfluxref(ng29)
+      real  :: absh2o(ng29), absco2(ng29)
 
       equivalence (ka(1,1,1),absa(1,1)), (kb(1,13,1),absb(1,1))
 
@@ -1163,9 +1162,7 @@
 
       module rrsw_ref
 
-      use parkind, only : im => kind_im, rb => kind_rb
-
-!     implicit none
+!      implicit none
       save
 
 !------------------------------------------------------------------
@@ -1184,15 +1181,13 @@
 ! tref   :  real   : Reference temperature levels for MLS profile
 !------------------------------------------------------------------
 
-      real(kind=rb) , dimension(59) :: pref
-      real(kind=rb) , dimension(59) :: preflog
-      real(kind=rb) , dimension(59) :: tref
+      real  , dimension(59) :: pref
+      real  , dimension(59) :: preflog
+      real  , dimension(59) :: tref
 
       end module rrsw_ref
 
       module rrsw_tbl
-
-      use parkind, only : im => kind_im, rb => kind_rb
 
 !     implicit none
       save
@@ -1217,17 +1212,17 @@
 ! bpade  :  real   : Inverse of Pade constant
 !------------------------------------------------------------------
 
-      integer(kind=im), parameter :: ntbl = 10000
+      integer , parameter :: ntbl = 10000
 
-      real(kind=rb), parameter :: tblint = 10000.0_rb
+      real , parameter :: tblint = 10000.0 
 
-      real(kind=rb), parameter :: od_lo = 0.06_rb
+      real , parameter :: od_lo = 0.06 
 
-      real(kind=rb) :: tau_tbl
-      real(kind=rb) , dimension(0:ntbl) :: exp_tbl
+      real :: tau_tbl
+      real , dimension(0:ntbl) :: exp_tbl
 
-      real(kind=rb), parameter :: pade = 0.278_rb
-      real(kind=rb) :: bpade
+      real , parameter :: pade = 0.278 
+      real :: bpade
 
       end module rrsw_tbl
 
@@ -1289,7 +1284,6 @@
 
       module rrsw_wvn
 
-      use parkind, only : im => kind_im, rb => kind_rb
       use parrrsw, only : nbndsw, mg, ngptsw, jpb1, jpb2
 
 !     implicit none
@@ -1325,198 +1319,53 @@
 !                    (112 total)
 !------------------------------------------------------------------
 
-      integer(kind=im) :: ng(jpb1:jpb2)
-      integer(kind=im) :: nspa(jpb1:jpb2)
-      integer(kind=im) :: nspb(jpb1:jpb2)
+      integer  :: ng(jpb1:jpb2)
+      integer  :: nspa(jpb1:jpb2)
+      integer  :: nspb(jpb1:jpb2)
 
-      real(kind=rb) :: wavenum1(jpb1:jpb2)
-      real(kind=rb) :: wavenum2(jpb1:jpb2)
-      real(kind=rb) :: delwave(jpb1:jpb2)
+      real  :: wavenum1(jpb1:jpb2)
+      real  :: wavenum2(jpb1:jpb2)
+      real  :: delwave(jpb1:jpb2)
+      integer :: icxa(jpb1:jpb2)
 
-      integer(kind=im) :: ngc(nbndsw)
-      integer(kind=im) :: ngs(nbndsw)
-      integer(kind=im) :: ngn(ngptsw)
-      integer(kind=im) :: ngb(ngptsw)
-      integer(kind=im) :: ngm(nbndsw*mg)
+      integer  :: ngc(nbndsw)
+      integer  :: ngs(nbndsw)
+      integer  :: ngn(ngptsw)
+      integer  :: ngb(ngptsw)
+      integer  :: ngm(nbndsw*mg)
 
-      real(kind=rb) :: wt(mg)
-      real(kind=rb) :: rwgt(nbndsw*mg)
+      real  :: wt(mg)
+      real  :: rwgt(nbndsw*mg)
 
       end module rrsw_wvn
 
-!     path:      $Source: /cvsroot/NWP/WRFV3/phys/module_ra_rrtmg_sw.F,v $
-!     author:    $Author: trn $
-!     revision:  $Revision: 1.3 $
-!     created:   $Date: 2009/04/16 19:54:22 $
-!
+
       module mcica_subcol_gen_sw
 
-!  --------------------------------------------------------------------------
-! |                                                                          |
-! |  Copyright 2006-2008, Atmospheric & Environmental Research, Inc. (AER).  |
-! |  This software may be used, copied, or redistributed as long as it is    |
-! |  not sold and this copyright notice is reproduced on each copy made.     |
-! |  This model is provided as is without any express or implied warranties. |
-! |                       (http://www.rtweb.aer.com/)                        |
-! |                                                                          |
-!  --------------------------------------------------------------------------
-
-! Purpose: Create McICA stochastic arrays for cloud physical or optical properties.   
-! Two options are possible:
-! 1) Input cloud physical properties: cloud fraction, ice and liquid water
-!    paths, ice fraction, and particle sizes.  Output will be stochastic
-!    arrays of these variables.  (inflag = 1)
-! 2) Input cloud optical properties directly: cloud optical depth, single
-!    scattering albedo and asymmetry parameter.  Output will be stochastic
-!    arrays of these variables.  (inflag = 0)
-
-! --------- Modules ----------
-
-      use parkind, only : im => kind_im, rb => kind_rb
       use parrrsw, only : nbndsw, ngptsw
       use rrsw_con, only: grav
       use rrsw_wvn, only: ngb
       use rrsw_vsn
+! For GSFC, not needed for WRF
+!      use tab_xcw
 
       implicit none
 
-! public interfaces/functions/subroutines
-      public :: mcica_subcol_sw, generate_stochastic_clouds_sw
-
+      public :: mcica_sw      
+      
       contains
-
-!------------------------------------------------------------------
-! Public subroutines
-!------------------------------------------------------------------
-
-      subroutine mcica_subcol_sw(iplon, ncol, nlay, icld, permuteseed, irng, play, &
-                       cldfrac, ciwp, clwp, cswp, rei, rel, res, tauc, ssac, asmc, fsfc, &
-                       cldfmcl, ciwpmcl, clwpmcl, cswpmcl, reicmcl, relqmcl, resnmcl, &
-                       taucmcl, ssacmcl, asmcmcl, fsfcmcl)
-
-! ----- Input -----
-! Control
-      integer(kind=im), intent(in) :: iplon           ! column/longitude dimension
-      integer(kind=im), intent(in) :: ncol            ! number of columns
-      integer(kind=im), intent(in) :: nlay            ! number of model layers
-      integer(kind=im), intent(in) :: icld            ! clear/cloud, cloud overlap flag
-      integer(kind=im), intent(in) :: permuteseed     ! if the cloud generator is called multiple times,
-                                                      ! permute the seed between each call;
-                                                      ! between calls for LW and SW, recommended
-                                                      ! permuteseed differs by 'ngpt'
-      integer(kind=im), intent(inout) :: irng         ! flag for random number generator
-                                                      !  0 = kissvec
-                                                      !  1 = Mersenne Twister
-        
-! Atmosphere
-      real(kind=rb), intent(in) :: play(:,:)          ! layer pressures (mb) 
-                                                      !    Dimensions: (ncol,nlay)
-
-! Atmosphere/clouds - cldprop
-      real(kind=rb), intent(in) :: cldfrac(:,:)       ! layer cloud fraction
-                                                      !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: tauc(:,:,:)        ! in-cloud optical depth
-                                                      !    Dimensions: (nbndsw,ncol,nlay)
-      real(kind=rb), intent(in) :: ssac(:,:,:)        ! in-cloud single scattering albedo (non-delta scaled)
-                                                      !    Dimensions: (nbndsw,ncol,nlay)
-      real(kind=rb), intent(in) :: asmc(:,:,:)        ! in-cloud asymmetry parameter (non-delta scaled)
-                                                      !    Dimensions: (nbndsw,ncol,nlay)
-      real(kind=rb), intent(in) :: fsfc(:,:,:)        ! in-cloud forward scattering fraction (non-delta scaled)
-                                                      !    Dimensions: (nbndsw,ncol,nlay)
-      real(kind=rb), intent(in) :: ciwp(:,:)          ! in-cloud ice water path
-                                                      !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: clwp(:,:)          ! in-cloud liquid water path
-                                                      !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: cswp(:,:)          ! in-cloud snow water path
-                                                      !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: rei(:,:)           ! cloud ice particle size
-                                                      !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: rel(:,:)           ! cloud liquid particle size
-                                                      !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: res(:,:)           ! cloud snow particle size
-                                                      !    Dimensions: (ncol,nlay)
-
-! ----- Output -----
-! Atmosphere/clouds - cldprmc [mcica]
-      real(kind=rb), intent(out) :: cldfmcl(:,:,:)    ! cloud fraction [mcica]
-                                                      !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(out) :: ciwpmcl(:,:,:)    ! in-cloud ice water path [mcica]
-                                                      !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(out) :: clwpmcl(:,:,:)    ! in-cloud liquid water path [mcica]
-                                                      !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(out) :: cswpmcl(:,:,:)    ! in-cloud snow water path [mcica]
-                                                      !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(out) :: relqmcl(:,:)      ! liquid particle size (microns)
-                                                      !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(out) :: reicmcl(:,:)      ! ice partcle size (microns)
-                                                      !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(out) :: resnmcl(:,:)      ! snow partcle size (microns)
-                                                      !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(out) :: taucmcl(:,:,:)    ! in-cloud optical depth [mcica]
-                                                      !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(out) :: ssacmcl(:,:,:)    ! in-cloud single scattering albedo [mcica]
-                                                      !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(out) :: asmcmcl(:,:,:)    ! in-cloud asymmetry parameter [mcica]
-                                                      !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(out) :: fsfcmcl(:,:,:)    ! in-cloud forward scattering fraction [mcica]
-                                                      !    Dimensions: (ngptsw,ncol,nlay)
-
-! ----- Local -----
-
-! Stochastic cloud generator variables [mcica]
-      integer(kind=im), parameter :: nsubcsw = ngptsw ! number of sub-columns (g-point intervals)
-      integer(kind=im) :: ilev                        ! loop index
-
-      real(kind=rb) :: pmid(ncol,nlay)                ! layer pressures (Pa) 
-!      real(kind=rb) :: pdel(ncol,nlay)               ! layer pressure thickness (Pa) 
-!      real(kind=rb) :: qi(ncol,nlay)                 ! ice water (specific humidity)
-!      real(kind=rb) :: ql(ncol,nlay)                 ! liq water (specific humidity)
-
-
-! Return if clear sky; or stop if icld out of range
-      if (icld.eq.0) return
-      if (icld.lt.0.or.icld.gt.3) then 
-         stop 'MCICA_SUBCOL: INVALID ICLD'
-      endif 
-
-! NOTE: For GCM mode, permuteseed must be offset between LW and SW by at least number of subcolumns
-
-
-! Pass particle sizes to new arrays, no subcolumns for these properties yet
-! Convert pressures from mb to Pa
-
-      reicmcl(:ncol,:nlay) = rei(:ncol,:nlay)
-      relqmcl(:ncol,:nlay) = rel(:ncol,:nlay)
-      resnmcl(:ncol,:nlay) = res(:ncol,:nlay)
-      pmid(:ncol,:nlay) = play(:ncol,:nlay)*1.e2_rb
-
-! Convert input ice and liquid cloud water paths to specific humidity ice and liquid components 
-
-!      cwp =  (q * pdel * 1000.) / gravit)
-!           = (kg/kg * kg m-1 s-2 *1000.) / m s-2
-!           = (g m-2)
-!
-!      q  = (cwp * gravit) / (pdel *1000.)
-!         = (g m-2 * m s-2) / (kg m-1 s-2 * 1000.)
-!         =  kg/kg
-
-!      do ilev = 1, nlay
-!         qi(ilev) = (ciwp(ilev) * grav) / (pdel(ilev) * 1000._rb)
-!         ql(ilev) = (clwp(ilev) * grav) / (pdel(ilev) * 1000._rb)
-!      enddo
-
-!  Generate the stochastic subcolumns of cloud optical properties for the shortwave;
-      call generate_stochastic_clouds_sw (ncol, nlay, nsubcsw, icld, irng, pmid, cldfrac, clwp, ciwp, cswp, &
-                               tauc, ssac, asmc, fsfc, cldfmcl, clwpmcl, ciwpmcl, cswpmcl, &
-                               taucmcl, ssacmcl, asmcmcl, fsfcmcl, permuteseed)
-
-      end subroutine mcica_subcol_sw
-
-
 !-------------------------------------------------------------------------------------------------
-      subroutine generate_stochastic_clouds_sw(ncol, nlay, nsubcol, icld, irng, pmid, cld, clwp, ciwp, cswp, &
-                               tauc, ssac, asmc, fsfc, cld_stoch, clwp_stoch, ciwp_stoch, cswp_stoch,        &
-                               tauc_stoch, ssac_stoch, asmc_stoch, fsfc_stoch, changeSeed) 
+! mji - fixed order of clwp, ciwp, clwp_stoch, ciwp_stoch
+      subroutine mcica_sw(ncol, nlay, nsubcol, icld, irng, play, cld, ciwp, clwp, cswp, &
+                          tauc, ssac, asmc, fsfc, cld_stoch, ciwp_stoch, clwp_stoch, cswp_stoch, &
+!      subroutine mcica_sw(ncol, nlay, nsubcol, icld, irng, play, cld, clwp, ciwp, cswp, &
+!                          tauc, ssac, asmc, fsfc, cld_stoch, clwp_stoch, ciwp_stoch, cswp_stoch, &
+                          tauc_stoch, ssac_stoch, asmc_stoch, fsfc_stoch, changeSeed )
+! for inactive icld=4 option
+!                          CDF,&
+!                          CDF2, CDF3, alpha, &
+!                          zm, alat, &
+!                          DOY, rdl, adl) 
 !-------------------------------------------------------------------------------------------------
 
   !----------------------------------------------------------------------------------------------------------------
@@ -1575,265 +1424,339 @@
 
       use mcica_random_numbers
 ! The Mersenne Twister random number engine
-      use MersenneTwister, only: randomNumberSequence, &   
-                                 new_RandomNumberSequence, getRandomReal
+      !use MersenneTwister, only: randomNumberSequence, &   
+      !                           new_RandomNumberSequence, getRandomReal
 
-      type(randomNumberSequence) :: randomNumbers
+      !type(randomNumberSequence) :: randomNumbers
 
 ! -- Arguments
 
-      integer(kind=im), intent(in) :: ncol            ! number of layers
-      integer(kind=im), intent(in) :: nlay            ! number of layers
-      integer(kind=im), intent(in) :: icld            ! clear/cloud, cloud overlap flag
-      integer(kind=im), intent(inout) :: irng         ! flag for random number generator
+      integer , intent(in) :: ncol            ! number of layers
+      integer , intent(in) :: nlay            ! number of layers
+      integer , intent(in) :: icld            ! clear/cloud, cloud overlap flag
+      integer , intent(inout) :: irng         ! flag for random number generator
                                                       !  0 = kissvec
                                                       !  1 = Mersenne Twister
-      integer(kind=im), intent(in) :: nsubcol         ! number of sub-columns (g-point intervals)
-      integer(kind=im), optional, intent(in) :: changeSeed     ! allows permuting seed
+      integer , intent(in) :: nsubcol         ! number of sub-columns (g-point intervals)
+      integer , optional, intent(in) :: changeSeed     ! allows permuting seed
 
 ! Column state (cloud fraction, cloud water, cloud ice) + variables needed to read physics state 
-      real(kind=rb), intent(in) :: pmid(:,:)          ! layer pressure (Pa)
+      real , intent(in) :: play(:,:)          ! layer pressure (Pa)
                                                       !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: cld(:,:)           ! cloud fraction 
+      real , intent(in) :: cld(:,:)           ! cloud fraction 
                                                       !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: clwp(:,:)          ! in-cloud liquid water path (g/m2)
+      real , intent(in) :: clwp(:,:)          ! in-cloud liquid water path (g/m2)
                                                       !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: ciwp(:,:)          ! in-cloud ice water path (g/m2)
+      real , intent(in) :: ciwp(:,:)          ! in-cloud ice water path (g/m2)
                                                       !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: cswp(:,:)          ! in-cloud snow water path (g/m2)
+      real , intent(in) :: cswp(:,:)          ! in-cloud snow water path (g/m2)
                                                       !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: tauc(:,:,:)        ! in-cloud optical depth (non-delta scaled)
-                                                      !    Dimensions: (nbndsw,ncol,nlay)
-      real(kind=rb), intent(in) :: ssac(:,:,:)        ! in-cloud single scattering albedo (non-delta scaled)
-                                                      !    Dimensions: (nbndsw,ncol,nlay)
-      real(kind=rb), intent(in) :: asmc(:,:,:)        ! in-cloud asymmetry parameter (non-delta scaled)
-                                                      !    Dimensions: (nbndsw,ncol,nlay)
-      real(kind=rb), intent(in) :: fsfc(:,:,:)        ! in-cloud forward scattering fraction (non-delta scaled)
-                                                      !    Dimensions: (nbndsw,ncol,nlay)
-
-      real(kind=rb), intent(out) :: cld_stoch(:,:,:)  ! subcolumn cloud fraction 
+      real , intent(in) :: tauc(:,:,:)        ! in-cloud optical depth (non-delta scaled)
+                                                      !    Dimensions: (ncol,nlay,nbndsw)
+      real , intent(in) :: ssac(:,:,:)        ! in-cloud single scattering albedo (non-delta scaled)
+                                                      !    Dimensions: (ncol,nlay,nbndsw)
+      real , intent(in) :: asmc(:,:,:)        ! in-cloud asymmetry parameter (non-delta scaled)
+                                                      !    Dimensions: (ncol,nlay,nbndsw)
+      real , intent(in) :: fsfc(:,:,:)        ! in-cloud forward scattering fraction (non-delta scaled)
+                                                      !    Dimensions: (ncol,nlay,nbndsw)
+!      real , intent(inout), dimension(ncol, nlay, nsubcol) gpu_device :: CDF       
+!      real , intent(inout), dimension(ncol, nlay, nsubcol) gpu_device :: CDF2
+!      real , intent(inout), dimension(ncol, nlay, nsubcol) gpu_device :: CDF3
+!      real , intent(inout), dimension(ncol, nlay) :: alpha
+      
+! for inactive icld=4 option
+!      real , intent(in), dimension(ncol) :: ALAT
+!      real , intent(in), dimension(ncol, nlay) :: zm
+!      integer , intent(in) :: DOY
+      
+      real , intent(out) :: cld_stoch(:,:,:)  ! subcolumn cloud fraction 
                                                       !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(out) :: clwp_stoch(:,:,:) ! subcolumn in-cloud liquid water path
+      real , intent(out) :: clwp_stoch(:,:,:) ! subcolumn in-cloud liquid water path
                                                       !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(out) :: ciwp_stoch(:,:,:) ! subcolumn in-cloud ice water path
+      real , intent(out) :: ciwp_stoch(:,:,:) ! subcolumn in-cloud ice water path
                                                       !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(out) :: cswp_stoch(:,:,:) ! subcolumn in-cloud snow water path
+      real , intent(out) :: cswp_stoch(:,:,:) ! subcolumn in-cloud snow water path
                                                       !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(out) :: tauc_stoch(:,:,:) ! subcolumn in-cloud optical depth
-                                                      !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(out) :: ssac_stoch(:,:,:) ! subcolumn in-cloud single scattering albedo
-                                                      !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(out) :: asmc_stoch(:,:,:) ! subcolumn in-cloud asymmetry parameter
-                                                      !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(out) :: fsfc_stoch(:,:,:) ! subcolumn in-cloud forward scattering fraction
-                                                      !    Dimensions: (ngptsw,ncol,nlay)
-
+      real , intent(out) :: tauc_stoch(:,:,:) ! subcolumn in-cloud optical depth
+                                                      !    Dimensions: (ncol,nlay,ngptsw)
+      real , intent(out) :: ssac_stoch(:,:,:) ! subcolumn in-cloud single scattering albedo
+                                                      !    Dimensions: (ncol,nlay,ngptsw)
+      real , intent(out) :: asmc_stoch(:,:,:) ! subcolumn in-cloud asymmetry parameter
+                                                      !    Dimensions: (ncol,nlay,ngptsw)
+      real , intent(out) :: fsfc_stoch(:,:,:) ! subcolumn in-cloud forward scattering fraction
+                                                      !    Dimensions: (ncol,nlay,ngptsw)
+      
 ! -- Local variables
-      real(kind=rb) :: cldf(ncol,nlay)                ! cloud fraction 
-                                                      !    Dimensions: (ncol,nlay)
-
-! Mean over the subcolumns (cloud fraction, cloud water , cloud ice) - inactive
-!      real(kind=rb) :: mean_cld_stoch(ncol,nlay)     ! cloud fraction 
-!      real(kind=rb) :: mean_clwp_stoch(ncol,nlay)    ! cloud water
-!      real(kind=rb) :: mean_ciwp_stoch(ncol,nlay)    ! cloud ice
-!      real(kind=rb) :: mean_tauc_stoch(ncol,nlay)    ! cloud optical depth
-!      real(kind=rb) :: mean_ssac_stoch(ncol,nlay)    ! cloud single scattering albedo
-!      real(kind=rb) :: mean_asmc_stoch(ncol,nlay)    ! cloud asymmetry parameter
-!      real(kind=rb) :: mean_fsfc_stoch(ncol,nlay)    ! cloud forward scattering fraction
-
-! Set overlap
-      integer(kind=im) :: overlap                     ! 1 = random overlap, 2 = maximum/random,
-                                                      ! 3 = maximum overlap, 
-!      real(kind=rb), parameter  :: Zo = 2500._rb        ! length scale (m) 
-!      real(kind=rb) :: zm(ncon,nlay)                    ! Height of midpoints (above surface)
-!      real(kind=rb), dimension(nlay) :: alpha=0.0_rb    ! overlap parameter  
+!      real, intent(inout)  :: adl(ncol)                
+!      real, intent(inout)  :: rdl(ncol)
+    
 
 ! Constants (min value for cloud fraction and cloud water and ice)
-      real(kind=rb), parameter :: cldmin = 1.0e-20_rb ! min cloud fraction
-!      real(kind=rb), parameter :: qmin   = 1.0e-10_rb   ! min cloud water and cloud ice (not used)
+      real , parameter :: cldmin = 1.0e-20  ! min cloud fraction
+
 
 ! Variables related to random number and seed 
-      real(kind=rb), dimension(nsubcol, ncol, nlay) :: CDF, CDF2       ! random numbers
-      integer(kind=im), dimension(ncol) :: seed1, seed2, seed3, seed4  ! seed to create random number
-      real(kind=rb), dimension(ncol) :: rand_num       ! random number (kissvec)
-      integer(kind=im) :: iseed                        ! seed to create random number (Mersenne Twister)
-      real(kind=rb) :: rand_num_mt                     ! random number (Mersenne Twister)
+     
+      real, dimension(ncol, nlay, nsubcol) gpu_device :: CDF       
+      integer :: seed1, seed2, seed3, seed4  ! seed to create random number
+    
+      integer  :: iseed                        ! seed to create random number (Mersenne Twister)
+!      real  :: rand_num_mt                     ! random number (Mersenne Twister)
+      real  :: kiss
 
-! Flag to identify cloud fraction in subcolumns
-      logical,  dimension(nsubcol, ncol, nlay) :: isCloudy   ! flag that says whether a gridbox is cloudy
 
 ! Indices
-      integer(kind=im) :: ilev, isubcol, i, n, ngbm    ! indices
-
+      integer  :: ilev, isubcol, i, n, ngbm, iplon   ! indices
+! For inactive icld=4 option
+!      integer  :: inhm
+!      real     :: am1,am2,am3,am4,amr
+!      real     :: SIGMA_QCW
+!      real     :: rind1, rind2
+!      integer  :: ind1, ind2
+!      real     :: zcw
 !------------------------------------------------------------------------------------------ 
 
 ! Check that irng is in bounds; if not, set to default
-      if (irng .ne. 0) irng = 1
+! Note: in GPU version of code, only kissvec method is used, Mersenne Twister not installed
 
 ! Pass input cloud overlap setting to local variable
-      overlap = icld
 
-! Ensure that cloud fractions are in bounds 
-      do ilev = 1, nlay
-         do i = 1, ncol
-            cldf(i,ilev) = cld(i,ilev)
-            if (cldf(i,ilev) < cldmin) then
-               cldf(i,ilev) = 0._rb
-            endif
-         enddo
-      enddo
-
-! ----- Create seed  --------
-   
-! Advance randum number generator by changeseed values
-      if (irng.eq.0) then   
-! For kissvec, create a seed that depends on the state of the columns. Maybe not the best way, but it works.  
-! Must use pmid from bottom four layers. 
-         do i=1,ncol
-            if (pmid(i,1).lt.pmid(i,2)) then
-               stop 'MCICA_SUBCOL: KISSVEC SEED GENERATOR REQUIRES PMID FROM BOTTOM FOUR LAYERS.'
-            endif
-            seed1(i) = (pmid(i,1) - int(pmid(i,1)))  * 1000000000_im
-            seed2(i) = (pmid(i,2) - int(pmid(i,2)))  * 1000000000_im
-            seed3(i) = (pmid(i,3) - int(pmid(i,3)))  * 1000000000_im
-            seed4(i) = (pmid(i,4) - int(pmid(i,4)))  * 1000000000_im
-          enddo
-         do i=1,changeSeed
-            call kissvec(seed1, seed2, seed3, seed4, rand_num)
-         enddo
-      elseif (irng.eq.1) then
-         randomNumbers = new_RandomNumberSequence(seed = changeSeed)
-      endif 
+! For inactive icld=4 option
+!      inhm = 0
 
 
 ! ------ Apply overlap assumption --------
 
 ! generate the random numbers  
 
-      select case (overlap)
-
-      case(1) 
-! Random overlap
-! i) pick a random value at every level
-  
-         if (irng.eq.0) then 
-            do isubcol = 1,nsubcol
-               do ilev = 1,nlay
-                  call kissvec(seed1, seed2, seed3, seed4, rand_num)
-                  CDF(isubcol,:,ilev) = rand_num
-               enddo
-            enddo
-         elseif (irng.eq.1) then
-            do isubcol = 1, nsubcol
+! Random cloud overlap
+      if (icld==1) then
+!$acc kernels 
+           
+            do ilev = 1,nlay
                do i = 1, ncol
-                  do ilev = 1, nlay
-                     rand_num_mt = getRandomReal(randomNumbers)
-                     CDF(isubcol,i,ilev) = rand_num_mt
-                  enddo
-               enddo
-             enddo
-         endif
+                  seed1 = (play(i,1) - int(play(i,1)))  * 100000000 - ilev
+                  seed2 = (play(i,2) - int(play(i,2)))  * 100000000 + ilev
+                  seed3 = (play(i,3) - int(play(i,3)))  * 100000000 + ilev * 6.2
+                  seed4 = (play(i,4) - int(play(i,4)))  * 100000000           
+                  do isubcol = 1,nsubcol
+                     seed1 = 69069  * seed1 + 132721785 
+                     seed2 = 11002  * iand (seed2, 65535 ) + ishft (seed2, - 16 )
+                     seed3 = 18000  * iand (seed3, 65535 ) + ishft (seed3, - 16 )
+                     seed4 = 30903  * iand (seed4, 65535 ) + ishft (seed4, - 16 )
+                     kiss = seed1 + seed2 + ishft (seed3, 16 ) + seed4
+                     CDF(i,ilev,isubcol) = kiss*2.328306e-10  + 0.5 
+                  end do
+               end do
+            end do
 
-      case(2) 
-! Maximum-Random overlap
-! i) pick  a random number for top layer.
-! ii) walk down the column: 
-!    - if the layer above is cloudy, we use the same random number than in the layer above
-!    - if the layer above is clear, we use a new random number 
+!$acc end kernels      
+      endif
 
-         if (irng.eq.0) then 
-            do isubcol = 1,nsubcol
-               do ilev = 1,nlay
-                  call kissvec(seed1, seed2, seed3, seed4, rand_num)
-                  CDF(isubcol,:,ilev) = rand_num
-               enddo
-            enddo
-         elseif (irng.eq.1) then
-            do isubcol = 1, nsubcol
+! Maximum-Random cloud overlap
+      if (icld==2) then
+!$acc kernels 
+           
+            do ilev = 1,nlay
                do i = 1, ncol
-                  do ilev = 1, nlay
-                     rand_num_mt = getRandomReal(randomNumbers)
-                     CDF(isubcol,i,ilev) = rand_num_mt
-                  enddo
-               enddo
-             enddo
-         endif
+                  seed1 = (play(i,1) - int(play(i,1)))  * 100000000 - ilev
+                  seed2 = (play(i,2) - int(play(i,2)))  * 100000000 + ilev
+                  seed3 = (play(i,3) - int(play(i,3)))  * 100000000 + ilev * 6.2
+                  seed4 = (play(i,4) - int(play(i,4)))  * 100000000           
+                  do isubcol = 1,nsubcol
+                     seed1 = 69069  * seed1 + 132721785 
+                     seed2 = 11002  * iand (seed2, 65535 ) + ishft (seed2, - 16 )
+                     seed3 = 18000  * iand (seed3, 65535 ) + ishft (seed3, - 16 )
+                     seed4 = 30903  * iand (seed4, 65535 ) + ishft (seed4, - 16 )
+                     kiss = seed1 + seed2 + ishft (seed3, 16 ) + seed4
+                     CDF(i,ilev,isubcol) = kiss*2.328306e-10  + 0.5 
+                  end do
+               end do
+            end do
 
-         do ilev = 2,nlay
+            do ilev = 2,nlay
+               do i = 1, ncol
+                  do isubcol = 1,nsubcol
+                     if (CDF(i,ilev-1,isubcol) > 1.  - cld(i, ilev-1)) then 
+                        CDF(i,ilev,isubcol) = CDF(i,ilev-1,isubcol)
+                     else
+                        CDF(i,ilev,isubcol) = CDF(i,ilev,isubcol) * (1. - cld(i, ilev-1))
+                     end if
+                  end do
+               end do
+            end do
+            
+!$acc end kernels      
+      endif
+
+! Maximum cloud overlap
+      if (icld==3) then
+!$acc kernels 
+           
             do i = 1, ncol
-               do isubcol = 1, nsubcol
-                  if (CDF(isubcol, i, ilev-1) > 1._rb - cldf(i,ilev-1) ) then
-                     CDF(isubcol,i,ilev) = CDF(isubcol,i,ilev-1) 
-                  else
-                     CDF(isubcol,i,ilev) = CDF(isubcol,i,ilev) * (1._rb - cldf(i,ilev-1)) 
-                  endif
-               enddo
-            enddo
-         enddo
+               seed1 = (play(i,1) - int(play(i,1)))  * 100000000 - ilev
+               seed2 = (play(i,2) - int(play(i,2)))  * 100000000 + ilev
+               seed3 = (play(i,3) - int(play(i,3)))  * 100000000 + ilev * 6.2
+               seed4 = (play(i,4) - int(play(i,4)))  * 100000000           
+               do isubcol = 1,nsubcol
+                  seed1 = 69069  * seed1 + 132721785 
+                  seed2 = 11002  * iand (seed2, 65535 ) + ishft (seed2, - 16 )
+                  seed3 = 18000  * iand (seed3, 65535 ) + ishft (seed3, - 16 )
+                  seed4 = 30903  * iand (seed4, 65535 ) + ishft (seed4, - 16 )
+                  kiss = seed1 + seed2 + ishft (seed3, 16 ) + seed4
+                  do ilev = 1,nlay
+                     CDF(i,ilev,isubcol) = kiss*2.328306e-10  + 0.5 
+                  end do
+               end do
+            end do
 
-      case(3) 
-! Maximum overlap
-! i) pick same random numebr at every level  
+!$acc end kernels      
+      endif
 
-         if (irng.eq.0) then 
-            do isubcol = 1,nsubcol
-               call kissvec(seed1, seed2, seed3, seed4, rand_num)
-               do ilev = 1,nlay
-                  CDF(isubcol,:,ilev) = rand_num
-               enddo
-            enddo
-         elseif (irng.eq.1) then
-            do isubcol = 1, nsubcol
-               do i = 1, ncol
-                  rand_num_mt = getRandomReal(randomNumbers)
-                  do ilev = 1, nlay
-                     CDF(isubcol,i,ilev) = rand_num_mt
-                  enddo
-               enddo
-             enddo
-         endif
-
-!    case(4)  - inactive
-!       ! Exponential overlap: weighting between maximum and random overlap increases with the distance. 
-!       ! The random numbers for exponential overlap verify:
-!       ! j=1   RAN(j)=RND1
-!       ! j>1   if RND1 < alpha(j,j-1) => RAN(j) = RAN(j-1)
-!       !                                 RAN(j) = RND2
-!       ! alpha is obtained from the equation
-!       ! alpha = exp(- (Zi-Zj-1)/Zo) where Zo is a characteristic length scale    
-
-
-!       ! compute alpha
-!       zm    = state%zm     
-!       alpha(:, 1) = 0._rb
-!       do ilev = 2,nlay
-!          alpha(:, ilev) = exp( -( zm (:, ilev-1) -  zm (:, ilev)) / Zo)
-!       end do
-       
-!       ! generate 2 streams of random numbers
-!       do isubcol = 1,nsubcol
+! Exponential cloud overlap (icld=4 option, inactive)
+!      if (icld==4) then
+!      ! Exponential overlap: weighting between maximum and random overlap increases with the distance. 
+!      ! The random numbers for exponential overlap verify:
+!      ! j=1   RAN(j)=RND1
+!      ! j>1   if RND1 < alpha(j,j-1) => RAN(j) = RAN(j-1)
+!      !                                 RAN(j) = RND2
+!      ! alpha is obtained from the equation
+!      ! alpha = exp(- (Zi-Zj-1)/Zo) where Zo is a characteristic length scale    
+!
+!!  !$acc kernels
+!         AM1 = 1.4315
+!         AM2 = 2.1219
+!         AM4 = -25.584
+!         AMR = 7.
+!         IF ( DOY .GT. 181 ) THEN
+!            AM3 = -4.*AMR/365*(DOY-272)
+!         ELSE
+!            AM3 = 4.*AMR/365.*(DOY-91)
+!         ENDIF
+!         adl(:) = AM1+AM2*EXP(-(ALAT(:)*180./3.141592-AM3)**2/AM4**2)
+!         adl(:) = adl(:)*1.e3
+!         AM1 = 0.72192
+!         AM2 = 0.78996
+!         AM4 = 40.404
+!         AMR = 8.5
+!         IF ( DOY .GT. 181 ) THEN
+!            AM3 = -4.*AMR/365*(DOY-272)
+!         ELSE
+!            AM3 = 4.*AMR/365.*(DOY-91)
+!         ENDIF
+!         rdl(:) = AM1+AM2*EXP(-(ALAT(:)*180./3.141592-AM3)**2/AM4**2)
+!         rdl(:) = rdl(:)*1.e3
+!!  !$acc end kernels      
+!      
+!!  !$acc kernels
+!         alpha(:,1) = 0.
+!         do ilev = 2, nlay
+!            alpha(:,ilev) = exp( -(zm(:,ilev) - zm(:,ilev-1)) / adl(:))
+!         end do
+!!  !$acc end kernels
+!        
+!!  !$acc kernels
+!         do ilev = 1,nlay
+!               do i = 1, ncol
+!                   seed1 = (play(i,1) - int(play(i,1)))  * 100000000 - ilev
+!                   seed2 = (play(i,2) - int(play(i,2)))  * 100000000 + ilev
+!                   seed3 = (play(i,3) - int(play(i,3)))  * 100000000 + ilev * 6.2
+!                   seed4 = (play(i,4) - int(play(i,4)))  * 100000000           
+!                   do isubcol = 1,nsubcol
+!                       
+!                        seed1 = 69069  * seed1 + 132721785 
+!                        seed2 = 11002  * iand (seed2, 65535 ) + ishft (seed2, - 16 )
+!                        seed3 = 18000  * iand (seed3, 65535 ) + ishft (seed3, - 16 )
+!                        seed4 = 30903  * iand (seed4, 65535 ) + ishft (seed4, - 16 )
+!                        kiss = seed1 + seed2 + ishft (seed3, 16 ) + seed4
+!                        CDF(i,ilev,isubcol) = kiss*2.328306e-10  + 0.5 
+!                        ! for testing purposes to generate determanistic sequence
+!                        !CDF(i,ilev,isubcol) = real(MOD((isubcol * 37 + ilev * 71) , 10000))/10000.0
+!                        
+!                        seed1 = 69069  * seed1 + 132721785 
+!                        seed2 = 11002  * iand (seed2, 65535 ) + ishft (seed2, - 16 )
+!                        seed3 = 18000  * iand (seed3, 65535 ) + ishft (seed3, - 16 )
+!                        seed4 = 30903  * iand (seed4, 65535 ) + ishft (seed4, - 16 )
+!                        kiss = seed1 + seed2 + ishft (seed3, 16 ) + seed4
+!                        CDF2(i,ilev,isubcol) = kiss*2.328306e-10  + 0.5 
+!                        ! for testing purposes to generate determanistic sequence
+!                        !CDF2(i,ilev,isubcol) =  real(MOD((isubcol * 37 + ilev * 73) , 10000))/10000.0
+!                    
+!                    end do
+!               end do
+!         end do
+!!  !$acc end kernels        
+!       
+!!  !$acc kernels
+!         do iplon = 1, ncol
+!            do isubcol = 1, nsubcol
+!                      do ilev = 2, nlay
+!                    if (CDF2(iplon, ilev, isubcol) < alpha(iplon,ilev)) then
+!                        CDF(iplon,  ilev, isubcol) = CDF(iplon, ilev-1, isubcol) 
+!                    end if
+!                end do
+!            end do
+!         end do
+!!  !$acc end kernels
+!         inhm = 1
+!    
+!      end if
+!
+!      if (inhm>=1) then
+!        
+!!  !$acc kernels      
+!        alpha(:,1)=0.
+!        do ilev = 2, nlay
+!            alpha(:, ilev) = exp( -( zm(:, ilev) - zm(:, ilev-1))/rdl(:))
+!        end do
+!!  !$acc end kernels
+!        
+!!  !$acc kernels
 !          do ilev = 1,nlay
-!             call kissvec(seed1, seed2, seed3, seed4, rand_num)
-!             CDF(isubcol, :, ilev) = rand_num
-!             call kissvec(seed1, seed2, seed3, seed4, rand_num)
-!             CDF2(isubcol, :, ilev) = rand_num
+!               do i = 1, ncol
+!                   seed1 = (play(i,1) - int(play(i,1)))  * 100000000 - ilev
+!                   seed2 = (play(i,2) - int(play(i,2)))  * 100000000 + ilev
+!                   seed3 = (play(i,3) - int(play(i,3)))  * 100000000 + ilev * 6.2
+!                   seed4 = (play(i,4) - int(play(i,4)))  * 100000000           
+!                   do isubcol = 1,nsubcol
+!                     
+!                       
+!                        seed1 = 69069  * seed1 + 132721785 
+!                        seed2 = 11002  * iand (seed2, 65535 ) + ishft (seed2, - 16 )
+!                        seed3 = 18000  * iand (seed3, 65535 ) + ishft (seed3, - 16 )
+!                        seed4 = 30903  * iand (seed4, 65535 ) + ishft (seed4, - 16 )
+!                        kiss = seed1 + seed2 + ishft (seed3, 16 ) + seed4
+!                        CDF2(i,ilev,isubcol) = kiss*2.328306e-10  + 0.5 
+!                        ! for testing purposes to generate determanistic sequence
+!                        !CDF2(i,ilev,isubcol) = real(MOD((isubcol * 7 + ilev * 101) , 10000))/10000.0
+!                    
+!                        seed1 = 69069  * seed1 + 132721785 
+!                        seed2 = 11002  * iand (seed2, 65535 ) + ishft (seed2, - 16 )
+!                        seed3 = 18000  * iand (seed3, 65535 ) + ishft (seed3, - 16 )
+!                        seed4 = 30903  * iand (seed4, 65535 ) + ishft (seed4, - 16 )
+!                        kiss = seed1 + seed2 + ishft (seed3, 16 ) + seed4
+!                        CDF3(i,ilev,isubcol) = kiss*2.328306e-10  + 0.5 
+!                        ! for testing purposes to generate determanistic sequence
+!                        !CDF3(i,ilev,isubcol) =  real(MOD((isubcol * 41 + ilev * 89) , 10000))/10000.0
+!                    
+!                    end do
+!               end do
 !          end do
-!       end do
+!!  !$acc end kernels
+!
+!!  !$acc kernels
+!          do iplon = 1, ncol
+!            do isubcol = 1, nsubcol
+!                      do ilev = 2, nlay
+!                    if (CDF2(iplon, ilev, isubcol) < alpha(iplon,ilev)) then
+!                        CDF3(iplon, ilev, isubcol) = CDF3(iplon, ilev-1, isubcol)
+!                    end if
+!                end do
+!            end do
+!          end do
+!!  !$acc end kernels        
+!      end if
 
-!       ! generate random numbers
-!       do ilev = 2,nlay
-!          where (CDF2(:, :, ilev) < spread(alpha (:,ilev), dim=1, nCopies=nsubcol) )
-!             CDF(:,:,ilev) = CDF(:,:,ilev-1) 
-!          end where
-!       end do
-
-      end select
-
- 
-! -- generate subcolumns for homogeneous clouds -----
-      do ilev = 1, nlay
-         isCloudy(:,:,ilev) = (CDF(:,:,ilev) >= 1._rb - spread(cldf(:,ilev), dim=1, nCopies=nsubcol) )
-      enddo
 
 ! where the subcolumn is cloudy, the subcolumn cloud fraction is 1;
 ! where the subcolumn is not cloudy, the subcolumn cloud fraction is 0;
@@ -1841,124 +1764,87 @@
 ! otherwise set these to zero
 
       ngbm = ngb(1) - 1
+!$acc kernels 
       do ilev = 1,nlay
          do i = 1, ncol
             do isubcol = 1, nsubcol
-               if ( iscloudy(isubcol,i,ilev) ) then
-                  cld_stoch(isubcol,i,ilev) = 1._rb
-                  clwp_stoch(isubcol,i,ilev) = clwp(i,ilev)
-                  ciwp_stoch(isubcol,i,ilev) = ciwp(i,ilev)
-                  cswp_stoch(isubcol,i,ilev) = cswp(i,ilev)
+
+! For GSFC icld=4 option, not needed for WRF
+!               if ( inhm >= 1 .and. CDF(i,ilev,isubcol)>=(1.0 - cld(i,ilev))) then
+!                  cld_stoch(i,ilev,isubcol) = 1.0 
+!                  
+!                  if (cld(i,ilev) .gt. 0.99 ) then
+!                    SIGMA_QCW = 0.5
+!                  elseif (cld(i,ilev) .gt. 0.9 ) then
+!                    SIGMA_QCW = 0.71
+!                    else  
+!                    SIGMA_QCW = 1
+!                  endif
+!                  
+!                  RIND1 = CDF3(i,ilev,isubcol) * (N1 - 1) + 1.0
+!                  IND1  = MAX(1, MIN(INT(RIND1), N1-1))
+!                  RIND1 = RIND1 - IND1
+!                  RIND2 = 40.0 * SIGMA_QCW    - 3.0
+!                  IND2  = MAX(1, MIN(INT(RIND2), N2-1))
+!                  RIND2 = RIND2 - IND2
+!
+!                   ZCW = (1.0-RIND1) * (1.0-RIND2) * XCW(IND1,IND2) &
+!                       + (1.0-RIND1) * RIND2       * XCW(IND1,IND2+1) &
+!                       + RIND1 * (1.0-RIND2)       * XCW(IND1+1,IND2) &
+!                       + RIND1 * RIND2             * XCW(IND1+1,IND2+1)
+!                   
+!                 
+!                  clwp_stoch(i,ilev,isubcol) = clwp(i,ilev) * ZCW
+!                  ciwp_stoch(i,ilev,isubcol) = ciwp(i,ilev) * ZCW
+!                  cswp_stoch(i,ilev,isubcol) = cswp(i,ilev) * ZCW
+!                  n = ngb(isubcol) - ngbm
+!                  tauc_stoch(i,ilev,isubcol) = tauc(i,ilev,n)
+!                  ssac_stoch(i,ilev,isubcol) = ssac(i,ilev,n)
+!                  asmc_stoch(i,ilev,isubcol) = asmc(i,ilev,n)
+!                  fsfc_stoch(i,ilev,isubcol) = fsfc(i,ilev,n)
+!                
+!                
+!               elseif ( CDF(i,ilev,isubcol)>=(1.0 - cld(i,ilev)) ) then
+
+               if ( CDF(i,ilev,isubcol)>=(1.0 - cld(i,ilev)) ) then
+                  cld_stoch(i,ilev,isubcol) = 1.0 
+                  clwp_stoch(i,ilev,isubcol) = clwp(i,ilev)
+                  ciwp_stoch(i,ilev,isubcol) = ciwp(i,ilev)
+                  cswp_stoch(i,ilev,isubcol) = cswp(i,ilev)
                   n = ngb(isubcol) - ngbm
-                  tauc_stoch(isubcol,i,ilev) = tauc(n,i,ilev)
-                  ssac_stoch(isubcol,i,ilev) = ssac(n,i,ilev)
-                  asmc_stoch(isubcol,i,ilev) = asmc(n,i,ilev)
-                  fsfc_stoch(isubcol,i,ilev) = fsfc(n,i,ilev)
+                  tauc_stoch(i,ilev,isubcol) = tauc(i,ilev,n)
+                  ssac_stoch(i,ilev,isubcol) = ssac(i,ilev,n)
+                  asmc_stoch(i,ilev,isubcol) = asmc(i,ilev,n)
+                  fsfc_stoch(i,ilev,isubcol) = fsfc(i,ilev,n)
                else
-                  cld_stoch(isubcol,i,ilev) = 0._rb
-                  clwp_stoch(isubcol,i,ilev) = 0._rb
-                  ciwp_stoch(isubcol,i,ilev) = 0._rb
-                  cswp_stoch(isubcol,i,ilev) = 0._rb
-                  tauc_stoch(isubcol,i,ilev) = 0._rb
-                  ssac_stoch(isubcol,i,ilev) = 1._rb
-                  asmc_stoch(isubcol,i,ilev) = 0._rb
-                  fsfc_stoch(isubcol,i,ilev) = 0._rb
+                  cld_stoch(i,ilev,isubcol) = 0. 
+                  clwp_stoch(i,ilev,isubcol) = 0. 
+                  ciwp_stoch(i,ilev,isubcol) = 0. 
+                  cswp_stoch(i,ilev,isubcol) = 0. 
+                  tauc_stoch(i,ilev,isubcol) = 0. 
+                  ssac_stoch(i,ilev,isubcol) = 1. 
+                  asmc_stoch(i,ilev,isubcol) = 0. 
+                  fsfc_stoch(i,ilev,isubcol) = 0. 
                endif
             enddo
          enddo
       enddo
+!$acc end kernels
 
-! -- compute the means of the subcolumns ---
-!      mean_cld_stoch(:,:) = 0._rb
-!      mean_clwp_stoch(:,:) = 0._rb
-!      mean_ciwp_stoch(:,:) = 0._rb
-!      mean_tauc_stoch(:,:) = 0._rb
-!      mean_ssac_stoch(:,:) = 0._rb
-!      mean_asmc_stoch(:,:) = 0._rb
-!      mean_fsfc_stoch(:,:) = 0._rb
-!      do i = 1, nsubcol
-!         mean_cld_stoch(:,:) =  cld_stoch(i,:,:) + mean_cld_stoch(:,:) 
-!         mean_clwp_stoch(:,:) =  clwp_stoch( i,:,:) + mean_clwp_stoch(:,:) 
-!         mean_ciwp_stoch(:,:) =  ciwp_stoch( i,:,:) + mean_ciwp_stoch(:,:) 
-!         mean_tauc_stoch(:,:) =  tauc_stoch( i,:,:) + mean_tauc_stoch(:,:) 
-!         mean_ssac_stoch(:,:) =  ssac_stoch( i,:,:) + mean_ssac_stoch(:,:) 
-!         mean_asmc_stoch(:,:) =  asmc_stoch( i,:,:) + mean_asmc_stoch(:,:) 
-!         mean_fsfc_stoch(:,:) =  fsfc_stoch( i,:,:) + mean_fsfc_stoch(:,:) 
-!      end do
-!      mean_cld_stoch(:,:) = mean_cld_stoch(:,:) / nsubcol
-!      mean_clwp_stoch(:,:) = mean_clwp_stoch(:,:) / nsubcol
-!      mean_ciwp_stoch(:,:) = mean_ciwp_stoch(:,:) / nsubcol
-!      mean_tauc_stoch(:,:) = mean_tauc_stoch(:,:) / nsubcol
-!      mean_ssac_stoch(:,:) = mean_ssac_stoch(:,:) / nsubcol
-!      mean_asmc_stoch(:,:) = mean_asmc_stoch(:,:) / nsubcol
-!      mean_fsfc_stoch(:,:) = mean_fsfc_stoch(:,:) / nsubcol
-
-      end subroutine generate_stochastic_clouds_sw
-
-
-!-------------------------------------------------------------------------------------------------- 
-      subroutine kissvec(seed1,seed2,seed3,seed4,ran_arr)
-!-------------------------------------------------------------------------------------------------- 
-
-! public domain code
-! made available from http://www.fortran.com/
-! downloaded by pjr on 03/16/04 for NCAR CAM
-! converted to vector form, functions inlined by pjr,mvr on 05/10/2004
-
-! The  KISS (Keep It Simple Stupid) random number generator. Combines:
-! (1) The congruential generator x(n)=69069*x(n-1)+1327217885, period 2^32.
-! (2) A 3-shift shift-register generator, period 2^32-1,
-! (3) Two 16-bit multiply-with-carry generators, period 597273182964842497>2^59
-!  Overall period>2^123; 
-!
-      real(kind=rb), dimension(:), intent(inout)  :: ran_arr
-      integer(kind=im), dimension(:), intent(inout) :: seed1,seed2,seed3,seed4
-      integer(kind=im) :: i,sz,kiss
-      integer(kind=im) :: m, k, n
-
-! inline function 
-      m(k, n) = ieor (k, ishft (k, n) )
-
-      sz = size(ran_arr)
-      do i = 1, sz
-         seed1(i) = 69069_im * seed1(i) + 1327217885_im
-         seed2(i) = m (m (m (seed2(i), 13_im), - 17_im), 5_im)
-         seed3(i) = 18000_im * iand (seed3(i), 65535_im) + ishft (seed3(i), - 16_im)
-         seed4(i) = 30903_im * iand (seed4(i), 65535_im) + ishft (seed4(i), - 16_im)
-         kiss = seed1(i) + seed2(i) + ishft (seed3(i), 16_im) + seed4(i)
-         ran_arr(i) = kiss*2.328306e-10_rb + 0.5_rb
-      end do
-    
-      end subroutine kissvec
+      end subroutine mcica_sw
 
       end module mcica_subcol_gen_sw
 
-!     path:      $Source: /cvsroot/NWP/WRFV3/phys/module_ra_rrtmg_sw.F,v $
-!     author:    $Author: trn $
-!     revision:  $Revision: 1.3 $
-!     created:   $Date: 2009/04/16 19:54:22 $
-
       module rrtmg_sw_cldprmc
-
-!  --------------------------------------------------------------------------
-! |                                                                          |
-! |  Copyright 2002-2008, Atmospheric & Environmental Research, Inc. (AER).  |
-! |  This software may be used, copied, or redistributed as long as it is    |
-! |  not sold and this copyright notice is reproduced on each copy made.     |
-! |  This model is provided as is without any express or implied warranties. |
-! |                       (http://www.rtweb.aer.com/)                        |
-! |                                                                          |
-!  --------------------------------------------------------------------------
 
 ! ------- Modules -------
 
-      use parkind, only : im => kind_im, rb => kind_rb
       use parrrsw, only : ngptsw, jpband, jpb1, jpb2
       use rrsw_cld, only : extliq1, ssaliq1, asyliq1, &
                            extice2, ssaice2, asyice2, &
                            extice3, ssaice3, asyice3, fdlice3, &
                            abari, bbari, cbari, dbari, ebari, fbari
-      use rrsw_wvn, only : wavenum1, wavenum2, ngb
+      use rrsw_wvn, only : wavenum2, ngb, icxa
       use rrsw_vsn, only : hvrclc, hnamclc
 
       implicit none
@@ -1966,38 +1852,41 @@
       contains
 
 ! ----------------------------------------------------------------------------
-      subroutine cldprmc_sw(nlayers, inflag, iceflag, liqflag, cldfmc, &
+      subroutine cldprmc_sw(ncol, nlayers, inflag, iceflag, liqflag, cldfmc, &
                             ciwpmc, clwpmc, cswpmc, reicmc, relqmc, resnmc, &
                             taormc, taucmc, ssacmc, asmcmc, fsfcmc)
 ! ----------------------------------------------------------------------------
 
 ! Purpose: Compute the cloud optical properties for each cloudy layer
 ! and g-point interval for use by the McICA method.  
-! Note: Only inflag = 0 and inflag=2/liqflag=1/iceflag=2,3 are available;
-! (Hu & Stamnes, Key, and Fu) are implemented. 
+! Note: Only inflag = 0 and inflag=2/liqflag=1/iceflag=1,2,3 are available;
+! (Hu & Stamnes, Ebert and Curry, Key, and Fu) are implemented. 
 
 ! ------- Input -------
 
-      integer(kind=im), intent(in) :: nlayers         ! total number of layers
-      integer(kind=im), intent(in) :: inflag          ! see definitions
-      integer(kind=im), intent(in) :: iceflag         ! see definitions
-      integer(kind=im), intent(in) :: liqflag         ! see definitions
+      integer , intent(in) :: nlayers         ! total number of layers
+      integer , intent(in) :: inflag          ! see definitions
+      integer , intent(in) :: iceflag         ! see definitions
+      integer , intent(in) :: liqflag         ! see definitions
+      integer , intent(in) :: ncol
 
-      real(kind=rb), intent(in) :: cldfmc(:,:)        ! cloud fraction [mcica]
+      real , intent(in) :: cldfmc(:,:,:)          ! cloud fraction [mcica]
                                                       !    Dimensions: (ngptsw,nlayers)
-      real(kind=rb), intent(in) :: ciwpmc(:,:)        ! cloud ice water path [mcica]
+      real , intent(in) :: ciwpmc(:,:,:)          ! cloud ice water path [mcica]
                                                       !    Dimensions: (ngptsw,nlayers)
-      real(kind=rb), intent(in) :: clwpmc(:,:)        ! cloud liquid water path [mcica]
+      real , intent(in) :: clwpmc(:,:,:)          ! cloud liquid water path [mcica]
                                                       !    Dimensions: (ngptsw,nlayers)
-      real(kind=rb), intent(in) :: cswpmc(:,:)        ! cloud snow water path [mcica]
+      real , intent(in) :: cswpmc(:,:,:)          ! cloud snow water path [mcica]
                                                       !    Dimensions: (ngptsw,nlayers)
-      real(kind=rb), intent(in) :: resnmc(:)          ! cloud snow particle effective radius (microns)
+      real , intent(in) :: relqmc(:,:)           ! cloud liquid particle effective radius (microns)
                                                       !    Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: relqmc(:)          ! cloud liquid particle effective radius (microns)
+      real , intent(in) :: resnmc(:,:)           ! cloud snow particle effective radius (microns)
                                                       !    Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: reicmc(:)          ! cloud ice particle effective radius (microns)
+      real , intent(in) :: reicmc(:,:)           ! cloud ice particle effective radius (microns)
                                                       !    Dimensions: (nlayers)
                                                       ! specific definition of reicmc depends on setting of iceflag:
+                                                      ! iceflag = 0: (inactive)
+                                                      !              
                                                       ! iceflag = 1: ice effective radius, r_ec, (Ebert and Curry, 1992),
                                                       !              r_ec range is limited to 13.0 to 130.0 microns
                                                       ! iceflag = 2: ice effective radius, r_k, (Key, Streamer Ref. Manual, 1996)
@@ -2005,199 +1894,184 @@
                                                       ! iceflag = 3: generalized effective size, dge, (Fu, 1996),
                                                       !              dge range is limited to 5.0 to 140.0 microns
                                                       !              [dge = 1.0315 * r_ec]
-      real(kind=rb), intent(in) :: fsfcmc(:,:)        ! cloud forward scattering fraction
+      real , intent(in) :: fsfcmc(:,:,:)          ! cloud forward scattering fraction
                                                       !    Dimensions: (ngptsw,nlayers)
 
 ! ------- Output -------
 
-      real(kind=rb), intent(inout) :: taucmc(:,:)     ! cloud optical depth (delta scaled)
-                                                      !    Dimensions: (ngptsw,nlayers)
-      real(kind=rb), intent(inout) :: ssacmc(:,:)     ! single scattering albedo (delta scaled)
-                                                      !    Dimensions: (ngptsw,nlayers)
-      real(kind=rb), intent(inout) :: asmcmc(:,:)     ! asymmetry parameter (delta scaled)
-                                                      !    Dimensions: (ngptsw,nlayers)
-      real(kind=rb), intent(out) :: taormc(:,:)       ! cloud optical depth (non-delta scaled)
-                                                      !    Dimensions: (ngptsw,nlayers)
+      real , intent(inout) :: taucmc(:,:,:)       ! cloud optical depth (delta scaled)
+                                                      !    Dimensions: (ncol,nlayers,ngptsw)
+      real , intent(inout) :: ssacmc(:,:,:)       ! single scattering albedo (delta scaled)
+                                                      !    Dimensions: (ncol,nlayers,ngptsw)
+      real , intent(inout) :: asmcmc(:,:,:)       ! asymmetry parameter (delta scaled)
+                                                      !    Dimensions: (ncol,nlayers,ngptsw)
+      real , intent(out) :: taormc(:,:,:)         ! cloud optical depth (non-delta scaled)
+                                                      !    Dimensions: (ncol,nlayers,ngptsw)
 
 ! ------- Local -------
 
-!      integer(kind=im) :: ncbands
-      integer(kind=im) :: ib, lay, istr, index, icx, ig
+!      integer  :: ncbands
+      integer  :: ib, lay, istr, index, icx, ig, iplon
 
-      real(kind=rb), parameter :: eps = 1.e-06_rb     ! epsilon
-      real(kind=rb), parameter :: cldmin = 1.e-20_rb  ! minimum value for cloud quantities
-      real(kind=rb) :: cwp                            ! total cloud water path
-      real(kind=rb) :: radliq                         ! cloud liquid droplet radius (microns)
-      real(kind=rb) :: radice                         ! cloud ice effective size (microns)
-      real(kind=rb) :: radsno                         ! cloud snow effective size (microns)
-      real(kind=rb) :: factor
-      real(kind=rb) :: fint
+      real , parameter :: eps = 1.e-06      ! epsilon
+      real , parameter :: cldmin = 1.e-20   ! minimum value for cloud quantities
+      real  :: cwp                            ! total cloud water path
+      real  :: radliq                         ! cloud liquid droplet radius (microns)
+      real  :: radice                         ! cloud ice effective size (microns)
+      real  :: radsno                         ! cloud snow effective size (microns)
+      real  :: factor
+      real  :: fint
 
-      real(kind=rb) :: taucldorig_a, taucloud_a, ssacloud_a, ffp, ffp1, ffpssa
-      real(kind=rb) :: tauiceorig, scatice, ssaice, tauice, tauliqorig, scatliq, ssaliq, tauliq
-      real(kind=rb) :: tausnoorig, scatsno, ssasno, tausno
+      real  :: taucldorig_a, taucloud_a, ssacloud_a, ffp, ffp1, ffpssa
+      real  :: tauiceorig, scatice, ssaice, tauice, tauliqorig, scatliq, ssaliq, tauliq
+      real  :: tausnoorig, scatsno, ssasno, tausno
 
-      real(kind=rb) :: fdelta(ngptsw)
-      real(kind=rb) :: extcoice(ngptsw), gice(ngptsw)
-      real(kind=rb) :: ssacoice(ngptsw), forwice(ngptsw)
-      real(kind=rb) :: extcoliq(ngptsw), gliq(ngptsw)
-      real(kind=rb) :: ssacoliq(ngptsw), forwliq(ngptsw)
-      real(kind=rb) :: extcosno(ngptsw), gsno(ngptsw)
-      real(kind=rb) :: ssacosno(ngptsw), forwsno(ngptsw)
-
-      CHARACTER*80 errmess
+      real  :: fdelta
+      real  :: extcoice, gice
+      real  :: ssacoice, forwice
+      real  :: extcoliq, gliq
+      real  :: ssacoliq, forwliq
+      real  :: extcosno, gsno
+      real  :: ssacosno, forwsno
 
 ! Initialize
 
-      hvrclc = '$Revision: 1.3 $'
 
-! Some of these initializations are done elsewhere
-      do lay = 1, nlayers
-         do ig = 1, ngptsw
-            taormc(ig,lay) = taucmc(ig,lay)
-!            taucmc(ig,lay) = 0.0_rb
-!            ssacmc(ig,lay) = 1.0_rb
-!            asmcmc(ig,lay) = 0.0_rb
-         enddo
-      enddo
+!$acc kernels
+
+      taormc   = taucmc
+  
+!$acc end kernels    
+
 
 ! Main layer loop
+
+!$acc kernels loop present(cldfmc, ciwpmc, clwpmc, cswpmc, relqmc, reicmc, resnmc, fsfcmc,taucmc, ssacmc, asmcmc, taormc)
+    do iplon = 1, ncol
+      !$acc loop 
       do lay = 1, nlayers
 
-! Main g-point interval loop
+         !$acc loop private(fdelta,extcoice,gice,ssacoice,forwice,extcoliq,gliq,ssacoliq,forwliq,gsno,forwsno,scatsno)
          do ig = 1, ngptsw 
-            cwp = ciwpmc(ig,lay) + clwpmc(ig,lay) + cswpmc(ig,lay)
-
-            if (cldfmc(ig,lay) .ge. cldmin .and. &
-               (cwp .ge. cldmin .or. taucmc(ig,lay) .ge. cldmin)) then
+            cwp = ciwpmc(iplon,lay,ig) + clwpmc(iplon,lay,ig) + cswpmc(iplon,lay,ig)  
+            if (cldfmc(iplon,lay,ig)   .ge. cldmin .and. &
+               (cwp .ge. cldmin .or. taucmc(iplon,lay,ig)   .ge. cldmin)) then
 
 ! (inflag=0): Cloud optical properties input directly
                if (inflag .eq. 0) then
 ! Cloud optical properties already defined in taucmc, ssacmc, asmcmc are unscaled;
 ! Apply delta-M scaling here (using Henyey-Greenstein approximation)
-                  taucldorig_a = taucmc(ig,lay)
-                  ffp = fsfcmc(ig,lay)
-                  ffp1 = 1.0_rb - ffp
-                  ffpssa = 1.0_rb - ffp * ssacmc(ig,lay)
-                  ssacloud_a = ffp1 * ssacmc(ig,lay) / ffpssa
+                  taucldorig_a = taucmc(iplon,lay,ig)  
+                  ffp = fsfcmc(iplon,lay,ig)  
+                  ffp1 = 1.0  - ffp
+                  ffpssa = 1.0  - ffp * ssacmc(iplon,lay,ig)  
+                  ssacloud_a = ffp1 * ssacmc(iplon,lay,ig)   / ffpssa
                   taucloud_a = ffpssa * taucldorig_a
 
-                  taormc(ig,lay) = taucldorig_a
-                  ssacmc(ig,lay) = ssacloud_a
-                  taucmc(ig,lay) = taucloud_a
-                  asmcmc(ig,lay) = (asmcmc(ig,lay) - ffp) / (ffp1)
-
-               elseif (inflag .eq. 1) then 
-                  stop 'INFLAG = 1 OPTION NOT AVAILABLE WITH MCICA'
+                  taormc(iplon,lay,ig)   = taucldorig_a
+                  ssacmc(iplon,lay,ig)   = ssacloud_a
+                  taucmc(iplon,lay,ig)   = taucloud_a
+                  asmcmc(iplon,lay,ig)   = (asmcmc(iplon,lay,ig)   - ffp) / (ffp1)
 
 ! (inflag=2): Separate treatement of ice clouds and water clouds.
-               elseif (inflag .ge. 2) then
-                  radice = reicmc(lay)
+               elseif (inflag .eq. 2) then       
+                  radice = reicmc(iplon,lay) 
 
 ! Calculation of absorption coefficients due to ice clouds.
-                  if ((ciwpmc(ig,lay)+cswpmc(ig,lay)) .eq. 0.0_rb) then
-                     extcoice(ig) = 0.0_rb
-                     ssacoice(ig) = 0.0_rb
-                     gice(ig)     = 0.0_rb
-                     forwice(ig)  = 0.0_rb
+                  if (ciwpmc(iplon,lay,ig) + cswpmc(iplon,lay,ig) .eq. 0.0 ) then
+                     extcoice = 0.0 
+                     ssacoice = 0.0 
+                     gice     = 0.0 
+                     forwice  = 0.0 
 
-                     extcosno(ig) = 0.0_rb
-                     ssacosno(ig) = 0.0_rb
-                     gsno(ig)     = 0.0_rb
-                     forwsno(ig)  = 0.0_rb
+                     extcosno = 0.0
+                     ssacosno = 0.0
+                     gsno     = 0.0
+                     forwsno  = 0.0
 
 ! (iceflag = 1): 
 ! Note: This option uses Ebert and Curry approach for all particle sizes similar to
 ! CAM3 implementation, though this is somewhat unjustified for large ice particles
                   elseif (iceflag .eq. 1) then
-                     ib = ngb(ig)
-                     if (wavenum2(ib) .gt. 1.43e04_rb) then
-                        icx = 1
-                     elseif (wavenum2(ib) .gt. 7.7e03_rb) then
-                        icx = 2
-                     elseif (wavenum2(ib) .gt. 5.3e03_rb) then
-                        icx = 3
-                     elseif (wavenum2(ib) .gt. 4.0e03_rb) then
-                        icx = 4
-                     elseif (wavenum2(ib) .ge. 2.5e03_rb) then
-                        icx = 5
-                     endif
-                     extcoice(ig) = (abari(icx) + bbari(icx)/radice)
-                     ssacoice(ig) = 1._rb - cbari(icx) - dbari(icx) * radice
-                     gice(ig) = ebari(icx) + fbari(icx) * radice
+                   
+                     ib = ngb(ig )
+                     ib = icxa(ib)
+  
+                     extcoice = (abari(ib) + bbari(ib)/radice)
+                     ssacoice = 1.  - cbari(ib) - dbari(ib) * radice
+                     gice = ebari(ib) + fbari(ib) * radice
 ! Check to ensure upper limit of gice is within physical limits for large particles
-                     if (gice(ig).ge.1._rb) gice(ig) = 1._rb - eps
-                     forwice(ig) = gice(ig)*gice(ig)
+                     if (gice.ge.1. ) gice = 1.  - eps
+                     forwice = gice*gice
 ! Check to ensure all calculated quantities are within physical limits.
-                     if (extcoice(ig) .lt. 0.0_rb) stop 'ICE EXTINCTION LESS THAN 0.0'
-                     if (ssacoice(ig) .gt. 1.0_rb) stop 'ICE SSA GRTR THAN 1.0'
-                     if (ssacoice(ig) .lt. 0.0_rb) stop 'ICE SSA LESS THAN 0.0'
-                     if (gice(ig) .gt. 1.0_rb) stop 'ICE ASYM GRTR THAN 1.0'
-                     if (gice(ig) .lt. 0.0_rb) stop 'ICE ASYM LESS THAN 0.0'
+! mji - added checks below
+                     if (extcoice .lt. 0.0) extcoice = 0.0
+                     if (ssacoice .gt. 1.0) ssacoice = 1.0
+                     if (ssacoice .lt. 0.0) ssacoice = 0.0
+                     if (gice .gt. 1.0) gice = 1.0
+                     if (gice .lt. 0.0) gice = 0.0
+                  
 
 ! For iceflag=2 option, ice particle effective radius is limited to 5.0 to 131.0 microns
 
                   elseif (iceflag .eq. 2) then
-                     if (radice .lt. 5.0_rb .or. radice .gt. 131.0_rb) stop 'ICE RADIUS OUT OF BOUNDS'
-                     factor = (radice - 2._rb)/3._rb
+                     
+                     factor = (radice - 2. )/3. 
                      index = int(factor)
-                     if (index .eq. 43) index = 42
+! mji - temporary fix to prevent out of range subscripts
+                     if (index .le. 0) index = 1
+                     if (index .ge. 43) index = 42
+!                     if (index .eq. 43) index = 42
                      fint = factor - float(index)
                      ib = ngb(ig)
-                     extcoice(ig) = extice2(index,ib) + fint * &
+                     extcoice = extice2(index,ib) + fint * &
                                    (extice2(index+1,ib) -  extice2(index,ib))
-                     ssacoice(ig) = ssaice2(index,ib) + fint * &
+                     ssacoice = ssaice2(index,ib) + fint * &
                                    (ssaice2(index+1,ib) -  ssaice2(index,ib))
-                     gice(ig) = asyice2(index,ib) + fint * &
+                     gice = asyice2(index,ib) + fint * &
                                    (asyice2(index+1,ib) -  asyice2(index,ib))
-                     forwice(ig) = gice(ig)*gice(ig)
+                     forwice = gice*gice
 ! Check to ensure all calculated quantities are within physical limits.
-                     if (extcoice(ig) .lt. 0.0_rb) stop 'ICE EXTINCTION LESS THAN 0.0'
-                     if (ssacoice(ig) .gt. 1.0_rb) stop 'ICE SSA GRTR THAN 1.0'
-                     if (ssacoice(ig) .lt. 0.0_rb) stop 'ICE SSA LESS THAN 0.0'
-                     if (gice(ig) .gt. 1.0_rb) stop 'ICE ASYM GRTR THAN 1.0'
-                     if (gice(ig) .lt. 0.0_rb) stop 'ICE ASYM LESS THAN 0.0'
+! mji - added checks below
+                     if (extcoice .lt. 0.0) extcoice = 0.0
+                     if (ssacoice .gt. 1.0) ssacoice = 1.0
+                     if (ssacoice .lt. 0.0) ssacoice = 0.0
+                     if (gice .gt. 1.0) gice = 1.0
+                     if (gice .lt. 0.0) gice = 0.0
+                 
 
 ! For iceflag=3 option, ice particle generalized effective size is limited to 5.0 to 140.0 microns
 
-                  elseif (iceflag .ge. 3) then
-                     if (radice .lt. 5.0_rb .or. radice .gt. 140.0_rb) then
-                         write(errmess,'(A,i5,i5,f8.2,f8.2)' )         &
-               'ERROR: ICE GENERALIZED EFFECTIVE SIZE OUT OF BOUNDS'   &
-               ,ig, lay, ciwpmc(ig,lay), radice
-                         call wrf_error_fatal(errmess)
-                     end if
-                     factor = (radice - 2._rb)/3._rb
+                  elseif (iceflag .eq. 3) then
+                    
+                     factor = (radice - 2. )/3. 
                      index = int(factor)
-                     if (index .eq. 46) index = 45
+! mji - temporary fix to prevent out of range subscripts
+                     if (index .le. 0) index = 1
+                     if (index .ge. 46) index = 45
+!                     if (index .eq. 46) index = 45
                      fint = factor - float(index)
                      ib = ngb(ig)
-                     extcoice(ig) = extice3(index,ib) + fint * &
+                     extcoice = extice3(index,ib) + fint * &
                                    (extice3(index+1,ib) - extice3(index,ib))
-                     ssacoice(ig) = ssaice3(index,ib) + fint * &
+                     ssacoice = ssaice3(index,ib) + fint * &
                                    (ssaice3(index+1,ib) - ssaice3(index,ib))
-                     gice(ig) = asyice3(index,ib) + fint * &
+                     gice = asyice3(index,ib) + fint * &
                                (asyice3(index+1,ib) - asyice3(index,ib))
-                     fdelta(ig) = fdlice3(index,ib) + fint * &
+                     fdelta = fdlice3(index,ib) + fint * &
                                  (fdlice3(index+1,ib) - fdlice3(index,ib))
-                     if (fdelta(ig) .lt. 0.0_rb) then
-                      write(errmess, *) 'FDELTA LESS THAN 0.0'
-                      call wrf_error_fatal(errmess)
-                     end if
-                     if (fdelta(ig) .gt. 1.0_rb) then
-                      write(errmess, *) 'FDELTA GT THAN 1.0'
-                      call wrf_error_fatal(errmess)
-                     end if
-                     forwice(ig) = fdelta(ig) + 0.5_rb / ssacoice(ig)
+                  
+                     forwice = fdelta + 0.5  / ssacoice
 ! See Fu 1996 p. 2067 
-                     if (forwice(ig) .gt. gice(ig)) forwice(ig) = gice(ig)
+                     if (forwice .gt. gice) forwice = gice
 ! Check to ensure all calculated quantities are within physical limits.  
-                     if (extcoice(ig) .lt. 0.0_rb) stop 'ICE EXTINCTION LESS THAN 0.0'
-                     if (ssacoice(ig) .gt. 1.0_rb) stop 'ICE SSA GRTR THAN 1.0'
-                     if (ssacoice(ig) .lt. 0.0_rb) stop 'ICE SSA LESS THAN 0.0'
-                     if (gice(ig) .gt. 1.0_rb) stop 'ICE ASYM GRTR THAN 1.0'
-                     if (gice(ig) .lt. 0.0_rb) stop 'ICE ASYM LESS THAN 0.0'
-
+! mji - added checks below
+                     if (extcoice .lt. 0.0) extcoice = 0.0
+                     if (ssacoice .gt. 1.0) ssacoice = 1.0
+                     if (ssacoice .lt. 0.0) ssacoice = 0.0
+                     if (gice .gt. 1.0) gice = 1.0
+                     if (gice .lt. 0.0) gice = 0.0
+                  
                   endif
 
 !!!!!!!!!!!!!!!!!! Mukul !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2208,146 +2082,125 @@
 !!!! an improvement.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-                  if (cswpmc(ig,lay).gt.0.0_rb .and. iceflag .eq. 5) then
-                     radsno = resnmc(lay)
-                     if (radsno .lt. 5.0_rb .or. radsno .gt. 140.0_rb) then
-                         write(errmess,'(A,i5,i5,f8.2,f8.2)' )         &
-               'ERROR: SNOW GENERALIZED EFFECTIVE SIZE OUT OF BOUNDS'   &
-               ,ig, lay, cswpmc(ig,lay), radsno
-                         call wrf_error_fatal(errmess)
-                     end if
-                     factor = (radsno - 2._rb)/3._rb
+                  if (cswpmc(iplon,lay,ig).gt.0.0 .and. iceflag .eq. 5) then
+                     radsno = resnmc(iplon,lay)
+                     factor = (radsno - 2.)/3.
                      index = int(factor)
-                     if (index .eq. 46) index = 45
+! mji - temporary fix to prevent out of range subscripts
+                     if (index .le. 0) index = 1
+                     if (index .ge. 46) index = 45
+!                     if (index .eq. 46) index = 45
                      fint = factor - float(index)
                      ib = ngb(ig)
-                     extcosno(ig) = extice3(index,ib) + fint * &
+                     extcosno = extice3(index,ib) + fint * &
                                    (extice3(index+1,ib) - extice3(index,ib))
-                     ssacosno(ig) = ssaice3(index,ib) + fint * &
+                     ssacosno = ssaice3(index,ib) + fint * &
                                    (ssaice3(index+1,ib) - ssaice3(index,ib))
-                     gsno(ig) = asyice3(index,ib) + fint * &
+                     gsno = asyice3(index,ib) + fint * &
                                (asyice3(index+1,ib) - asyice3(index,ib))
-                     fdelta(ig) = fdlice3(index,ib) + fint * &
+                     fdelta = fdlice3(index,ib) + fint * &
                                  (fdlice3(index+1,ib) - fdlice3(index,ib))
-                     if (fdelta(ig) .lt. 0.0_rb) then
-                      write(errmess, *) 'FDELTA LESS THAN 0.0'
-                      call wrf_error_fatal(errmess)
-                     end if
-                     if (fdelta(ig) .gt. 1.0_rb) then
-                      write(errmess, *) 'FDELTA GT THAN 1.0'
-                      call wrf_error_fatal(errmess)
-                     end if
-                     forwsno(ig) = fdelta(ig) + 0.5_rb / ssacosno(ig)
+                     forwsno = fdelta + 0.5 / ssacosno
 ! See Fu 1996 p. 2067
-                     if (forwsno(ig) .gt. gsno(ig)) forwsno(ig) = gsno(ig)
+                     if (forwsno .gt. gsno) forwsno = gsno
 ! Check to ensure all calculated quantities are within physical limits.  
-                     if (extcosno(ig) .lt. 0.0_rb) then
-                      write(errmess, *) 'SNOW EXTINCTION LESS THAN 0.0'
-                      call wrf_error_fatal(errmess)
-                     end if
-                     if (ssacosno(ig) .gt. 1.0_rb) then
-                      write(errmess, *) 'SNOW SSA GRTR THAN 1.0'
-                      call wrf_error_fatal(errmess)
-                     end if
-                     if (ssacosno(ig) .lt. 0.0_rb)  then
-                      write(errmess, *) 'SNOW SSA LESS THAN 0.0'
-                      call wrf_error_fatal(errmess)
-                     end if
-                     if (gsno(ig) .gt. 1.0_rb)  then
-                      write(errmess, *) 'SNOW ASYM GRTR THAN 1.0'
-                      call wrf_error_fatal(errmess)
-                     end if
-                     if (gsno(ig) .lt. 0.0_rb)  then
-                      write(errmess, *) 'SNOW ASYM LESS THAN 0.0'
-                      call wrf_error_fatal(errmess)
-                     end if
+! mji - added checks below
+                     if (extcosno .lt. 0.0) extcosno = 0.0
+                     if (ssacosno .gt. 1.0) ssacosno = 1.0
+                     if (ssacosno .lt. 0.0) ssacosno = 0.0
+                     if (gsno .gt. 1.0) gsno = 1.0
+                     if (gsno .lt. 0.0) gsno = 0.0
+!
                   else
-                     extcosno(ig) = 0.0_rb
-                     ssacosno(ig) = 0.0_rb
-                     gsno(ig)     = 0.0_rb
-                     forwsno(ig)  = 0.0_rb
+                     extcosno = 0.0
+                     ssacosno = 0.0
+                     gsno     = 0.0
+                     forwsno  = 0.0
                   endif
-
 
 ! Calculation of absorption coefficients due to water clouds.
-                  if (clwpmc(ig,lay) .eq. 0.0_rb) then
-                     extcoliq(ig) = 0.0_rb
-                     ssacoliq(ig) = 0.0_rb
-                     gliq(ig) = 0.0_rb
-                     forwliq(ig) = 0.0_rb
+                  if (clwpmc(iplon,lay,ig)   .eq. 0.0 ) then
+                     extcoliq = 0.0 
+                     ssacoliq = 0.0 
+                     gliq = 0.0 
+                     forwliq = 0.0 
 
                   elseif (liqflag .eq. 1) then
-                     radliq = relqmc(lay)
-                     if (radliq .lt. 1.5_rb .or. radliq .gt. 60._rb) stop &
-                        'liquid effective radius out of bounds'
-                     index = int(radliq - 1.5_rb)
-                     if (index .eq. 0) index = 1
-                     if (index .eq. 58) index = 57
-                     fint = radliq - 1.5_rb - float(index)
+                     radliq = relqmc(iplon,lay) 
+                   
+                     index = int(radliq - 1.5 )
+! mji - temporary fix to prevent out of range subscripts
+                     if (index .le. 0) index = 1
+                     if (index .ge. 58) index = 57
+!                     if (index .eq. 0) index = 1
+!                     if (index .eq. 58) index = 57
+                     fint = radliq - 1.5  - float(index)
                      ib = ngb(ig)
-                     extcoliq(ig) = extliq1(index,ib) + fint * &
+                     extcoliq = extliq1(index,ib) + fint * &
                                    (extliq1(index+1,ib) - extliq1(index,ib))
-                     ssacoliq(ig) = ssaliq1(index,ib) + fint * &
+                     ssacoliq = ssaliq1(index,ib) + fint * &
                                    (ssaliq1(index+1,ib) - ssaliq1(index,ib))
-                     if (fint .lt. 0._rb .and. ssacoliq(ig) .gt. 1._rb) &
-                                    ssacoliq(ig) = ssaliq1(index,ib)
-                     gliq(ig) = asyliq1(index,ib) + fint * &
+                     if (fint .lt. 0.  .and. ssacoliq .gt. 1. ) &
+                                    ssacoliq = ssaliq1(index,ib)
+                     gliq = asyliq1(index,ib) + fint * &
                                (asyliq1(index+1,ib) - asyliq1(index,ib))
-                     forwliq(ig) = gliq(ig)*gliq(ig)
+                     forwliq = gliq*gliq
 ! Check to ensure all calculated quantities are within physical limits.
-                     if (extcoliq(ig) .lt. 0.0_rb) stop 'LIQUID EXTINCTION LESS THAN 0.0'
-                     if (ssacoliq(ig) .gt. 1.0_rb) stop 'LIQUID SSA GRTR THAN 1.0'
-                     if (ssacoliq(ig) .lt. 0.0_rb) stop 'LIQUID SSA LESS THAN 0.0'
-                     if (gliq(ig) .gt. 1.0_rb) stop 'LIQUID ASYM GRTR THAN 1.0'
-                     if (gliq(ig) .lt. 0.0_rb) stop 'LIQUID ASYM LESS THAN 0.0'
+! mji - added checks below
+                     if (extcoliq .lt. 0.0) extcoliq = 0.0
+                     if (ssacoliq .gt. 1.0) ssacoliq = 1.0
+                     if (ssacoliq .lt. 0.0) ssacoliq = 0.0
+                     if (gliq .gt. 1.0) gliq = 1.0
+                     if (gliq .lt. 0.0) gliq = 0.0
+!
                   endif
    
-
                   if (iceflag .lt. 5) then
-                      tauliqorig = clwpmc(ig,lay) * extcoliq(ig)
-                      tauiceorig = ciwpmc(ig,lay) * extcoice(ig)
-                      taormc(ig,lay) = tauliqorig + tauiceorig
-  
-                      ssaliq = ssacoliq(ig) * (1._rb - forwliq(ig)) / &
-                               (1._rb - forwliq(ig) * ssacoliq(ig))
-                      tauliq = (1._rb - forwliq(ig) * ssacoliq(ig)) * tauliqorig
-                      ssaice = ssacoice(ig) * (1._rb - forwice(ig)) / &
-                               (1._rb - forwice(ig) * ssacoice(ig))
-                      tauice = (1._rb - forwice(ig) * ssacoice(ig)) * tauiceorig
-                      scatliq = ssaliq * tauliq
-                      scatice = ssaice * tauice
-                      scatsno = 0.0_rb 
-                      taucmc(ig,lay) = tauliq + tauice
-                  else
-                      tauliqorig = clwpmc(ig,lay) * extcoliq(ig)
-                      tauiceorig = ciwpmc(ig,lay) * extcoice(ig)
-                      tausnoorig = cswpmc(ig,lay) * extcosno(ig)
-                      taormc(ig,lay) = tauliqorig + tauiceorig + tausnoorig
+                     tauliqorig = clwpmc(iplon,lay,ig)   * extcoliq
+                     tauiceorig = ciwpmc(iplon,lay,ig)   * extcoice
+                     taormc(iplon,lay,ig)   = tauliqorig + tauiceorig
 
-                      ssaliq = ssacoliq(ig) * (1._rb - forwliq(ig)) / &
-                               (1._rb - forwliq(ig) * ssacoliq(ig))
-                      tauliq = (1._rb - forwliq(ig) * ssacoliq(ig)) * tauliqorig
-                      ssaice = ssacoice(ig) * (1._rb - forwice(ig)) / &
-                               (1._rb - forwice(ig) * ssacoice(ig))
-                      tauice = (1._rb - forwice(ig) * ssacoice(ig)) * tauiceorig
-                      ssasno = ssacosno(ig) * (1._rb - forwsno(ig)) / &
-                               (1._rb - forwsno(ig) * ssacosno(ig))
-                      tausno = (1._rb - forwsno(ig) * ssacosno(ig)) * tausnoorig
-                      scatliq = ssaliq * tauliq
-                      scatice = ssaice * tauice
-                      scatsno = ssasno * tausno
-                      taucmc(ig,lay) = tauliq + tauice + tausno
+                     ssaliq = ssacoliq * (1.  - forwliq) / &
+                             (1.  - forwliq * ssacoliq)
+                     tauliq = (1.  - forwliq * ssacoliq) * tauliqorig
+                     ssaice = ssacoice * (1.  - forwice) / &
+                             (1.  - forwice * ssacoice)
+                     tauice = (1.  - forwice * ssacoice) * tauiceorig
+
+                     scatliq = ssaliq * tauliq
+                     scatice = ssaice * tauice
+                     taucmc(iplon,lay,ig)   = tauliq + tauice
+                  else
+                     tauliqorig = clwpmc(iplon,lay,ig)   * extcoliq
+                     tauiceorig = ciwpmc(iplon,lay,ig)   * extcoice
+                     tausnoorig = cswpmc(iplon,lay,ig)   * extcosno
+                     taormc(iplon,lay,ig)   = tauliqorig + tauiceorig + tausnoorig
+
+                     ssaliq = ssacoliq * (1.  - forwliq) / &
+                             (1.  - forwliq * ssacoliq)
+                     tauliq = (1.  - forwliq * ssacoliq) * tauliqorig
+                     ssaice = ssacoice * (1.  - forwice) / &
+                             (1.  - forwice * ssacoice)
+                     tauice = (1.  - forwice * ssacoice) * tauiceorig
+                     ssasno = ssacosno * (1.  - forwsno) / &
+                             (1.  - forwsno * ssacosno)
+                     tausno = (1.  - forwsno * ssacosno) * tausnoorig
+
+                     scatliq = ssaliq * tauliq
+                     scatice = ssaice * tauice
+                     scatsno = ssasno * tausno
+                     taucmc(iplon,lay,ig)   = tauliq + tauice + tausno
                   endif
 
 ! Ensure non-zero taucmc and scatice
-                  if(taucmc(ig,lay).eq.0.) taucmc(ig,lay) = cldmin
+                  if(taucmc(iplon,lay,ig)  .eq.0.) taucmc(iplon,lay,ig)   = cldmin
                   if(scatice.eq.0.) scatice = cldmin
                   if(scatsno.eq.0.) scatsno = cldmin
 
                   if (iceflag .lt. 5) then
-                      ssacmc(ig,lay) = (scatliq + scatice) / taucmc(ig,lay)
+                     ssacmc(iplon,lay,ig)   = (scatliq + scatice) / taucmc(iplon,lay,ig)  
                   else
-                      ssacmc(ig,lay) = (scatliq + scatice + scatsno) / taucmc(ig,lay)
+                     ssacmc(iplon,lay,ig)   = (scatliq + scatice + scatsno) / taucmc(iplon,lay,ig)  
                   endif
 
                   if (iceflag .eq. 3 .or. iceflag.eq.4) then
@@ -2356,25 +2209,26 @@
 ! or hexagonal ice crystals.
 ! Set asymetry parameter to first moment (istr=1)
                      istr = 1
-                     asmcmc(ig,lay) = (1.0_rb/(scatliq+scatice))* &
-                        (scatliq*(gliq(ig)**istr - forwliq(ig)) / &
-                        (1.0_rb - forwliq(ig)) + scatice * ((gice(ig)-forwice(ig))/ &
-                        (1.0_rb - forwice(ig)))**istr)
+                     asmcmc(iplon,lay,ig)   = (1.0 /(scatliq+scatice))* &
+                        (scatliq*(gliq**istr - forwliq) / &
+                        (1.0  - forwliq) + scatice * ((gice-forwice)/ &
+                        (1.0  - forwice))**istr)
+
                   elseif (iceflag .eq. 5) then
                      istr = 1
-                     asmcmc(ig,lay) = (1.0_rb/(scatliq+scatice+scatsno))                               &
-                                    *  (scatliq*(gliq(ig)**istr - forwliq(ig))/(1.0_rb - forwliq(ig))  &
-                                    + scatice * ((gice(ig)-forwice(ig))/(1.0_rb - forwice(ig)))        &
-                                    + scatsno * ((gsno(ig)-forwsno(ig))/(1.0_rb - forwsno(ig)))**istr)
+                     asmcmc(iplon,lay,ig) = (1.0 /(scatliq+scatice+scatsno)) * &
+                                    (scatliq*(gliq**istr - forwliq)/(1.0 - forwliq)  &
+                                    + scatice * ((gice-forwice)/(1.0 - forwice))        &
+                                    + scatsno * ((gsno-forwsno)/(1.0 - forwsno))**istr)
 
                   else 
 ! This code is the standard method for delta-m scaling. 
 ! Set asymetry parameter to first moment (istr=1)
                      istr = 1
-                     asmcmc(ig,lay) = (scatliq *  &
-                        (gliq(ig)**istr - forwliq(ig)) / &
-                        (1.0_rb - forwliq(ig)) + scatice * (gice(ig)**istr - forwice(ig)) / &
-                        (1.0_rb - forwice(ig)))/(scatliq + scatice)
+                     asmcmc(iplon,lay,ig)   = (scatliq *  &
+                        (gliq**istr - forwliq) / &
+                        (1.0  - forwliq) + scatice * (gice**istr - forwice) / &
+                        (1.0  - forwice))/(scatliq + scatice)
                   endif 
 
                endif
@@ -2386,342 +2240,18 @@
 
 ! End layer loop
       enddo
+! End column loop
+      enddo
+!$acc end kernels
 
       end subroutine cldprmc_sw
 
       end module rrtmg_sw_cldprmc
 
-!     path:      $Source: /cvsroot/NWP/WRFV3/phys/module_ra_rrtmg_sw.F,v $
-!     author:    $Author: trn $
-!     revision:  $Revision: 1.3 $
-!     created:   $Date: 2009/04/16 19:54:22 $
-
-      module rrtmg_sw_reftra
-
-!  --------------------------------------------------------------------------
-! |                                                                          |
-! |  Copyright 2002-2008, Atmospheric & Environmental Research, Inc. (AER).  |
-! |  This software may be used, copied, or redistributed as long as it is    |
-! |  not sold and this copyright notice is reproduced on each copy made.     |
-! |  This model is provided as is without any express or implied warranties. |
-! |                       (http://www.rtweb.aer.com/)                        |
-! |                                                                          |
-!  --------------------------------------------------------------------------
-
-! ------- Modules -------
-
-      use parkind, only : im => kind_im, rb => kind_rb
-      use rrsw_tbl, only : tblint, bpade, od_lo, exp_tbl
-      use rrsw_vsn, only : hvrrft, hnamrft
-
-      implicit none
-
-      contains
-
-! --------------------------------------------------------------------
-      subroutine reftra_sw(nlayers, lrtchk, pgg, prmuz, ptau, pw, &
-                           pref, prefd, ptra, ptrad)
-! --------------------------------------------------------------------
-  
-! Purpose: computes the reflectivity and transmissivity of a clear or 
-!   cloudy layer using a choice of various approximations.
-!
-! Interface:  *rrtmg_sw_reftra* is called by *rrtmg_sw_spcvrt*
-!
-! Description:
-! explicit arguments :
-! --------------------
-! inputs
-! ------ 
-!      lrtchk  = .t. for all layers in clear profile
-!      lrtchk  = .t. for cloudy layers in cloud profile 
-!              = .f. for clear layers in cloud profile
-!      pgg     = assymetry factor
-!      prmuz   = cosine solar zenith angle
-!      ptau    = optical thickness
-!      pw      = single scattering albedo
-!
-! outputs
-! -------
-!      pref    : collimated beam reflectivity
-!      prefd   : diffuse beam reflectivity 
-!      ptra    : collimated beam transmissivity
-!      ptrad   : diffuse beam transmissivity
-!
-!
-! Method:
-! -------
-!      standard delta-eddington, p.i.f.m., or d.o.m. layer calculations.
-!      kmodts  = 1 eddington (joseph et al., 1976)
-!              = 2 pifm (zdunkowski et al., 1980)
-!              = 3 discrete ordinates (liou, 1973)
-!
-!
-! Modifications:
-! --------------
-! Original: J-JMorcrette, ECMWF, Feb 2003
-! Revised for F90 reformatting: MJIacono, AER, Jul 2006
-! Revised to add exponential lookup table: MJIacono, AER, Aug 2007
-! Reformulated some code to avoid potential fpes: MJIacono, AER, Nov 2008
-!
-! ------------------------------------------------------------------
-
-! ------- Declarations ------
-
-! ------- Input -------
-
-      integer(kind=im), intent(in) :: nlayers
-
-      logical, intent(in) :: lrtchk(:)                         ! Logical flag for reflectivity and
-                                                               ! and transmissivity calculation; 
-                                                               !   Dimensions: (nlayers)
-
-      real(kind=rb), intent(in) :: pgg(:)                      ! asymmetry parameter
-                                                               !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: ptau(:)                     ! optical depth
-                                                               !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: pw(:)                       ! single scattering albedo 
-                                                               !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: prmuz                       ! cosine of solar zenith angle
-
-! ------- Output -------
-
-      real(kind=rb), intent(inout) :: pref(:)                  ! direct beam reflectivity
-                                                               !   Dimensions: (nlayers+1)
-      real(kind=rb), intent(inout) :: prefd(:)                 ! diffuse beam reflectivity
-                                                               !   Dimensions: (nlayers+1)
-      real(kind=rb), intent(inout) :: ptra(:)                  ! direct beam transmissivity
-                                                               !   Dimensions: (nlayers+1)
-      real(kind=rb), intent(inout) :: ptrad(:)                 ! diffuse beam transmissivity
-                                                               !   Dimensions: (nlayers+1)
-
-! ------- Local -------
-
-      integer(kind=im) :: jk, jl, kmodts
-      integer(kind=im) :: itind
-
-      real(kind=rb) :: tblind
-      real(kind=rb) :: za, za1, za2
-      real(kind=rb) :: zbeta, zdend, zdenr, zdent
-      real(kind=rb) :: ze1, ze2, zem1, zem2, zemm, zep1, zep2
-      real(kind=rb) :: zg, zg3, zgamma1, zgamma2, zgamma3, zgamma4, zgt
-      real(kind=rb) :: zr1, zr2, zr3, zr4, zr5
-      real(kind=rb) :: zrk, zrk2, zrkg, zrm1, zrp, zrp1, zrpp
-      real(kind=rb) :: zsr3, zt1, zt2, zt3, zt4, zt5, zto1
-      real(kind=rb) :: zw, zwcrit, zwo
-      real(kind=rb) :: denom
-
-      real(kind=rb), parameter :: eps = 1.e-08_rb
-
-!     ------------------------------------------------------------------
-
-! Initialize
-
-      hvrrft = '$Revision: 1.3 $'
-
-      zsr3=sqrt(3._rb)
-      zwcrit=0.9999995_rb
-      kmodts=2
-
-      do jk=1, nlayers
-         if (.not.lrtchk(jk)) then
-            pref(jk) =0._rb
-            ptra(jk) =1._rb
-            prefd(jk)=0._rb
-            ptrad(jk)=1._rb
-         else
-            zto1=ptau(jk)
-            zw  =pw(jk)
-            zg  =pgg(jk)  
-
-! General two-stream expressions
-
-            zg3= 3._rb * zg
-            if (kmodts == 1) then
-               zgamma1= (7._rb - zw * (4._rb + zg3)) * 0.25_rb
-               zgamma2=-(1._rb - zw * (4._rb - zg3)) * 0.25_rb
-               zgamma3= (2._rb - zg3 * prmuz ) * 0.25_rb
-            else if (kmodts == 2) then  
-               zgamma1= (8._rb - zw * (5._rb + zg3)) * 0.25_rb
-               zgamma2=  3._rb *(zw * (1._rb - zg )) * 0.25_rb
-               zgamma3= (2._rb - zg3 * prmuz ) * 0.25_rb
-            else if (kmodts == 3) then  
-               zgamma1= zsr3 * (2._rb - zw * (1._rb + zg)) * 0.5_rb
-               zgamma2= zsr3 * zw * (1._rb - zg ) * 0.5_rb
-               zgamma3= (1._rb - zsr3 * zg * prmuz ) * 0.5_rb
-            end if
-            zgamma4= 1._rb - zgamma3
-    
-! Recompute original s.s.a. to test for conservative solution
-            !Balwinder.Singh@pnnl.gov: Code added to avoid 'divide by zero' error in zwo computation
-            denom = max((1._rb - (1._rb - zw) * (zg / (1._rb - zg))**2),1.0E-30_rb)
-            zwo= zw / denom
-
-            if (zwo >= zwcrit) then
-! Conservative scattering
-
-               za  = zgamma1 * prmuz 
-               za1 = za - zgamma3
-               zgt = zgamma1 * zto1
-        
-! Homogeneous reflectance and transmittance,
-! collimated beam
-
-               ze1 = min ( zto1 / prmuz , 500._rb)
-!               ze2 = exp( -ze1 )
-
-! Use exponential lookup table for transmittance, or expansion of 
-! exponential for low tau
-               if (ze1 .le. od_lo) then 
-                  ze2 = 1._rb - ze1 + 0.5_rb * ze1 * ze1
-               else
-                  tblind = ze1 / (bpade + ze1)
-                  itind = tblint * tblind + 0.5_rb
-                  ze2 = exp_tbl(itind)
-               endif
-!
-
-               pref(jk) = (zgt - za1 * (1._rb - ze2)) / (1._rb + zgt)
-               ptra(jk) = 1._rb - pref(jk)
-
-! isotropic incidence
-
-               prefd(jk) = zgt / (1._rb + zgt)
-               ptrad(jk) = 1._rb - prefd(jk)        
-
-! This is applied for consistency between total (delta-scaled) and direct (unscaled) 
-! calculations at very low optical depths (tau < 1.e-4) when the exponential lookup
-! table returns a transmittance of 1.0.
-               if (ze2 .eq. 1.0_rb) then 
-                  pref(jk) = 0.0_rb
-                  ptra(jk) = 1.0_rb
-                  prefd(jk) = 0.0_rb
-                  ptrad(jk) = 1.0_rb
-               endif
-
-            else
-! Non-conservative scattering
-
-               za1 = zgamma1 * zgamma4 + zgamma2 * zgamma3
-               za2 = zgamma1 * zgamma3 + zgamma2 * zgamma4
-               zrk = sqrt ( zgamma1**2 - zgamma2**2)
-               zrp = zrk * prmuz               
-               zrp1 = 1._rb + zrp
-               zrm1 = 1._rb - zrp
-               zrk2 = 2._rb * zrk
-               zrpp = 1._rb - zrp*zrp
-               zrkg = zrk + zgamma1
-               zr1  = zrm1 * (za2 + zrk * zgamma3)
-               zr2  = zrp1 * (za2 - zrk * zgamma3)
-               zr3  = zrk2 * (zgamma3 - za2 * prmuz )
-               zr4  = zrpp * zrkg
-               zr5  = zrpp * (zrk - zgamma1)
-               zt1  = zrp1 * (za1 + zrk * zgamma4)
-               zt2  = zrm1 * (za1 - zrk * zgamma4)
-               zt3  = zrk2 * (zgamma4 + za1 * prmuz )
-               zt4  = zr4
-               zt5  = zr5
-
-! mji - reformulated code to avoid potential floating point exceptions
-!               zbeta = - zr5 / zr4
-               zbeta = (zgamma1 - zrk) / zrkg
-!!
-        
-! Homogeneous reflectance and transmittance
-
-               ze1 = min ( zrk * zto1, 500._rb)
-               ze2 = min ( zto1 / prmuz , 500._rb)
-!
-! Original
-!              zep1 = exp( ze1 )
-!              zem1 = exp(-ze1 )
-!              zep2 = exp( ze2 )
-!              zem2 = exp(-ze2 )
-!
-! Revised original, to reduce exponentials
-!              zep1 = exp( ze1 )
-!              zem1 = 1._rb / zep1
-!              zep2 = exp( ze2 )
-!              zem2 = 1._rb / zep2
-!
-! Use exponential lookup table for transmittance, or expansion of 
-! exponential for low tau
-               if (ze1 .le. od_lo) then 
-                  zem1 = 1._rb - ze1 + 0.5_rb * ze1 * ze1
-                  zep1 = 1._rb / zem1
-               else
-                  tblind = ze1 / (bpade + ze1)
-                  itind = tblint * tblind + 0.5_rb
-                  zem1 = exp_tbl(itind)
-                  zep1 = 1._rb / zem1
-               endif
-
-               if (ze2 .le. od_lo) then 
-                  zem2 = 1._rb - ze2 + 0.5_rb * ze2 * ze2
-                  zep2 = 1._rb / zem2
-               else
-                  tblind = ze2 / (bpade + ze2)
-                  itind = tblint * tblind + 0.5_rb
-                  zem2 = exp_tbl(itind)
-                  zep2 = 1._rb / zem2
-               endif
-
-! collimated beam
-
-! mji - reformulated code to avoid potential floating point exceptions
-!               zdenr = zr4*zep1 + zr5*zem1
-!               pref(jk) = zw * (zr1*zep1 - zr2*zem1 - zr3*zem2) / zdenr
-!               zdent = zt4*zep1 + zt5*zem1
-!               ptra(jk) = zem2 - zem2 * zw * (zt1*zep1 - zt2*zem1 - zt3*zep2) / zdent
-
-               zdenr = zr4*zep1 + zr5*zem1
-               zdent = zt4*zep1 + zt5*zem1
-               if (zdenr .ge. -eps .and. zdenr .le. eps) then
-                  pref(jk) = eps
-                  ptra(jk) = zem2
-               else
-                  pref(jk) = zw * (zr1*zep1 - zr2*zem1 - zr3*zem2) / zdenr
-                  ptra(jk) = zem2 - zem2 * zw * (zt1*zep1 - zt2*zem1 - zt3*zep2) / zdent
-               endif
-!!
-
-! diffuse beam
-
-               zemm = zem1*zem1
-               zdend = 1._rb / ( (1._rb - zbeta*zemm ) * zrkg)
-               prefd(jk) =  zgamma2 * (1._rb - zemm) * zdend
-               ptrad(jk) =  zrk2*zem1*zdend
-
-            endif
-
-         endif         
-
-      enddo    
-
-      end subroutine reftra_sw
-
-      end module rrtmg_sw_reftra
-
-!     path:      $Source: /cvsroot/NWP/WRFV3/phys/module_ra_rrtmg_sw.F,v $
-!     author:    $Author: trn $
-!     revision:  $Revision: 1.3 $
-!     created:   $Date: 2009/04/16 19:54:22 $
-
       module rrtmg_sw_setcoef
 
-!  --------------------------------------------------------------------------
-! |                                                                          |
-! |  Copyright 2002-2008, Atmospheric & Environmental Research, Inc. (AER).  |
-! |  This software may be used, copied, or redistributed as long as it is    |
-! |  not sold and this copyright notice is reproduced on each copy made.     |
-! |  This model is provided as is without any express or implied warranties. |
-! |                       (http://www.rtweb.aer.com/)                        |
-! |                                                                          |
-!  --------------------------------------------------------------------------
-
 ! ------- Modules -------
 
-      use parkind, only : im => kind_im, rb => kind_rb
       use parrrsw, only : mxmol
       use rrsw_ref, only : pref, preflog, tref
       use rrsw_vsn, only : hvrset, hnamset
@@ -2731,7 +2261,7 @@
       contains
 
 !----------------------------------------------------------------------------
-      subroutine setcoef_sw(nlayers, pavel, tavel, pz, tz, tbound, coldry, wkl, &
+      subroutine setcoef_sw(ncol, nlayers, pavel, tavel, pz, tz, tbound, coldry, wkl, &
                             laytrop, layswtch, laylow, jp, jt, jt1, &
                             co2mult, colch4, colco2, colh2o, colmol, coln2o, &
                             colo2, colo3, fac00, fac01, fac10, fac11, &
@@ -2749,117 +2279,139 @@
 ! ------ Declarations -------
 
 ! ----- Input -----
-      integer(kind=im), intent(in) :: nlayers         ! total number of layers
+      integer, intent(in) :: ncol
 
-      real(kind=rb), intent(in) :: pavel(:)           ! layer pressures (mb) 
+      integer , intent(in) :: nlayers         ! total number of layers
+      
+      real , intent(in) :: pavel(:,:)            ! layer pressures (mb) 
                                                       !    Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: tavel(:)           ! layer temperatures (K)
+      real , intent(in) :: tavel(:,:)            ! layer temperatures (K)
                                                       !    Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: pz(0:)             ! level (interface) pressures (hPa, mb)
+      real , intent(in) :: pz(:,0:)              ! level (interface) pressures (hPa, mb)
                                                       !    Dimensions: (0:nlayers)
-      real(kind=rb), intent(in) :: tz(0:)             ! level (interface) temperatures (K)
+      real , intent(in) :: tz(:,0:)              ! level (interface) temperatures (K)
                                                       !    Dimensions: (0:nlayers)
-      real(kind=rb), intent(in) :: tbound             ! surface temperature (K)
-      real(kind=rb), intent(in) :: coldry(:)          ! dry air column density (mol/cm2)
+      real , intent(in) :: tbound(:)             ! surface temperature (K)
+      real , intent(in) :: coldry(:,:)           ! dry air column density (mol/cm2)
                                                       !    Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: wkl(:,:)           ! molecular amounts (mol/cm-2)
+      real , intent(in) :: wkl(:,:,:)            ! molecular amounts (mol/cm-2)
                                                       !    Dimensions: (mxmol,nlayers)
 
 ! ----- Output -----
-      integer(kind=im), intent(out) :: laytrop        ! tropopause layer index
-      integer(kind=im), intent(out) :: layswtch       ! 
-      integer(kind=im), intent(out) :: laylow         ! 
+      integer , intent(out) :: laytrop(:)        ! tropopause layer index
+      integer , intent(out) :: layswtch(:)       ! 
+      integer , intent(out) :: laylow(:)         ! 
 
-      integer(kind=im), intent(out) :: jp(:)          ! 
+      integer , intent(out) :: jp(:,:)           ! 
                                                       !    Dimensions: (nlayers)
-      integer(kind=im), intent(out) :: jt(:)          !
+      integer , intent(out) :: jt(:,:)           !
                                                       !    Dimensions: (nlayers)
-      integer(kind=im), intent(out) :: jt1(:)         !
-                                                      !    Dimensions: (nlayers)
-
-      real(kind=rb), intent(out) :: colh2o(:)         ! column amount (h2o)
-                                                      !    Dimensions: (nlayers)
-      real(kind=rb), intent(out) :: colco2(:)         ! column amount (co2)
-                                                      !    Dimensions: (nlayers)
-      real(kind=rb), intent(out) :: colo3(:)          ! column amount (o3)
-                                                      !    Dimensions: (nlayers)
-      real(kind=rb), intent(out) :: coln2o(:)         ! column amount (n2o)
-                                                      !    Dimensions: (nlayers)
-      real(kind=rb), intent(out) :: colch4(:)         ! column amount (ch4)
-                                                      !    Dimensions: (nlayers)
-      real(kind=rb), intent(out) :: colo2(:)          ! column amount (o2)
-                                                      !    Dimensions: (nlayers)
-      real(kind=rb), intent(out) :: colmol(:)         ! 
-                                                      !    Dimensions: (nlayers)
-      real(kind=rb), intent(out) :: co2mult(:)        !
+      integer , intent(out) :: jt1(:,:)          !
                                                       !    Dimensions: (nlayers)
 
-      integer(kind=im), intent(out) :: indself(:)
+      real , intent(out) :: colh2o(:,:)          ! column amount (h2o)
                                                       !    Dimensions: (nlayers)
-      integer(kind=im), intent(out) :: indfor(:)
+      real , intent(out) :: colco2(:,:)          ! column amount (co2)
                                                       !    Dimensions: (nlayers)
-      real(kind=rb), intent(out) :: selffac(:)
+      real , intent(out) :: colo3(:,:)           ! column amount (o3)
                                                       !    Dimensions: (nlayers)
-      real(kind=rb), intent(out) :: selffrac(:)
+      real , intent(out) :: coln2o(:,:)          ! column amount (n2o)
                                                       !    Dimensions: (nlayers)
-      real(kind=rb), intent(out) :: forfac(:)
+      real , intent(out) :: colch4(:,:)          ! column amount (ch4)
                                                       !    Dimensions: (nlayers)
-      real(kind=rb), intent(out) :: forfrac(:)
+      real , intent(out) :: colo2(:,:)           ! column amount (o2)
+                                                      !    Dimensions: (nlayers)
+      real , intent(out) :: colmol(:,:)          ! 
+                                                      !    Dimensions: (nlayers)
+      real , intent(out) :: co2mult(:,:)         !
                                                       !    Dimensions: (nlayers)
 
-      real(kind=rb), intent(out) :: &                 !
-                         fac00(:), fac01(:), &        !    Dimensions: (nlayers)
-                         fac10(:), fac11(:) 
+      integer , intent(out) :: indself(:,:) 
+                                                      !    Dimensions: (nlayers)
+      integer , intent(out) :: indfor(:,:) 
+                                                      !    Dimensions: (nlayers)
+      real , intent(out) :: selffac(:,:) 
+                                                      !    Dimensions: (nlayers)
+      real , intent(out) :: selffrac(:,:) 
+                                                      !    Dimensions: (nlayers)
+      real , intent(out) :: forfac(:,:) 
+                                                      !    Dimensions: (nlayers)
+      real , intent(out) :: forfrac(:,:) 
+                                                      !    Dimensions: (nlayers)
+
+      real , intent(out) :: fac00(:,:) , fac01(:,:) , fac10(:,:) , fac11(:,:)  
 
 ! ----- Local -----
 
-      integer(kind=im) :: indbound
-      integer(kind=im) :: indlev0
-      integer(kind=im) :: lay
-      integer(kind=im) :: jp1
+      integer  :: indbound
+      integer  :: indlev0
+      integer  :: lay
+      integer  :: jp1
+      integer  :: iplon
 
-      real(kind=rb) :: stpfac
-      real(kind=rb) :: tbndfrac
-      real(kind=rb) :: t0frac
-      real(kind=rb) :: plog
-      real(kind=rb) :: fp
-      real(kind=rb) :: ft
-      real(kind=rb) :: ft1
-      real(kind=rb) :: water
-      real(kind=rb) :: scalefac
-      real(kind=rb) :: factor
-      real(kind=rb) :: co2reg
-      real(kind=rb) :: compfp
+      real  :: stpfac
+      real  :: tbndfrac
+      real  :: t0frac
+      real  :: plog
+      real  :: fp
+      real  :: ft
+      real  :: ft1
+      real  :: water
+      real  :: scalefac
+      real  :: factor
+      real  :: co2reg
+      real  :: compfp
 
 
 ! Initializations
-      stpfac = 296._rb/1013._rb
+      stpfac = 296. /1013. 
 
-      indbound = tbound - 159._rb
-      tbndfrac = tbound - int(tbound)
-      indlev0  = tz(0) - 159._rb
-      t0frac   = tz(0) - int(tz(0))
 
-      laytrop  = 0
+!$acc kernels present(pavel, layswtch, laytrop, laylow)
       layswtch = 0
-      laylow   = 0
+      laytrop = 0
+      laylow = 0
+      do iplon = 1, ncol
+         do lay = 1, nlayers
+            plog = log(pavel(iplon,lay) )
+            if (plog .ge. 4.56) laytrop(iplon) = laytrop(iplon) + 1
+            if (plog .ge. 6.62) laylow(iplon) = laylow(iplon) + 1
+         end do
+      end do
+!$acc end kernels
+
+
+!$acc kernels loop present(pavel, tavel, pz, tz, tbound) &
+!$acc present(coldry, wkl, jp, jt, jt1, colh2o, colco2) &
+!$acc present(colo3, coln2o, colch4, colo2, colmol, co2mult, indself) &
+!$acc present(indfor, selffac, selffrac, forfac, forfrac, fac00, fac01, fac10, fac11)
+
+! Begin column loop
+      do iplon = 1, ncol
+
+      indbound = tbound(iplon) - 159. 
+      tbndfrac = tbound(iplon) - int(tbound(iplon))
+      
+      indlev0  = tz(iplon,0)  - 159. 
+      t0frac   = tz(iplon,0)  - int(tz(iplon,0) )
 
 ! Begin layer loop
-      do lay = 1, nlayers
+
+       do lay = 1, nlayers
 ! Find the two reference pressures on either side of the
 ! layer pressure.  Store them in JP and JP1.  Store in FP the
 ! fraction of the difference (in ln(pressure)) between these
 ! two values that the layer pressure lies.
 
-         plog = log(pavel(lay))
-         jp(lay) = int(36._rb - 5*(plog+0.04_rb))
-         if (jp(lay) .lt. 1) then
-            jp(lay) = 1
-         elseif (jp(lay) .gt. 58) then
-            jp(lay) = 58
+         plog = log(pavel(iplon,lay) )
+         jp(iplon,lay)  = int(36.  - 5*(plog+0.04 ))
+         if (jp(iplon,lay)  .lt. 1) then
+            jp(iplon,lay)  = 1
+         elseif (jp(iplon,lay)  .gt. 58) then
+            jp(iplon,lay)  = 58
          endif
-         jp1 = jp(lay) + 1
-         fp = 5._rb * (preflog(jp(lay)) - plog)
+         jp1 = jp(iplon,lay)  + 1
+         fp = 5.  * (preflog(jp(iplon,lay) ) - plog)
 
 ! Determine, for each reference pressure (JP and JP1), which
 ! reference temperature (these are different for each  
@@ -2869,108 +2421,102 @@
 ! (JT1) and the next highest reference temperature that the 
 ! layer temperature falls.
 
-         jt(lay) = int(3._rb + (tavel(lay)-tref(jp(lay)))/15._rb)
-         if (jt(lay) .lt. 1) then
-            jt(lay) = 1
-         elseif (jt(lay) .gt. 4) then
-            jt(lay) = 4
+         jt(iplon,lay)  = int(3.  + (tavel(iplon,lay) -tref(jp(iplon,lay) ))/15. )
+         if (jt(iplon,lay)  .lt. 1) then
+            jt(iplon,lay)  = 1
+         elseif (jt(iplon,lay)  .gt. 4) then
+            jt(iplon,lay)  = 4
          endif
-         ft = ((tavel(lay)-tref(jp(lay)))/15._rb) - float(jt(lay)-3)
-         jt1(lay) = int(3._rb + (tavel(lay)-tref(jp1))/15._rb)
-         if (jt1(lay) .lt. 1) then
-            jt1(lay) = 1
-         elseif (jt1(lay) .gt. 4) then
-            jt1(lay) = 4
+         ft = ((tavel(iplon,lay) -tref(jp(iplon,lay) ))/15. ) - float(jt(iplon,lay) -3)
+         jt1(iplon,lay)  = int(3.  + (tavel(iplon,lay) -tref(jp1))/15. )
+         if (jt1(iplon,lay)  .lt. 1) then
+            jt1(iplon,lay)  = 1
+         elseif (jt1(iplon,lay)  .gt. 4) then
+            jt1(iplon,lay)  = 4
          endif
-         ft1 = ((tavel(lay)-tref(jp1))/15._rb) - float(jt1(lay)-3)
+         ft1 = ((tavel(iplon,lay) -tref(jp1))/15. ) - float(jt1(iplon,lay) -3)
 
-         water = wkl(1,lay)/coldry(lay)
-         scalefac = pavel(lay) * stpfac / tavel(lay)
+         water = wkl(iplon,1,lay) /coldry(iplon,lay) 
+         scalefac = pavel(iplon,lay)  * stpfac / tavel(iplon,lay) 
 
 ! If the pressure is less than ~100mb, perform a different
 ! set of species interpolations.
 
-         if (plog .le. 4.56_rb) go to 5300
-         laytrop =  laytrop + 1
-         if (plog .ge. 6.62_rb) laylow = laylow + 1
+         if (plog .le. 4.56 ) then
+
+         forfac(iplon,lay)  = scalefac / (1.+water)
+         factor = (tavel(iplon,lay) -188.0 )/36.0 
+         indfor(iplon,lay)  = 3
+         forfrac(iplon,lay)  = factor - 1.0 
+
+! Calculate needed column amounts.
+
+         colh2o(iplon,lay)  = 1.e-20  * wkl(iplon,1,lay) 
+         colco2(iplon,lay)  = 1.e-20  * wkl(iplon,2,lay) 
+         colo3(iplon,lay)   = 1.e-20  * wkl(iplon,3,lay) 
+         coln2o(iplon,lay)  = 1.e-20  * wkl(iplon,4,lay) 
+         colch4(iplon,lay)  = 1.e-20  * wkl(iplon,6,lay) 
+         colo2(iplon,lay)   = 1.e-20  * wkl(iplon,7,lay) 
+         colmol(iplon,lay)  = 1.e-20  * coldry(iplon,lay)  + colh2o(iplon,lay) 
+         if (colco2(iplon,lay)  .eq. 0. ) colco2(iplon,lay)  = 1.e-32  * coldry(iplon,lay) 
+         if (coln2o(iplon,lay)  .eq. 0. ) coln2o(iplon,lay)  = 1.e-32  * coldry(iplon,lay) 
+         if (colch4(iplon,lay)  .eq. 0. ) colch4(iplon,lay)  = 1.e-32  * coldry(iplon,lay) 
+         if (colo2(iplon,lay)   .eq. 0. ) colo2(iplon,lay)   = 1.e-32  * coldry(iplon,lay) 
+         co2reg = 3.55e-24  * coldry(iplon,lay) 
+         co2mult(iplon,lay) = (colco2(iplon,lay)  - co2reg) * &
+               272.63 *exp(-1919.4 /tavel(iplon,lay) )/(8.7604e-4 *tavel(iplon,lay) )
+
+         selffac(iplon,lay)  = 0. 
+         selffrac(iplon,lay) = 0. 
+         indself(iplon,lay)  = 0
+
+
+         else
+
 
 ! Set up factors needed to separately include the water vapor
 ! foreign-continuum in the calculation of absorption coefficient.
 
-         forfac(lay) = scalefac / (1.+water)
-         factor = (332.0_rb-tavel(lay))/36.0_rb
-         indfor(lay) = min(2, max(1, int(factor)))
-         forfrac(lay) = factor - float(indfor(lay))
+         forfac(iplon,lay)  = scalefac / (1.+water)
+         factor = (332.0 -tavel(iplon,lay) )/36.0 
+         indfor(iplon,lay)  = min(2, max(1, int(factor)))
+         forfrac(iplon,lay)  = factor - float(indfor(iplon,lay) )
 
 ! Set up factors needed to separately include the water vapor
 ! self-continuum in the calculation of absorption coefficient.
 
-         selffac(lay) = water * forfac(lay)
-         factor = (tavel(lay)-188.0_rb)/7.2_rb
-         indself(lay) = min(9, max(1, int(factor)-7))
-         selffrac(lay) = factor - float(indself(lay) + 7)
+         selffac(iplon,lay)  = water * forfac(iplon,lay) 
+         factor = (tavel(iplon,lay) -188.0 )/7.2 
+         indself(iplon,lay)  = min(9, max(1, int(factor)-7))
+         selffrac(iplon,lay)  = factor - float(indself(iplon,lay)  + 7)
 
 ! Calculate needed column amounts.
 
-         colh2o(lay) = 1.e-20_rb * wkl(1,lay)
-         colco2(lay) = 1.e-20_rb * wkl(2,lay)
-         colo3(lay) = 1.e-20_rb * wkl(3,lay)
-!           colo3(lay) = 0._rb
-!           colo3(lay) = colo3(lay)/1.16_rb
-         coln2o(lay) = 1.e-20_rb * wkl(4,lay)
-         colch4(lay) = 1.e-20_rb * wkl(6,lay)
-         colo2(lay) = 1.e-20_rb * wkl(7,lay)
-         colmol(lay) = 1.e-20_rb * coldry(lay) + colh2o(lay)
-!           colco2(lay) = 0._rb
-!           colo3(lay) = 0._rb
-!           coln2o(lay) = 0._rb
-!           colch4(lay) = 0._rb
-!           colo2(lay) = 0._rb
-!           colmol(lay) = 0._rb
-         if (colco2(lay) .eq. 0._rb) colco2(lay) = 1.e-32_rb * coldry(lay)
-         if (coln2o(lay) .eq. 0._rb) coln2o(lay) = 1.e-32_rb * coldry(lay)
-         if (colch4(lay) .eq. 0._rb) colch4(lay) = 1.e-32_rb * coldry(lay)
-         if (colo2(lay) .eq. 0._rb) colo2(lay) = 1.e-32_rb * coldry(lay)
+         colh2o(iplon,lay)  = 1.e-20  * wkl(iplon,1,lay) 
+         colco2(iplon,lay)  = 1.e-20  * wkl(iplon,2,lay) 
+         colo3(iplon,lay)  = 1.e-20  * wkl(iplon,3,lay) 
+!           colo3(lay) = 0. 
+!           colo3(lay) = colo3(lay)/1.16 
+         coln2o(iplon,lay)  = 1.e-20  * wkl(iplon,4,lay) 
+         colch4(iplon,lay)  = 1.e-20  * wkl(iplon,6,lay) 
+         colo2(iplon,lay)  = 1.e-20  * wkl(iplon,7,lay) 
+         colmol(iplon,lay)  = 1.e-20  * coldry(iplon,lay)  + colh2o(iplon,lay) 
+!           colco2(lay) = 0. 
+!           colo3(lay) = 0. 
+!           coln2o(lay) = 0. 
+!           colch4(lay) = 0. 
+!           colo2(lay) = 0. 
+!           colmol(lay) = 0. 
+         if (colco2(iplon,lay)  .eq. 0. ) colco2(iplon,lay)  = 1.e-32  * coldry(iplon,lay) 
+         if (coln2o(iplon,lay)  .eq. 0. ) coln2o(iplon,lay)  = 1.e-32  * coldry(iplon,lay) 
+         if (colch4(iplon,lay)  .eq. 0. ) colch4(iplon,lay)  = 1.e-32  * coldry(iplon,lay) 
+         if (colo2(iplon,lay)  .eq. 0. ) colo2(iplon,lay)  = 1.e-32  * coldry(iplon,lay) 
 ! Using E = 1334.2 cm-1.
-         co2reg = 3.55e-24_rb * coldry(lay)
-         co2mult(lay)= (colco2(lay) - co2reg) * &
-               272.63_rb*exp(-1919.4_rb/tavel(lay))/(8.7604e-4_rb*tavel(lay))
-         goto 5400
-
-! Above laytrop.
- 5300    continue
-
-! Set up factors needed to separately include the water vapor
-! foreign-continuum in the calculation of absorption coefficient.
-
-         forfac(lay) = scalefac / (1.+water)
-         factor = (tavel(lay)-188.0_rb)/36.0_rb
-         indfor(lay) = 3
-         forfrac(lay) = factor - 1.0_rb
-
-! Calculate needed column amounts.
-
-         colh2o(lay) = 1.e-20_rb * wkl(1,lay)
-         colco2(lay) = 1.e-20_rb * wkl(2,lay)
-         colo3(lay)  = 1.e-20_rb * wkl(3,lay)
-         coln2o(lay) = 1.e-20_rb * wkl(4,lay)
-         colch4(lay) = 1.e-20_rb * wkl(6,lay)
-         colo2(lay)  = 1.e-20_rb * wkl(7,lay)
-         colmol(lay) = 1.e-20_rb * coldry(lay) + colh2o(lay)
-         if (colco2(lay) .eq. 0._rb) colco2(lay) = 1.e-32_rb * coldry(lay)
-         if (coln2o(lay) .eq. 0._rb) coln2o(lay) = 1.e-32_rb * coldry(lay)
-         if (colch4(lay) .eq. 0._rb) colch4(lay) = 1.e-32_rb * coldry(lay)
-         if (colo2(lay)  .eq. 0._rb) colo2(lay)  = 1.e-32_rb * coldry(lay)
-         co2reg = 3.55e-24_rb * coldry(lay)
-         co2mult(lay)= (colco2(lay) - co2reg) * &
-               272.63_rb*exp(-1919.4_rb/tavel(lay))/(8.7604e-4_rb*tavel(lay))
-
-         selffac(lay) = 0._rb
-         selffrac(lay)= 0._rb
-         indself(lay) = 0
-
- 5400    continue
-
+         co2reg = 3.55e-24  * coldry(iplon,lay) 
+         co2mult(iplon,lay) = (colco2(iplon,lay)  - co2reg) * &
+               272.63 *exp(-1919.4 /tavel(iplon,lay) )/(8.7604e-4 *tavel(iplon,lay) )
+      
+         end if
 ! We have now isolated the layer ln pressure and temperature,
 ! between two reference pressures and two reference temperatures 
 ! (for each reference pressure).  We multiply the pressure 
@@ -2978,16 +2524,20 @@
 ! the factors that will be needed for the interpolation that yields
 ! the optical depths (performed in routines TAUGBn for band n).
 
-         compfp = 1._rb - fp
-         fac10(lay) = compfp * ft
-         fac00(lay) = compfp * (1._rb - ft)
-         fac11(lay) = fp * ft1
-         fac01(lay) = fp * (1._rb - ft1)
+         compfp = 1.  - fp
+         fac10(iplon,lay)  = compfp * ft
+         fac00(iplon,lay)  = compfp * (1.  - ft)
+         fac11(iplon,lay)  = fp * ft1
+         fac01(iplon,lay)  = fp * (1.  - ft1)
 
 ! End layer loop
-      enddo
+       end do
 
-      end subroutine setcoef_sw
+! End column loop
+      end do
+!$acc end kernels
+
+end subroutine setcoef_sw
 
 !***************************************************************************
       subroutine swatmref
@@ -3000,75 +2550,58 @@
 ! each subsequent ln(pressure) differs from the previous one by 0.2.
 
       pref(:) = (/ &
-          1.05363e+03_rb,8.62642e+02_rb,7.06272e+02_rb,5.78246e+02_rb,4.73428e+02_rb, &
-          3.87610e+02_rb,3.17348e+02_rb,2.59823e+02_rb,2.12725e+02_rb,1.74164e+02_rb, &
-          1.42594e+02_rb,1.16746e+02_rb,9.55835e+01_rb,7.82571e+01_rb,6.40715e+01_rb, &
-          5.24573e+01_rb,4.29484e+01_rb,3.51632e+01_rb,2.87892e+01_rb,2.35706e+01_rb, &
-          1.92980e+01_rb,1.57998e+01_rb,1.29358e+01_rb,1.05910e+01_rb,8.67114e+00_rb, &
-          7.09933e+00_rb,5.81244e+00_rb,4.75882e+00_rb,3.89619e+00_rb,3.18993e+00_rb, &
-          2.61170e+00_rb,2.13828e+00_rb,1.75067e+00_rb,1.43333e+00_rb,1.17351e+00_rb, &
-          9.60789e-01_rb,7.86628e-01_rb,6.44036e-01_rb,5.27292e-01_rb,4.31710e-01_rb, &
-          3.53455e-01_rb,2.89384e-01_rb,2.36928e-01_rb,1.93980e-01_rb,1.58817e-01_rb, &
-          1.30029e-01_rb,1.06458e-01_rb,8.71608e-02_rb,7.13612e-02_rb,5.84256e-02_rb, &
-          4.78349e-02_rb,3.91639e-02_rb,3.20647e-02_rb,2.62523e-02_rb,2.14936e-02_rb, &
-          1.75975e-02_rb,1.44076e-02_rb,1.17959e-02_rb,9.65769e-03_rb /)
+          1.05363e+03 ,8.62642e+02 ,7.06272e+02 ,5.78246e+02 ,4.73428e+02 , &
+          3.87610e+02 ,3.17348e+02 ,2.59823e+02 ,2.12725e+02 ,1.74164e+02 , &
+          1.42594e+02 ,1.16746e+02 ,9.55835e+01 ,7.82571e+01 ,6.40715e+01 , &
+          5.24573e+01 ,4.29484e+01 ,3.51632e+01 ,2.87892e+01 ,2.35706e+01 , &
+          1.92980e+01 ,1.57998e+01 ,1.29358e+01 ,1.05910e+01 ,8.67114e+00 , &
+          7.09933e+00 ,5.81244e+00 ,4.75882e+00 ,3.89619e+00 ,3.18993e+00 , &
+          2.61170e+00 ,2.13828e+00 ,1.75067e+00 ,1.43333e+00 ,1.17351e+00 , &
+          9.60789e-01 ,7.86628e-01 ,6.44036e-01 ,5.27292e-01 ,4.31710e-01 , &
+          3.53455e-01 ,2.89384e-01 ,2.36928e-01 ,1.93980e-01 ,1.58817e-01 , &
+          1.30029e-01 ,1.06458e-01 ,8.71608e-02 ,7.13612e-02 ,5.84256e-02 , &
+          4.78349e-02 ,3.91639e-02 ,3.20647e-02 ,2.62523e-02 ,2.14936e-02 , &
+          1.75975e-02 ,1.44076e-02 ,1.17959e-02 ,9.65769e-03  /)
 
       preflog(:) = (/ &
-           6.9600e+00_rb, 6.7600e+00_rb, 6.5600e+00_rb, 6.3600e+00_rb, 6.1600e+00_rb, &
-           5.9600e+00_rb, 5.7600e+00_rb, 5.5600e+00_rb, 5.3600e+00_rb, 5.1600e+00_rb, &
-           4.9600e+00_rb, 4.7600e+00_rb, 4.5600e+00_rb, 4.3600e+00_rb, 4.1600e+00_rb, &
-           3.9600e+00_rb, 3.7600e+00_rb, 3.5600e+00_rb, 3.3600e+00_rb, 3.1600e+00_rb, &
-           2.9600e+00_rb, 2.7600e+00_rb, 2.5600e+00_rb, 2.3600e+00_rb, 2.1600e+00_rb, &
-           1.9600e+00_rb, 1.7600e+00_rb, 1.5600e+00_rb, 1.3600e+00_rb, 1.1600e+00_rb, &
-           9.6000e-01_rb, 7.6000e-01_rb, 5.6000e-01_rb, 3.6000e-01_rb, 1.6000e-01_rb, &
-          -4.0000e-02_rb,-2.4000e-01_rb,-4.4000e-01_rb,-6.4000e-01_rb,-8.4000e-01_rb, &
-          -1.0400e+00_rb,-1.2400e+00_rb,-1.4400e+00_rb,-1.6400e+00_rb,-1.8400e+00_rb, &
-          -2.0400e+00_rb,-2.2400e+00_rb,-2.4400e+00_rb,-2.6400e+00_rb,-2.8400e+00_rb, &
-          -3.0400e+00_rb,-3.2400e+00_rb,-3.4400e+00_rb,-3.6400e+00_rb,-3.8400e+00_rb, &
-          -4.0400e+00_rb,-4.2400e+00_rb,-4.4400e+00_rb,-4.6400e+00_rb /)
+           6.9600e+00 , 6.7600e+00 , 6.5600e+00 , 6.3600e+00 , 6.1600e+00 , &
+           5.9600e+00 , 5.7600e+00 , 5.5600e+00 , 5.3600e+00 , 5.1600e+00 , &
+           4.9600e+00 , 4.7600e+00 , 4.5600e+00 , 4.3600e+00 , 4.1600e+00 , &
+           3.9600e+00 , 3.7600e+00 , 3.5600e+00 , 3.3600e+00 , 3.1600e+00 , &
+           2.9600e+00 , 2.7600e+00 , 2.5600e+00 , 2.3600e+00 , 2.1600e+00 , &
+           1.9600e+00 , 1.7600e+00 , 1.5600e+00 , 1.3600e+00 , 1.1600e+00 , &
+           9.6000e-01 , 7.6000e-01 , 5.6000e-01 , 3.6000e-01 , 1.6000e-01 , &
+          -4.0000e-02 ,-2.4000e-01 ,-4.4000e-01 ,-6.4000e-01 ,-8.4000e-01 , &
+          -1.0400e+00 ,-1.2400e+00 ,-1.4400e+00 ,-1.6400e+00 ,-1.8400e+00 , &
+          -2.0400e+00 ,-2.2400e+00 ,-2.4400e+00 ,-2.6400e+00 ,-2.8400e+00 , &
+          -3.0400e+00 ,-3.2400e+00 ,-3.4400e+00 ,-3.6400e+00 ,-3.8400e+00 , &
+          -4.0400e+00 ,-4.2400e+00 ,-4.4400e+00 ,-4.6400e+00  /)
 
 ! These are the temperatures associated with the respective 
 ! pressures for the MLS standard atmosphere. 
 
       tref(:) = (/ &
-           2.9420e+02_rb, 2.8799e+02_rb, 2.7894e+02_rb, 2.6925e+02_rb, 2.5983e+02_rb, &
-           2.5017e+02_rb, 2.4077e+02_rb, 2.3179e+02_rb, 2.2306e+02_rb, 2.1578e+02_rb, &
-           2.1570e+02_rb, 2.1570e+02_rb, 2.1570e+02_rb, 2.1706e+02_rb, 2.1858e+02_rb, &
-           2.2018e+02_rb, 2.2174e+02_rb, 2.2328e+02_rb, 2.2479e+02_rb, 2.2655e+02_rb, &
-           2.2834e+02_rb, 2.3113e+02_rb, 2.3401e+02_rb, 2.3703e+02_rb, 2.4022e+02_rb, &
-           2.4371e+02_rb, 2.4726e+02_rb, 2.5085e+02_rb, 2.5457e+02_rb, 2.5832e+02_rb, &
-           2.6216e+02_rb, 2.6606e+02_rb, 2.6999e+02_rb, 2.7340e+02_rb, 2.7536e+02_rb, &
-           2.7568e+02_rb, 2.7372e+02_rb, 2.7163e+02_rb, 2.6955e+02_rb, 2.6593e+02_rb, &
-           2.6211e+02_rb, 2.5828e+02_rb, 2.5360e+02_rb, 2.4854e+02_rb, 2.4348e+02_rb, & 
-           2.3809e+02_rb, 2.3206e+02_rb, 2.2603e+02_rb, 2.2000e+02_rb, 2.1435e+02_rb, &
-           2.0887e+02_rb, 2.0340e+02_rb, 1.9792e+02_rb, 1.9290e+02_rb, 1.8809e+02_rb, &
-           1.8329e+02_rb, 1.7849e+02_rb, 1.7394e+02_rb, 1.7212e+02_rb /)
+           2.9420e+02 , 2.8799e+02 , 2.7894e+02 , 2.6925e+02 , 2.5983e+02 , &
+           2.5017e+02 , 2.4077e+02 , 2.3179e+02 , 2.2306e+02 , 2.1578e+02 , &
+           2.1570e+02 , 2.1570e+02 , 2.1570e+02 , 2.1706e+02 , 2.1858e+02 , &
+           2.2018e+02 , 2.2174e+02 , 2.2328e+02 , 2.2479e+02 , 2.2655e+02 , &
+           2.2834e+02 , 2.3113e+02 , 2.3401e+02 , 2.3703e+02 , 2.4022e+02 , &
+           2.4371e+02 , 2.4726e+02 , 2.5085e+02 , 2.5457e+02 , 2.5832e+02 , &
+           2.6216e+02 , 2.6606e+02 , 2.6999e+02 , 2.7340e+02 , 2.7536e+02 , &
+           2.7568e+02 , 2.7372e+02 , 2.7163e+02 , 2.6955e+02 , 2.6593e+02 , &
+           2.6211e+02 , 2.5828e+02 , 2.5360e+02 , 2.4854e+02 , 2.4348e+02 , & 
+           2.3809e+02 , 2.3206e+02 , 2.2603e+02 , 2.2000e+02 , 2.1435e+02 , &
+           2.0887e+02 , 2.0340e+02 , 1.9792e+02 , 1.9290e+02 , 1.8809e+02 , &
+           1.8329e+02 , 1.7849e+02 , 1.7394e+02 , 1.7212e+02  /)
 
       end subroutine swatmref
 
       end module rrtmg_sw_setcoef
 
-!     path:      $Source: /cvsroot/NWP/WRFV3/phys/module_ra_rrtmg_sw.F,v $
-!     author:    $Author: trn $
-!     revision:  $Revision: 1.3 $
-!     created:   $Date: 2009/04/16 19:54:22 $
-
       module rrtmg_sw_taumol
-
-!  --------------------------------------------------------------------------
-! |                                                                          |
-! |  Copyright 2002-2008, Atmospheric & Environmental Research, Inc. (AER).  |
-! |  This software may be used, copied, or redistributed as long as it is    |
-! |  not sold and this copyright notice is reproduced on each copy made.     |
-! |  This model is provided as is without any express or implied warranties. |
-! |                       (http://www.rtweb.aer.com/)                        |
-! |                                                                          |
-!  --------------------------------------------------------------------------
 
 ! ------- Modules -------
 
-      use parkind, only : im => kind_im, rb => kind_rb
-!      use parrrsw, only : mg, jpband, nbndsw, ngptsw
       use rrsw_con, only: oneminus
       use rrsw_wvn, only: nspa, nspb
       use rrsw_vsn, only: hvrtau, hnamtau
@@ -3078,7 +2611,7 @@
       contains
 
 !----------------------------------------------------------------------------
-      subroutine taumol_sw(nlayers, &
+      subroutine taumol_sw(ncol, nlayers, &
                            colh2o, colco2, colch4, colo2, colo3, colmol, &
                            laytrop, jp, jt, jt1, &
                            fac00, fac01, fac10, fac11, &
@@ -3086,211 +2619,154 @@
                            sfluxzen, taug, taur)
 !----------------------------------------------------------------------------
 
-! ******************************************************************************
-! *                                                                            *
-! *                 Optical depths developed for the                           *
-! *                                                                            *
-! *               RAPID RADIATIVE TRANSFER MODEL (RRTM)                        *
-! *                                                                            *
-! *                                                                            *
-! *           ATMOSPHERIC AND ENVIRONMENTAL RESEARCH, INC.                     *
-! *                       131 HARTWELL AVENUE                                  *
-! *                       LEXINGTON, MA 02421                                  *
-! *                                                                            *
-! *                                                                            *
-! *                          ELI J. MLAWER                                     *
-! *                        JENNIFER DELAMERE                                   *
-! *                        STEVEN J. TAUBMAN                                   *
-! *                        SHEPARD A. CLOUGH                                   *
-! *                                                                            *
-! *                                                                            *
-! *                                                                            *
-! *                                                                            *
-! *                      email:  mlawer@aer.com                                *
-! *                      email:  jdelamer@aer.com                              *
-! *                                                                            *
-! *       The authors wish to acknowledge the contributions of the             *
-! *       following people:  Patrick D. Brown, Michael J. Iacono,              *
-! *       Ronald E. Farren, Luke Chen, Robert Bergstrom.                       *
-! *                                                                            *
-! ******************************************************************************
-! *    TAUMOL                                                                  *
-! *                                                                            *
-! *    This file contains the subroutines TAUGBn (where n goes from            *
-! *    1 to 28).  TAUGBn calculates the optical depths and Planck fractions    *
-! *    per g-value and layer for band n.                                       *
-! *                                                                            *
-! * Output:  optical depths (unitless)                                         *
-! *          fractions needed to compute Planck functions at every layer       *
-! *              and g-value                                                   *
-! *                                                                            *
-! *    COMMON /TAUGCOM/  TAUG(MXLAY,MG)                                        *
-! *    COMMON /PLANKG/   FRACS(MXLAY,MG)                                       *
-! *                                                                            *
-! * Input                                                                      *
-! *                                                                            *
-! *    PARAMETER (MG=16, MXLAY=203, NBANDS=14)                                 *
-! *                                                                            *
-! *    COMMON /FEATURES/ NG(NBANDS),NSPA(NBANDS),NSPB(NBANDS)                  *
-! *    COMMON /PRECISE/  ONEMINUS                                              *
-! *    COMMON /PROFILE/  NLAYERS,PAVEL(MXLAY),TAVEL(MXLAY),                    *
-! *   &                  PZ(0:MXLAY),TZ(0:MXLAY),TBOUND                        *
-! *    COMMON /PROFDATA/ LAYTROP,LAYSWTCH,LAYLOW,                              *
-! *   &                  COLH2O(MXLAY),COLCO2(MXLAY),                          *
-! *   &                  COLO3(MXLAY),COLN2O(MXLAY),COLCH4(MXLAY),             *
-! *   &                  COLO2(MXLAY),CO2MULT(MXLAY)                           *
-! *    COMMON /INTFAC/   FAC00(MXLAY),FAC01(MXLAY),                            *
-! *   &                  FAC10(MXLAY),FAC11(MXLAY)                             *
-! *    COMMON /INTIND/   JP(MXLAY),JT(MXLAY),JT1(MXLAY)                        *
-! *    COMMON /SELF/     SELFFAC(MXLAY), SELFFRAC(MXLAY), INDSELF(MXLAY)       *
-! *                                                                            *
-! *    Description:                                                            *
-! *    NG(IBAND) - number of g-values in band IBAND                            *
-! *    NSPA(IBAND) - for the lower atmosphere, the number of reference         *
-! *                  atmospheres that are stored for band IBAND per            *
-! *                  pressure level and temperature.  Each of these            *
-! *                  atmospheres has different relative amounts of the         *
-! *                  key species for the band (i.e. different binary           *
-! *                  species parameters).                                      *
-! *    NSPB(IBAND) - same for upper atmosphere                                 *
-! *    ONEMINUS - since problems are caused in some cases by interpolation     *
-! *               parameters equal to or greater than 1, for these cases       *
-! *               these parameters are set to this value, slightly < 1.        *
-! *    PAVEL - layer pressures (mb)                                            *
-! *    TAVEL - layer temperatures (degrees K)                                  *
-! *    PZ - level pressures (mb)                                               *
-! *    TZ - level temperatures (degrees K)                                     *
-! *    LAYTROP - layer at which switch is made from one combination of         *
-! *              key species to another                                        *
-! *    COLH2O, COLCO2, COLO3, COLN2O, COLCH4 - column amounts of water         *
-! *              vapor,carbon dioxide, ozone, nitrous ozide, methane,          *
-! *              respectively (molecules/cm**2)                                *
-! *    CO2MULT - for bands in which carbon dioxide is implemented as a         *
-! *              trace species, this is the factor used to multiply the        *
-! *              band's average CO2 absorption coefficient to get the added    *
-! *              contribution to the optical depth relative to 355 ppm.        *
-! *    FACij(LAY) - for layer LAY, these are factors that are needed to        *
-! *                 compute the interpolation factors that multiply the        *
-! *                 appropriate reference k-values.  A value of 0 (1) for      *
-! *                 i,j indicates that the corresponding factor multiplies     *
-! *                 reference k-value for the lower (higher) of the two        *
-! *                 appropriate temperatures, and altitudes, respectively.     *
-! *    JP - the index of the lower (in altitude) of the two appropriate        *
-! *         reference pressure levels needed for interpolation                 *
-! *    JT, JT1 - the indices of the lower of the two appropriate reference     *
-! *              temperatures needed for interpolation (for pressure           *
-! *              levels JP and JP+1, respectively)                             *
-! *    SELFFAC - scale factor needed to water vapor self-continuum, equals     *
-! *              (water vapor density)/(atmospheric density at 296K and        *
-! *              1013 mb)                                                      *
-! *    SELFFRAC - factor needed for temperature interpolation of reference     *
-! *               water vapor self-continuum data                              *
-! *    INDSELF - index of the lower of the two appropriate reference           *
-! *              temperatures needed for the self-continuum interpolation      *
-! *                                                                            *
-! * Data input                                                                 *
-! *    COMMON /Kn/ KA(NSPA(n),5,13,MG), KB(NSPB(n),5,13:59,MG), SELFREF(10,MG) *
-! *       (note:  n is the band number)                                        *
-! *                                                                            *
-! *    Description:                                                            *
-! *    KA - k-values for low reference atmospheres (no water vapor             *
-! *         self-continuum) (units: cm**2/molecule)                            *
-! *    KB - k-values for high reference atmospheres (all sources)              *
-! *         (units: cm**2/molecule)                                            *
-! *    SELFREF - k-values for water vapor self-continuum for reference         *
-! *              atmospheres (used below LAYTROP)                              *
-! *              (units: cm**2/molecule)                                       *
-! *                                                                            *
-! *    DIMENSION ABSA(65*NSPA(n),MG), ABSB(235*NSPB(n),MG)                     *
-! *    EQUIVALENCE (KA,ABSA),(KB,ABSB)                                         *
-! *                                                                            *
-! *****************************************************************************
-!
-! Modifications
-!
-! Revised: Adapted to F90 coding, J.-J.Morcrette, ECMWF, Feb 2003
-! Revised: Modified for g-point reduction, MJIacono, AER, Dec 2003
-! Revised: Reformatted for consistency with rrtmg_lw, MJIacono, AER, Jul 2006
-!
-! ------- Declarations -------
+      integer , intent(in) :: ncol
+      integer , intent(in) :: nlayers               ! total number of layers
 
-! ----- Input -----
-      integer(kind=im), intent(in) :: nlayers            ! total number of layers
+      integer , intent(in) :: laytrop(:)            ! tropopause layer index
+      integer , intent(in) :: jp(:,:)               ! 
+      integer , intent(in) :: jt(:,:)               !
+      integer , intent(in) :: jt1(:,:)              !
+                                                    !   Dimensions: (ncol,nlayers)
 
-      integer(kind=im), intent(in) :: laytrop            ! tropopause layer index
-      integer(kind=im), intent(in) :: jp(:)              ! 
-                                                         !   Dimensions: (nlayers)
-      integer(kind=im), intent(in) :: jt(:)              !
-                                                         !   Dimensions: (nlayers)
-      integer(kind=im), intent(in) :: jt1(:)             !
-                                                         !   Dimensions: (nlayers)
+      real , intent(in) :: colh2o(:,:)              ! column amount (h2o)
+      real , intent(in) :: colco2(:,:)              ! column amount (co2)
+      real , intent(in) :: colo3(:,:)               ! column amount (o3)
+      real , intent(in) :: colch4(:,:)              ! column amount (ch4)
+      real , intent(in) :: colo2(:,:)               ! column amount (o2)
+      real , intent(in) :: colmol(:,:)              ! 
+                                                    !   Dimensions: (ncol,nlayers)
 
-      real(kind=rb), intent(in) :: colh2o(:)             ! column amount (h2o)
-                                                         !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: colco2(:)             ! column amount (co2)
-                                                         !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: colo3(:)              ! column amount (o3)
-                                                         !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: colch4(:)             ! column amount (ch4)
-                                                         !   Dimensions: (nlayers)
-                                                         !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: colo2(:)              ! column amount (o2)
-                                                         !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: colmol(:)             ! 
-                                                         !   Dimensions: (nlayers)
+      integer , intent(in) :: indself(:,:)     
+      integer , intent(in) :: indfor(:,:) 
+      real , intent(in) :: selffac(:,:) 
+      real , intent(in) :: selffrac(:,:) 
+      real , intent(in) :: forfac(:,:) 
+      real , intent(in) :: forfrac(:,:) 
+                                                    !   Dimensions: (ncol,nlayers)
 
-      integer(kind=im), intent(in) :: indself(:)    
-                                                         !   Dimensions: (nlayers)
-      integer(kind=im), intent(in) :: indfor(:)
-                                                         !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: selffac(:)
-                                                         !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: selffrac(:)
-                                                         !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: forfac(:)
-                                                         !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: forfrac(:)
-                                                         !   Dimensions: (nlayers)
-
-      real(kind=rb), intent(in) :: &                     !
-                       fac00(:), fac01(:), &             !   Dimensions: (nlayers)
-                       fac10(:), fac11(:) 
+      real , intent(in) :: &                        !
+                       fac00(:,:) , fac01(:,:) , &  
+                       fac10(:,:) , fac11(:,:)  
+                                                    !   Dimensions: (ncol,nlayers)
 
 ! ----- Output -----
-      real(kind=rb), intent(out) :: sfluxzen(:)          ! solar source function
-                                                         !   Dimensions: (ngptsw)
-      real(kind=rb), intent(out) :: taug(:,:)            ! gaseous optical depth 
-                                                         !   Dimensions: (nlayers,ngptsw)
-      real(kind=rb), intent(out) :: taur(:,:)            ! Rayleigh 
-                                                         !   Dimensions: (nlayers,ngptsw)
-!      real(kind=rb), intent(out) :: ssa(:,:)            ! single scattering albedo (inactive)
-                                                         !   Dimensions: (nlayers,ngptsw)
-
-      hvrtau = '$Revision: 1.3 $'
+      real , intent(inout) gpu_device :: sfluxzen(:,:)   ! solar source function
+                                                         !   Dimensions: (ncol,ngptsw)
+      real , intent(inout) gpu_device :: taug(:,:,:)     ! gaseous optical depth 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
+      real , intent(inout) gpu_device :: taur(:,:,:)     ! Rayleigh 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Calculate gaseous optical depth and planck fractions for each spectral band.
 
-      call taumol16
-      call taumol17
-      call taumol18
-      call taumol19
-      call taumol20
-      call taumol21
-      call taumol22
-      call taumol23
-      call taumol24
-      call taumol25
-      call taumol26
-      call taumol27
-      call taumol28
-      call taumol29
+      call taumol16(ncol, nlayers, &
+                    colh2o, colco2, colch4, colo2, colo3, colmol, &
+                    laytrop, jp, jt, jt1, &
+                    fac00, fac01, fac10, fac11, &
+                    selffac, selffrac, indself, forfac, forfrac, indfor, &
+                    sfluxzen, taug, taur)
 
-!-------------
-      contains
-!-------------
+      call taumol17(ncol, nlayers, &
+                    colh2o, colco2, colch4, colo2, colo3, colmol, &
+                    laytrop, jp, jt, jt1, &
+                    fac00, fac01, fac10, fac11, &
+                    selffac, selffrac, indself, forfac, forfrac, indfor, &
+                    sfluxzen, taug, taur)
+
+      call taumol18(ncol, nlayers, &
+                    colh2o, colco2, colch4, colo2, colo3, colmol, &
+                    laytrop, jp, jt, jt1, &
+                    fac00, fac01, fac10, fac11, &
+                    selffac, selffrac, indself, forfac, forfrac, indfor, &
+                    sfluxzen, taug, taur)
+
+      call taumol19(ncol, nlayers, &
+                    colh2o, colco2, colch4, colo2, colo3, colmol, &
+                    laytrop, jp, jt, jt1, &
+                    fac00, fac01, fac10, fac11, &
+                    selffac, selffrac, indself, forfac, forfrac, indfor, &
+                    sfluxzen, taug, taur)
+
+      call taumol20(ncol, nlayers, &
+                    colh2o, colco2, colch4, colo2, colo3, colmol, &
+                    laytrop, jp, jt, jt1, &
+                    fac00, fac01, fac10, fac11, &
+                    selffac, selffrac, indself, forfac, forfrac, indfor, &
+                    sfluxzen, taug, taur)
+
+      call taumol21(ncol, nlayers, &
+                    colh2o, colco2, colch4, colo2, colo3, colmol, &
+                    laytrop, jp, jt, jt1, &
+                    fac00, fac01, fac10, fac11, &
+                    selffac, selffrac, indself, forfac, forfrac, indfor, &
+                    sfluxzen, taug, taur)
+
+      call taumol22(ncol, nlayers, &
+                    colh2o, colco2, colch4, colo2, colo3, colmol, &
+                    laytrop, jp, jt, jt1, &
+                    fac00, fac01, fac10, fac11, &
+                    selffac, selffrac, indself, forfac, forfrac, indfor, &
+                    sfluxzen, taug, taur)
+
+      call taumol23(ncol, nlayers, &
+                    colh2o, colco2, colch4, colo2, colo3, colmol, &
+                    laytrop, jp, jt, jt1, &
+                    fac00, fac01, fac10, fac11, &
+                    selffac, selffrac, indself, forfac, forfrac, indfor, &
+                    sfluxzen, taug, taur)
+
+      call taumol24(ncol, nlayers, &
+                    colh2o, colco2, colch4, colo2, colo3, colmol, &
+                    laytrop, jp, jt, jt1, &
+                    fac00, fac01, fac10, fac11, &
+                    selffac, selffrac, indself, forfac, forfrac, indfor, &
+                    sfluxzen, taug, taur)
+
+      call taumol25(ncol, nlayers, &
+                    colh2o, colco2, colch4, colo2, colo3, colmol, &
+                    laytrop, jp, jt, jt1, &
+                    fac00, fac01, fac10, fac11, &
+                    selffac, selffrac, indself, forfac, forfrac, indfor, &
+                    sfluxzen, taug, taur)
+
+      call taumol26(ncol, nlayers, &
+                    colh2o, colco2, colch4, colo2, colo3, colmol, &
+                    laytrop, jp, jt, jt1, &
+                    fac00, fac01, fac10, fac11, &
+                    selffac, selffrac, indself, forfac, forfrac, indfor, &
+                    sfluxzen, taug, taur)
+
+      call taumol27(ncol, nlayers, &
+                    colh2o, colco2, colch4, colo2, colo3, colmol, &
+                    laytrop, jp, jt, jt1, &
+                    fac00, fac01, fac10, fac11, &
+                    selffac, selffrac, indself, forfac, forfrac, indfor, &
+                    sfluxzen, taug, taur)
+
+      call taumol28(ncol, nlayers, &
+                    colh2o, colco2, colch4, colo2, colo3, colmol, &
+                    laytrop, jp, jt, jt1, &
+                    fac00, fac01, fac10, fac11, &
+                    selffac, selffrac, indself, forfac, forfrac, indfor, &
+                    sfluxzen, taug, taur)
+
+      call taumol29(ncol, nlayers, &
+                    colh2o, colco2, colch4, colo2, colo3, colmol, &
+                    laytrop, jp, jt, jt1, &
+                    fac00, fac01, fac10, fac11, &
+                    selffac, selffrac, indself, forfac, forfrac, indfor, &
+                    sfluxzen, taug, taur)
+
+      end subroutine
+
 
 !----------------------------------------------------------------------------
-      subroutine taumol16
+      subroutine taumol16(ncol, nlayers, &
+                          colh2o, colco2, colch4, colo2, colo3, colmol, &
+                          laytrop, jp, jt, jt1, &
+                          fac00, fac01, fac10, fac11, &
+                          selffac, selffrac, indself, forfac, forfrac, indfor, &
+                          sfluxzen, taug, taur)
 !----------------------------------------------------------------------------
 !
 !     band 16:  2600-3250 cm-1 (low - h2o,ch4; high - ch4)
@@ -3302,44 +2778,93 @@
       use parrrsw, only : ng16
       use rrsw_kg16, only : absa, ka, absb, kb, forref, selfref, &
                             sfluxref, rayl, layreffr, strrat1
+!                            sfluxref, rayl
 
 ! ------- Declarations -------
+      integer , intent(in) :: ncol
+      integer , intent(in) :: nlayers               ! total number of layers
+
+      integer , intent(in) :: laytrop(:)            ! tropopause layer index
+      integer , intent(in) :: jp(:,:)               ! 
+      integer , intent(in) :: jt(:,:)               !
+      integer , intent(in) :: jt1(:,:)              !
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: colh2o(:,:)              ! column amount (h2o)
+      real , intent(in) :: colco2(:,:)              ! column amount (co2)
+      real , intent(in) :: colo3(:,:)               ! column amount (o3)
+      real , intent(in) :: colch4(:,:)              ! column amount (ch4)
+      real , intent(in) :: colo2(:,:)               ! column amount (o2)
+      real , intent(in) :: colmol(:,:)              ! 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      integer , intent(in) :: indself(:,:)     
+      integer , intent(in) :: indfor(:,:) 
+      real , intent(in) :: selffac(:,:) 
+      real , intent(in) :: selffrac(:,:) 
+      real , intent(in) :: forfac(:,:) 
+      real , intent(in) :: forfrac(:,:) 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: &                        !
+                       fac00(:,:) , fac01(:,:) , & 
+                       fac10(:,:) , fac11(:,:)  
+                                                    !   Dimensions: (ncol,nlayers)
+
+! ----- Output -----
+      real, intent(inout) gpu_device :: sfluxzen(:,:)    ! solar source function
+                                                         !   Dimensions: (ncol,ngptsw)
+      real, intent(inout) gpu_device :: taug(:,:,:)             ! gaseous optical depth 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
+      real, intent(inout) gpu_device :: taur(:,:,:)             ! Rayleigh 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
 
-      integer(kind=im) :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
-      real(kind=rb) :: fac000, fac001, fac010, fac011, fac100, fac101, &
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
                        fac110, fac111, fs, speccomb, specmult, specparm, &
                        tauray
-
+!      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr, &
+!                          layreffr
+!      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
+!                       fac110, fac111, fs, speccomb, specmult, specparm, &
+!                       tauray, strrat1
+      integer :: iplon
+!      strrat1 = 252.131 
+!      layreffr = 18
+       
+!$acc kernels 
+      do iplon=1,ncol
 ! Compute the optical depth by interpolating in ln(pressure), 
 ! temperature, and appropriate species.  Below LAYTROP, the water
 ! vapor self-continuum is interpolated (in temperature) separately.  
 
 ! Lower atmosphere loop
-      do lay = 1, laytrop
-         speccomb = colh2o(lay) + strrat1*colch4(lay)
-         specparm = colh2o(lay)/speccomb 
+      do lay = 1, nlayers
+         if (lay <= laytrop(iplon)) then 
+         speccomb = colh2o(iplon,lay)  + strrat1*colch4(iplon,lay) 
+         specparm = colh2o(iplon,lay) /speccomb 
          if (specparm .ge. oneminus) specparm = oneminus
-         specmult = 8._rb*(specparm)
+         specmult = 8. *(specparm)
          js = 1 + int(specmult)
-         fs = mod(specmult, 1._rb )
-         fac000 = (1._rb - fs) * fac00(lay)
-         fac010 = (1._rb - fs) * fac10(lay)
-         fac100 = fs * fac00(lay)
-         fac110 = fs * fac10(lay)
-         fac001 = (1._rb - fs) * fac01(lay)
-         fac011 = (1._rb - fs) * fac11(lay)
-         fac101 = fs * fac01(lay)
-         fac111 = fs * fac11(lay)
-         ind0 = ((jp(lay)-1)*5+(jt(lay)-1))*nspa(16) + js
-         ind1 = (jp(lay)*5+(jt1(lay)-1))*nspa(16) + js
-         inds = indself(lay)
-         indf = indfor(lay)
-         tauray = colmol(lay) * rayl
-
+         fs = mod(specmult, 1.  )
+         fac000 = (1.  - fs) * fac00(iplon,lay) 
+         fac010 = (1.  - fs) * fac10(iplon,lay) 
+         fac100 = fs * fac00(iplon,lay) 
+         fac110 = fs * fac10(iplon,lay) 
+         fac001 = (1.  - fs) * fac01(iplon,lay) 
+         fac011 = (1.  - fs) * fac11(iplon,lay) 
+         fac101 = fs * fac01(iplon,lay) 
+         fac111 = fs * fac11(iplon,lay) 
+         ind0 = ((jp(iplon,lay) -1)*5+(jt(iplon,lay) -1))*nspa(16) + js
+         ind1 = (jp(iplon,lay) *5+(jt1(iplon,lay) -1))*nspa(16) + js
+         inds = indself(iplon,lay) 
+         indf = indfor(iplon,lay) 
+         tauray = colmol(iplon,lay)  * rayl
+    
          do ig = 1, ng16
-            taug(lay,ig) = speccomb * &
+            taug(iplon,lay,ig)  = speccomb * &
                 (fac000 * absa(ind0   ,ig) + &
                  fac100 * absa(ind0 +1,ig) + &
                  fac010 * absa(ind0 +9,ig) + &
@@ -3348,44 +2873,63 @@
                  fac101 * absa(ind1 +1,ig) + &
                  fac011 * absa(ind1 +9,ig) + &
                  fac111 * absa(ind1+10,ig)) + &
-                 colh2o(lay) * &
-                 (selffac(lay) * (selfref(inds,ig) + &
-                 selffrac(lay) * &
+                 colh2o(iplon,lay)  * &
+                 (selffac(iplon,lay)  * (selfref(inds,ig) + &
+                 selffrac(iplon,lay)  * &
                  (selfref(inds+1,ig) - selfref(inds,ig))) + &
-                 forfac(lay) * (forref(indf,ig) + &
-                 forfrac(lay) * &
+                 forfac(iplon,lay)  * (forref(indf,ig) + &
+                 forfrac(iplon,lay)  * &
                  (forref(indf+1,ig) - forref(indf,ig)))) 
 !            ssa(lay,ig) = tauray/taug(lay,ig)
-            taur(lay,ig) = tauray
+            taur(iplon,lay,ig)  = tauray
+    
          enddo
+         end if
       enddo
-
-      laysolfr = nlayers
+     
+      end do
+!$acc end kernels
 
 ! Upper atmosphere loop
-      do lay = laytrop+1, nlayers
-         if (jp(lay-1) .lt. layreffr .and. jp(lay) .ge. layreffr) &
+!$acc kernels 
+      do iplon=1,ncol
+        laysolfr = nlayers
+! mji - fix for out of bounds issue on absb - added to pass bounds checking; FINAL
+      do lay = laytrop(iplon)+1, nlayers
+!        if (lay > laytrop(iplon)) then
+!          !do lay = laytrop(iplon) +1, nlayers
+         if (jp(iplon,lay-1)  .lt. layreffr .and. jp(iplon,lay)  .ge. layreffr) then
             laysolfr = lay
-         ind0 = ((jp(lay)-13)*5+(jt(lay)-1))*nspb(16) + 1
-         ind1 = ((jp(lay)-12)*5+(jt1(lay)-1))*nspb(16) + 1
-         tauray = colmol(lay) * rayl
+         end if
+         ind0 = ((jp(iplon,lay) -13)*5+(jt(iplon,lay) -1))*nspb(16) + 1
+         ind1 = ((jp(iplon,lay) -12)*5+(jt1(iplon,lay) -1))*nspb(16) + 1
+         tauray = colmol(iplon,lay)  * rayl
 
          do ig = 1, ng16
-            taug(lay,ig) = colch4(lay) * &
-                (fac00(lay) * absb(ind0  ,ig) + &
-                 fac10(lay) * absb(ind0+1,ig) + &
-                 fac01(lay) * absb(ind1  ,ig) + &
-                 fac11(lay) * absb(ind1+1,ig)) 
-!            ssa(lay,ig) = tauray/taug(lay,ig)
-            if (lay .eq. laysolfr) sfluxzen(ig) = sfluxref(ig) 
-            taur(lay,ig) = tauray  
-         enddo
-      enddo
+            taug(iplon,lay,ig)  = colch4(iplon,lay)  * &
+                (fac00(iplon,lay)  * absb(ind0  ,ig) + &
+                 fac10(iplon,lay)  * absb(ind0+1,ig) + &
+                 fac01(iplon,lay)  * absb(ind1  ,ig) + &
+                 fac11(iplon,lay)  * absb(ind1+1,ig)) 
 
-      end subroutine taumol16
+            if (laysolfr == lay) sfluxzen(iplon,ig)  = sfluxref(ig) 
+            taur(iplon,lay,ig)  = tauray  
+         enddo
+!        end if
+
+      enddo
+      enddo
+      
+!$acc end kernels
+ end subroutine taumol16
 
 !----------------------------------------------------------------------------
-      subroutine taumol17
+      subroutine taumol17(ncol, nlayers, &
+                          colh2o, colco2, colch4, colo2, colo3, colmol, &
+                          laytrop, jp, jt, jt1, &
+                          fac00, fac01, fac10, fac11, &
+                          selffac, selffrac, indself, forfac, forfrac, indfor, &
+                          sfluxzen, taug, taur)
 !----------------------------------------------------------------------------
 !
 !     band 17:  3250-4000 cm-1 (low - h2o,co2; high - h2o,co2)
@@ -3397,44 +2941,97 @@
       use parrrsw, only : ng17, ngs16
       use rrsw_kg17, only : absa, ka, absb, kb, forref, selfref, &
                             sfluxref, rayl, layreffr, strrat
+!      use rrsw_kg17, only : absa, ka, absb, kb, forref, selfref, &
+!                            sfluxref, rayl
 
 ! ------- Declarations -------
+      integer , intent(in) :: ncol
+      integer , intent(in) :: nlayers               ! total number of layers
+
+      integer , intent(in) :: laytrop(:)            ! tropopause layer index
+      integer , intent(in) :: jp(:,:)               ! 
+      integer , intent(in) :: jt(:,:)               !
+      integer , intent(in) :: jt1(:,:)              !
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: colh2o(:,:)              ! column amount (h2o)
+      real , intent(in) :: colco2(:,:)              ! column amount (co2)
+      real , intent(in) :: colo3(:,:)               ! column amount (o3)
+      real , intent(in) :: colch4(:,:)              ! column amount (ch4)
+      real , intent(in) :: colo2(:,:)               ! column amount (o2)
+      real , intent(in) :: colmol(:,:)              ! 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      integer , intent(in) :: indself(:,:)     
+      integer , intent(in) :: indfor(:,:) 
+      real , intent(in) :: selffac(:,:) 
+      real , intent(in) :: selffrac(:,:) 
+      real , intent(in) :: forfac(:,:) 
+      real , intent(in) :: forfrac(:,:) 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: &                        !
+                       fac00(:,:) , fac01(:,:) , &
+                       fac10(:,:) , fac11(:,:)  
+                                                    !   Dimensions: (ncol,nlayers)
+
+! ----- Output -----
+      real, intent(out) gpu_device :: sfluxzen(:,:)      ! solar source function
+                                                         !   Dimensions: (ncol,ngptsw)
+      real, intent(out) gpu_device :: taug(:,:,:)        ! gaseous optical depth 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
+      real, intent(out) gpu_device :: taur(:,:,:)        ! Rayleigh 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
 
-      integer(kind=im) :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
-      real(kind=rb) :: fac000, fac001, fac010, fac011, fac100, fac101, &
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
                        fac110, fac111, fs, speccomb, specmult, specparm, &
                        tauray
+!      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr, &
+!                          layreffr
+!      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
+!                       fac110, fac111, fs, speccomb, specmult, specparm, &
+!                       tauray, strrat
+      integer :: iplon
 
+!      layreffr = 30
+!      strrat = 0.364641 
+    
+!$acc kernels loop
+      do iplon=1,ncol
 ! Compute the optical depth by interpolating in ln(pressure), 
 ! temperature, and appropriate species.  Below LAYTROP, the water
 ! vapor self-continuum is interpolated (in temperature) separately.  
 
 ! Lower atmosphere loop
-      do lay = 1, laytrop
-         speccomb = colh2o(lay) + strrat*colco2(lay)
-         specparm = colh2o(lay)/speccomb 
+!$acc loop private(js, fs)
+      do lay = 1, nlayers 
+        if (lay <= laytrop(iplon)) then
+          !do lay = 1, laytrop(iplon) 
+         speccomb = colh2o(iplon,lay)  + strrat*colco2(iplon,lay) 
+         specparm = colh2o(iplon,lay) /speccomb 
          if (specparm .ge. oneminus) specparm = oneminus
-         specmult = 8._rb*(specparm)
+         specmult = 8. *(specparm)
          js = 1 + int(specmult)
-         fs = mod(specmult, 1._rb )
-         fac000 = (1._rb - fs) * fac00(lay)
-         fac010 = (1._rb - fs) * fac10(lay)
-         fac100 = fs * fac00(lay)
-         fac110 = fs * fac10(lay)
-         fac001 = (1._rb - fs) * fac01(lay)
-         fac011 = (1._rb - fs) * fac11(lay)
-         fac101 = fs * fac01(lay)
-         fac111 = fs * fac11(lay)
-         ind0 = ((jp(lay)-1)*5+(jt(lay)-1))*nspa(17) + js
-         ind1 = (jp(lay)*5+(jt1(lay)-1))*nspa(17) + js
-         inds = indself(lay)
-         indf = indfor(lay)
-         tauray = colmol(lay) * rayl
+         fs = mod(specmult, 1.  )
+         fac000 = (1.  - fs) * fac00(iplon,lay) 
+         fac010 = (1.  - fs) * fac10(iplon,lay) 
+         fac100 = fs * fac00(iplon,lay) 
+         fac110 = fs * fac10(iplon,lay) 
+         fac001 = (1.  - fs) * fac01(iplon,lay) 
+         fac011 = (1.  - fs) * fac11(iplon,lay) 
+         fac101 = fs * fac01(iplon,lay) 
+         fac111 = fs * fac11(iplon,lay) 
+         ind0 = ((jp(iplon,lay) -1)*5+(jt(iplon,lay) -1))*nspa(17) + js
+         ind1 = (jp(iplon,lay) *5+(jt1(iplon,lay) -1))*nspa(17) + js
+         inds = indself(iplon,lay) 
+         indf = indfor(iplon,lay) 
+         tauray = colmol(iplon,lay)  * rayl
 
          do ig = 1, ng17
-            taug(lay,ngs16+ig) = speccomb * &
+            taug(iplon,lay,ngs16+ig)  = speccomb * &
                 (fac000 * absa(ind0,ig) + &
                  fac100 * absa(ind0+1,ig) + &
                  fac010 * absa(ind0+9,ig) + &
@@ -3443,45 +3040,40 @@
                  fac101 * absa(ind1+1,ig) + &
                  fac011 * absa(ind1+9,ig) + &
                  fac111 * absa(ind1+10,ig)) + &
-                 colh2o(lay) * &
-                 (selffac(lay) * (selfref(inds,ig) + &
-                 selffrac(lay) * &
+                 colh2o(iplon,lay)  * &
+                 (selffac(iplon,lay)  * (selfref(inds,ig) + &
+                 selffrac(iplon,lay)  * &
                  (selfref(inds+1,ig) - selfref(inds,ig))) + &
-                 forfac(lay) * (forref(indf,ig) + &
-                 forfrac(lay) * &
+                 forfac(iplon,lay)  * (forref(indf,ig) + &
+                 forfrac(iplon,lay)  * &
                  (forref(indf+1,ig) - forref(indf,ig)))) 
-!             ssa(lay,ngs16+ig) = tauray/taug(lay,ngs16+ig)
-            taur(lay,ngs16+ig) = tauray
+            taur(iplon,lay,ngs16+ig)  = tauray
          enddo
-      enddo
 
-      laysolfr = nlayers
-
-! Upper atmosphere loop
-      do lay = laytrop+1, nlayers
-         if (jp(lay-1) .lt. layreffr .and. jp(lay) .ge. layreffr) &
-            laysolfr = lay
-         speccomb = colh2o(lay) + strrat*colco2(lay)
-         specparm = colh2o(lay)/speccomb 
+         else
+         
+        
+         speccomb = colh2o(iplon,lay)  + strrat*colco2(iplon,lay) 
+         specparm = colh2o(iplon,lay) /speccomb 
          if (specparm .ge. oneminus) specparm = oneminus
-         specmult = 4._rb*(specparm)
+         specmult = 4. *(specparm)
          js = 1 + int(specmult)
-         fs = mod(specmult, 1._rb )
-         fac000 = (1._rb - fs) * fac00(lay)
-         fac010 = (1._rb - fs) * fac10(lay)
-         fac100 = fs * fac00(lay)
-         fac110 = fs * fac10(lay)
-         fac001 = (1._rb - fs) * fac01(lay)
-         fac011 = (1._rb - fs) * fac11(lay)
-         fac101 = fs * fac01(lay)
-         fac111 = fs * fac11(lay)
-         ind0 = ((jp(lay)-13)*5+(jt(lay)-1))*nspb(17) + js
-         ind1 = ((jp(lay)-12)*5+(jt1(lay)-1))*nspb(17) + js
-         indf = indfor(lay)
-         tauray = colmol(lay) * rayl
+         fs = mod(specmult, 1.  )
+         fac000 = (1.  - fs) * fac00(iplon,lay) 
+         fac010 = (1.  - fs) * fac10(iplon,lay) 
+         fac100 = fs * fac00(iplon,lay) 
+         fac110 = fs * fac10(iplon,lay) 
+         fac001 = (1.  - fs) * fac01(iplon,lay) 
+         fac011 = (1.  - fs) * fac11(iplon,lay) 
+         fac101 = fs * fac01(iplon,lay) 
+         fac111 = fs * fac11(iplon,lay) 
+         ind0 = ((jp(iplon,lay) -13)*5+(jt(iplon,lay) -1))*nspb(17) + js
+         ind1 = ((jp(iplon,lay) -12)*5+(jt1(iplon,lay) -1))*nspb(17) + js
+         indf = indfor(iplon,lay) 
+         tauray = colmol(iplon,lay)  * rayl
 
          do ig = 1, ng17
-            taug(lay,ngs16+ig) = speccomb * &
+            taug(iplon,lay,ngs16+ig)  = speccomb * &
                 (fac000 * absb(ind0,ig) + &
                  fac100 * absb(ind0+1,ig) + &
                  fac010 * absb(ind0+5,ig) + &
@@ -3490,21 +3082,57 @@
                  fac101 * absb(ind1+1,ig) + &
                  fac011 * absb(ind1+5,ig) + &
                  fac111 * absb(ind1+6,ig)) + &
-                 colh2o(lay) * &
-                 forfac(lay) * (forref(indf,ig) + &
-                 forfrac(lay) * &
+                 colh2o(iplon,lay)  * &
+                 forfac(iplon,lay)  * (forref(indf,ig) + &
+                 forfrac(iplon,lay)  * &
                  (forref(indf+1,ig) - forref(indf,ig))) 
 !            ssa(lay,ngs16+ig) = tauray/taug(lay,ngs16+ig)
-            if (lay .eq. laysolfr) sfluxzen(ngs16+ig) = sfluxref(ig,js) &
-               + fs * (sfluxref(ig,js+1) - sfluxref(ig,js))
-            taur(lay,ngs16+ig) = tauray
+           
+            taur(iplon,lay,ngs16+ig)  = tauray
          enddo
+        endif
       enddo
+      enddo
+!$acc end kernels
+        
 
+!$acc kernels
+      do iplon = 1, ncol      
+! Upper atmosphere loop
+        laysolfr = nlayers 
+      do lay = 2, nlayers
+        if (lay > laytrop(iplon)) then 
+          
+        if ((jp(iplon,lay-1)  .lt. layreffr) .and. (jp(iplon,lay)  .ge. layreffr)) then
+            laysolfr = lay
+          end if
+          
+          if (lay == laysolfr) then
+              
+          speccomb = colh2o(iplon,lay)  + strrat*colco2(iplon,lay) 
+          specparm = colh2o(iplon,lay) /speccomb 
+          if (specparm .ge. oneminus) specparm = oneminus
+          specmult = 4. *(specparm)
+          js = 1 + int(specmult)
+          fs = mod(specmult, 1.  )
+          do ig = 1, ng17 
+            sfluxzen(iplon,ngs16+ig)  = sfluxref(ig,js) &
+               + fs * (sfluxref(ig,js+1) - sfluxref(ig,js))
+          end do
+          end if
+        end if
+      enddo
+      enddo   
+!$acc end kernels      
       end subroutine taumol17
 
 !----------------------------------------------------------------------------
-      subroutine taumol18
+      subroutine taumol18(ncol, nlayers, &
+                          colh2o, colco2, colch4, colo2, colo3, colmol, &
+                          laytrop, jp, jt, jt1, &
+                          fac00, fac01, fac10, fac11, &
+                          selffac, selffrac, indself, forfac, forfrac, indfor, &
+                          sfluxzen, taug, taur)
 !----------------------------------------------------------------------------
 !
 !     band 18:  4000-4650 cm-1 (low - h2o,ch4; high - ch4)
@@ -3516,48 +3144,113 @@
       use parrrsw, only : ng18, ngs17
       use rrsw_kg18, only : absa, ka, absb, kb, forref, selfref, &
                             sfluxref, rayl, layreffr, strrat
+!      use rrsw_kg18, only : absa, ka, absb, kb, forref, selfref, &
+!                            sfluxref, rayl
 
 ! ------- Declarations -------
+      integer , intent(in) :: ncol
+      integer , intent(in) :: nlayers               ! total number of layers
+
+      integer , intent(in) :: laytrop(:)            ! tropopause layer index
+      integer , intent(in) :: jp(:,:)               ! 
+      integer , intent(in) :: jt(:,:)               !
+      integer , intent(in) :: jt1(:,:)              !
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: colh2o(:,:)              ! column amount (h2o)
+      real , intent(in) :: colco2(:,:)              ! column amount (co2)
+      real , intent(in) :: colo3(:,:)               ! column amount (o3)
+      real , intent(in) :: colch4(:,:)              ! column amount (ch4)
+      real , intent(in) :: colo2(:,:)               ! column amount (o2)
+      real , intent(in) :: colmol(:,:)              ! 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      integer , intent(in) :: indself(:,:)     
+      integer , intent(in) :: indfor(:,:) 
+      real , intent(in) :: selffac(:,:) 
+      real , intent(in) :: selffrac(:,:) 
+      real , intent(in) :: forfac(:,:) 
+      real , intent(in) :: forfrac(:,:) 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: &                        !
+                       fac00(:,:) , fac01(:,:) , & 
+                       fac10(:,:) , fac11(:,:)  
+                                                    !   Dimensions: (ncol,nlayers)
+
+! ----- Output -----
+      real, intent(out) gpu_device :: sfluxzen(:,:)      ! solar source function
+                                                         !   Dimensions: (ncol,ngptsw)
+      real, intent(out) gpu_device :: taug(:,:,:)        ! gaseous optical depth 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
+      real, intent(out) gpu_device :: taur(:,:,:)        ! Rayleigh 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
 
-      integer(kind=im) :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
-      real(kind=rb) :: fac000, fac001, fac010, fac011, fac100, fac101, &
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
                        fac110, fac111, fs, speccomb, specmult, specparm, &
                        tauray
+!      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr, &
+!                          layreffr
+!      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
+!                       fac110, fac111, fs, speccomb, specmult, specparm, &
+!                       tauray, strrat
+      integer :: iplon
 
-! Compute the optical depth by interpolating in ln(pressure), 
-! temperature, and appropriate species.  Below LAYTROP, the water
-! vapor self-continuum is interpolated (in temperature) separately.  
-
-      laysolfr = laytrop
+    
+!      strrat = 38.9589 
+!      layreffr = 6
+!$acc kernels      
+      do iplon = 1, ncol
+          laysolfr = laytrop(iplon)
+          do lay = 1, laytrop(iplon)
+              speccomb = colh2o(iplon,lay)  + strrat*colch4(iplon,lay) 
+              specparm = colh2o(iplon,lay) /speccomb 
+              if (specparm .ge. oneminus) specparm = oneminus
+              specmult = 8. *(specparm)
+              js = 1 + int(specmult)
+              fs = mod(specmult, 1.  )
+              if (jp(iplon,lay)  .lt. layreffr .and. jp(iplon,lay+1)  .ge. layreffr) &
+              laysolfr = min(lay+1,laytrop(iplon) )
+              do ig = 1, ng18
+                if (lay .eq. laysolfr) sfluxzen(iplon,ngs17+ig)  = sfluxref(ig,js) &
+                  + fs * (sfluxref(ig,js+1) - sfluxref(ig,js))
+              end do
+          end do
+      end do
+!$acc end kernels
       
-! Lower atmosphere loop
-      do lay = 1, laytrop
-         if (jp(lay) .lt. layreffr .and. jp(lay+1) .ge. layreffr) &
-            laysolfr = min(lay+1,laytrop)
-         speccomb = colh2o(lay) + strrat*colch4(lay)
-         specparm = colh2o(lay)/speccomb 
+!$acc kernels 
+      do iplon = 1, ncol
+
+      do lay = 1, nlayers
+        if (lay <= laytrop(iplon)) then
+          !do lay = 1, laytrop(iplon) 
+       
+         speccomb = colh2o(iplon,lay)  + strrat*colch4(iplon,lay) 
+         specparm = colh2o(iplon,lay) /speccomb 
          if (specparm .ge. oneminus) specparm = oneminus
-         specmult = 8._rb*(specparm)
+         specmult = 8. *(specparm)
          js = 1 + int(specmult)
-         fs = mod(specmult, 1._rb )
-         fac000 = (1._rb - fs) * fac00(lay)
-         fac010 = (1._rb - fs) * fac10(lay)
-         fac100 = fs * fac00(lay)
-         fac110 = fs * fac10(lay)
-         fac001 = (1._rb - fs) * fac01(lay)
-         fac011 = (1._rb - fs) * fac11(lay)
-         fac101 = fs * fac01(lay)
-         fac111 = fs * fac11(lay)
-         ind0 = ((jp(lay)-1)*5+(jt(lay)-1))*nspa(18) + js
-         ind1 = (jp(lay)*5+(jt1(lay)-1))*nspa(18) + js
-         inds = indself(lay)
-         indf = indfor(lay)
-         tauray = colmol(lay) * rayl
+         fs = mod(specmult, 1.  )
+         fac000 = (1.  - fs) * fac00(iplon,lay) 
+         fac010 = (1.  - fs) * fac10(iplon,lay) 
+         fac100 = fs * fac00(iplon,lay) 
+         fac110 = fs * fac10(iplon,lay) 
+         fac001 = (1.  - fs) * fac01(iplon,lay) 
+         fac011 = (1.  - fs) * fac11(iplon,lay) 
+         fac101 = fs * fac01(iplon,lay) 
+         fac111 = fs * fac11(iplon,lay) 
+         ind0 = ((jp(iplon,lay) -1)*5+(jt(iplon,lay) -1))*nspa(18) + js
+         ind1 = (jp(iplon,lay) *5+(jt1(iplon,lay) -1))*nspa(18) + js
+         inds = indself(iplon,lay) 
+         indf = indfor(iplon,lay) 
+         tauray = colmol(iplon,lay)  * rayl
 
          do ig = 1, ng18
-            taug(lay,ngs17+ig) = speccomb * &
+            taug(iplon,lay,ngs17+ig)  = speccomb * &
                 (fac000 * absa(ind0,ig) + &
                  fac100 * absa(ind0+1,ig) + &
                  fac010 * absa(ind0+9,ig) + &
@@ -3566,41 +3259,51 @@
                  fac101 * absa(ind1+1,ig) + &
                  fac011 * absa(ind1+9,ig) + &
                  fac111 * absa(ind1+10,ig)) + &
-                 colh2o(lay) * &
-                 (selffac(lay) * (selfref(inds,ig) + &
-                 selffrac(lay) * &
+                 colh2o(iplon,lay)  * &
+                 (selffac(iplon,lay)  * (selfref(inds,ig) + &
+                 selffrac(iplon,lay)  * &
                  (selfref(inds+1,ig) - selfref(inds,ig))) + &
-                 forfac(lay) * (forref(indf,ig) + &
-                 forfrac(lay) * &
+                 forfac(iplon,lay)  * (forref(indf,ig) + &
+                 forfrac(iplon,lay)  * &
                  (forref(indf+1,ig) - forref(indf,ig)))) 
 !            ssa(lay,ngs17+ig) = tauray/taug(lay,ngs17+ig)
-            if (lay .eq. laysolfr) sfluxzen(ngs17+ig) = sfluxref(ig,js) &
-               + fs * (sfluxref(ig,js+1) - sfluxref(ig,js))
-            taur(lay,ngs17+ig) = tauray
+        
+            taur(iplon,lay,ngs17+ig)  = tauray
          enddo
-      enddo
+      
+        else
 
 ! Upper atmosphere loop
-      do lay = laytrop+1, nlayers
-         ind0 = ((jp(lay)-13)*5+(jt(lay)-1))*nspb(18) + 1
-         ind1 = ((jp(lay)-12)*5+(jt1(lay)-1))*nspb(18) + 1
-         tauray = colmol(lay) * rayl
+              
+!do lay = laytrop(iplon) +1, nlayers
+         ind0 = ((jp(iplon,lay) -13)*5+(jt(iplon,lay) -1))*nspb(18) + 1
+         ind1 = ((jp(iplon,lay) -12)*5+(jt1(iplon,lay) -1))*nspb(18) + 1
+         tauray = colmol(iplon,lay)  * rayl
 
          do ig = 1, ng18
-            taug(lay,ngs17+ig) = colch4(lay) * &
-                (fac00(lay) * absb(ind0,ig) + &
-                 fac10(lay) * absb(ind0+1,ig) + &
-                 fac01(lay) * absb(ind1,ig) + &	  
-                 fac11(lay) * absb(ind1+1,ig)) 
+            taug(iplon,lay,ngs17+ig)  = colch4(iplon,lay)  * &
+                (fac00(iplon,lay)  * absb(ind0,ig) + &
+                 fac10(iplon,lay)  * absb(ind0+1,ig) + &
+                 fac01(iplon,lay)  * absb(ind1,ig) + &	  
+                 fac11(iplon,lay)  * absb(ind1+1,ig)) 
 !           ssa(lay,ngs17+ig) = tauray/taug(lay,ngs17+ig)
-           taur(lay,ngs17+ig) = tauray
+           taur(iplon,lay,ngs17+ig)  = tauray
          enddo
-       enddo
+        end if
+       
+      enddo
+      enddo
 
-       end subroutine taumol18
+!$acc end kernels
+      end subroutine taumol18
 
 !----------------------------------------------------------------------------
-      subroutine taumol19
+      subroutine taumol19(ncol, nlayers, &
+                          colh2o, colco2, colch4, colo2, colo3, colmol, &
+                          laytrop, jp, jt, jt1, &
+                          fac00, fac01, fac10, fac11, &
+                          selffac, selffrac, indself, forfac, forfrac, indfor, &
+                          sfluxzen, taug, taur)
 !----------------------------------------------------------------------------
 !
 !     band 19:  4650-5150 cm-1 (low - h2o,co2; high - co2)
@@ -3612,48 +3315,130 @@
       use parrrsw, only : ng19, ngs18
       use rrsw_kg19, only : absa, ka, absb, kb, forref, selfref, &
                             sfluxref, rayl, layreffr, strrat
+!      use rrsw_kg19, only : absa, ka, absb, kb, forref, selfref, &
+!                            sfluxref, rayl
 
 ! ------- Declarations -------
+      integer , intent(in) :: ncol
+      integer , intent(in) :: nlayers               ! total number of layers
+
+      integer , intent(in) :: laytrop(:)            ! tropopause layer index
+      integer , intent(in) :: jp(:,:)               ! 
+      integer , intent(in) :: jt(:,:)               !
+      integer , intent(in) :: jt1(:,:)              !
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: colh2o(:,:)              ! column amount (h2o)
+      real , intent(in) :: colco2(:,:)              ! column amount (co2)
+      real , intent(in) :: colo3(:,:)               ! column amount (o3)
+      real , intent(in) :: colch4(:,:)              ! column amount (ch4)
+      real , intent(in) :: colo2(:,:)               ! column amount (o2)
+      real , intent(in) :: colmol(:,:)              ! 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      integer , intent(in) :: indself(:,:)     
+      integer , intent(in) :: indfor(:,:) 
+      real , intent(in) :: selffac(:,:) 
+      real , intent(in) :: selffrac(:,:) 
+      real , intent(in) :: forfac(:,:) 
+      real , intent(in) :: forfrac(:,:) 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: &                        !
+                       fac00(:,:) , fac01(:,:) , &  
+                       fac10(:,:) , fac11(:,:)  
+                                                    !   Dimensions: (ncol,nlayers)
+
+! ----- Output -----
+      real, intent(out) gpu_device :: sfluxzen(:,:)      ! solar source function
+                                                         !   Dimensions: (ncol,ngptsw)
+      real, intent(out) gpu_device :: taug(:,:,:)        ! gaseous optical depth 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
+      real, intent(out) gpu_device :: taur(:,:,:)        ! Rayleigh 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
 
-      integer(kind=im) :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
-      real(kind=rb) :: fac000, fac001, fac010, fac011, fac100, fac101, &
-                       fac110, fac111, fs, speccomb, specmult, specparm, &
-                       tauray
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
+                  fac110, fac111, fs, speccomb, specmult, specparm, &
+                  tauray
+!      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr, &
+!                  layreffr
+!      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
+!                  fac110, fac111, fs, speccomb, specmult, specparm, &
+!                  tauray, strrat
+      integer :: iplon
+
+	        
+      strrat = 5.49281 
+      layreffr = 3      
+      
+!$acc kernels 
+      do iplon=1,ncol
+
+! Compute the optical depth by interpolating in ln(pressure), 
+! temperature, and appropriate species.  Below LAYTROP, the water
+! vapor self-continuum is interpolated (in temperature) separately.  
+      laysolfr = laytrop(iplon) 
+  
+! Lower atmosphere loop      
+      do lay = 1, laytrop(iplon) 
+            
+        if (jp(iplon,lay)  .lt. layreffr .and. jp(iplon,lay+1)  .ge. layreffr) &
+            laysolfr = min(lay+1,laytrop(iplon) )
+     
+         if (lay .eq. laysolfr) then 
+                 speccomb = colh2o(iplon,lay)  + strrat*colco2(iplon,lay) 
+         specparm = colh2o(iplon,lay) /speccomb 
+         if (specparm .ge. oneminus) specparm = oneminus
+         specmult = 8. *(specparm)
+         js = 1 + int(specmult)
+         fs = mod(specmult, 1.  )
+        
+         do ig = 1 , ng19
+            sfluxzen(iplon,ngs18+ig)  = sfluxref(ig,js) &
+               + fs * (sfluxref(ig,js+1) - sfluxref(ig,js))
+         end do
+         end if
+      end do
+      end do
+!$acc end kernels
+      
+      
+!$acc kernels 
+      do iplon=1,ncol
 
 ! Compute the optical depth by interpolating in ln(pressure), 
 ! temperature, and appropriate species.  Below LAYTROP, the water
 ! vapor self-continuum is interpolated (in temperature) separately.  
 
-      laysolfr = laytrop
-
 ! Lower atmosphere loop      
-      do lay = 1, laytrop
-         if (jp(lay) .lt. layreffr .and. jp(lay+1) .ge. layreffr) &
-            laysolfr = min(lay+1,laytrop)
-         speccomb = colh2o(lay) + strrat*colco2(lay)
-         specparm = colh2o(lay)/speccomb 
+      do lay = 1, nlayers
+         if (lay <= laytrop(iplon)) then
+       
+         speccomb = colh2o(iplon,lay)  + strrat*colco2(iplon,lay) 
+         specparm = colh2o(iplon,lay) /speccomb 
          if (specparm .ge. oneminus) specparm = oneminus
-         specmult = 8._rb*(specparm)
+         specmult = 8. *(specparm)
          js = 1 + int(specmult)
-         fs = mod(specmult, 1._rb )
-         fac000 = (1._rb - fs) * fac00(lay)
-         fac010 = (1._rb - fs) * fac10(lay)
-         fac100 = fs * fac00(lay)
-         fac110 = fs * fac10(lay)
-         fac001 = (1._rb - fs) * fac01(lay)
-         fac011 = (1._rb - fs) * fac11(lay)
-         fac101 = fs * fac01(lay)
-         fac111 = fs * fac11(lay)
-         ind0 = ((jp(lay)-1)*5+(jt(lay)-1))*nspa(19) + js
-         ind1 = (jp(lay)*5+(jt1(lay)-1))*nspa(19) + js
-         inds = indself(lay)
-         indf = indfor(lay)
-         tauray = colmol(lay) * rayl
+         fs = mod(specmult, 1.  )
+         fac000 = (1.  - fs) * fac00(iplon,lay) 
+         fac010 = (1.  - fs) * fac10(iplon,lay) 
+         fac100 = fs * fac00(iplon,lay) 
+         fac110 = fs * fac10(iplon,lay) 
+         fac001 = (1.  - fs) * fac01(iplon,lay) 
+         fac011 = (1.  - fs) * fac11(iplon,lay) 
+         fac101 = fs * fac01(iplon,lay) 
+         fac111 = fs * fac11(iplon,lay) 
+         ind0 = ((jp(iplon,lay) -1)*5+(jt(iplon,lay) -1))*nspa(19) + js
+         ind1 = (jp(iplon,lay) *5+(jt1(iplon,lay) -1))*nspa(19) + js
+         inds = indself(iplon,lay) 
+         indf = indfor(iplon,lay) 
+         tauray = colmol(iplon,lay)  * rayl
 
          do ig = 1 , ng19
-            taug(lay,ngs18+ig) = speccomb * &
+            taug(iplon,lay,ngs18+ig)  = speccomb * &
                 (fac000 * absa(ind0,ig) + &
                  fac100 * absa(ind0+1,ig) + &
                  fac010 * absa(ind0+9,ig) + &
@@ -3662,41 +3447,47 @@
                  fac101 * absa(ind1+1,ig) + &
                  fac011 * absa(ind1+9,ig) + &
                  fac111 * absa(ind1+10,ig)) + &
-                 colh2o(lay) * &
-                 (selffac(lay) * (selfref(inds,ig) + &
-                 selffrac(lay) * &
+                 colh2o(iplon,lay)  * &
+                 (selffac(iplon,lay)  * (selfref(inds,ig) + &
+                 selffrac(iplon,lay)  * &
                  (selfref(inds+1,ig) - selfref(inds,ig))) + & 
-                 forfac(lay) * (forref(indf,ig) + &
-                 forfrac(lay) * &
+                 forfac(iplon,lay)  * (forref(indf,ig) + &
+                 forfrac(iplon,lay)  * &
                  (forref(indf+1,ig) - forref(indf,ig)))) 
 !            ssa(lay,ngs18+ig) = tauray/taug(lay,ngs18+ig)
-            if (lay .eq. laysolfr) sfluxzen(ngs18+ig) = sfluxref(ig,js) &
-               + fs * (sfluxref(ig,js+1) - sfluxref(ig,js))
-            taur(lay,ngs18+ig) = tauray   
+            taur(iplon,lay,ngs18+ig)  = tauray   
          enddo
-      enddo
+        else
 
 ! Upper atmosphere loop
-      do lay = laytrop+1, nlayers
-         ind0 = ((jp(lay)-13)*5+(jt(lay)-1))*nspb(19) + 1
-         ind1 = ((jp(lay)-12)*5+(jt1(lay)-1))*nspb(19) + 1
-         tauray = colmol(lay) * rayl
+  
+         ind0 = ((jp(iplon,lay) -13)*5+(jt(iplon,lay) -1))*nspb(19) + 1
+         ind1 = ((jp(iplon,lay) -12)*5+(jt1(iplon,lay) -1))*nspb(19) + 1
+         tauray = colmol(iplon,lay)  * rayl
 
          do ig = 1 , ng19
-            taug(lay,ngs18+ig) = colco2(lay) * &
-                (fac00(lay) * absb(ind0,ig) + &
-                 fac10(lay) * absb(ind0+1,ig) + &
-                 fac01(lay) * absb(ind1,ig) + &
-                 fac11(lay) * absb(ind1+1,ig)) 
+            taug(iplon,lay,ngs18+ig)  = colco2(iplon,lay)  * &
+                (fac00(iplon,lay)  * absb(ind0,ig) + &
+                 fac10(iplon,lay)  * absb(ind0+1,ig) + &
+                 fac01(iplon,lay)  * absb(ind1,ig) + &
+                 fac11(iplon,lay)  * absb(ind1+1,ig)) 
 !            ssa(lay,ngs18+ig) = tauray/taug(lay,ngs18+ig) 
-            taur(lay,ngs18+ig) = tauray   
+            taur(iplon,lay,ngs18+ig)  = tauray   
          enddo
+        end if
       enddo
-
+      enddo
+      
+!$acc end kernels
       end subroutine taumol19
 
 !----------------------------------------------------------------------------
-      subroutine taumol20
+      subroutine taumol20(ncol, nlayers, &
+                          colh2o, colco2, colch4, colo2, colo3, colmol, &
+                          laytrop, jp, jt, jt1, &
+                          fac00, fac01, fac10, fac11, &
+                          selffac, selffrac, indself, forfac, forfrac, indfor, &
+                          sfluxzen, taug, taur)
 !----------------------------------------------------------------------------
 !
 !     band 20:  5150-6150 cm-1 (low - h2o; high - h2o)
@@ -3708,79 +3499,141 @@
       use parrrsw, only : ng20, ngs19
       use rrsw_kg20, only : absa, ka, absb, kb, forref, selfref, &
                             sfluxref, absch4, rayl, layreffr
+!      use rrsw_kg20, only : absa, ka, absb, kb, forref, selfref, &
+!                            sfluxref, absch4, rayl
 
       implicit none
 
 ! ------- Declarations -------
+      integer , intent(in) :: ncol
+      integer , intent(in) :: nlayers               ! total number of layers
+
+      integer , intent(in) :: laytrop(:)            ! tropopause layer index
+      integer , intent(in) :: jp(:,:)               ! 
+      integer , intent(in) :: jt(:,:)               !
+      integer , intent(in) :: jt1(:,:)              !
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: colh2o(:,:)              ! column amount (h2o)
+      real , intent(in) :: colco2(:,:)              ! column amount (co2)
+      real , intent(in) :: colo3(:,:)               ! column amount (o3)
+      real , intent(in) :: colch4(:,:)              ! column amount (ch4)
+      real , intent(in) :: colo2(:,:)               ! column amount (o2)
+      real , intent(in) :: colmol(:,:)              ! 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      integer , intent(in) :: indself(:,:)     
+      integer , intent(in) :: indfor(:,:) 
+      real , intent(in) :: selffac(:,:) 
+      real , intent(in) :: selffrac(:,:) 
+      real , intent(in) :: forfac(:,:) 
+      real , intent(in) :: forfrac(:,:) 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: &                        !
+                       fac00(:,:) , fac01(:,:) , &  
+                       fac10(:,:) , fac11(:,:)  
+                                                    !   Dimensions: (ncol,nlayers)
+
+! ----- Output -----
+      real, intent(out) gpu_device :: sfluxzen(:,:)      ! solar source function
+                                                         !   Dimensions: (ncol,ngptsw)
+      real, intent(out) gpu_device :: taug(:,:,:)        ! gaseous optical depth 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
+      real, intent(out) gpu_device :: taur(:,:,:)        ! Rayleigh 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
 
-      integer(kind=im) :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
-      real(kind=rb) :: fac000, fac001, fac010, fac011, fac100, fac101, &
-                       fac110, fac111, fs, speccomb, specmult, specparm, &
-                       tauray
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+!      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr, &
+!                  layreffr
+      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
+                  fac110, fac111, fs, speccomb, specmult, specparm, &
+                  tauray
+      integer :: iplon
 
-! Compute the optical depth by interpolating in ln(pressure), 
-! temperature, and appropriate species.  Below LAYTROP, the water
-! vapor self-continuum is interpolated (in temperature) separately.  
+!      layreffr = 3        
+!$acc kernels loop independent private(laysolfr)
+      do iplon = 1, ncol
+      laysolfr = laytrop(iplon)
+      do lay = 1, laytrop(iplon)
+         if (jp(iplon,lay)  .lt. layreffr .and. jp(iplon,lay+1)  .ge. layreffr) &
+            laysolfr = min(lay+1,laytrop(iplon) )
+         if (lay .eq. laysolfr) then 
+             do ig = 1, ng20 
+                 sfluxzen(iplon,ngs19+ig)  = sfluxref(ig) 
+             end do
+         end if
+      end do
+      end do
+!$acc end kernels
+       
+!$acc kernels 
+      do iplon=1,ncol
 
-      laysolfr = laytrop
-
-! Lower atmosphere loop
-      do lay = 1, laytrop
-         if (jp(lay) .lt. layreffr .and. jp(lay+1) .ge. layreffr) &
-            laysolfr = min(lay+1,laytrop)
-         ind0 = ((jp(lay)-1)*5+(jt(lay)-1))*nspa(20) + 1
-         ind1 = (jp(lay)*5+(jt1(lay)-1))*nspa(20) + 1
-         inds = indself(lay)
-         indf = indfor(lay)
-         tauray = colmol(lay) * rayl
+      do lay = 1, nlayers 
+         if (lay <= laytrop(iplon)) then
+         
+         ind0 = ((jp(iplon,lay) -1)*5+(jt(iplon,lay) -1))*nspa(20) + 1
+         ind1 = (jp(iplon,lay) *5+(jt1(iplon,lay) -1))*nspa(20) + 1
+         inds = indself(iplon,lay) 
+         indf = indfor(iplon,lay) 
+         tauray = colmol(iplon,lay)  * rayl
 
          do ig = 1, ng20
-            taug(lay,ngs19+ig) = colh2o(lay) * &
-               ((fac00(lay) * absa(ind0,ig) + &
-                 fac10(lay) * absa(ind0+1,ig) + &
-                 fac01(lay) * absa(ind1,ig) + &
-                 fac11(lay) * absa(ind1+1,ig)) + &
-                 selffac(lay) * (selfref(inds,ig) + & 
-                 selffrac(lay) * &
+            taug(iplon,lay,ngs19+ig)  = colh2o(iplon,lay)  * &
+               ((fac00(iplon,lay)  * absa(ind0,ig) + &
+                 fac10(iplon,lay)  * absa(ind0+1,ig) + &
+                 fac01(iplon,lay)  * absa(ind1,ig) + &
+                 fac11(iplon,lay)  * absa(ind1+1,ig)) + &
+                 selffac(iplon,lay)  * (selfref(inds,ig) + & 
+                 selffrac(iplon,lay)  * &
                  (selfref(inds+1,ig) - selfref(inds,ig))) + &
-                 forfac(lay) * (forref(indf,ig) + &
-                 forfrac(lay) * &
+                 forfac(iplon,lay)  * (forref(indf,ig) + &
+                 forfrac(iplon,lay)  * &
                  (forref(indf+1,ig) - forref(indf,ig)))) &
-                 + colch4(lay) * absch4(ig)
+                 + colch4(iplon,lay)  * absch4(ig)
 !            ssa(lay,ngs19+ig) = tauray/taug(lay,ngs19+ig)
-            taur(lay,ngs19+ig) = tauray 
-            if (lay .eq. laysolfr) sfluxzen(ngs19+ig) = sfluxref(ig) 
+            taur(iplon,lay,ngs19+ig)  = tauray 
+           
          enddo
-      enddo
+         else
 
 ! Upper atmosphere loop
-      do lay = laytrop+1, nlayers
-         ind0 = ((jp(lay)-13)*5+(jt(lay)-1))*nspb(20) + 1
-         ind1 = ((jp(lay)-12)*5+(jt1(lay)-1))*nspb(20) + 1
-         indf = indfor(lay)
-         tauray = colmol(lay) * rayl
+      
+         ind0 = ((jp(iplon,lay) -13)*5+(jt(iplon,lay) -1))*nspb(20) + 1
+         ind1 = ((jp(iplon,lay) -12)*5+(jt1(iplon,lay) -1))*nspb(20) + 1
+         indf = indfor(iplon,lay) 
+         tauray = colmol(iplon,lay)  * rayl
 
          do ig = 1, ng20
-            taug(lay,ngs19+ig) = colh2o(lay) * &
-                (fac00(lay) * absb(ind0,ig) + &
-                 fac10(lay) * absb(ind0+1,ig) + &
-                 fac01(lay) * absb(ind1,ig) + &
-                 fac11(lay) * absb(ind1+1,ig) + &
-                 forfac(lay) * (forref(indf,ig) + &
-                 forfrac(lay) * &
+            taug(iplon,lay,ngs19+ig)  = colh2o(iplon,lay)  * &
+                (fac00(iplon,lay)  * absb(ind0,ig) + &
+                 fac10(iplon,lay)  * absb(ind0+1,ig) + &
+                 fac01(iplon,lay)  * absb(ind1,ig) + &
+                 fac11(iplon,lay)  * absb(ind1+1,ig) + &
+                 forfac(iplon,lay)  * (forref(indf,ig) + &
+                 forfrac(iplon,lay)  * &
                  (forref(indf+1,ig) - forref(indf,ig)))) + &
-                 colch4(lay) * absch4(ig)
+                 colch4(iplon,lay)  * absch4(ig)
 !            ssa(lay,ngs19+ig) = tauray/taug(lay,ngs19+ig)
-            taur(lay,ngs19+ig) = tauray 
+            taur(iplon,lay,ngs19+ig)  = tauray 
          enddo
+         end if
+      enddo
       enddo
 
+!$acc end kernels
       end subroutine taumol20
 
 !----------------------------------------------------------------------------
-      subroutine taumol21
+      subroutine taumol21(ncol, nlayers, &
+                          colh2o, colco2, colch4, colo2, colo3, colmol, &
+                          laytrop, jp, jt, jt1, &
+                          fac00, fac01, fac10, fac11, &
+                          selffac, selffrac, indself, forfac, forfrac, indfor, &
+                          sfluxzen, taug, taur)
 !----------------------------------------------------------------------------
 !
 !     band 21:  6150-7700 cm-1 (low - h2o,co2; high - h2o,co2)
@@ -3792,48 +3645,120 @@
       use parrrsw, only : ng21, ngs20
       use rrsw_kg21, only : absa, ka, absb, kb, forref, selfref, &
                             sfluxref, rayl, layreffr, strrat
+!      use rrsw_kg21, only : absa, ka, absb, kb, forref, selfref, &
+!                            sfluxref, rayl
 
 ! ------- Declarations -------
+      integer , intent(in) :: ncol
+      integer , intent(in) :: nlayers               ! total number of layers
+
+      integer , intent(in) :: laytrop(:)            ! tropopause layer index
+      integer , intent(in) :: jp(:,:)               ! 
+      integer , intent(in) :: jt(:,:)               !
+      integer , intent(in) :: jt1(:,:)              !
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: colh2o(:,:)              ! column amount (h2o)
+      real , intent(in) :: colco2(:,:)              ! column amount (co2)
+      real , intent(in) :: colo3(:,:)               ! column amount (o3)
+      real , intent(in) :: colch4(:,:)              ! column amount (ch4)
+      real , intent(in) :: colo2(:,:)               ! column amount (o2)
+      real , intent(in) :: colmol(:,:)              ! 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      integer , intent(in) :: indself(:,:)     
+      integer , intent(in) :: indfor(:,:) 
+      real , intent(in) :: selffac(:,:) 
+      real , intent(in) :: selffrac(:,:) 
+      real , intent(in) :: forfac(:,:) 
+      real , intent(in) :: forfrac(:,:) 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: &                        !
+                       fac00(:,:) , fac01(:,:) , &  
+                       fac10(:,:) , fac11(:,:)  
+                                                    !   Dimensions: (ncol,nlayers)
+
+! ----- Output -----
+      real, intent(out) gpu_device :: sfluxzen(:,:)      ! solar source function
+                                                         !   Dimensions: (ncol,ngptsw)
+      real, intent(out) gpu_device :: taug(:,:,:)        ! gaseous optical depth 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
+      real, intent(out) gpu_device :: taur(:,:,:)        ! Rayleigh 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
 
-      integer(kind=im) :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
-      real(kind=rb) :: fac000, fac001, fac010, fac011, fac100, fac101, &
-                       fac110, fac111, fs, speccomb, specmult, specparm, &
-                       tauray
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
+                  fac110, fac111, fs, speccomb, specmult, specparm, &
+                  tauray
+!      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr, &
+!                  layreffr
+!      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
+!                  fac110, fac111, fs, speccomb, specmult, specparm, &
+!                  tauray, strrat
+      integer :: iplon
+        
+!      strrat = 0.0045321 
+!      layreffr = 8
+     
+!$acc kernels loop independent private(laysolfr)
+      do iplon=1,ncol
+      laysolfr = laytrop(iplon)        
+!$acc loop seq
+      do lay=1,laytrop(iplon)
+         if (jp(iplon,lay)  .lt. layreffr .and. jp(iplon,lay+1)  .ge. layreffr) &
+            laysolfr = min(lay+1,laytrop(iplon) )
+         if (lay .eq. laysolfr) then 
+                speccomb = colh2o(iplon,lay)  + strrat*colco2(iplon,lay) 
+         specparm = colh2o(iplon,lay) /speccomb 
+         if (specparm .ge. oneminus) specparm = oneminus
+         specmult = 8. *(specparm)
+         js = 1 + int(specmult)
+         fs = mod(specmult, 1.  )
+               do ig = 1, ng21
+              sfluxzen(iplon,ngs20+ig)  = sfluxref(ig,js) &
+               + fs * (sfluxref(ig,js+1) - sfluxref(ig,js))
+               end do
+          end if
+      end do
+      end do        
+!$acc end kernels
 
+!$acc kernels 
+      do iplon=1,ncol  
 ! Compute the optical depth by interpolating in ln(pressure), 
 ! temperature, and appropriate species.  Below LAYTROP, the water
 ! vapor self-continuum is interpolated (in temperature) separately.  
 
-      laysolfr = laytrop
       
 ! Lower atmosphere loop
-      do lay = 1, laytrop
-         if (jp(lay) .lt. layreffr .and. jp(lay+1) .ge. layreffr) &
-            laysolfr = min(lay+1,laytrop)
-         speccomb = colh2o(lay) + strrat*colco2(lay)
-         specparm = colh2o(lay)/speccomb 
+      do lay = 1, nlayers 
+        if (lay <= laytrop(iplon)) then 
+        
+         speccomb = colh2o(iplon,lay)  + strrat*colco2(iplon,lay) 
+         specparm = colh2o(iplon,lay) /speccomb 
          if (specparm .ge. oneminus) specparm = oneminus
-         specmult = 8._rb*(specparm)
+         specmult = 8. *(specparm)
          js = 1 + int(specmult)
-         fs = mod(specmult, 1._rb )
-         fac000 = (1._rb - fs) * fac00(lay)
-         fac010 = (1._rb - fs) * fac10(lay)
-         fac100 = fs * fac00(lay)
-         fac110 = fs * fac10(lay)
-         fac001 = (1._rb - fs) * fac01(lay)
-         fac011 = (1._rb - fs) * fac11(lay)
-         fac101 = fs * fac01(lay)
-         fac111 = fs * fac11(lay)
-         ind0 = ((jp(lay)-1)*5+(jt(lay)-1))*nspa(21) + js
-         ind1 = (jp(lay)*5+(jt1(lay)-1))*nspa(21) + js
-         inds = indself(lay)
-         indf = indfor(lay)
-         tauray = colmol(lay) * rayl
+         fs = mod(specmult, 1.  )
+         fac000 = (1.  - fs) * fac00(iplon,lay) 
+         fac010 = (1.  - fs) * fac10(iplon,lay) 
+         fac100 = fs * fac00(iplon,lay) 
+         fac110 = fs * fac10(iplon,lay) 
+         fac001 = (1.  - fs) * fac01(iplon,lay) 
+         fac011 = (1.  - fs) * fac11(iplon,lay) 
+         fac101 = fs * fac01(iplon,lay) 
+         fac111 = fs * fac11(iplon,lay) 
+         ind0 = ((jp(iplon,lay) -1)*5+(jt(iplon,lay) -1))*nspa(21) + js
+         ind1 = (jp(iplon,lay) *5+(jt1(iplon,lay) -1))*nspa(21) + js
+         inds = indself(iplon,lay) 
+         indf = indfor(iplon,lay) 
+         tauray = colmol(iplon,lay)  * rayl
 
          do ig = 1, ng21
-            taug(lay,ngs20+ig) = speccomb * &
+            taug(iplon,lay,ngs20+ig)  = speccomb * &
                 (fac000 * absa(ind0,ig) + &
                  fac100 * absa(ind0+1,ig) + &
                  fac010 * absa(ind0+9,ig) + &
@@ -3842,43 +3767,42 @@
                  fac101 * absa(ind1+1,ig) + &
                  fac011 * absa(ind1+9,ig) + &
                  fac111 * absa(ind1+10,ig)) + &
-                 colh2o(lay) * &
-                 (selffac(lay) * (selfref(inds,ig) + &
-                 selffrac(lay) * &
+                 colh2o(iplon,lay)  * &
+                 (selffac(iplon,lay)  * (selfref(inds,ig) + &
+                 selffrac(iplon,lay)  * &
                  (selfref(inds+1,ig) - selfref(inds,ig))) + &
-                 forfac(lay) * (forref(indf,ig) + &
-                 forfrac(lay) * &
+                 forfac(iplon,lay)  * (forref(indf,ig) + &
+                 forfrac(iplon,lay)  * &
                  (forref(indf+1,ig) - forref(indf,ig))))
 !            ssa(lay,ngs20+ig) = tauray/taug(lay,ngs20+ig)
-            if (lay .eq. laysolfr) sfluxzen(ngs20+ig) = sfluxref(ig,js) &
-               + fs * (sfluxref(ig,js+1) - sfluxref(ig,js))
-            taur(lay,ngs20+ig) = tauray
+          
+            taur(iplon,lay,ngs20+ig)  = tauray
          enddo
-      enddo
+        else
 
 ! Upper atmosphere loop
-      do lay = laytrop+1, nlayers
-         speccomb = colh2o(lay) + strrat*colco2(lay)
-         specparm = colh2o(lay)/speccomb 
+
+         speccomb = colh2o(iplon,lay)  + strrat*colco2(iplon,lay) 
+         specparm = colh2o(iplon,lay) /speccomb 
          if (specparm .ge. oneminus) specparm = oneminus
-         specmult = 4._rb*(specparm)
+         specmult = 4. *(specparm)
          js = 1 + int(specmult)
-         fs = mod(specmult, 1._rb )
-         fac000 = (1._rb - fs) * fac00(lay)
-         fac010 = (1._rb - fs) * fac10(lay)
-         fac100 = fs * fac00(lay)
-         fac110 = fs * fac10(lay)
-         fac001 = (1._rb - fs) * fac01(lay)
-         fac011 = (1._rb - fs) * fac11(lay)
-         fac101 = fs * fac01(lay)
-         fac111 = fs * fac11(lay)
-         ind0 = ((jp(lay)-13)*5+(jt(lay)-1))*nspb(21) + js
-         ind1 = ((jp(lay)-12)*5+(jt1(lay)-1))*nspb(21) + js
-         indf = indfor(lay)
-         tauray = colmol(lay) * rayl
+         fs = mod(specmult, 1.  )
+         fac000 = (1.  - fs) * fac00(iplon,lay) 
+         fac010 = (1.  - fs) * fac10(iplon,lay) 
+         fac100 = fs * fac00(iplon,lay) 
+         fac110 = fs * fac10(iplon,lay) 
+         fac001 = (1.  - fs) * fac01(iplon,lay) 
+         fac011 = (1.  - fs) * fac11(iplon,lay) 
+         fac101 = fs * fac01(iplon,lay) 
+         fac111 = fs * fac11(iplon,lay) 
+         ind0 = ((jp(iplon,lay) -13)*5+(jt(iplon,lay) -1))*nspb(21) + js
+         ind1 = ((jp(iplon,lay) -12)*5+(jt1(iplon,lay) -1))*nspb(21) + js
+         indf = indfor(iplon,lay) 
+         tauray = colmol(iplon,lay)  * rayl
 
          do ig = 1, ng21
-            taug(lay,ngs20+ig) = speccomb * &
+            taug(iplon,lay,ngs20+ig)  = speccomb * &
                 (fac000 * absb(ind0,ig) + &
                  fac100 * absb(ind0+1,ig) + &
                  fac010 * absb(ind0+5,ig) + &
@@ -3887,19 +3811,27 @@
                  fac101 * absb(ind1+1,ig) + &
                  fac011 * absb(ind1+5,ig) + &
                  fac111 * absb(ind1+6,ig)) + &
-                 colh2o(lay) * &
-                 forfac(lay) * (forref(indf,ig) + &
-                 forfrac(lay) * &
+                 colh2o(iplon,lay)  * &
+                 forfac(iplon,lay)  * (forref(indf,ig) + &
+                 forfrac(iplon,lay)  * &
                  (forref(indf+1,ig) - forref(indf,ig)))
 !            ssa(lay,ngs20+ig) = tauray/taug(lay,ngs20+ig)
-            taur(lay,ngs20+ig) = tauray
+            taur(iplon,lay,ngs20+ig)  = tauray
          enddo
+        end if
       enddo
-
+      enddo
+      
+!$acc end kernels
       end subroutine taumol21
 
 !----------------------------------------------------------------------------
-      subroutine taumol22
+      subroutine taumol22(ncol, nlayers, &
+                          colh2o, colco2, colch4, colo2, colo3, colmol, &
+                          laytrop, jp, jt, jt1, &
+                          fac00, fac01, fac10, fac11, &
+                          selffac, selffrac, indself, forfac, forfrac, indfor, &
+                          sfluxzen, taug, taur)
 !----------------------------------------------------------------------------
 !
 !     band 22:  7700-8050 cm-1 (low - h2o,o2; high - o2)
@@ -3911,55 +3843,135 @@
       use parrrsw, only : ng22, ngs21
       use rrsw_kg22, only : absa, ka, absb, kb, forref, selfref, &
                             sfluxref, rayl, layreffr, strrat
+!      use rrsw_kg22, only : absa, ka, absb, kb, forref, selfref, &
+!                            sfluxref, rayl
 
 ! ------- Declarations -------
+      integer , intent(in) :: ncol
+      integer , intent(in) :: nlayers               ! total number of layers
+
+      integer , intent(in) :: laytrop(:)            ! tropopause layer index
+      integer , intent(in) :: jp(:,:)               ! 
+      integer , intent(in) :: jt(:,:)               !
+      integer , intent(in) :: jt1(:,:)              !
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: colh2o(:,:)              ! column amount (h2o)
+      real , intent(in) :: colco2(:,:)              ! column amount (co2)
+      real , intent(in) :: colo3(:,:)               ! column amount (o3)
+      real , intent(in) :: colch4(:,:)              ! column amount (ch4)
+      real , intent(in) :: colo2(:,:)               ! column amount (o2)
+      real , intent(in) :: colmol(:,:)              ! 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      integer , intent(in) :: indself(:,:)     
+      integer , intent(in) :: indfor(:,:) 
+      real , intent(in) :: selffac(:,:) 
+      real , intent(in) :: selffrac(:,:) 
+      real , intent(in) :: forfac(:,:) 
+      real , intent(in) :: forfrac(:,:) 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: &                        !
+                       fac00(:,:) , fac01(:,:) , &  
+                       fac10(:,:) , fac11(:,:)  
+                                                    !   Dimensions: (ncol,nlayers)
+
+! ----- Output -----
+      real, intent(out) gpu_device :: sfluxzen(:,:)      ! solar source function
+                                                         !   Dimensions: (ncol,ngptsw)
+      real, intent(out) gpu_device :: taug(:,:,:)        ! gaseous optical depth 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
+      real, intent(out) gpu_device :: taur(:,:,:)        ! Rayleigh 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
 
-      integer(kind=im) :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
-      real(kind=rb) :: fac000, fac001, fac010, fac011, fac100, fac101, &
-                       fac110, fac111, fs, speccomb, specmult, specparm, &
-                       tauray, o2adj, o2cont
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
+                  fac110, fac111, fs, speccomb, specmult, specparm, &
+                  tauray, o2adj, o2cont
+!      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr, &
+!                  layreffr
+!      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
+!                  fac110, fac111, fs, speccomb, specmult, specparm, &
+!                  tauray, o2adj, o2cont, strrat
+      integer :: iplon
 
 ! The following factor is the ratio of total O2 band intensity (lines 
 ! and Mate continuum) to O2 band intensity (line only).  It is needed
 ! to adjust the optical depths since the k's include only lines.
-      o2adj = 1.6_rb
+      o2adj = 1.6 
       
 ! Compute the optical depth by interpolating in ln(pressure), 
 ! temperature, and appropriate species.  Below LAYTROP, the water
 ! vapor self-continuum is interpolated (in temperature) separately.  
 
-      laysolfr = laytrop
+!      strrat = 0.022708 
+!      layreffr = 2
+      
+!$acc kernels loop independent private(laysolfr)
+      do iplon=1,ncol
+
+      laysolfr = laytrop(iplon) 
 
 ! Lower atmosphere loop
-      do lay = 1, laytrop
-         if (jp(lay) .lt. layreffr .and. jp(lay+1) .ge. layreffr) &
-            laysolfr = min(lay+1,laytrop)
-         o2cont = 4.35e-4_rb*colo2(lay)/(350.0_rb*2.0_rb)
-         speccomb = colh2o(lay) + o2adj*strrat*colo2(lay)
-         specparm = colh2o(lay)/speccomb 
+!$acc loop seq
+         do lay = 1, laytrop(iplon) 
+            if (jp(iplon,lay)  .lt. layreffr .and. jp(iplon,lay+1)  .ge. layreffr) &
+            laysolfr = min(lay+1,laytrop(iplon) )
+                 
+            if (lay .eq. laysolfr) then 
+            speccomb = colh2o(iplon,lay)  + o2adj*strrat*colo2(iplon,lay) 
+            specparm = colh2o(iplon,lay) /speccomb 
+            if (specparm .ge. oneminus) specparm = oneminus
+            specmult = 8. *(specparm)
+    !         odadj = specparm + o2adj * (1.  - specparm)
+            js = 1 + int(specmult)
+            fs = mod(specmult, 1.  )
+            do ig = 1, ng22                                 
+                                 
+               sfluxzen(iplon,ngs21+ig)  = sfluxref(ig,js) &
+                + fs * (sfluxref(ig,js+1) - sfluxref(ig,js))
+            end do
+            end if
+         end do
+      end do
+ !$acc end kernels
+ 
+!$acc kernels 
+      do iplon=1,ncol
+
+      laysolfr = laytrop(iplon) 
+
+! Lower atmosphere loop
+         do lay = 1, nlayers 
+         if (lay<=laytrop(iplon)) then
+  
+         o2cont = 4.35e-4 *colo2(iplon,lay) /(350.0 *2.0 )
+         speccomb = colh2o(iplon,lay)  + o2adj*strrat*colo2(iplon,lay) 
+         specparm = colh2o(iplon,lay) /speccomb 
          if (specparm .ge. oneminus) specparm = oneminus
-         specmult = 8._rb*(specparm)
-!         odadj = specparm + o2adj * (1._rb - specparm)
+         specmult = 8. *(specparm)
+!         odadj = specparm + o2adj * (1.  - specparm)
          js = 1 + int(specmult)
-         fs = mod(specmult, 1._rb )
-         fac000 = (1._rb - fs) * fac00(lay)
-         fac010 = (1._rb - fs) * fac10(lay)
-         fac100 = fs * fac00(lay)
-         fac110 = fs * fac10(lay)
-         fac001 = (1._rb - fs) * fac01(lay)
-         fac011 = (1._rb - fs) * fac11(lay)
-         fac101 = fs * fac01(lay)
-         fac111 = fs * fac11(lay)
-         ind0 = ((jp(lay)-1)*5+(jt(lay)-1))*nspa(22) + js
-         ind1 = (jp(lay)*5+(jt1(lay)-1))*nspa(22) + js
-         inds = indself(lay)
-         indf = indfor(lay)
-         tauray = colmol(lay) * rayl
+         fs = mod(specmult, 1.  )
+         fac000 = (1.  - fs) * fac00(iplon,lay) 
+         fac010 = (1.  - fs) * fac10(iplon,lay) 
+         fac100 = fs * fac00(iplon,lay) 
+         fac110 = fs * fac10(iplon,lay) 
+         fac001 = (1.  - fs) * fac01(iplon,lay) 
+         fac011 = (1.  - fs) * fac11(iplon,lay) 
+         fac101 = fs * fac01(iplon,lay) 
+         fac111 = fs * fac11(iplon,lay) 
+         ind0 = ((jp(iplon,lay) -1)*5+(jt(iplon,lay) -1))*nspa(22) + js
+         ind1 = (jp(iplon,lay) *5+(jt1(iplon,lay) -1))*nspa(22) + js
+         inds = indself(iplon,lay) 
+         indf = indfor(iplon,lay) 
+         tauray = colmol(iplon,lay)  * rayl
 
          do ig = 1, ng22
-            taug(lay,ngs21+ig) = speccomb * &
+            taug(iplon,lay,ngs21+ig)  = speccomb * &
                 (fac000 * absa(ind0,ig) + &
                  fac100 * absa(ind0+1,ig) + &
                  fac010 * absa(ind0+9,ig) + &
@@ -3968,44 +3980,52 @@
                  fac101 * absa(ind1+1,ig) + &
                  fac011 * absa(ind1+9,ig) + &
                  fac111 * absa(ind1+10,ig)) + &
-                 colh2o(lay) * &
-                 (selffac(lay) * (selfref(inds,ig) + &
-                 selffrac(lay) * &
+                 colh2o(iplon,lay)  * &
+                 (selffac(iplon,lay)  * (selfref(inds,ig) + &
+                 selffrac(iplon,lay)  * &
                   (selfref(inds+1,ig) - selfref(inds,ig))) + &
-                 forfac(lay) * (forref(indf,ig) + &
-                 forfrac(lay) * &
+                 forfac(iplon,lay)  * (forref(indf,ig) + &
+                 forfrac(iplon,lay)  * &
                  (forref(indf+1,ig) - forref(indf,ig)))) &
                  + o2cont
 !            ssa(lay,ngs21+ig) = tauray/taug(lay,ngs21+ig)
-            if (lay .eq. laysolfr) sfluxzen(ngs21+ig) = sfluxref(ig,js) &
-                + fs * (sfluxref(ig,js+1) - sfluxref(ig,js))
-            taur(lay,ngs21+ig) = tauray
+
+            taur(iplon,lay,ngs21+ig)  = tauray
          enddo
-      enddo
+
+         else
 
 ! Upper atmosphere loop
-      do lay = laytrop+1, nlayers
-         o2cont = 4.35e-4_rb*colo2(lay)/(350.0_rb*2.0_rb)
-         ind0 = ((jp(lay)-13)*5+(jt(lay)-1))*nspb(22) + 1
-         ind1 = ((jp(lay)-12)*5+(jt1(lay)-1))*nspb(22) + 1
-         tauray = colmol(lay) * rayl
+      
+         o2cont = 4.35e-4 *colo2(iplon,lay) /(350.0 *2.0 )
+         ind0 = ((jp(iplon,lay) -13)*5+(jt(iplon,lay) -1))*nspb(22) + 1
+         ind1 = ((jp(iplon,lay) -12)*5+(jt1(iplon,lay) -1))*nspb(22) + 1
+         tauray = colmol(iplon,lay)  * rayl
 
          do ig = 1, ng22
-            taug(lay,ngs21+ig) = colo2(lay) * o2adj * &
-                (fac00(lay) * absb(ind0,ig) + &
-                 fac10(lay) * absb(ind0+1,ig) + &
-                 fac01(lay) * absb(ind1,ig) + &
-                 fac11(lay) * absb(ind1+1,ig)) + &
+            taug(iplon,lay,ngs21+ig)  = colo2(iplon,lay)  * o2adj * &
+                (fac00(iplon,lay)  * absb(ind0,ig) + &
+                 fac10(iplon,lay)  * absb(ind0+1,ig) + &
+                 fac01(iplon,lay)  * absb(ind1,ig) + &
+                 fac11(iplon,lay)  * absb(ind1+1,ig)) + &
                  o2cont
 !            ssa(lay,ngs21+ig) = tauray/taug(lay,ngs21+ig)
-            taur(lay,ngs21+ig) = tauray
+            taur(iplon,lay,ngs21+ig)  = tauray
          enddo
+         end if
       enddo
-
+      enddo
+      
+!$acc end kernels
       end subroutine taumol22
 
 !----------------------------------------------------------------------------
-      subroutine taumol23
+      subroutine taumol23(ncol, nlayers, &
+                          colh2o, colco2, colch4, colo2, colo3, colmol, &
+                          laytrop, jp, jt, jt1, &
+                          fac00, fac01, fac10, fac11, &
+                          selffac, selffrac, indself, forfac, forfrac, indfor, &
+                          sfluxzen, taug, taur)
 !----------------------------------------------------------------------------
 !
 !     band 23:  8050-12850 cm-1 (low - h2o; high - nothing)
@@ -4017,64 +4037,147 @@
       use parrrsw, only : ng23, ngs22
       use rrsw_kg23, only : absa, ka, forref, selfref, &
                             sfluxref, rayl, layreffr, givfac
+!      use rrsw_kg23, only : absa, ka, forref, selfref, &
+!                            sfluxref, rayl
 
 ! ------- Declarations -------
+      integer , intent(in) :: ncol
+      integer , intent(in) :: nlayers               ! total number of layers
+
+      integer , intent(in) :: laytrop(:)            ! tropopause layer index
+      integer , intent(in) :: jp(:,:)               ! 
+      integer , intent(in) :: jt(:,:)               !
+      integer , intent(in) :: jt1(:,:)              !
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: colh2o(:,:)              ! column amount (h2o)
+      real , intent(in) :: colco2(:,:)              ! column amount (co2)
+      real , intent(in) :: colo3(:,:)               ! column amount (o3)
+      real , intent(in) :: colch4(:,:)              ! column amount (ch4)
+      real , intent(in) :: colo2(:,:)               ! column amount (o2)
+      real , intent(in) :: colmol(:,:)              ! 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      integer , intent(in) :: indself(:,:)     
+      integer , intent(in) :: indfor(:,:) 
+      real , intent(in) :: selffac(:,:) 
+      real , intent(in) :: selffrac(:,:) 
+      real , intent(in) :: forfac(:,:) 
+      real , intent(in) :: forfrac(:,:) 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: &                        !
+                       fac00(:,:) , fac01(:,:) , &  
+                       fac10(:,:) , fac11(:,:)  
+                                                    !   Dimensions: (ncol,nlayers)
+
+! ----- Output -----
+      real, intent(out) gpu_device :: sfluxzen(:,:)      ! solar source function
+                                                         !   Dimensions: (ncol,ngptsw)
+      real, intent(out) gpu_device :: taug(:,:,:)        ! gaseous optical depth 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
+      real, intent(out) gpu_device :: taur(:,:,:)        ! Rayleigh 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
 
-      integer(kind=im) :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
-      real(kind=rb) :: fac000, fac001, fac010, fac011, fac100, fac101, &
-                       fac110, fac111, fs, speccomb, specmult, specparm, &
-                       tauray
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
+                  fac110, fac111, fs, speccomb, specmult, specparm, &
+                  tauray
+!      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr, &
+!                  layreffr
+!      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
+!                  fac110, fac111, fs, speccomb, specmult, specparm, &
+!                  tauray, givfac
+      integer :: iplon
+
+
+! Average Giver et al. correction factor for this band.
+!      givfac = 1.029 
 
 ! Compute the optical depth by interpolating in ln(pressure), 
 ! temperature, and appropriate species.  Below LAYTROP, the water
 ! vapor self-continuum is interpolated (in temperature) separately.  
 
-      laysolfr = laytrop
+!      layreffr = 6    
+      
+!$acc kernels loop independent private(laysolfr)
+      do iplon=1,ncol
+
+      laysolfr = laytrop(iplon) 
 
 ! Lower atmosphere loop
-      do lay = 1, laytrop
-         if (jp(lay) .lt. layreffr .and. jp(lay+1) .ge. layreffr) &
-            laysolfr = min(lay+1,laytrop)
-         ind0 = ((jp(lay)-1)*5+(jt(lay)-1))*nspa(23) + 1
-         ind1 = (jp(lay)*5+(jt1(lay)-1))*nspa(23) + 1
-         inds = indself(lay)
-         indf = indfor(lay)
+!$acc loop seq
+      do lay = 1, laytrop(iplon) 
+          if (jp(iplon,lay)  .lt. layreffr .and. jp(iplon,lay+1)  .ge. layreffr) &
+            laysolfr = min(lay+1,laytrop(iplon) )
+         
+          if (lay .eq. laysolfr) then 
+            do ig = 1, ng23
+              sfluxzen(iplon,ngs22+ig)  = sfluxref(ig) 
+            end do
+          end if
+      end do
+      end do      
+!$acc end kernels   
+      
+!$acc kernels 
+      do iplon=1,ncol
+
+! Lower atmosphere loop
+      do lay = 1, nlayers 
+         if (lay <= laytrop(iplon)) then
+         if (jp(iplon,lay)  .lt. layreffr .and. jp(iplon,lay+1)  .ge. layreffr) &
+            laysolfr = min(lay+1,laytrop(iplon) )
+         ind0 = ((jp(iplon,lay) -1)*5+(jt(iplon,lay) -1))*nspa(23) + 1
+         ind1 = (jp(iplon,lay) *5+(jt1(iplon,lay) -1))*nspa(23) + 1
+         inds = indself(iplon,lay) 
+         indf = indfor(iplon,lay) 
 
          do ig = 1, ng23
-            tauray = colmol(lay) * rayl(ig)
-            taug(lay,ngs22+ig) = colh2o(lay) * &
-                (givfac * (fac00(lay) * absa(ind0,ig) + &
-                 fac10(lay) * absa(ind0+1,ig) + &
-                 fac01(lay) * absa(ind1,ig) + &
-                 fac11(lay) * absa(ind1+1,ig)) + &
-                 selffac(lay) * (selfref(inds,ig) + &
-                 selffrac(lay) * &
+            tauray = colmol(iplon,lay)  * rayl(ig)
+            taug(iplon,lay,ngs22+ig)  = colh2o(iplon,lay)  * &
+                (givfac * (fac00(iplon,lay)  * absa(ind0,ig) + &
+                 fac10(iplon,lay)  * absa(ind0+1,ig) + &
+                 fac01(iplon,lay)  * absa(ind1,ig) + &
+                 fac11(iplon,lay)  * absa(ind1+1,ig)) + &
+                 selffac(iplon,lay)  * (selfref(inds,ig) + &
+                 selffrac(iplon,lay)  * &
                  (selfref(inds+1,ig) - selfref(inds,ig))) + &
-                 forfac(lay) * (forref(indf,ig) + &
-                 forfrac(lay) * &
+                 forfac(iplon,lay)  * (forref(indf,ig) + &
+                 forfrac(iplon,lay)  * &
                  (forref(indf+1,ig) - forref(indf,ig)))) 
 !            ssa(lay,ngs22+ig) = tauray/taug(lay,ngs22+ig)
-            if (lay .eq. laysolfr) sfluxzen(ngs22+ig) = sfluxref(ig) 
-            taur(lay,ngs22+ig) = tauray
+           
+            taur(iplon,lay,ngs22+ig)  = tauray
          enddo
-      enddo
+
+         else
 
 ! Upper atmosphere loop
-      do lay = laytrop+1, nlayers
+      
          do ig = 1, ng23
 !            taug(lay,ngs22+ig) = colmol(lay) * rayl(ig)
-!            ssa(lay,ngs22+ig) = 1.0_rb
-            taug(lay,ngs22+ig) = 0._rb
-            taur(lay,ngs22+ig) = colmol(lay) * rayl(ig) 
+!            ssa(lay,ngs22+ig) = 1.0 
+            taug(iplon,lay,ngs22+ig)  = 0. 
+            taur(iplon,lay,ngs22+ig)  = colmol(iplon,lay)  * rayl(ig) 
          enddo
-      enddo
+         end if
 
+      enddo
+      enddo
+      
+!$acc end kernels
       end subroutine taumol23
 
 !----------------------------------------------------------------------------
-      subroutine taumol24
+      subroutine taumol24(ncol, nlayers, &
+                          colh2o, colco2, colch4, colo2, colo3, colmol, &
+                          laytrop, jp, jt, jt1, &
+                          fac00, fac01, fac10, fac11, &
+                          selffac, selffrac, indself, forfac, forfrac, indfor, &
+                          sfluxzen, taug, taur)
 !----------------------------------------------------------------------------
 !
 !     band 24:  12850-16000 cm-1 (low - h2o,o2; high - o2)
@@ -4087,49 +4190,126 @@
       use rrsw_kg24, only : absa, ka, absb, kb, forref, selfref, &
                             sfluxref, abso3a, abso3b, rayla, raylb, &
                             layreffr, strrat
+!      use rrsw_kg24, only : absa, ka, absb, kb, forref, selfref, &
+!                            sfluxref, abso3a, abso3b, rayla, raylb
 
 ! ------- Declarations -------
+      integer , intent(in) :: ncol
+      integer , intent(in) :: nlayers               ! total number of layers
+
+      integer , intent(in) :: laytrop(:)            ! tropopause layer index
+      integer , intent(in) :: jp(:,:)               ! 
+      integer , intent(in) :: jt(:,:)               !
+      integer , intent(in) :: jt1(:,:)              !
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: colh2o(:,:)              ! column amount (h2o)
+      real , intent(in) :: colco2(:,:)              ! column amount (co2)
+      real , intent(in) :: colo3(:,:)               ! column amount (o3)
+      real , intent(in) :: colch4(:,:)              ! column amount (ch4)
+      real , intent(in) :: colo2(:,:)               ! column amount (o2)
+      real , intent(in) :: colmol(:,:)              ! 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      integer , intent(in) :: indself(:,:)     
+      integer , intent(in) :: indfor(:,:) 
+      real , intent(in) :: selffac(:,:) 
+      real , intent(in) :: selffrac(:,:) 
+      real , intent(in) :: forfac(:,:) 
+      real , intent(in) :: forfrac(:,:) 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: &                        !
+                       fac00(:,:) , fac01(:,:) , & 
+                       fac10(:,:) , fac11(:,:)  
+                                                    !   Dimensions: (ncol,nlayers)
+
+! ----- Output -----
+      real, intent(out) gpu_device :: sfluxzen(:,:)      ! solar source function
+                                                         !   Dimensions: (ncol,ngptsw)
+      real, intent(out) gpu_device :: taug(:,:,:)        ! gaseous optical depth 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
+      real, intent(out) gpu_device :: taur(:,:,:)        ! Rayleigh 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
 
-      integer(kind=im) :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
-      real(kind=rb) :: fac000, fac001, fac010, fac011, fac100, fac101, &
-                       fac110, fac111, fs, speccomb, specmult, specparm, &
-                       tauray
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
+                  fac110, fac111, fs, speccomb, specmult, specparm, &
+                  tauray
+!      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr, &
+!                  layreffr
+!      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
+!                  fac110, fac111, fs, speccomb, specmult, specparm, &
+!                  tauray, strrat
+      integer :: iplon
 
+!      strrat = 0.124692 
+!      layreffr = 1   
+        
+!$acc kernels loop independent private(laysolfr)
+      do iplon=1,ncol
 ! Compute the optical depth by interpolating in ln(pressure), 
 ! temperature, and appropriate species.  Below LAYTROP, the water
 ! vapor self-continuum is interpolated (in temperature) separately.  
 
-      laysolfr = laytrop
+      laysolfr = laytrop(iplon) 
 
 ! Lower atmosphere loop
-      do lay = 1, laytrop
-         if (jp(lay) .lt. layreffr .and. jp(lay+1) .ge. layreffr) &
-            laysolfr = min(lay+1,laytrop)
-         speccomb = colh2o(lay) + strrat*colo2(lay)
-         specparm = colh2o(lay)/speccomb 
+!$acc loop independent
+      do lay = 1, laytrop(iplon) 
+          if (jp(iplon,lay)  .lt. layreffr .and. jp(iplon,lay+1)  .ge. layreffr) &
+            laysolfr = min(lay+1,laytrop(iplon) )
+          if (lay .eq. laysolfr) then
+                 speccomb = colh2o(iplon,lay)  + strrat*colo2(iplon,lay) 
+            specparm = colh2o(iplon,lay) /speccomb 
+            if (specparm .ge. oneminus) specparm = oneminus
+            specmult = 8. *(specparm)
+            js = 1 + int(specmult)
+            fs = mod(specmult, 1.  )
+          do ig = 1, ng24
+           sfluxzen(iplon,ngs23+ig)  = sfluxref(ig,js) &
+               + fs * (sfluxref(ig,js+1) - sfluxref(ig,js))
+          end do
+          end if
+      end do
+      end do
+!$acc end kernels
+        
+!$acc kernels 
+      do iplon=1,ncol
+! Compute the optical depth by interpolating in ln(pressure), 
+! temperature, and appropriate species.  Below LAYTROP, the water
+! vapor self-continuum is interpolated (in temperature) separately.  
+
+! Lower atmosphere loop
+      do lay = 1, nlayers 
+         if (lay <= laytrop(iplon)) then
+
+         speccomb = colh2o(iplon,lay)  + strrat*colo2(iplon,lay) 
+         specparm = colh2o(iplon,lay) /speccomb 
          if (specparm .ge. oneminus) specparm = oneminus
-         specmult = 8._rb*(specparm)
+         specmult = 8. *(specparm)
          js = 1 + int(specmult)
-         fs = mod(specmult, 1._rb )
-         fac000 = (1._rb - fs) * fac00(lay)
-         fac010 = (1._rb - fs) * fac10(lay)
-         fac100 = fs * fac00(lay)
-         fac110 = fs * fac10(lay)
-         fac001 = (1._rb - fs) * fac01(lay)
-         fac011 = (1._rb - fs) * fac11(lay)
-         fac101 = fs * fac01(lay)
-         fac111 = fs * fac11(lay)
-         ind0 = ((jp(lay)-1)*5+(jt(lay)-1))*nspa(24) + js
-         ind1 = (jp(lay)*5+(jt1(lay)-1))*nspa(24) + js
-         inds = indself(lay)
-         indf = indfor(lay)
+         fs = mod(specmult, 1.  )
+         fac000 = (1.  - fs) * fac00(iplon,lay) 
+         fac010 = (1.  - fs) * fac10(iplon,lay) 
+         fac100 = fs * fac00(iplon,lay) 
+         fac110 = fs * fac10(iplon,lay) 
+         fac001 = (1.  - fs) * fac01(iplon,lay) 
+         fac011 = (1.  - fs) * fac11(iplon,lay) 
+         fac101 = fs * fac01(iplon,lay) 
+         fac111 = fs * fac11(iplon,lay) 
+         ind0 = ((jp(iplon,lay) -1)*5+(jt(iplon,lay) -1))*nspa(24) + js
+         ind1 = (jp(iplon,lay) *5+(jt1(iplon,lay) -1))*nspa(24) + js
+         inds = indself(iplon,lay) 
+         indf = indfor(iplon,lay) 
 
          do ig = 1, ng24
-            tauray = colmol(lay) * (rayla(ig,js) + &
+            tauray = colmol(iplon,lay)  * (rayla(ig,js) + &
                fs * (rayla(ig,js+1) - rayla(ig,js)))
-            taug(lay,ngs23+ig) = speccomb * &
+            taug(iplon,lay,ngs23+ig)  = speccomb * &
                 (fac000 * absa(ind0,ig) + &
                  fac100 * absa(ind0+1,ig) + &
                  fac010 * absa(ind0+9,ig) + &
@@ -4138,43 +4318,52 @@
                  fac101 * absa(ind1+1,ig) + &
                  fac011 * absa(ind1+9,ig) + &
                  fac111 * absa(ind1+10,ig)) + &
-                 colo3(lay) * abso3a(ig) + &
-                 colh2o(lay) * & 
-                 (selffac(lay) * (selfref(inds,ig) + &
-                 selffrac(lay) * &
+                 colo3(iplon,lay)  * abso3a(ig) + &
+                 colh2o(iplon,lay)  * & 
+                 (selffac(iplon,lay)  * (selfref(inds,ig) + &
+                 selffrac(iplon,lay)  * &
                  (selfref(inds+1,ig) - selfref(inds,ig))) + &
-                 forfac(lay) * (forref(indf,ig) + & 
-                 forfrac(lay) * &
+                 forfac(iplon,lay)  * (forref(indf,ig) + & 
+                 forfrac(iplon,lay)  * &
                  (forref(indf+1,ig) - forref(indf,ig))))
 !            ssa(lay,ngs23+ig) = tauray/taug(lay,ngs23+ig)
-            if (lay .eq. laysolfr) sfluxzen(ngs23+ig) = sfluxref(ig,js) &
-               + fs * (sfluxref(ig,js+1) - sfluxref(ig,js))
-            taur(lay,ngs23+ig) = tauray
+           
+            taur(iplon,lay,ngs23+ig)  = tauray
          enddo
-      enddo
+
+         else
 
 ! Upper atmosphere loop
-      do lay = laytrop+1, nlayers
-         ind0 = ((jp(lay)-13)*5+(jt(lay)-1))*nspb(24) + 1
-         ind1 = ((jp(lay)-12)*5+(jt1(lay)-1))*nspb(24) + 1
+      
+         ind0 = ((jp(iplon,lay) -13)*5+(jt(iplon,lay) -1))*nspb(24) + 1
+         ind1 = ((jp(iplon,lay) -12)*5+(jt1(iplon,lay) -1))*nspb(24) + 1
 
          do ig = 1, ng24
-            tauray = colmol(lay) * raylb(ig)
-            taug(lay,ngs23+ig) = colo2(lay) * &
-                (fac00(lay) * absb(ind0,ig) + &
-                 fac10(lay) * absb(ind0+1,ig) + &
-                 fac01(lay) * absb(ind1,ig) + &
-                 fac11(lay) * absb(ind1+1,ig)) + &
-                 colo3(lay) * abso3b(ig)
+            tauray = colmol(iplon,lay)  * raylb(ig)
+            taug(iplon,lay,ngs23+ig)  = colo2(iplon,lay)  * &
+                (fac00(iplon,lay)  * absb(ind0,ig) + &
+                 fac10(iplon,lay)  * absb(ind0+1,ig) + &
+                 fac01(iplon,lay)  * absb(ind1,ig) + &
+                 fac11(iplon,lay)  * absb(ind1+1,ig)) + &
+                 colo3(iplon,lay)  * abso3b(ig)
 !            ssa(lay,ngs23+ig) = tauray/taug(lay,ngs23+ig)
-            taur(lay,ngs23+ig) = tauray
+            taur(iplon,lay,ngs23+ig)  = tauray
          enddo
-      enddo
+         endif
 
+      enddo
+      enddo
+      
+!$acc end kernels
       end subroutine taumol24
 
 !----------------------------------------------------------------------------
-      subroutine taumol25
+      subroutine taumol25(ncol, nlayers, &
+                          colh2o, colco2, colch4, colo2, colo3, colmol, &
+                          laytrop, jp, jt, jt1, &
+                          fac00, fac01, fac10, fac11, &
+                          selffac, selffrac, indself, forfac, forfrac, indfor, &
+                          sfluxzen, taug, taur)
 !----------------------------------------------------------------------------
 !
 !     band 25:  16000-22650 cm-1 (low - h2o; high - nothing)
@@ -4186,57 +4375,109 @@
       use parrrsw, only : ng25, ngs24
       use rrsw_kg25, only : absa, ka, &
                             sfluxref, abso3a, abso3b, rayl, layreffr
+!      use rrsw_kg25, only : absa, ka, &
+!                            sfluxref, abso3a, abso3b, rayl
 
 ! ------- Declarations -------
+      integer , intent(in) :: ncol
+      integer , intent(in) :: nlayers               ! total number of layers
+
+      integer , intent(in) :: laytrop(:)            ! tropopause layer index
+      integer , intent(in) :: jp(:,:)               ! 
+      integer , intent(in) :: jt(:,:)               !
+      integer , intent(in) :: jt1(:,:)              !
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: colh2o(:,:)              ! column amount (h2o)
+      real , intent(in) :: colco2(:,:)              ! column amount (co2)
+      real , intent(in) :: colo3(:,:)               ! column amount (o3)
+      real , intent(in) :: colch4(:,:)              ! column amount (ch4)
+      real , intent(in) :: colo2(:,:)               ! column amount (o2)
+      real , intent(in) :: colmol(:,:)              ! 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      integer , intent(in) :: indself(:,:)     
+      integer , intent(in) :: indfor(:,:) 
+      real , intent(in) :: selffac(:,:) 
+      real , intent(in) :: selffrac(:,:) 
+      real , intent(in) :: forfac(:,:) 
+      real , intent(in) :: forfrac(:,:) 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: &                        !
+                       fac00(:,:) , fac01(:,:) , &  
+                       fac10(:,:) , fac11(:,:)  
+                                                    !   Dimensions: (ncol,nlayers)
+
+! ----- Output -----
+      real, intent(out) gpu_device :: sfluxzen(:,:)      ! solar source function
+                                                         !   Dimensions: (ncol,ngptsw)
+      real, intent(out) gpu_device :: taug(:,:,:)        ! gaseous optical depth 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
+      real, intent(out) gpu_device :: taur(:,:,:)        ! Rayleigh 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
 
-      integer(kind=im) :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
-      real(kind=rb) :: fac000, fac001, fac010, fac011, fac100, fac101, &
-                       fac110, fac111, fs, speccomb, specmult, specparm, &
-                       tauray
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+!      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr, &
+!                  layreffr
+      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
+                  fac110, fac111, fs, speccomb, specmult, specparm, &
+                  tauray
+      integer :: iplon
 
+!$acc kernels 
+      do iplon=1,ncol
 ! Compute the optical depth by interpolating in ln(pressure), 
 ! temperature, and appropriate species.  Below LAYTROP, the water
 ! vapor self-continuum is interpolated (in temperature) separately.  
 
-      laysolfr = laytrop
+!      layreffr = 2
+      laysolfr = laytrop(iplon) 
 
 ! Lower atmosphere loop
-      do lay = 1, laytrop
-         if (jp(lay) .lt. layreffr .and. jp(lay+1) .ge. layreffr) &
-            laysolfr = min(lay+1,laytrop)
-         ind0 = ((jp(lay)-1)*5+(jt(lay)-1))*nspa(25) + 1
-         ind1 = (jp(lay)*5+(jt1(lay)-1))*nspa(25) + 1
+      do lay = 1, laytrop(iplon) 
+         if (jp(iplon,lay)  .lt. layreffr .and. jp(iplon,lay+1)  .ge. layreffr) &
+            laysolfr = min(lay+1,laytrop(iplon) )
+         ind0 = ((jp(iplon,lay) -1)*5+(jt(iplon,lay) -1))*nspa(25) + 1
+         ind1 = (jp(iplon,lay) *5+(jt1(iplon,lay) -1))*nspa(25) + 1
 
          do ig = 1, ng25
-            tauray = colmol(lay) * rayl(ig)
-            taug(lay,ngs24+ig) = colh2o(lay) * &
-                (fac00(lay) * absa(ind0,ig) + &
-                 fac10(lay) * absa(ind0+1,ig) + &
-                 fac01(lay) * absa(ind1,ig) + &
-                 fac11(lay) * absa(ind1+1,ig)) + &
-                 colo3(lay) * abso3a(ig) 
+            tauray = colmol(iplon,lay)  * rayl(ig)
+            taug(iplon,lay,ngs24+ig)  = colh2o(iplon,lay)  * &
+                (fac00(iplon,lay)  * absa(ind0,ig) + &
+                 fac10(iplon,lay)  * absa(ind0+1,ig) + &
+                 fac01(iplon,lay)  * absa(ind1,ig) + &
+                 fac11(iplon,lay)  * absa(ind1+1,ig)) + &
+                 colo3(iplon,lay)  * abso3a(ig) 
 !            ssa(lay,ngs24+ig) = tauray/taug(lay,ngs24+ig)
-            if (lay .eq. laysolfr) sfluxzen(ngs24+ig) = sfluxref(ig) 
-            taur(lay,ngs24+ig) = tauray
+            if (lay .eq. laysolfr) sfluxzen(iplon,ngs24+ig)  = sfluxref(ig) 
+            taur(iplon,lay,ngs24+ig)  = tauray
          enddo
       enddo
 
 ! Upper atmosphere loop
-      do lay = laytrop+1, nlayers
+      do lay = laytrop(iplon) +1, nlayers
          do ig = 1, ng25
-            tauray = colmol(lay) * rayl(ig)
-            taug(lay,ngs24+ig) = colo3(lay) * abso3b(ig) 
+            tauray = colmol(iplon,lay)  * rayl(ig)
+            taug(iplon,lay,ngs24+ig)  = colo3(iplon,lay)  * abso3b(ig) 
 !            ssa(lay,ngs24+ig) = tauray/taug(lay,ngs24+ig)
-            taur(lay,ngs24+ig) = tauray
+            taur(iplon,lay,ngs24+ig)  = tauray
          enddo
       enddo
-
+      enddo
+      
+!$acc end kernels
       end subroutine taumol25
 
 !----------------------------------------------------------------------------
-      subroutine taumol26
+      subroutine taumol26(ncol, nlayers, &
+                          colh2o, colco2, colch4, colo2, colo3, colmol, &
+                          laytrop, jp, jt, jt1, &
+                          fac00, fac01, fac10, fac11, &
+                          selffac, selffrac, indself, forfac, forfrac, indfor, &
+                          sfluxzen, taug, taur)
 !----------------------------------------------------------------------------
 !
 !     band 26:  22650-29000 cm-1 (low - nothing; high - nothing)
@@ -4249,45 +4490,92 @@
       use rrsw_kg26, only : sfluxref, rayl
 
 ! ------- Declarations -------
+      integer , intent(in) :: ncol
+      integer , intent(in) :: nlayers               ! total number of layers
+
+      integer , intent(in) :: laytrop(:)            ! tropopause layer index
+      integer , intent(in) :: jp(:,:)               ! 
+      integer , intent(in) :: jt(:,:)               !
+      integer , intent(in) :: jt1(:,:)              !
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: colh2o(:,:)              ! column amount (h2o)
+      real , intent(in) :: colco2(:,:)              ! column amount (co2)
+      real , intent(in) :: colo3(:,:)               ! column amount (o3)
+      real , intent(in) :: colch4(:,:)              ! column amount (ch4)
+      real , intent(in) :: colo2(:,:)               ! column amount (o2)
+      real , intent(in) :: colmol(:,:)              ! 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      integer , intent(in) :: indself(:,:)     
+      integer , intent(in) :: indfor(:,:) 
+      real , intent(in) :: selffac(:,:) 
+      real , intent(in) :: selffrac(:,:) 
+      real , intent(in) :: forfac(:,:) 
+      real , intent(in) :: forfrac(:,:) 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: &                        !
+                       fac00(:,:) , fac01(:,:) , &  
+                       fac10(:,:) , fac11(:,:)  
+                                                    !   Dimensions: (ncol,nlayers)
+
+! ----- Output -----
+      real, intent(out) gpu_device :: sfluxzen(:,:)      ! solar source function
+                                                         !   Dimensions: (ncol,ngptsw)
+      real, intent(out) gpu_device :: taug(:,:,:)        ! gaseous optical depth 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
+      real, intent(out) gpu_device :: taur(:,:,:)        ! Rayleigh 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
 
-      integer(kind=im) :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
-      real(kind=rb) :: fac000, fac001, fac010, fac011, fac100, fac101, &
-                       fac110, fac111, fs, speccomb, specmult, specparm, &
-                       tauray
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
+                  fac110, fac111, fs, speccomb, specmult, specparm, &
+                  tauray
+      integer :: iplon
 
+!$acc kernels 
+      do iplon=1,ncol
 ! Compute the optical depth by interpolating in ln(pressure), 
 ! temperature, and appropriate species.  Below LAYTROP, the water
 ! vapor self-continuum is interpolated (in temperature) separately.  
 
-      laysolfr = laytrop
+      laysolfr = laytrop(iplon) 
 
 ! Lower atmosphere loop
-      do lay = 1, laytrop
+      do lay = 1, laytrop(iplon) 
          do ig = 1, ng26 
 !            taug(lay,ngs25+ig) = colmol(lay) * rayl(ig)
-!            ssa(lay,ngs25+ig) = 1.0_rb
-            if (lay .eq. laysolfr) sfluxzen(ngs25+ig) = sfluxref(ig) 
-            taug(lay,ngs25+ig) = 0._rb
-            taur(lay,ngs25+ig) = colmol(lay) * rayl(ig) 
+!            ssa(lay,ngs25+ig) = 1.0 
+            if (lay .eq. laysolfr) sfluxzen(iplon,ngs25+ig)  = sfluxref(ig) 
+            taug(iplon,lay,ngs25+ig)  = 0. 
+            taur(iplon,lay,ngs25+ig)  = colmol(iplon,lay)  * rayl(ig) 
          enddo
       enddo
 
 ! Upper atmosphere loop
-      do lay = laytrop+1, nlayers
+      do lay = laytrop(iplon) +1, nlayers
          do ig = 1, ng26
 !            taug(lay,ngs25+ig) = colmol(lay) * rayl(ig)
-!            ssa(lay,ngs25+ig) = 1.0_rb
-            taug(lay,ngs25+ig) = 0._rb
-            taur(lay,ngs25+ig) = colmol(lay) * rayl(ig) 
+!            ssa(lay,ngs25+ig) = 1.0 
+            taug(iplon,lay,ngs25+ig)  = 0. 
+            taur(iplon,lay,ngs25+ig)  = colmol(iplon,lay)  * rayl(ig) 
          enddo
       enddo
-
+      enddo
+      
+!$acc end kernels
       end subroutine taumol26
 
 !----------------------------------------------------------------------------
-      subroutine taumol27
+      subroutine taumol27(ncol, nlayers, &
+                          colh2o, colco2, colch4, colo2, colo3, colmol, &
+                          laytrop, jp, jt, jt1, &
+                          fac00, fac01, fac10, fac11, &
+                          selffac, selffrac, indself, forfac, forfrac, indfor, &
+                          sfluxzen, taug, taur)
 !----------------------------------------------------------------------------
 !
 !     band 27:  29000-38000 cm-1 (low - o3; high - o3)
@@ -4299,63 +4587,127 @@
       use parrrsw, only : ng27, ngs26
       use rrsw_kg27, only : absa, ka, absb, kb, &
                             sfluxref, rayl, layreffr, scalekur
+!      use rrsw_kg27, only : absa, ka, absb, kb, sfluxref, rayl
 
 ! ------- Declarations -------
+      integer , intent(in) :: ncol
+      integer , intent(in) :: nlayers               ! total number of layers
+
+      integer , intent(in) :: laytrop(:)            ! tropopause layer index
+      integer , intent(in) :: jp(:,:)               ! 
+      integer , intent(in) :: jt(:,:)               !
+      integer , intent(in) :: jt1(:,:)              !
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: colh2o(:,:)              ! column amount (h2o)
+      real , intent(in) :: colco2(:,:)              ! column amount (co2)
+      real , intent(in) :: colo3(:,:)               ! column amount (o3)
+      real , intent(in) :: colch4(:,:)              ! column amount (ch4)
+      real , intent(in) :: colo2(:,:)               ! column amount (o2)
+      real , intent(in) :: colmol(:,:)              ! 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      integer , intent(in) :: indself(:,:)     
+      integer , intent(in) :: indfor(:,:) 
+      real , intent(in) :: selffac(:,:) 
+      real , intent(in) :: selffrac(:,:) 
+      real , intent(in) :: forfac(:,:) 
+      real , intent(in) :: forfrac(:,:) 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: &                        !
+                       fac00(:,:) , fac01(:,:) , &  
+                       fac10(:,:) , fac11(:,:)  
+                                                    !   Dimensions: (ncol,nlayers)
+
+! ----- Output -----
+      real, intent(out) gpu_device :: sfluxzen(:,:)      ! solar source function
+                                                         !   Dimensions: (ncol,ngptsw)
+      real, intent(out) gpu_device :: taug(:,:,:)        ! gaseous optical depth 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
+      real, intent(out) gpu_device :: taur(:,:,:)        ! Rayleigh 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
 
-      integer(kind=im) :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
-      real(kind=rb) :: fac000, fac001, fac010, fac011, fac100, fac101, &
-                       fac110, fac111, fs, speccomb, specmult, specparm, &
-                       tauray
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
+                  fac110, fac111, fs, speccomb, specmult, specparm, &
+                  tauray
+!      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr, &
+!                  layreffr
+!      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
+!                  fac110, fac111, fs, speccomb, specmult, specparm, &
+!                  tauray, scalekur
+      integer :: iplon
+       
+!$acc kernels 
+      do iplon=1,ncol
+! Kurucz solar source function
+! The values in sfluxref were obtained using the "low resolution"
+! version of the Kurucz solar source function.  For unknown reasons,
+! the total irradiance in this band differs from the corresponding
+! total in the "high-resolution" version of the Kurucz function.
+! Therefore, these values are scaled below by the factor SCALEKUR.
+
+!      scalekur = 50.15 /48.37 
 
 ! Compute the optical depth by interpolating in ln(pressure), 
 ! temperature, and appropriate species.  Below LAYTROP, the water
 ! vapor self-continuum is interpolated (in temperature) separately.  
 
+!      layreffr = 32
+
 ! Lower atmosphere loop
-      do lay = 1, laytrop
-         ind0 = ((jp(lay)-1)*5+(jt(lay)-1))*nspa(27) + 1
-         ind1 = (jp(lay)*5+(jt1(lay)-1))*nspa(27) + 1
+      do lay = 1, laytrop(iplon) 
+         ind0 = ((jp(iplon,lay) -1)*5+(jt(iplon,lay) -1))*nspa(27) + 1
+         ind1 = (jp(iplon,lay) *5+(jt1(iplon,lay) -1))*nspa(27) + 1
 
          do ig = 1, ng27
-            tauray = colmol(lay) * rayl(ig)
-            taug(lay,ngs26+ig) = colo3(lay) * &
-                (fac00(lay) * absa(ind0,ig) + &
-                 fac10(lay) * absa(ind0+1,ig) + &
-                 fac01(lay) * absa(ind1,ig) + &
-                 fac11(lay) * absa(ind1+1,ig))
+            tauray = colmol(iplon,lay)  * rayl(ig)
+            taug(iplon,lay,ngs26+ig)  = colo3(iplon,lay)  * &
+                (fac00(iplon,lay)  * absa(ind0,ig) + &
+                 fac10(iplon,lay)  * absa(ind0+1,ig) + &
+                 fac01(iplon,lay)  * absa(ind1,ig) + &
+                 fac11(iplon,lay)  * absa(ind1+1,ig))
 !            ssa(lay,ngs26+ig) = tauray/taug(lay,ngs26+ig)
-            taur(lay,ngs26+ig) = tauray
+            taur(iplon,lay,ngs26+ig)  = tauray
          enddo
       enddo
 
       laysolfr = nlayers
 
 ! Upper atmosphere loop
-      do lay = laytrop+1, nlayers
-         if (jp(lay-1) .lt. layreffr .and. jp(lay) .ge. layreffr) &
+      do lay = laytrop(iplon) +1, nlayers
+         if (jp(iplon,lay-1)  .lt. layreffr .and. jp(iplon,lay)  .ge. layreffr) &
             laysolfr = lay
-         ind0 = ((jp(lay)-13)*5+(jt(lay)-1))*nspb(27) + 1
-         ind1 = ((jp(lay)-12)*5+(jt1(lay)-1))*nspb(27) + 1
+         ind0 = ((jp(iplon,lay) -13)*5+(jt(iplon,lay) -1))*nspb(27) + 1
+         ind1 = ((jp(iplon,lay) -12)*5+(jt1(iplon,lay) -1))*nspb(27) + 1
 
          do ig = 1, ng27
-            tauray = colmol(lay) * rayl(ig)
-            taug(lay,ngs26+ig) = colo3(lay) * &
-                (fac00(lay) * absb(ind0,ig) + &
-                 fac10(lay) * absb(ind0+1,ig) + &
-                 fac01(lay) * absb(ind1,ig) + & 
-                 fac11(lay) * absb(ind1+1,ig))
+            tauray = colmol(iplon,lay)  * rayl(ig)
+            taug(iplon,lay,ngs26+ig)  = colo3(iplon,lay)  * &
+                (fac00(iplon,lay)  * absb(ind0,ig) + &
+                 fac10(iplon,lay)  * absb(ind0+1,ig) + &
+                 fac01(iplon,lay)  * absb(ind1,ig) + & 
+                 fac11(iplon,lay)  * absb(ind1+1,ig))
 !            ssa(lay,ngs26+ig) = tauray/taug(lay,ngs26+ig)
-            if (lay.eq.laysolfr) sfluxzen(ngs26+ig) = scalekur * sfluxref(ig) 
-            taur(lay,ngs26+ig) = tauray
+            if (lay.eq.laysolfr) sfluxzen(iplon,ngs26+ig)  = scalekur * sfluxref(ig) 
+            taur(iplon,lay,ngs26+ig)  = tauray
          enddo
       enddo
-
+      enddo
+      
+!$acc end kernels
       end subroutine taumol27
 
 !----------------------------------------------------------------------------
-      subroutine taumol28
+      subroutine taumol28(ncol, nlayers, &
+                          colh2o, colco2, colch4, colo2, colo3, colmol, &
+                          laytrop, jp, jt, jt1, &
+                          fac00, fac01, fac10, fac11, &
+                          selffac, selffrac, indself, forfac, forfrac, indfor, &
+                          sfluxzen, taug, taur)
 !----------------------------------------------------------------------------
 !
 !     band 28:  38000-50000 cm-1 (low - o3,o2; high - o3,o2)
@@ -4367,42 +4719,91 @@
       use parrrsw, only : ng28, ngs27
       use rrsw_kg28, only : absa, ka, absb, kb, &
                             sfluxref, rayl, layreffr, strrat
+!      use rrsw_kg28, only : absa, ka, absb, kb, sfluxref, rayl
 
 ! ------- Declarations -------
+      integer , intent(in) :: ncol
+      integer , intent(in) :: nlayers               ! total number of layers
+
+      integer , intent(in) :: laytrop(:)            ! tropopause layer index
+      integer , intent(in) :: jp(:,:)               ! 
+      integer , intent(in) :: jt(:,:)               !
+      integer , intent(in) :: jt1(:,:)              !
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: colh2o(:,:)              ! column amount (h2o)
+      real , intent(in) :: colco2(:,:)              ! column amount (co2)
+      real , intent(in) :: colo3(:,:)               ! column amount (o3)
+      real , intent(in) :: colch4(:,:)              ! column amount (ch4)
+      real , intent(in) :: colo2(:,:)               ! column amount (o2)
+      real , intent(in) :: colmol(:,:)              ! 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      integer , intent(in) :: indself(:,:)     
+      integer , intent(in) :: indfor(:,:) 
+      real , intent(in) :: selffac(:,:) 
+      real , intent(in) :: selffrac(:,:) 
+      real , intent(in) :: forfac(:,:) 
+      real , intent(in) :: forfrac(:,:) 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: &                        !
+                       fac00(:,:) , fac01(:,:) , & 
+                       fac10(:,:) , fac11(:,:)  
+                                                    !   Dimensions: (ncol,nlayers)
+
+! ----- Output -----
+      real, intent(out) gpu_device :: sfluxzen(:,:)      ! solar source function
+                                                         !   Dimensions: (ncol,ngptsw)
+      real, intent(out) gpu_device :: taug(:,:,:)        ! gaseous optical depth 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
+      real, intent(out) gpu_device :: taur(:,:,:)        ! Rayleigh 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
 
-      integer(kind=im) :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
-      real(kind=rb) :: fac000, fac001, fac010, fac011, fac100, fac101, &
-                       fac110, fac111, fs, speccomb, specmult, specparm, &
-                       tauray
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
+                  fac110, fac111, fs, speccomb, specmult, specparm, &
+                  tauray
+!      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr, &
+!                  layreffr
+!      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
+!                  fac110, fac111, fs, speccomb, specmult, specparm, &
+!                  tauray, strrat
+      integer :: iplon
 
+!$acc kernels 
+      do iplon=1,ncol
 ! Compute the optical depth by interpolating in ln(pressure), 
 ! temperature, and appropriate species.  Below LAYTROP, the water
 ! vapor self-continuum is interpolated (in temperature) separately.  
 
+!      strrat = 6.67029e-07 
+!      layreffr = 58
+
 ! Lower atmosphere loop
-      do lay = 1, laytrop
-         speccomb = colo3(lay) + strrat*colo2(lay)
-         specparm = colo3(lay)/speccomb 
+      do lay = 1, laytrop(iplon) 
+         speccomb = colo3(iplon,lay)  + strrat*colo2(iplon,lay) 
+         specparm = colo3(iplon,lay) /speccomb 
          if (specparm .ge. oneminus) specparm = oneminus
-         specmult = 8._rb*(specparm)
+         specmult = 8. *(specparm)
          js = 1 + int(specmult)
-         fs = mod(specmult, 1._rb )
-         fac000 = (1._rb - fs) * fac00(lay)
-         fac010 = (1._rb - fs) * fac10(lay)
-         fac100 = fs * fac00(lay)
-         fac110 = fs * fac10(lay)
-         fac001 = (1._rb - fs) * fac01(lay)
-         fac011 = (1._rb - fs) * fac11(lay)
-         fac101 = fs * fac01(lay)
-         fac111 = fs * fac11(lay)
-         ind0 = ((jp(lay)-1)*5+(jt(lay)-1))*nspa(28) + js
-         ind1 = (jp(lay)*5+(jt1(lay)-1))*nspa(28) + js
-         tauray = colmol(lay) * rayl
+         fs = mod(specmult, 1.  )
+         fac000 = (1.  - fs) * fac00(iplon,lay) 
+         fac010 = (1.  - fs) * fac10(iplon,lay) 
+         fac100 = fs * fac00(iplon,lay) 
+         fac110 = fs * fac10(iplon,lay) 
+         fac001 = (1.  - fs) * fac01(iplon,lay) 
+         fac011 = (1.  - fs) * fac11(iplon,lay) 
+         fac101 = fs * fac01(iplon,lay) 
+         fac111 = fs * fac11(iplon,lay) 
+         ind0 = ((jp(iplon,lay) -1)*5+(jt(iplon,lay) -1))*nspa(28) + js
+         ind1 = (jp(iplon,lay) *5+(jt1(iplon,lay) -1))*nspa(28) + js
+         tauray = colmol(iplon,lay)  * rayl
 
          do ig = 1, ng28
-            taug(lay,ngs27+ig) = speccomb * &
+            taug(iplon,lay,ngs27+ig)  = speccomb * &
                 (fac000 * absa(ind0,ig) + &
                  fac100 * absa(ind0+1,ig) + &
                  fac010 * absa(ind0+9,ig) + &
@@ -4412,36 +4813,36 @@
                  fac011 * absa(ind1+9,ig) + &
                  fac111 * absa(ind1+10,ig)) 
 !            ssa(lay,ngs27+ig) = tauray/taug(lay,ngs27+ig)
-            taur(lay,ngs27+ig) = tauray
+            taur(iplon,lay,ngs27+ig)  = tauray
          enddo
       enddo
 
       laysolfr = nlayers
 
 ! Upper atmosphere loop
-      do lay = laytrop+1, nlayers
-         if (jp(lay-1) .lt. layreffr .and. jp(lay) .ge. layreffr) &
+      do lay = laytrop(iplon) +1, nlayers
+         if (jp(iplon,lay-1)  .lt. layreffr .and. jp(iplon,lay)  .ge. layreffr) &
             laysolfr = lay
-         speccomb = colo3(lay) + strrat*colo2(lay)
-         specparm = colo3(lay)/speccomb 
+         speccomb = colo3(iplon,lay)  + strrat*colo2(iplon,lay) 
+         specparm = colo3(iplon,lay) /speccomb 
          if (specparm .ge. oneminus) specparm = oneminus
-         specmult = 4._rb*(specparm)
+         specmult = 4. *(specparm)
          js = 1 + int(specmult)
-         fs = mod(specmult, 1._rb )
-         fac000 = (1._rb - fs) * fac00(lay)
-         fac010 = (1._rb - fs) * fac10(lay)
-         fac100 = fs * fac00(lay)
-         fac110 = fs * fac10(lay)
-         fac001 = (1._rb - fs) * fac01(lay)
-         fac011 = (1._rb - fs) * fac11(lay)
-         fac101 = fs * fac01(lay)
-         fac111 = fs * fac11(lay)
-         ind0 = ((jp(lay)-13)*5+(jt(lay)-1))*nspb(28) + js
-         ind1 = ((jp(lay)-12)*5+(jt1(lay)-1))*nspb(28) + js
-         tauray = colmol(lay) * rayl
+         fs = mod(specmult, 1.  )
+         fac000 = (1.  - fs) * fac00(iplon,lay) 
+         fac010 = (1.  - fs) * fac10(iplon,lay) 
+         fac100 = fs * fac00(iplon,lay) 
+         fac110 = fs * fac10(iplon,lay) 
+         fac001 = (1.  - fs) * fac01(iplon,lay) 
+         fac011 = (1.  - fs) * fac11(iplon,lay) 
+         fac101 = fs * fac01(iplon,lay) 
+         fac111 = fs * fac11(iplon,lay) 
+         ind0 = ((jp(iplon,lay) -13)*5+(jt(iplon,lay) -1))*nspb(28) + js
+         ind1 = ((jp(iplon,lay) -12)*5+(jt1(iplon,lay) -1))*nspb(28) + js
+         tauray = colmol(iplon,lay)  * rayl
 
          do ig = 1, ng28
-            taug(lay,ngs27+ig) = speccomb * &
+            taug(iplon,lay,ngs27+ig)  = speccomb * &
                 (fac000 * absb(ind0,ig) + &
                  fac100 * absb(ind0+1,ig) + &
                  fac010 * absb(ind0+5,ig) + &
@@ -4451,16 +4852,23 @@
                  fac011 * absb(ind1+5,ig) + &
                  fac111 * absb(ind1+6,ig)) 
 !            ssa(lay,ngs27+ig) = tauray/taug(lay,ngs27+ig)
-            if (lay .eq. laysolfr) sfluxzen(ngs27+ig) = sfluxref(ig,js) &
+            if (lay .eq. laysolfr) sfluxzen(iplon,ngs27+ig)  = sfluxref(ig,js) &
                + fs * (sfluxref(ig,js+1) - sfluxref(ig,js))
-            taur(lay,ngs27+ig) = tauray
+            taur(iplon,lay,ngs27+ig)  = tauray
          enddo
       enddo
-
+      enddo
+      
+!$acc end kernels
       end subroutine taumol28
 
 !----------------------------------------------------------------------------
-      subroutine taumol29
+      subroutine taumol29(ncol, nlayers, &
+                          colh2o, colco2, colch4, colo2, colo3, colmol, &
+                          laytrop, jp, jt, jt1, &
+                          fac00, fac01, fac10, fac11, &
+                          selffac, selffrac, indself, forfac, forfrac, indfor, &
+                          sfluxzen, taug, taur)
 !----------------------------------------------------------------------------
 !
 !     band 29:  820-2600 cm-1 (low - h2o; high - co2)
@@ -4472,99 +4880,149 @@
       use parrrsw, only : ng29, ngs28
       use rrsw_kg29, only : absa, ka, absb, kb, forref, selfref, &
                             sfluxref, absh2o, absco2, rayl, layreffr
+!      use rrsw_kg29, only : absa, ka, absb, kb, forref, selfref, &
+!                            sfluxref, absh2o, absco2, rayl
 
 ! ------- Declarations -------
+      integer , intent(in) :: ncol
+      integer , intent(in) :: nlayers               ! total number of layers
+
+      integer , intent(in) :: laytrop(:)            ! tropopause layer index
+      integer , intent(in) :: jp(:,:)               ! 
+      integer , intent(in) :: jt(:,:)               !
+      integer , intent(in) :: jt1(:,:)              !
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: colh2o(:,:)              ! column amount (h2o)
+      real , intent(in) :: colco2(:,:)              ! column amount (co2)
+      real , intent(in) :: colo3(:,:)               ! column amount (o3)
+      real , intent(in) :: colch4(:,:)              ! column amount (ch4)
+      real , intent(in) :: colo2(:,:)               ! column amount (o2)
+      real , intent(in) :: colmol(:,:)              ! 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      integer , intent(in) :: indself(:,:)     
+      integer , intent(in) :: indfor(:,:) 
+      real , intent(in) :: selffac(:,:) 
+      real , intent(in) :: selffrac(:,:) 
+      real , intent(in) :: forfac(:,:) 
+      real , intent(in) :: forfrac(:,:) 
+                                                    !   Dimensions: (ncol,nlayers)
+
+      real , intent(in) :: &                        !
+                       fac00(:,:) , fac01(:,:) , &  
+                       fac10(:,:) , fac11(:,:)  
+                                                    !   Dimensions: (ncol,nlayers)
+
+! ----- Output -----
+      real, intent(out) gpu_device :: sfluxzen(:,:)      ! solar source function
+                                                         !   Dimensions: (ncol,ngptsw)
+      real, intent(out) gpu_device :: taug(:,:,:)        ! gaseous optical depth 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
+      real, intent(out) gpu_device :: taur(:,:,:)        ! Rayleigh 
+                                                         !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
 
-      integer(kind=im) :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
-      real(kind=rb) :: fac000, fac001, fac010, fac011, fac100, fac101, &
-                       fac110, fac111, fs, speccomb, specmult, specparm, &
-                       tauray
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+!      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr, &
+!                  layreffr
+      real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
+                  fac110, fac111, fs, speccomb, specmult, specparm, &
+                  tauray
+      integer :: iplon
 
+!      layreffr = 49  
+        
+!$acc kernels loop independent private (laysolfr)
+      do iplon=1,ncol
+        
+        laysolfr = nlayers
+!$acc loop seq
+        do lay = laytrop(iplon) +1, nlayers
+         if (jp(iplon,lay-1)  .lt. layreffr .and. jp(iplon,lay)  .ge. layreffr) &
+            laysolfr = lay
+
+            if (lay .eq. laysolfr) then 
+                do ig = 1, ng29
+                sfluxzen(iplon,ngs28+ig)  = sfluxref(ig) 
+                end do
+            end if
+        end do
+      end do
+!$acc end kernels
+       
+!$acc kernels 
+      do iplon=1,ncol
 ! Compute the optical depth by interpolating in ln(pressure), 
 ! temperature, and appropriate species.  Below LAYTROP, the water
 ! vapor self-continuum is interpolated (in temperature) separately.  
 
 ! Lower atmosphere loop
-      do lay = 1, laytrop
-         ind0 = ((jp(lay)-1)*5+(jt(lay)-1))*nspa(29) + 1
-         ind1 = (jp(lay)*5+(jt1(lay)-1))*nspa(29) + 1
-         inds = indself(lay)
-         indf = indfor(lay)
-         tauray = colmol(lay) * rayl
+      do lay = 1, nlayers 
+         if (lay <= laytrop(iplon)) then
+         ind0 = ((jp(iplon,lay) -1)*5+(jt(iplon,lay) -1))*nspa(29) + 1
+         ind1 = (jp(iplon,lay) *5+(jt1(iplon,lay) -1))*nspa(29) + 1
+         inds = indself(iplon,lay) 
+         indf = indfor(iplon,lay) 
+         tauray = colmol(iplon,lay)  * rayl
 
          do ig = 1, ng29
-            taug(lay,ngs28+ig) = colh2o(lay) * &
-               ((fac00(lay) * absa(ind0,ig) + &
-                 fac10(lay) * absa(ind0+1,ig) + &
-                 fac01(lay) * absa(ind1,ig) + &
-                 fac11(lay) * absa(ind1+1,ig)) + &
-                 selffac(lay) * (selfref(inds,ig) + &
-                 selffrac(lay) * &
+            taug(iplon,lay,ngs28+ig)  = colh2o(iplon,lay)  * &
+               ((fac00(iplon,lay)  * absa(ind0,ig) + &
+                 fac10(iplon,lay)  * absa(ind0+1,ig) + &
+                 fac01(iplon,lay)  * absa(ind1,ig) + &
+                 fac11(iplon,lay)  * absa(ind1+1,ig)) + &
+                 selffac(iplon,lay)  * (selfref(inds,ig) + &
+                 selffrac(iplon,lay)  * &
                  (selfref(inds+1,ig) - selfref(inds,ig))) + &
-                 forfac(lay) * (forref(indf,ig) + & 
-                 forfrac(lay) * &
+                 forfac(iplon,lay)  * (forref(indf,ig) + & 
+                 forfrac(iplon,lay)  * &
                  (forref(indf+1,ig) - forref(indf,ig)))) &
-                 + colco2(lay) * absco2(ig) 
+                 + colco2(iplon,lay)  * absco2(ig) 
 !            ssa(lay,ngs28+ig) = tauray/taug(lay,ngs28+ig)
-            taur(lay,ngs28+ig) = tauray
+            taur(iplon,lay,ngs28+ig)  = tauray
          enddo
-      enddo
 
-      laysolfr = nlayers
+         else 
 
 ! Upper atmosphere loop
-      do lay = laytrop+1, nlayers
-         if (jp(lay-1) .lt. layreffr .and. jp(lay) .ge. layreffr) &
-            laysolfr = lay
-         ind0 = ((jp(lay)-13)*5+(jt(lay)-1))*nspb(29) + 1
-         ind1 = ((jp(lay)-12)*5+(jt1(lay)-1))*nspb(29) + 1
-         tauray = colmol(lay) * rayl
+         ind0 = ((jp(iplon,lay) -13)*5+(jt(iplon,lay) -1))*nspb(29) + 1
+         ind1 = ((jp(iplon,lay) -12)*5+(jt1(iplon,lay) -1))*nspb(29) + 1
+         tauray = colmol(iplon,lay)  * rayl
 
          do ig = 1, ng29
-            taug(lay,ngs28+ig) = colco2(lay) * &
-                (fac00(lay) * absb(ind0,ig) + &
-                 fac10(lay) * absb(ind0+1,ig) + &
-                 fac01(lay) * absb(ind1,ig) + &
-                 fac11(lay) * absb(ind1+1,ig)) &  
-                 + colh2o(lay) * absh2o(ig) 
+            taug(iplon,lay,ngs28+ig)  = colco2(iplon,lay)  * &
+                (fac00(iplon,lay)  * absb(ind0,ig) + &
+                 fac10(iplon,lay)  * absb(ind0+1,ig) + &
+                 fac01(iplon,lay)  * absb(ind1,ig) + &
+                 fac11(iplon,lay)  * absb(ind1+1,ig)) &  
+                 + colh2o(iplon,lay)  * absh2o(ig) 
 !            ssa(lay,ngs28+ig) = tauray/taug(lay,ngs28+ig)
-            if (lay .eq. laysolfr) sfluxzen(ngs28+ig) = sfluxref(ig) 
-            taur(lay,ngs28+ig) = tauray
+        
+            taur(iplon,lay,ngs28+ig)  = tauray
          enddo
+         end if
+
       enddo
-
+      enddo
+      
+!$acc end kernels
       end subroutine taumol29
-
-      end subroutine taumol_sw
 
       end module rrtmg_sw_taumol
 
-!     path:      $Source: /cvsroot/NWP/WRFV3/phys/module_ra_rrtmg_sw.F,v $
-!     author:    $Author: trn $
-!     revision:  $Revision: 1.3 $
-!     created:   $Date: 2009/04/16 19:54:22 $
-
       module rrtmg_sw_init
 
-!  --------------------------------------------------------------------------
-! |                                                                          |
-! |  Copyright 2002-2008, Atmospheric & Environmental Research, Inc. (AER).  |
-! |  This software may be used, copied, or redistributed as long as it is    |
-! |  not sold and this copyright notice is reproduced on each copy made.     |
-! |  This model is provided as is without any express or implied warranties. |
-! |                       (http://www.rtweb.aer.com/)                        |
-! |                                                                          |
-!  --------------------------------------------------------------------------
-
 ! ------- Modules -------
-      use parkind, only : im => kind_im, rb => kind_rb
+
       use rrsw_wvn
       use rrtmg_sw_setcoef, only: swatmref
-
+      
       implicit none
 
+      public rrtmg_sw_ini
+      
       contains
 
 ! **************************************************************************
@@ -4584,20 +5042,20 @@
       use rrsw_tbl, only: ntbl, tblint, pade, bpade, tau_tbl, exp_tbl
       use rrsw_vsn, only: hvrini, hnamini
 
-      real(kind=rb), intent(in) :: cpdair     ! Specific heat capacity of dry air
-                                              ! at constant pressure at 273 K
-                                              ! (J kg-1 K-1)
+      real , intent(in) :: cpdair     ! Specific heat capacity of dry air
+                                      ! at constant pressure at 273 K
+                                      ! (J kg-1 K-1)
 
 ! ------- Local -------
 
-      integer(kind=im) :: ibnd, igc, ig, ind, ipr
-      integer(kind=im) :: igcsm, iprsm
-      integer(kind=im) :: itr
+      integer  :: ibnd, igc, ig, ind, ipr
+      integer  :: igcsm, iprsm
+      integer  :: itr
 
-      real(kind=rb) :: wtsum, wtsm(mg)
-      real(kind=rb) :: tfn
+      real  :: wtsum, wtsm(mg)
+      real  :: tfn
 
-      real(kind=rb), parameter :: expeps = 1.e-20   ! Smallest value for exponential table
+      real , parameter :: expeps = 1.e-20    ! Smallest value for exponential table
 
 ! ------- Definitions -------
 !     Arrays for 10000-point look-up tables:
@@ -4607,7 +5065,7 @@
 !     BPADE    Inverse of the Pade approximation constant
 !
 
-      hvrini = '$Revision: 1.3 $'
+      hvrini = '$Revision: 1.5 $'
 
 ! Initialize model data
       call swdatinit(cpdair)
@@ -4637,12 +5095,12 @@
 ! of 0.0001.  The inverse of the constant used in the Pade approximation to 
 ! the tau transition function is set to bpade.
 
-      exp_tbl(0) = 1.0_rb
+      exp_tbl(0) = 1.0 
       exp_tbl(ntbl) = expeps
-      bpade = 1.0_rb / pade
+      bpade = 1.0  / pade
       do itr = 1, ntbl-1
          tfn = float(itr) / float(ntbl)
-         tau_tbl = bpade * tfn / (1._rb - tfn)
+         tau_tbl = bpade * tfn / (1.  - tfn)
          exp_tbl(itr) = exp(-tau_tbl)
          if (exp_tbl(itr) .le. expeps) exp_tbl(itr) = expeps
       enddo
@@ -4673,7 +5131,7 @@
             do ig = 1, ng(ibnd+15)
                igcsm = igcsm + 1
                ind = (ibnd-1)*mg + ig
-               rwgt(ind) = 1.0_rb
+               rwgt(ind) = 1.0 
             enddo
          endif
       enddo
@@ -4710,46 +5168,47 @@
 
       save 
  
-      real(kind=rb), intent(in) :: cpdair     ! Specific heat capacity of dry air
-                                              ! at constant pressure at 273 K
-                                              ! (J kg-1 K-1)
+      real , intent(in) :: cpdair     ! Specific heat capacity of dry air
+                                      ! at constant pressure at 273 K
+                                      ! (J kg-1 K-1)
 
 ! Shortwave spectral band limits (wavenumbers)
-      wavenum1(:) = (/2600._rb, 3250._rb, 4000._rb, 4650._rb, 5150._rb, 6150._rb, 7700._rb, &
-                      8050._rb,12850._rb,16000._rb,22650._rb,29000._rb,38000._rb,  820._rb/)
-      wavenum2(:) = (/3250._rb, 4000._rb, 4650._rb, 5150._rb, 6150._rb, 7700._rb, 8050._rb, &
-                     12850._rb,16000._rb,22650._rb,29000._rb,38000._rb,50000._rb, 2600._rb/)
-      delwave(:) =  (/ 650._rb,  750._rb,  650._rb,  500._rb, 1000._rb, 1550._rb,  350._rb, &
-                      4800._rb, 3150._rb, 6650._rb, 6350._rb, 9000._rb,12000._rb, 1780._rb/)
-
+      wavenum1(:) = (/2600. , 3250. , 4000. , 4650. , 5150. , 6150. , 7700. , &
+                      8050. ,12850. ,16000. ,22650. ,29000. ,38000. ,  820. /)
+      wavenum2(:) = (/3250. , 4000. , 4650. , 5150. , 6150. , 7700. , 8050. , &
+                     12850. ,16000. ,22650. ,29000. ,38000. ,50000. , 2600. /)
+      delwave(:) =  (/ 650. ,  750. ,  650. ,  500. , 1000. , 1550. ,  350. , &
+                      4800. , 3150. , 6650. , 6350. , 9000. ,12000. , 1780. /)
+     
 ! Spectral band information
       ng(:) = (/16,16,16,16,16,16,16,16,16,16,16,16,16,16/)
       nspa(:) = (/9,9,9,9,1,9,9,1,9,1,0,1,9,1/)
       nspb(:) = (/1,5,1,1,1,5,1,0,1,0,0,1,5,1/)
+      icxa(:) = (/ 5 ,5 ,4 ,4 ,3 ,3 ,2 ,2 ,1 ,1 ,1 ,1 ,1 ,5/)
 
 ! Fundamental physical constants from NIST 2002
 
-      grav = 9.8066_rb                        ! Acceleration of gravity
+      grav = 9.8066                         ! Acceleration of gravity
                                               ! (m s-2)
-      planck = 6.62606876e-27_rb              ! Planck constant
+      planck = 6.62606876e-27               ! Planck constant
                                               ! (ergs s; g cm2 s-1)
-      boltz = 1.3806503e-16_rb                ! Boltzmann constant
+      boltz = 1.3806503e-16                 ! Boltzmann constant
                                               ! (ergs K-1; g cm2 s-2 K-1)
-      clight = 2.99792458e+10_rb              ! Speed of light in a vacuum  
+      clight = 2.99792458e+10               ! Speed of light in a vacuum  
                                               ! (cm s-1)
-      avogad = 6.02214199e+23_rb              ! Avogadro constant
+      avogad = 6.02214199e+23               ! Avogadro constant
                                               ! (mol-1)
-      alosmt = 2.6867775e+19_rb               ! Loschmidt constant
+      alosmt = 2.6867775e+19                ! Loschmidt constant
                                               ! (cm-3)
-      gascon = 8.31447200e+07_rb              ! Molar gas constant
+      gascon = 8.31447200e+07               ! Molar gas constant
                                               ! (ergs mol-1 K-1)
-      radcn1 = 1.191042772e-12_rb             ! First radiation constant
+      radcn1 = 1.191042772e-12              ! First radiation constant
                                               ! (W cm2 sr-1)
-      radcn2 = 1.4387752_rb                   ! Second radiation constant
+      radcn2 = 1.4387752                    ! Second radiation constant
                                               ! (cm K)
-      sbcnst = 5.670400e-04_rb                ! Stefan-Boltzmann constant
+      sbcnst = 5.670400e-04                 ! Stefan-Boltzmann constant
                                               ! (W cm-2 K-4)
-      secdy = 8.6400e4_rb                     ! Number of seconds per day
+      secdy = 8.6400e4                      ! Number of seconds per day
                                               ! (s d-1)
 !
 !     units are generally cgs
@@ -4767,20 +5226,20 @@
 !           Here, cpdair (1.004) is in units of J g-1 K-1, and the 
 !           constant (1.e-5) converts mb to Pa and g-1 to kg-1.
 !        =  (9.8066)(86400)(1e-5)/(1.004)
-!      heatfac = 8.4391_rb
+!      heatfac = 8.4391 
 !
 !     Modified value for consistency with CAM3:
 !           (g)x(#sec/day)x(1e-5)/(specific heat of air at const. p)
 !           Here, cpdair (1.00464) is in units of J g-1 K-1, and the
 !           constant (1.e-5) converts mb to Pa and g-1 to kg-1.
 !        =  (9.80616)(86400)(1e-5)/(1.00464)
-!      heatfac = 8.43339130434_rb
+!      heatfac = 8.43339130434 
 !
 !     Calculated value (from constants above and input cpdair)
 !        (grav) x (#sec/day) / (specific heat of dry air at const. p x 1.e2)
 !           Here, cpdair is in units of J kg-1 K-1, and the constant (1.e2) 
 !           converts mb to Pa when heatfac is multiplied by W m-2 mb-1. 
-      heatfac = grav * secdy / (cpdair * 1.e2_rb)
+      heatfac = grav * secdy / (cpdair * 1.e2 )
 
       end subroutine swdatinit
 
@@ -4901,12 +5360,12 @@
 !                  29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,29 /)   ! band 29
 
 
-      wt(:) =  (/ 0.1527534276_rb, 0.1491729617_rb, 0.1420961469_rb, &
-                  0.1316886544_rb, 0.1181945205_rb, 0.1019300893_rb, &
-                  0.0832767040_rb, 0.0626720116_rb, 0.0424925000_rb, &
-                  0.0046269894_rb, 0.0038279891_rb, 0.0030260086_rb, &
-                  0.0022199750_rb, 0.0014140010_rb, 0.0005330000_rb, &
-                  0.0000750000_rb /)
+      wt(:) =  (/ 0.1527534276 , 0.1491729617 , 0.1420961469 , &
+                  0.1316886544 , 0.1181945205 , 0.1019300893 , &
+                  0.0832767040 , 0.0626720116 , 0.0424925000 , &
+                  0.0046269894 , 0.0038279891 , 0.0030260086 , &
+                  0.0022199750 , 0.0014140010 , 0.0005330000 , &
+                  0.0000750000  /)
 
       end subroutine swcmbdat
 
@@ -4925,91 +5384,91 @@
       save
 
       rsrtaua( 1, :) = (/ &
-        0.10849_rb, 0.66699_rb, 0.65255_rb, 0.11600_rb, 0.06529_rb, 0.04468_rb/)
+        0.10849 , 0.66699 , 0.65255 , 0.11600 , 0.06529 , 0.04468 /)
       rsrtaua( 2, :) = (/ &
-        0.10849_rb, 0.66699_rb, 0.65255_rb, 0.11600_rb, 0.06529_rb, 0.04468_rb/)
+        0.10849 , 0.66699 , 0.65255 , 0.11600 , 0.06529 , 0.04468 /)
       rsrtaua( 3, :) = (/ &
-        0.20543_rb, 0.84642_rb, 0.84958_rb, 0.21673_rb, 0.28270_rb, 0.10915_rb/)
+        0.20543 , 0.84642 , 0.84958 , 0.21673 , 0.28270 , 0.10915 /)
       rsrtaua( 4, :) = (/ &
-        0.20543_rb, 0.84642_rb, 0.84958_rb, 0.21673_rb, 0.28270_rb, 0.10915_rb/)
+        0.20543 , 0.84642 , 0.84958 , 0.21673 , 0.28270 , 0.10915 /)
       rsrtaua( 5, :) = (/ &
-        0.20543_rb, 0.84642_rb, 0.84958_rb, 0.21673_rb, 0.28270_rb, 0.10915_rb/)
+        0.20543 , 0.84642 , 0.84958 , 0.21673 , 0.28270 , 0.10915 /)
       rsrtaua( 6, :) = (/ &
-        0.20543_rb, 0.84642_rb, 0.84958_rb, 0.21673_rb, 0.28270_rb, 0.10915_rb/)
+        0.20543 , 0.84642 , 0.84958 , 0.21673 , 0.28270 , 0.10915 /)
       rsrtaua( 7, :) = (/ &
-        0.20543_rb, 0.84642_rb, 0.84958_rb, 0.21673_rb, 0.28270_rb, 0.10915_rb/)
+        0.20543 , 0.84642 , 0.84958 , 0.21673 , 0.28270 , 0.10915 /)
       rsrtaua( 8, :) = (/ &
-        0.52838_rb, 0.93285_rb, 0.93449_rb, 0.53078_rb, 0.67148_rb, 0.46608_rb/)
+        0.52838 , 0.93285 , 0.93449 , 0.53078 , 0.67148 , 0.46608 /)
       rsrtaua( 9, :) = (/ &
-        0.52838_rb, 0.93285_rb, 0.93449_rb, 0.53078_rb, 0.67148_rb, 0.46608_rb/)
+        0.52838 , 0.93285 , 0.93449 , 0.53078 , 0.67148 , 0.46608 /)
       rsrtaua(10, :) = (/ &
-        1.69446_rb, 1.11855_rb, 1.09212_rb, 1.72145_rb, 1.03858_rb, 1.12044_rb/)
+        1.69446 , 1.11855 , 1.09212 , 1.72145 , 1.03858 , 1.12044 /)
       rsrtaua(11, :) = (/ &
-        1.69446_rb, 1.11855_rb, 1.09212_rb, 1.72145_rb, 1.03858_rb, 1.12044_rb/)
+        1.69446 , 1.11855 , 1.09212 , 1.72145 , 1.03858 , 1.12044 /)
       rsrtaua(12, :) = (/ &
-        1.69446_rb, 1.11855_rb, 1.09212_rb, 1.72145_rb, 1.03858_rb, 1.12044_rb/)
+        1.69446 , 1.11855 , 1.09212 , 1.72145 , 1.03858 , 1.12044 /)
       rsrtaua(13, :) = (/ &
-        1.69446_rb, 1.11855_rb, 1.09212_rb, 1.72145_rb, 1.03858_rb, 1.12044_rb/)
+        1.69446 , 1.11855 , 1.09212 , 1.72145 , 1.03858 , 1.12044 /)
       rsrtaua(14, :) = (/ &
-        0.10849_rb, 0.66699_rb, 0.65255_rb, 0.11600_rb, 0.06529_rb, 0.04468_rb/)
+        0.10849 , 0.66699 , 0.65255 , 0.11600 , 0.06529 , 0.04468 /)
  
       rsrpiza( 1, :) = (/ &
-        .5230504_rb, .7868518_rb, .8531531_rb, .4048149_rb, .8748231_rb, .2355667_rb/)
+        .5230504 , .7868518 , .8531531 , .4048149 , .8748231 , .2355667 /)
       rsrpiza( 2, :) = (/ &
-        .5230504_rb, .7868518_rb, .8531531_rb, .4048149_rb, .8748231_rb, .2355667_rb/)
+        .5230504 , .7868518 , .8531531 , .4048149 , .8748231 , .2355667 /)
       rsrpiza( 3, :) = (/ &
-        .8287144_rb, .9949396_rb, .9279543_rb, .6765051_rb, .9467578_rb, .9955938_rb/)
+        .8287144 , .9949396 , .9279543 , .6765051 , .9467578 , .9955938 /)
       rsrpiza( 4, :) = (/ &
-        .8287144_rb, .9949396_rb, .9279543_rb, .6765051_rb, .9467578_rb, .9955938_rb/)
+        .8287144 , .9949396 , .9279543 , .6765051 , .9467578 , .9955938 /)
       rsrpiza( 5, :) = (/ &
-        .8287144_rb, .9949396_rb, .9279543_rb, .6765051_rb, .9467578_rb, .9955938_rb/)
+        .8287144 , .9949396 , .9279543 , .6765051 , .9467578 , .9955938 /)
       rsrpiza( 6, :) = (/ &
-        .8287144_rb, .9949396_rb, .9279543_rb, .6765051_rb, .9467578_rb, .9955938_rb/)
+        .8287144 , .9949396 , .9279543 , .6765051 , .9467578 , .9955938 /)
       rsrpiza( 7, :) = (/ &
-        .8287144_rb, .9949396_rb, .9279543_rb, .6765051_rb, .9467578_rb, .9955938_rb/)
+        .8287144 , .9949396 , .9279543 , .6765051 , .9467578 , .9955938 /)
       rsrpiza( 8, :) = (/ &
-        .8970131_rb, .9984940_rb, .9245594_rb, .7768385_rb, .9532763_rb, .9999999_rb/)
+        .8970131 , .9984940 , .9245594 , .7768385 , .9532763 , .9999999 /)
       rsrpiza( 9, :) = (/ &
-        .8970131_rb, .9984940_rb, .9245594_rb, .7768385_rb, .9532763_rb, .9999999_rb/)
+        .8970131 , .9984940 , .9245594 , .7768385 , .9532763 , .9999999 /)
       rsrpiza(10, :) = (/ &
-        .9148907_rb, .9956173_rb, .7504584_rb, .8131335_rb, .9401905_rb, .9999999_rb/)
+        .9148907 , .9956173 , .7504584 , .8131335 , .9401905 , .9999999 /)
       rsrpiza(11, :) = (/ &
-        .9148907_rb, .9956173_rb, .7504584_rb, .8131335_rb, .9401905_rb, .9999999_rb/)
+        .9148907 , .9956173 , .7504584 , .8131335 , .9401905 , .9999999 /)
       rsrpiza(12, :) = (/ &
-        .9148907_rb, .9956173_rb, .7504584_rb, .8131335_rb, .9401905_rb, .9999999_rb/)
+        .9148907 , .9956173 , .7504584 , .8131335 , .9401905 , .9999999 /)
       rsrpiza(13, :) = (/ &
-        .9148907_rb, .9956173_rb, .7504584_rb, .8131335_rb, .9401905_rb, .9999999_rb/)
+        .9148907 , .9956173 , .7504584 , .8131335 , .9401905 , .9999999 /)
       rsrpiza(14, :) = (/ &
-        .5230504_rb, .7868518_rb, .8531531_rb, .4048149_rb, .8748231_rb, .2355667_rb/)
+        .5230504 , .7868518 , .8531531 , .4048149 , .8748231 , .2355667 /)
 
       rsrasya( 1, :) = (/ &
-        0.700610_rb, 0.818871_rb, 0.702399_rb, 0.689886_rb, .4629866_rb, .1907639_rb/)
+        0.700610 , 0.818871 , 0.702399 , 0.689886 , .4629866 , .1907639 /)
       rsrasya( 2, :) = (/ &
-        0.700610_rb, 0.818871_rb, 0.702399_rb, 0.689886_rb, .4629866_rb, .1907639_rb/)
+        0.700610 , 0.818871 , 0.702399 , 0.689886 , .4629866 , .1907639 /)
       rsrasya( 3, :) = (/ &
-        0.636342_rb, 0.802467_rb, 0.691305_rb, 0.627497_rb, .6105750_rb, .4760794_rb/)
+        0.636342 , 0.802467 , 0.691305 , 0.627497 , .6105750 , .4760794 /)
       rsrasya( 4, :) = (/ &
-        0.636342_rb, 0.802467_rb, 0.691305_rb, 0.627497_rb, .6105750_rb, .4760794_rb/)
+        0.636342 , 0.802467 , 0.691305 , 0.627497 , .6105750 , .4760794 /)
       rsrasya( 5, :) = (/ &
-        0.636342_rb, 0.802467_rb, 0.691305_rb, 0.627497_rb, .6105750_rb, .4760794_rb/)
+        0.636342 , 0.802467 , 0.691305 , 0.627497 , .6105750 , .4760794 /)
       rsrasya( 6, :) = (/ &
-        0.636342_rb, 0.802467_rb, 0.691305_rb, 0.627497_rb, .6105750_rb, .4760794_rb/)
+        0.636342 , 0.802467 , 0.691305 , 0.627497 , .6105750 , .4760794 /)
       rsrasya( 7, :) = (/ &
-        0.636342_rb, 0.802467_rb, 0.691305_rb, 0.627497_rb, .6105750_rb, .4760794_rb/)
+        0.636342 , 0.802467 , 0.691305 , 0.627497 , .6105750 , .4760794 /)
       rsrasya( 8, :) = (/ &
-        0.668431_rb, 0.788530_rb, 0.698682_rb, 0.657422_rb, .6735182_rb, .6519706_rb/)
+        0.668431 , 0.788530 , 0.698682 , 0.657422 , .6735182 , .6519706 /)
       rsrasya( 9, :) = (/ &
-        0.668431_rb, 0.788530_rb, 0.698682_rb, 0.657422_rb, .6735182_rb, .6519706_rb/)
+        0.668431 , 0.788530 , 0.698682 , 0.657422 , .6735182 , .6519706 /)
       rsrasya(10, :) = (/ &
-        0.729019_rb, 0.803129_rb, 0.784592_rb, 0.712208_rb, .7008249_rb, .7270548_rb/)
+        0.729019 , 0.803129 , 0.784592 , 0.712208 , .7008249 , .7270548 /)
       rsrasya(11, :) = (/ &
-        0.729019_rb, 0.803129_rb, 0.784592_rb, 0.712208_rb, .7008249_rb, .7270548_rb/)
+        0.729019 , 0.803129 , 0.784592 , 0.712208 , .7008249 , .7270548 /)
       rsrasya(12, :) = (/ &
-        0.729019_rb, 0.803129_rb, 0.784592_rb, 0.712208_rb, .7008249_rb, .7270548_rb/)
+        0.729019 , 0.803129 , 0.784592 , 0.712208 , .7008249 , .7270548 /)
       rsrasya(13, :) = (/ &
-        0.729019_rb, 0.803129_rb, 0.784592_rb, 0.712208_rb, .7008249_rb, .7270548_rb/)
+        0.729019 , 0.803129 , 0.784592 , 0.712208 , .7008249 , .7270548 /)
       rsrasya(14, :) = (/ &
-        0.700610_rb, 0.818871_rb, 0.702399_rb, 0.689886_rb, .4629866_rb, .1907639_rb/)
+        0.700610 , 0.818871 , 0.702399 , 0.689886 , .4629866 , .1907639 /)
 
       end subroutine swaerpr
  
@@ -5037,8 +5496,8 @@
                             absa, ka, absb, kb, selfref, forref, sfluxref
 
 ! ------- Local -------
-      integer(kind=im) :: jn, jt, jp, igc, ipr, iprsm
-      real(kind=rb) :: sumk, sumf
+      integer  :: jn, jt, jp, igc, ipr, iprsm
+      real  :: sumk, sumf
 
 
       do jn = 1,9
@@ -5118,8 +5577,8 @@
                             absa, ka, absb, kb, selfref, forref, sfluxref
 
 ! ------- Local -------
-      integer(kind=im) :: jn, jt, jp, igc, ipr, iprsm
-      real(kind=rb) :: sumk, sumf
+      integer  :: jn, jt, jp, igc, ipr, iprsm
+      real  :: sumk, sumf
 
 
       do jn = 1,9
@@ -5203,8 +5662,8 @@
                             absa, ka, absb, kb, selfref, forref, sfluxref
 
 ! ------- Local -------
-      integer(kind=im) :: jn, jt, jp, igc, ipr, iprsm
-      real(kind=rb) :: sumk, sumf
+      integer  :: jn, jt, jp, igc, ipr, iprsm
+      real  :: sumk, sumf
 
 
       do jn = 1,9
@@ -5286,8 +5745,8 @@
                             absa, ka, absb, kb, selfref, forref, sfluxref
 
 ! ------- Local -------
-      integer(kind=im) :: jn, jt, jp, igc, ipr, iprsm
-      real(kind=rb) :: sumk, sumf
+      integer  :: jn, jt, jp, igc, ipr, iprsm
+      real  :: sumk, sumf
 
 
       do jn = 1,9
@@ -5369,8 +5828,8 @@
                             absa, ka, absb, kb, selfref, forref, sfluxref, absch4
 
 ! ------- Local -------
-      integer(kind=im) :: jt, jp, igc, ipr, iprsm
-      real(kind=rb) :: sumk, sumf1, sumf2
+      integer  :: jt, jp, igc, ipr, iprsm
+      real  :: sumk, sumf1, sumf2
 
 
       do jt = 1,5
@@ -5448,8 +5907,8 @@
                             absa, ka, absb, kb, selfref, forref, sfluxref
 
 ! ------- Local -------
-      integer(kind=im) :: jn, jt, jp, igc, ipr, iprsm
-      real(kind=rb) :: sumk, sumf
+      integer  :: jn, jt, jp, igc, ipr, iprsm
+      real  :: sumk, sumf
 
 
       do jn = 1,9
@@ -5533,8 +5992,8 @@
                             absa, ka, absb, kb, selfref, forref, sfluxref
 
 ! ------- Local -------
-      integer(kind=im) :: jn, jt, jp, igc, ipr, iprsm
-      real(kind=rb) :: sumk, sumf
+      integer  :: jn, jt, jp, igc, ipr, iprsm
+      real  :: sumk, sumf
 
 
       do jn = 1,9
@@ -5616,8 +6075,8 @@
                             absa, ka, selfref, forref, sfluxref, rayl
 
 ! ------- Local -------
-      integer(kind=im) :: jt, jp, igc, ipr, iprsm
-      real(kind=rb) :: sumk, sumf1, sumf2
+      integer  :: jt, jp, igc, ipr, iprsm
+      real  :: sumk, sumf1, sumf2
 
 
       do jt = 1,5
@@ -5686,8 +6145,8 @@
                             abso3a, abso3b, rayla, raylb
 
 ! ------- Local -------
-      integer(kind=im) :: jn, jt, jp, igc, ipr, iprsm
-      real(kind=rb) :: sumk, sumf1, sumf2, sumf3
+      integer  :: jn, jt, jp, igc, ipr, iprsm
+      real  :: sumk, sumf1, sumf2, sumf3
 
 
       do jn = 1,9
@@ -5790,8 +6249,8 @@
                             abso3a, abso3b, rayl
 
 ! ------- Local -------
-      integer(kind=im) :: jt, jp, igc, ipr, iprsm
-      real(kind=rb) :: sumk, sumf1, sumf2, sumf3, sumf4
+      integer  :: jt, jp, igc, ipr, iprsm
+      real  :: sumk, sumf1, sumf2, sumf3, sumf4
 
 
       do jt = 1,5
@@ -5840,8 +6299,8 @@
                             sfluxref, rayl
 
 ! ------- Local -------
-      integer(kind=im) :: igc, ipr, iprsm
-      real(kind=rb) :: sumf1, sumf2
+      integer  :: igc, ipr, iprsm
+      real  :: sumf1, sumf2
 
 
       iprsm = 0
@@ -5870,8 +6329,8 @@
                             absa, ka, absb, kb, sfluxref, rayl
 
 ! ------- Local -------
-      integer(kind=im) :: jt, jp, igc, ipr, iprsm
-      real(kind=rb) :: sumk, sumf1, sumf2
+      integer  :: jt, jp, igc, ipr, iprsm
+      real  :: sumk, sumf1, sumf2
 
 
       do jt = 1,5
@@ -5925,8 +6384,8 @@
                             absa, ka, absb, kb, sfluxref
 
 ! ------- Local -------
-      integer(kind=im) :: jn, jt, jp, igc, ipr, iprsm
-      real(kind=rb) :: sumk, sumf
+      integer  :: jn, jt, jp, igc, ipr, iprsm
+      real  :: sumk, sumf
 
 
       do jn = 1,9
@@ -5988,8 +6447,8 @@
                             absh2o, absco2
 
 ! ------- Local -------
-      integer(kind=im) :: jt, jp, igc, ipr, iprsm
-      real(kind=rb) :: sumk, sumf1, sumf2, sumf3
+      integer  :: jt, jp, igc, ipr, iprsm
+      real  :: sumk, sumf1, sumf2, sumf3
 
 
       do jt = 1,5
@@ -6061,6 +6520,7 @@
 
 !***********************************************************************
       subroutine swcldpr
+!***********************************************************************
 
 ! Purpose: Define cloud extinction coefficient, single scattering albedo
 !          and asymmetry parameter data.
@@ -6120,8 +6580,8 @@
 !    based on the work of J. Pinto (private communication).
 !    Linear interpolation is used to get the absorption 
 !    coefficients for the input effective radius.
-!
-!..Updated tables suggested by Peter Blossey (Univ. Washington) that came from RRTM v3.9 from AER, Inc.
+!    ..Updated tables suggested by Peter Blossey (Univ. Washington) 
+!    and came from RRTMG_SW_v3.9 from AER, Inc.
 !
 !     ------------------------------------------------------------------
 
@@ -6129,1963 +6589,1801 @@
 
 ! Coefficients for Ebert and Curry method
       abari(:) = (/ &
-        & 3.448e-03_rb,3.448e-03_rb,3.448e-03_rb,3.448e-03_rb,3.448e-03_rb /)
+        & 3.448e-03 ,3.448e-03 ,3.448e-03 ,3.448e-03 ,3.448e-03  /)
       bbari(:) = (/ &
-        & 2.431e+00_rb,2.431e+00_rb,2.431e+00_rb,2.431e+00_rb,2.431e+00_rb /)
+        & 2.431e+00 ,2.431e+00 ,2.431e+00 ,2.431e+00 ,2.431e+00  /)
       cbari(:) = (/ &
-        & 1.000e-05_rb,1.100e-04_rb,1.240e-02_rb,3.779e-02_rb,4.666e-01_rb /)
+        & 1.000e-05 ,1.100e-04 ,1.240e-02 ,3.779e-02 ,4.666e-01  /)
       dbari(:) = (/ &
-        & 0.000e+00_rb,1.405e-05_rb,6.867e-04_rb,1.284e-03_rb,2.050e-05_rb /)
+        & 0.000e+00 ,1.405e-05 ,6.867e-04 ,1.284e-03 ,2.050e-05  /)
       ebari(:) = (/ &
-        & 7.661e-01_rb,7.730e-01_rb,7.865e-01_rb,8.172e-01_rb,9.595e-01_rb /)
+        & 7.661e-01 ,7.730e-01 ,7.865e-01 ,8.172e-01 ,9.595e-01  /)
       fbari(:) = (/ &
-        & 5.851e-04_rb,5.665e-04_rb,7.204e-04_rb,7.463e-04_rb,1.076e-04_rb /)
+        & 5.851e-04 ,5.665e-04 ,7.204e-04 ,7.463e-04 ,1.076e-04  /)
 
 ! LIQFLAG==1 extinction coefficients, single scattering albedos, and asymmetry parameters
 !   Derived from on Mie scattering computations; based on Hu & Stamnes coefficients
+
+! Extinction coefficient
 !     BAND  16
       extliq1(:, 16) = (/ &
-        & 9.004493E-01_rb,6.366723E-01_rb,4.542354E-01_rb,3.468253E-01_rb,2.816431E-01_rb,&
-        & 2.383415E-01_rb,2.070854E-01_rb,1.831854E-01_rb,1.642115E-01_rb,1.487539E-01_rb,&
-        & 1.359169E-01_rb,1.250900E-01_rb,1.158354E-01_rb,1.078400E-01_rb,1.008646E-01_rb,&
-        & 9.472307E-02_rb,8.928000E-02_rb,8.442308E-02_rb,8.005924E-02_rb,7.612231E-02_rb,&
-        & 7.255153E-02_rb,6.929539E-02_rb,6.631769E-02_rb,6.358153E-02_rb,6.106231E-02_rb,&
-        & 5.873077E-02_rb,5.656924E-02_rb,5.455769E-02_rb,5.267846E-02_rb,5.091923E-02_rb,&
-        & 4.926692E-02_rb,4.771154E-02_rb,4.623923E-02_rb,4.484385E-02_rb,4.351539E-02_rb,&
-        & 4.224615E-02_rb,4.103385E-02_rb,3.986538E-02_rb,3.874077E-02_rb,3.765462E-02_rb,&
-        & 3.660077E-02_rb,3.557384E-02_rb,3.457615E-02_rb,3.360308E-02_rb,3.265000E-02_rb,&
-        & 3.171770E-02_rb,3.080538E-02_rb,2.990846E-02_rb,2.903000E-02_rb,2.816461E-02_rb,&
-        & 2.731539E-02_rb,2.648231E-02_rb,2.566308E-02_rb,2.485923E-02_rb,2.407000E-02_rb,&
-        & 2.329615E-02_rb,2.253769E-02_rb,2.179615E-02_rb /)
+        & 9.004493E-01,6.366723E-01,4.542354E-01,3.468253E-01,2.816431E-01,&
+        & 2.383415E-01,2.070854E-01,1.831854E-01,1.642115E-01,1.487539E-01,&
+        & 1.359169E-01,1.250900E-01,1.158354E-01,1.078400E-01,1.008646E-01,&
+        & 9.472307E-02,8.928000E-02,8.442308E-02,8.005924E-02,7.612231E-02,&
+        & 7.255153E-02,6.929539E-02,6.631769E-02,6.358153E-02,6.106231E-02,&
+        & 5.873077E-02,5.656924E-02,5.455769E-02,5.267846E-02,5.091923E-02,&
+        & 4.926692E-02,4.771154E-02,4.623923E-02,4.484385E-02,4.351539E-02,&
+        & 4.224615E-02,4.103385E-02,3.986538E-02,3.874077E-02,3.765462E-02,&
+        & 3.660077E-02,3.557384E-02,3.457615E-02,3.360308E-02,3.265000E-02,&
+        & 3.171770E-02,3.080538E-02,2.990846E-02,2.903000E-02,2.816461E-02,&
+        & 2.731539E-02,2.648231E-02,2.566308E-02,2.485923E-02,2.407000E-02,&
+        & 2.329615E-02,2.253769E-02,2.179615E-02 /)
 !     BAND  17
       extliq1(:, 17) = (/ &
-       & 6.741200e-01_rb,5.390739e-01_rb,4.198767e-01_rb,3.332553e-01_rb,2.735633e-01_rb,&
-       & 2.317727e-01_rb,2.012760e-01_rb,1.780400e-01_rb,1.596927e-01_rb,1.447980e-01_rb,&
-       & 1.324480e-01_rb,1.220347e-01_rb,1.131327e-01_rb,1.054313e-01_rb,9.870534e-02_rb,&
-       & 9.278200e-02_rb,8.752599e-02_rb,8.282933e-02_rb,7.860600e-02_rb,7.479133e-02_rb,&
-       & 7.132800e-02_rb,6.816733e-02_rb,6.527401e-02_rb,6.261266e-02_rb,6.015934e-02_rb,&
-       & 5.788867e-02_rb,5.578134e-02_rb,5.381667e-02_rb,5.198133e-02_rb,5.026067e-02_rb,&
-       & 4.864466e-02_rb,4.712267e-02_rb,4.568066e-02_rb,4.431200e-02_rb,4.300867e-02_rb,&
-       & 4.176600e-02_rb,4.057400e-02_rb,3.942534e-02_rb,3.832066e-02_rb,3.725068e-02_rb,&
-       & 3.621400e-02_rb,3.520533e-02_rb,3.422333e-02_rb,3.326400e-02_rb,3.232467e-02_rb,&
-       & 3.140535e-02_rb,3.050400e-02_rb,2.962000e-02_rb,2.875267e-02_rb,2.789800e-02_rb,&
-       & 2.705934e-02_rb,2.623667e-02_rb,2.542667e-02_rb,2.463200e-02_rb,2.385267e-02_rb,&
-       & 2.308667e-02_rb,2.233667e-02_rb,2.160067e-02_rb /)
+       & 6.741200e-01,5.390739e-01,4.198767e-01,3.332553e-01,2.735633e-01,&
+       & 2.317727e-01,2.012760e-01,1.780400e-01,1.596927e-01,1.447980e-01,&
+       & 1.324480e-01,1.220347e-01,1.131327e-01,1.054313e-01,9.870534e-02,&
+       & 9.278200e-02,8.752599e-02,8.282933e-02,7.860600e-02,7.479133e-02,&
+       & 7.132800e-02,6.816733e-02,6.527401e-02,6.261266e-02,6.015934e-02,&
+       & 5.788867e-02,5.578134e-02,5.381667e-02,5.198133e-02,5.026067e-02,&
+       & 4.864466e-02,4.712267e-02,4.568066e-02,4.431200e-02,4.300867e-02,&
+       & 4.176600e-02,4.057400e-02,3.942534e-02,3.832066e-02,3.725068e-02,&
+       & 3.621400e-02,3.520533e-02,3.422333e-02,3.326400e-02,3.232467e-02,&
+       & 3.140535e-02,3.050400e-02,2.962000e-02,2.875267e-02,2.789800e-02,&
+       & 2.705934e-02,2.623667e-02,2.542667e-02,2.463200e-02,2.385267e-02,&
+       & 2.308667e-02,2.233667e-02,2.160067e-02 /)
 !     BAND  18
       extliq1(:, 18) = (/ &
-       & 9.250861e-01_rb,6.245692e-01_rb,4.347038e-01_rb,3.320208e-01_rb,2.714869e-01_rb,&
-       & 2.309516e-01_rb,2.012592e-01_rb,1.783315e-01_rb,1.600369e-01_rb,1.451000e-01_rb,&
-       & 1.326838e-01_rb,1.222069e-01_rb,1.132554e-01_rb,1.055146e-01_rb,9.876000e-02_rb,&
-       & 9.281386e-02_rb,8.754000e-02_rb,8.283078e-02_rb,7.860077e-02_rb,7.477769e-02_rb,&
-       & 7.130847e-02_rb,6.814461e-02_rb,6.524615e-02_rb,6.258462e-02_rb,6.012847e-02_rb,&
-       & 5.785462e-02_rb,5.574231e-02_rb,5.378000e-02_rb,5.194461e-02_rb,5.022462e-02_rb,&
-       & 4.860846e-02_rb,4.708462e-02_rb,4.564154e-02_rb,4.427462e-02_rb,4.297231e-02_rb,&
-       & 4.172769e-02_rb,4.053693e-02_rb,3.939000e-02_rb,3.828462e-02_rb,3.721692e-02_rb,&
-       & 3.618000e-02_rb,3.517077e-02_rb,3.418923e-02_rb,3.323077e-02_rb,3.229154e-02_rb,&
-       & 3.137154e-02_rb,3.047154e-02_rb,2.959077e-02_rb,2.872308e-02_rb,2.786846e-02_rb,&
-       & 2.703077e-02_rb,2.620923e-02_rb,2.540077e-02_rb,2.460615e-02_rb,2.382693e-02_rb,&
-       & 2.306231e-02_rb,2.231231e-02_rb,2.157923e-02_rb /)
+       & 9.250861e-01,6.245692e-01,4.347038e-01,3.320208e-01,2.714869e-01,&
+       & 2.309516e-01,2.012592e-01,1.783315e-01,1.600369e-01,1.451000e-01,&
+       & 1.326838e-01,1.222069e-01,1.132554e-01,1.055146e-01,9.876000e-02,&
+       & 9.281386e-02,8.754000e-02,8.283078e-02,7.860077e-02,7.477769e-02,&
+       & 7.130847e-02,6.814461e-02,6.524615e-02,6.258462e-02,6.012847e-02,&
+       & 5.785462e-02,5.574231e-02,5.378000e-02,5.194461e-02,5.022462e-02,&
+       & 4.860846e-02,4.708462e-02,4.564154e-02,4.427462e-02,4.297231e-02,&
+       & 4.172769e-02,4.053693e-02,3.939000e-02,3.828462e-02,3.721692e-02,&
+       & 3.618000e-02,3.517077e-02,3.418923e-02,3.323077e-02,3.229154e-02,&
+       & 3.137154e-02,3.047154e-02,2.959077e-02,2.872308e-02,2.786846e-02,&
+       & 2.703077e-02,2.620923e-02,2.540077e-02,2.460615e-02,2.382693e-02,&
+       & 2.306231e-02,2.231231e-02,2.157923e-02 /)
 !     BAND  19
       extliq1(:, 19) = (/ &
-       & 9.298960e-01_rb,5.776460e-01_rb,4.083450e-01_rb,3.211160e-01_rb,2.666390e-01_rb,&
-       & 2.281990e-01_rb,1.993250e-01_rb,1.768080e-01_rb,1.587810e-01_rb,1.440390e-01_rb,&
-       & 1.317720e-01_rb,1.214150e-01_rb,1.125540e-01_rb,1.048890e-01_rb,9.819600e-02_rb,&
-       & 9.230201e-02_rb,8.706900e-02_rb,8.239698e-02_rb,7.819500e-02_rb,7.439899e-02_rb,&
-       & 7.095300e-02_rb,6.780700e-02_rb,6.492900e-02_rb,6.228600e-02_rb,5.984600e-02_rb,&
-       & 5.758599e-02_rb,5.549099e-02_rb,5.353801e-02_rb,5.171400e-02_rb,5.000500e-02_rb,&
-       & 4.840000e-02_rb,4.688500e-02_rb,4.545100e-02_rb,4.409300e-02_rb,4.279700e-02_rb,&
-       & 4.156100e-02_rb,4.037700e-02_rb,3.923800e-02_rb,3.813800e-02_rb,3.707600e-02_rb,&
-       & 3.604500e-02_rb,3.504300e-02_rb,3.406500e-02_rb,3.310800e-02_rb,3.217700e-02_rb,&
-       & 3.126600e-02_rb,3.036800e-02_rb,2.948900e-02_rb,2.862400e-02_rb,2.777500e-02_rb,&
-       & 2.694200e-02_rb,2.612300e-02_rb,2.531700e-02_rb,2.452800e-02_rb,2.375100e-02_rb,&
-       & 2.299100e-02_rb,2.224300e-02_rb,2.151201e-02_rb /)
+       & 9.298960e-01,5.776460e-01,4.083450e-01,3.211160e-01,2.666390e-01,&
+       & 2.281990e-01,1.993250e-01,1.768080e-01,1.587810e-01,1.440390e-01,&
+       & 1.317720e-01,1.214150e-01,1.125540e-01,1.048890e-01,9.819600e-02,&
+       & 9.230201e-02,8.706900e-02,8.239698e-02,7.819500e-02,7.439899e-02,&
+       & 7.095300e-02,6.780700e-02,6.492900e-02,6.228600e-02,5.984600e-02,&
+       & 5.758599e-02,5.549099e-02,5.353801e-02,5.171400e-02,5.000500e-02,&
+       & 4.840000e-02,4.688500e-02,4.545100e-02,4.409300e-02,4.279700e-02,&
+       & 4.156100e-02,4.037700e-02,3.923800e-02,3.813800e-02,3.707600e-02,&
+       & 3.604500e-02,3.504300e-02,3.406500e-02,3.310800e-02,3.217700e-02,&
+       & 3.126600e-02,3.036800e-02,2.948900e-02,2.862400e-02,2.777500e-02,&
+       & 2.694200e-02,2.612300e-02,2.531700e-02,2.452800e-02,2.375100e-02,&
+       & 2.299100e-02,2.224300e-02,2.151201e-02 /)
 !     BAND  20
       extliq1(:, 20) = (/ &
-       & 8.780964e-01_rb,5.407031e-01_rb,3.961100e-01_rb,3.166645e-01_rb,2.640455e-01_rb,&
-       & 2.261070e-01_rb,1.974820e-01_rb,1.751775e-01_rb,1.573415e-01_rb,1.427725e-01_rb,&
-       & 1.306535e-01_rb,1.204195e-01_rb,1.116650e-01_rb,1.040915e-01_rb,9.747550e-02_rb,&
-       & 9.164800e-02_rb,8.647649e-02_rb,8.185501e-02_rb,7.770200e-02_rb,7.394749e-02_rb,&
-       & 7.053800e-02_rb,6.742700e-02_rb,6.457999e-02_rb,6.196149e-02_rb,5.954450e-02_rb,&
-       & 5.730650e-02_rb,5.522949e-02_rb,5.329450e-02_rb,5.148500e-02_rb,4.979000e-02_rb,&
-       & 4.819600e-02_rb,4.669301e-02_rb,4.527050e-02_rb,4.391899e-02_rb,4.263500e-02_rb,&
-       & 4.140500e-02_rb,4.022850e-02_rb,3.909500e-02_rb,3.800199e-02_rb,3.694600e-02_rb,&
-       & 3.592000e-02_rb,3.492250e-02_rb,3.395050e-02_rb,3.300150e-02_rb,3.207250e-02_rb,&
-       & 3.116250e-02_rb,3.027100e-02_rb,2.939500e-02_rb,2.853500e-02_rb,2.768900e-02_rb,&
-       & 2.686000e-02_rb,2.604350e-02_rb,2.524150e-02_rb,2.445350e-02_rb,2.368049e-02_rb,&
-       & 2.292150e-02_rb,2.217800e-02_rb,2.144800e-02_rb /)
+       & 8.780964e-01,5.407031e-01,3.961100e-01,3.166645e-01,2.640455e-01,&
+       & 2.261070e-01,1.974820e-01,1.751775e-01,1.573415e-01,1.427725e-01,&
+       & 1.306535e-01,1.204195e-01,1.116650e-01,1.040915e-01,9.747550e-02,&
+       & 9.164800e-02,8.647649e-02,8.185501e-02,7.770200e-02,7.394749e-02,&
+       & 7.053800e-02,6.742700e-02,6.457999e-02,6.196149e-02,5.954450e-02,&
+       & 5.730650e-02,5.522949e-02,5.329450e-02,5.148500e-02,4.979000e-02,&
+       & 4.819600e-02,4.669301e-02,4.527050e-02,4.391899e-02,4.263500e-02,&
+       & 4.140500e-02,4.022850e-02,3.909500e-02,3.800199e-02,3.694600e-02,&
+       & 3.592000e-02,3.492250e-02,3.395050e-02,3.300150e-02,3.207250e-02,&
+       & 3.116250e-02,3.027100e-02,2.939500e-02,2.853500e-02,2.768900e-02,&
+       & 2.686000e-02,2.604350e-02,2.524150e-02,2.445350e-02,2.368049e-02,&
+       & 2.292150e-02,2.217800e-02,2.144800e-02 /)
 !     BAND  21
       extliq1(:, 21) = (/ &
-       & 7.937480e-01_rb,5.123036e-01_rb,3.858181e-01_rb,3.099622e-01_rb,2.586829e-01_rb,&
-       & 2.217587e-01_rb,1.939755e-01_rb,1.723397e-01_rb,1.550258e-01_rb,1.408600e-01_rb,&
-       & 1.290545e-01_rb,1.190661e-01_rb,1.105039e-01_rb,1.030848e-01_rb,9.659387e-02_rb,&
-       & 9.086775e-02_rb,8.577807e-02_rb,8.122452e-02_rb,7.712711e-02_rb,7.342193e-02_rb,&
-       & 7.005387e-02_rb,6.697840e-02_rb,6.416000e-02_rb,6.156903e-02_rb,5.917484e-02_rb,&
-       & 5.695807e-02_rb,5.489968e-02_rb,5.298097e-02_rb,5.118806e-02_rb,4.950645e-02_rb,&
-       & 4.792710e-02_rb,4.643581e-02_rb,4.502484e-02_rb,4.368547e-02_rb,4.241001e-02_rb,&
-       & 4.118936e-02_rb,4.002193e-02_rb,3.889711e-02_rb,3.781322e-02_rb,3.676387e-02_rb,&
-       & 3.574549e-02_rb,3.475548e-02_rb,3.379033e-02_rb,3.284678e-02_rb,3.192420e-02_rb,&
-       & 3.102032e-02_rb,3.013484e-02_rb,2.926258e-02_rb,2.840839e-02_rb,2.756742e-02_rb,&
-       & 2.674258e-02_rb,2.593064e-02_rb,2.513258e-02_rb,2.435000e-02_rb,2.358064e-02_rb,&
-       & 2.282581e-02_rb,2.208548e-02_rb,2.135936e-02_rb /)
+       & 7.937480e-01,5.123036e-01,3.858181e-01,3.099622e-01,2.586829e-01,&
+       & 2.217587e-01,1.939755e-01,1.723397e-01,1.550258e-01,1.408600e-01,&
+       & 1.290545e-01,1.190661e-01,1.105039e-01,1.030848e-01,9.659387e-02,&
+       & 9.086775e-02,8.577807e-02,8.122452e-02,7.712711e-02,7.342193e-02,&
+       & 7.005387e-02,6.697840e-02,6.416000e-02,6.156903e-02,5.917484e-02,&
+       & 5.695807e-02,5.489968e-02,5.298097e-02,5.118806e-02,4.950645e-02,&
+       & 4.792710e-02,4.643581e-02,4.502484e-02,4.368547e-02,4.241001e-02,&
+       & 4.118936e-02,4.002193e-02,3.889711e-02,3.781322e-02,3.676387e-02,&
+       & 3.574549e-02,3.475548e-02,3.379033e-02,3.284678e-02,3.192420e-02,&
+       & 3.102032e-02,3.013484e-02,2.926258e-02,2.840839e-02,2.756742e-02,&
+       & 2.674258e-02,2.593064e-02,2.513258e-02,2.435000e-02,2.358064e-02,&
+       & 2.282581e-02,2.208548e-02,2.135936e-02 /)
 !     BAND  22
       extliq1(:, 22) = (/ &
-       & 7.533129e-01_rb,5.033129e-01_rb,3.811271e-01_rb,3.062757e-01_rb,2.558729e-01_rb,&
-       & 2.196828e-01_rb,1.924372e-01_rb,1.711714e-01_rb,1.541086e-01_rb,1.401114e-01_rb,&
-       & 1.284257e-01_rb,1.185200e-01_rb,1.100243e-01_rb,1.026529e-01_rb,9.620142e-02_rb,&
-       & 9.050714e-02_rb,8.544428e-02_rb,8.091714e-02_rb,7.684000e-02_rb,7.315429e-02_rb,&
-       & 6.980143e-02_rb,6.673999e-02_rb,6.394000e-02_rb,6.136000e-02_rb,5.897715e-02_rb,&
-       & 5.677000e-02_rb,5.472285e-02_rb,5.281286e-02_rb,5.102858e-02_rb,4.935429e-02_rb,&
-       & 4.778000e-02_rb,4.629714e-02_rb,4.489142e-02_rb,4.355857e-02_rb,4.228715e-02_rb,&
-       & 4.107285e-02_rb,3.990857e-02_rb,3.879000e-02_rb,3.770999e-02_rb,3.666429e-02_rb,&
-       & 3.565000e-02_rb,3.466286e-02_rb,3.370143e-02_rb,3.276143e-02_rb,3.184143e-02_rb,&
-       & 3.094000e-02_rb,3.005714e-02_rb,2.919000e-02_rb,2.833714e-02_rb,2.750000e-02_rb,&
-       & 2.667714e-02_rb,2.586714e-02_rb,2.507143e-02_rb,2.429143e-02_rb,2.352428e-02_rb,&
-       & 2.277143e-02_rb,2.203429e-02_rb,2.130857e-02_rb /)
+       & 7.533129e-01,5.033129e-01,3.811271e-01,3.062757e-01,2.558729e-01,&
+       & 2.196828e-01,1.924372e-01,1.711714e-01,1.541086e-01,1.401114e-01,&
+       & 1.284257e-01,1.185200e-01,1.100243e-01,1.026529e-01,9.620142e-02,&
+       & 9.050714e-02,8.544428e-02,8.091714e-02,7.684000e-02,7.315429e-02,&
+       & 6.980143e-02,6.673999e-02,6.394000e-02,6.136000e-02,5.897715e-02,&
+       & 5.677000e-02,5.472285e-02,5.281286e-02,5.102858e-02,4.935429e-02,&
+       & 4.778000e-02,4.629714e-02,4.489142e-02,4.355857e-02,4.228715e-02,&
+       & 4.107285e-02,3.990857e-02,3.879000e-02,3.770999e-02,3.666429e-02,&
+       & 3.565000e-02,3.466286e-02,3.370143e-02,3.276143e-02,3.184143e-02,&
+       & 3.094000e-02,3.005714e-02,2.919000e-02,2.833714e-02,2.750000e-02,&
+       & 2.667714e-02,2.586714e-02,2.507143e-02,2.429143e-02,2.352428e-02,&
+       & 2.277143e-02,2.203429e-02,2.130857e-02 /)
 !     BAND  23
       extliq1(:, 23) = (/ &
-       & 7.079894e-01_rb,4.878198e-01_rb,3.719852e-01_rb,3.001873e-01_rb,2.514795e-01_rb,&
-       & 2.163013e-01_rb,1.897100e-01_rb,1.689033e-01_rb,1.521793e-01_rb,1.384449e-01_rb,&
-       & 1.269666e-01_rb,1.172326e-01_rb,1.088745e-01_rb,1.016224e-01_rb,9.527085e-02_rb,&
-       & 8.966240e-02_rb,8.467543e-02_rb,8.021144e-02_rb,7.619344e-02_rb,7.255676e-02_rb,&
-       & 6.924996e-02_rb,6.623030e-02_rb,6.346261e-02_rb,6.091499e-02_rb,5.856325e-02_rb,&
-       & 5.638385e-02_rb,5.435930e-02_rb,5.247156e-02_rb,5.070699e-02_rb,4.905230e-02_rb,&
-       & 4.749499e-02_rb,4.602611e-02_rb,4.463581e-02_rb,4.331543e-02_rb,4.205647e-02_rb,&
-       & 4.085241e-02_rb,3.969978e-02_rb,3.859033e-02_rb,3.751877e-02_rb,3.648168e-02_rb,&
-       & 3.547468e-02_rb,3.449553e-02_rb,3.354072e-02_rb,3.260732e-02_rb,3.169438e-02_rb,&
-       & 3.079969e-02_rb,2.992146e-02_rb,2.905875e-02_rb,2.821201e-02_rb,2.737873e-02_rb,&
-       & 2.656052e-02_rb,2.575586e-02_rb,2.496511e-02_rb,2.418783e-02_rb,2.342500e-02_rb,&
-       & 2.267646e-02_rb,2.194177e-02_rb,2.122146e-02_rb /)
+       & 7.079894e-01,4.878198e-01,3.719852e-01,3.001873e-01,2.514795e-01,&
+       & 2.163013e-01,1.897100e-01,1.689033e-01,1.521793e-01,1.384449e-01,&
+       & 1.269666e-01,1.172326e-01,1.088745e-01,1.016224e-01,9.527085e-02,&
+       & 8.966240e-02,8.467543e-02,8.021144e-02,7.619344e-02,7.255676e-02,&
+       & 6.924996e-02,6.623030e-02,6.346261e-02,6.091499e-02,5.856325e-02,&
+       & 5.638385e-02,5.435930e-02,5.247156e-02,5.070699e-02,4.905230e-02,&
+       & 4.749499e-02,4.602611e-02,4.463581e-02,4.331543e-02,4.205647e-02,&
+       & 4.085241e-02,3.969978e-02,3.859033e-02,3.751877e-02,3.648168e-02,&
+       & 3.547468e-02,3.449553e-02,3.354072e-02,3.260732e-02,3.169438e-02,&
+       & 3.079969e-02,2.992146e-02,2.905875e-02,2.821201e-02,2.737873e-02,&
+       & 2.656052e-02,2.575586e-02,2.496511e-02,2.418783e-02,2.342500e-02,&
+       & 2.267646e-02,2.194177e-02,2.122146e-02 /)
 !     BAND  24
       extliq1(:, 24) = (/ &
-       & 6.850164e-01_rb,4.762468e-01_rb,3.642001e-01_rb,2.946012e-01_rb,2.472001e-01_rb,&
-       & 2.128588e-01_rb,1.868537e-01_rb,1.664893e-01_rb,1.501142e-01_rb,1.366620e-01_rb,&
-       & 1.254147e-01_rb,1.158721e-01_rb,1.076732e-01_rb,1.005530e-01_rb,9.431306e-02_rb,&
-       & 8.879891e-02_rb,8.389232e-02_rb,7.949714e-02_rb,7.553857e-02_rb,7.195474e-02_rb,&
-       & 6.869413e-02_rb,6.571444e-02_rb,6.298286e-02_rb,6.046779e-02_rb,5.814474e-02_rb,&
-       & 5.599141e-02_rb,5.399114e-02_rb,5.212443e-02_rb,5.037870e-02_rb,4.874321e-02_rb,&
-       & 4.720219e-02_rb,4.574813e-02_rb,4.437160e-02_rb,4.306460e-02_rb,4.181810e-02_rb,&
-       & 4.062603e-02_rb,3.948252e-02_rb,3.838256e-02_rb,3.732049e-02_rb,3.629192e-02_rb,&
-       & 3.529301e-02_rb,3.432190e-02_rb,3.337412e-02_rb,3.244842e-02_rb,3.154175e-02_rb,&
-       & 3.065253e-02_rb,2.978063e-02_rb,2.892367e-02_rb,2.808221e-02_rb,2.725478e-02_rb,&
-       & 2.644174e-02_rb,2.564175e-02_rb,2.485508e-02_rb,2.408303e-02_rb,2.332365e-02_rb,&
-       & 2.257890e-02_rb,2.184824e-02_rb,2.113224e-02_rb /)
+       & 6.850164e-01,4.762468e-01,3.642001e-01,2.946012e-01,2.472001e-01,&
+       & 2.128588e-01,1.868537e-01,1.664893e-01,1.501142e-01,1.366620e-01,&
+       & 1.254147e-01,1.158721e-01,1.076732e-01,1.005530e-01,9.431306e-02,&
+       & 8.879891e-02,8.389232e-02,7.949714e-02,7.553857e-02,7.195474e-02,&
+       & 6.869413e-02,6.571444e-02,6.298286e-02,6.046779e-02,5.814474e-02,&
+       & 5.599141e-02,5.399114e-02,5.212443e-02,5.037870e-02,4.874321e-02,&
+       & 4.720219e-02,4.574813e-02,4.437160e-02,4.306460e-02,4.181810e-02,&
+       & 4.062603e-02,3.948252e-02,3.838256e-02,3.732049e-02,3.629192e-02,&
+       & 3.529301e-02,3.432190e-02,3.337412e-02,3.244842e-02,3.154175e-02,&
+       & 3.065253e-02,2.978063e-02,2.892367e-02,2.808221e-02,2.725478e-02,&
+       & 2.644174e-02,2.564175e-02,2.485508e-02,2.408303e-02,2.332365e-02,&
+       & 2.257890e-02,2.184824e-02,2.113224e-02 /)
 !     BAND  25
       extliq1(:, 25) = (/ &
-       & 6.673017e-01_rb,4.664520e-01_rb,3.579398e-01_rb,2.902234e-01_rb,2.439904e-01_rb,&
-       & 2.104149e-01_rb,1.849277e-01_rb,1.649234e-01_rb,1.488087e-01_rb,1.355515e-01_rb,&
-       & 1.244562e-01_rb,1.150329e-01_rb,1.069321e-01_rb,9.989310e-02_rb,9.372070e-02_rb,&
-       & 8.826450e-02_rb,8.340622e-02_rb,7.905378e-02_rb,7.513109e-02_rb,7.157859e-02_rb,&
-       & 6.834588e-02_rb,6.539114e-02_rb,6.268150e-02_rb,6.018621e-02_rb,5.788098e-02_rb,&
-       & 5.574351e-02_rb,5.375699e-02_rb,5.190412e-02_rb,5.017099e-02_rb,4.854497e-02_rb,&
-       & 4.701490e-02_rb,4.557030e-02_rb,4.420249e-02_rb,4.290304e-02_rb,4.166427e-02_rb,&
-       & 4.047820e-02_rb,3.934232e-02_rb,3.824778e-02_rb,3.719236e-02_rb,3.616931e-02_rb,&
-       & 3.517597e-02_rb,3.420856e-02_rb,3.326566e-02_rb,3.234346e-02_rb,3.144122e-02_rb,&
-       & 3.055684e-02_rb,2.968798e-02_rb,2.883519e-02_rb,2.799635e-02_rb,2.717228e-02_rb,&
-       & 2.636182e-02_rb,2.556424e-02_rb,2.478114e-02_rb,2.401086e-02_rb,2.325657e-02_rb,&
-       & 2.251506e-02_rb,2.178594e-02_rb,2.107301e-02_rb /)
+       & 6.673017e-01,4.664520e-01,3.579398e-01,2.902234e-01,2.439904e-01,&
+       & 2.104149e-01,1.849277e-01,1.649234e-01,1.488087e-01,1.355515e-01,&
+       & 1.244562e-01,1.150329e-01,1.069321e-01,9.989310e-02,9.372070e-02,&
+       & 8.826450e-02,8.340622e-02,7.905378e-02,7.513109e-02,7.157859e-02,&
+       & 6.834588e-02,6.539114e-02,6.268150e-02,6.018621e-02,5.788098e-02,&
+       & 5.574351e-02,5.375699e-02,5.190412e-02,5.017099e-02,4.854497e-02,&
+       & 4.701490e-02,4.557030e-02,4.420249e-02,4.290304e-02,4.166427e-02,&
+       & 4.047820e-02,3.934232e-02,3.824778e-02,3.719236e-02,3.616931e-02,&
+       & 3.517597e-02,3.420856e-02,3.326566e-02,3.234346e-02,3.144122e-02,&
+       & 3.055684e-02,2.968798e-02,2.883519e-02,2.799635e-02,2.717228e-02,&
+       & 2.636182e-02,2.556424e-02,2.478114e-02,2.401086e-02,2.325657e-02,&
+       & 2.251506e-02,2.178594e-02,2.107301e-02 /)
 !     BAND  26
       extliq1(:, 26) = (/ &
-       & 6.552414e-01_rb,4.599454e-01_rb,3.538626e-01_rb,2.873547e-01_rb,2.418033e-01_rb,&
-       & 2.086660e-01_rb,1.834885e-01_rb,1.637142e-01_rb,1.477767e-01_rb,1.346583e-01_rb,&
-       & 1.236734e-01_rb,1.143412e-01_rb,1.063148e-01_rb,9.933905e-02_rb,9.322026e-02_rb,&
-       & 8.780979e-02_rb,8.299230e-02_rb,7.867554e-02_rb,7.478450e-02_rb,7.126053e-02_rb,&
-       & 6.805276e-02_rb,6.512143e-02_rb,6.243211e-02_rb,5.995541e-02_rb,5.766712e-02_rb,&
-       & 5.554484e-02_rb,5.357246e-02_rb,5.173222e-02_rb,5.001069e-02_rb,4.839505e-02_rb,&
-       & 4.687471e-02_rb,4.543861e-02_rb,4.407857e-02_rb,4.278577e-02_rb,4.155331e-02_rb,&
-       & 4.037322e-02_rb,3.924302e-02_rb,3.815376e-02_rb,3.710172e-02_rb,3.608296e-02_rb,&
-       & 3.509330e-02_rb,3.412980e-02_rb,3.319009e-02_rb,3.227106e-02_rb,3.137157e-02_rb,&
-       & 3.048950e-02_rb,2.962365e-02_rb,2.877297e-02_rb,2.793726e-02_rb,2.711500e-02_rb,&
-       & 2.630666e-02_rb,2.551206e-02_rb,2.473052e-02_rb,2.396287e-02_rb,2.320861e-02_rb,&
-       & 2.246810e-02_rb,2.174162e-02_rb,2.102927e-02_rb /)
+       & 6.552414e-01,4.599454e-01,3.538626e-01,2.873547e-01,2.418033e-01,&
+       & 2.086660e-01,1.834885e-01,1.637142e-01,1.477767e-01,1.346583e-01,&
+       & 1.236734e-01,1.143412e-01,1.063148e-01,9.933905e-02,9.322026e-02,&
+       & 8.780979e-02,8.299230e-02,7.867554e-02,7.478450e-02,7.126053e-02,&
+       & 6.805276e-02,6.512143e-02,6.243211e-02,5.995541e-02,5.766712e-02,&
+       & 5.554484e-02,5.357246e-02,5.173222e-02,5.001069e-02,4.839505e-02,&
+       & 4.687471e-02,4.543861e-02,4.407857e-02,4.278577e-02,4.155331e-02,&
+       & 4.037322e-02,3.924302e-02,3.815376e-02,3.710172e-02,3.608296e-02,&
+       & 3.509330e-02,3.412980e-02,3.319009e-02,3.227106e-02,3.137157e-02,&
+       & 3.048950e-02,2.962365e-02,2.877297e-02,2.793726e-02,2.711500e-02,&
+       & 2.630666e-02,2.551206e-02,2.473052e-02,2.396287e-02,2.320861e-02,&
+       & 2.246810e-02,2.174162e-02,2.102927e-02 /)
 !     BAND  27
       extliq1(:, 27) = (/ &
-       & 6.430901e-01_rb,4.532134e-01_rb,3.496132e-01_rb,2.844655e-01_rb,2.397347e-01_rb,&
-       & 2.071236e-01_rb,1.822976e-01_rb,1.627640e-01_rb,1.469961e-01_rb,1.340006e-01_rb,&
-       & 1.231069e-01_rb,1.138441e-01_rb,1.058706e-01_rb,9.893678e-02_rb,9.285166e-02_rb,&
-       & 8.746871e-02_rb,8.267411e-02_rb,7.837656e-02_rb,7.450257e-02_rb,7.099318e-02_rb,&
-       & 6.779929e-02_rb,6.487987e-02_rb,6.220168e-02_rb,5.973530e-02_rb,5.745636e-02_rb,&
-       & 5.534344e-02_rb,5.337986e-02_rb,5.154797e-02_rb,4.983404e-02_rb,4.822582e-02_rb,&
-       & 4.671228e-02_rb,4.528321e-02_rb,4.392997e-02_rb,4.264325e-02_rb,4.141647e-02_rb,&
-       & 4.024259e-02_rb,3.911767e-02_rb,3.803309e-02_rb,3.698782e-02_rb,3.597140e-02_rb,&
-       & 3.498774e-02_rb,3.402852e-02_rb,3.309340e-02_rb,3.217818e-02_rb,3.128292e-02_rb,&
-       & 3.040486e-02_rb,2.954230e-02_rb,2.869545e-02_rb,2.786261e-02_rb,2.704372e-02_rb,&
-       & 2.623813e-02_rb,2.544668e-02_rb,2.466788e-02_rb,2.390313e-02_rb,2.315136e-02_rb,&
-       & 2.241391e-02_rb,2.168921e-02_rb,2.097903e-02_rb /)
+       & 6.430901e-01,4.532134e-01,3.496132e-01,2.844655e-01,2.397347e-01,&
+       & 2.071236e-01,1.822976e-01,1.627640e-01,1.469961e-01,1.340006e-01,&
+       & 1.231069e-01,1.138441e-01,1.058706e-01,9.893678e-02,9.285166e-02,&
+       & 8.746871e-02,8.267411e-02,7.837656e-02,7.450257e-02,7.099318e-02,&
+       & 6.779929e-02,6.487987e-02,6.220168e-02,5.973530e-02,5.745636e-02,&
+       & 5.534344e-02,5.337986e-02,5.154797e-02,4.983404e-02,4.822582e-02,&
+       & 4.671228e-02,4.528321e-02,4.392997e-02,4.264325e-02,4.141647e-02,&
+       & 4.024259e-02,3.911767e-02,3.803309e-02,3.698782e-02,3.597140e-02,&
+       & 3.498774e-02,3.402852e-02,3.309340e-02,3.217818e-02,3.128292e-02,&
+       & 3.040486e-02,2.954230e-02,2.869545e-02,2.786261e-02,2.704372e-02,&
+       & 2.623813e-02,2.544668e-02,2.466788e-02,2.390313e-02,2.315136e-02,&
+       & 2.241391e-02,2.168921e-02,2.097903e-02 /)
 !     BAND  28
       extliq1(:, 28) = (/ &
-       & 6.367074e-01_rb,4.495768e-01_rb,3.471263e-01_rb,2.826149e-01_rb,2.382868e-01_rb,&
-       & 2.059640e-01_rb,1.813562e-01_rb,1.619881e-01_rb,1.463436e-01_rb,1.334402e-01_rb,&
-       & 1.226166e-01_rb,1.134096e-01_rb,1.054829e-01_rb,9.858838e-02_rb,9.253790e-02_rb,&
-       & 8.718582e-02_rb,8.241830e-02_rb,7.814482e-02_rb,7.429212e-02_rb,7.080165e-02_rb,&
-       & 6.762385e-02_rb,6.471838e-02_rb,6.205388e-02_rb,5.959726e-02_rb,5.732871e-02_rb,&
-       & 5.522402e-02_rb,5.326793e-02_rb,5.144230e-02_rb,4.973440e-02_rb,4.813188e-02_rb,&
-       & 4.662283e-02_rb,4.519798e-02_rb,4.384833e-02_rb,4.256541e-02_rb,4.134253e-02_rb,&
-       & 4.017136e-02_rb,3.904911e-02_rb,3.796779e-02_rb,3.692364e-02_rb,3.591182e-02_rb,&
-       & 3.492930e-02_rb,3.397230e-02_rb,3.303920e-02_rb,3.212572e-02_rb,3.123278e-02_rb,&
-       & 3.035519e-02_rb,2.949493e-02_rb,2.864985e-02_rb,2.781840e-02_rb,2.700197e-02_rb,&
-       & 2.619682e-02_rb,2.540674e-02_rb,2.462966e-02_rb,2.386613e-02_rb,2.311602e-02_rb,&
-       & 2.237846e-02_rb,2.165660e-02_rb,2.094756e-02_rb /)
+       & 6.367074e-01,4.495768e-01,3.471263e-01,2.826149e-01,2.382868e-01,&
+       & 2.059640e-01,1.813562e-01,1.619881e-01,1.463436e-01,1.334402e-01,&
+       & 1.226166e-01,1.134096e-01,1.054829e-01,9.858838e-02,9.253790e-02,&
+       & 8.718582e-02,8.241830e-02,7.814482e-02,7.429212e-02,7.080165e-02,&
+       & 6.762385e-02,6.471838e-02,6.205388e-02,5.959726e-02,5.732871e-02,&
+       & 5.522402e-02,5.326793e-02,5.144230e-02,4.973440e-02,4.813188e-02,&
+       & 4.662283e-02,4.519798e-02,4.384833e-02,4.256541e-02,4.134253e-02,&
+       & 4.017136e-02,3.904911e-02,3.796779e-02,3.692364e-02,3.591182e-02,&
+       & 3.492930e-02,3.397230e-02,3.303920e-02,3.212572e-02,3.123278e-02,&
+       & 3.035519e-02,2.949493e-02,2.864985e-02,2.781840e-02,2.700197e-02,&
+       & 2.619682e-02,2.540674e-02,2.462966e-02,2.386613e-02,2.311602e-02,&
+       & 2.237846e-02,2.165660e-02,2.094756e-02 /)
 !     BAND  29
       extliq1(:, 29) = (/ &
-       & 4.298416e-01_rb,4.391639e-01_rb,3.975030e-01_rb,3.443028e-01_rb,2.957345e-01_rb,&
-       & 2.556461e-01_rb,2.234755e-01_rb,1.976636e-01_rb,1.767428e-01_rb,1.595611e-01_rb,&
-       & 1.452636e-01_rb,1.332156e-01_rb,1.229481e-01_rb,1.141059e-01_rb,1.064208e-01_rb,&
-       & 9.968527e-02_rb,9.373833e-02_rb,8.845221e-02_rb,8.372112e-02_rb,7.946667e-02_rb,&
-       & 7.561807e-02_rb,7.212029e-02_rb,6.893166e-02_rb,6.600944e-02_rb,6.332277e-02_rb,&
-       & 6.084277e-02_rb,5.854721e-02_rb,5.641361e-02_rb,5.442639e-02_rb,5.256750e-02_rb,&
-       & 5.082499e-02_rb,4.918556e-02_rb,4.763694e-02_rb,4.617222e-02_rb,4.477861e-02_rb,&
-       & 4.344861e-02_rb,4.217999e-02_rb,4.096111e-02_rb,3.978638e-02_rb,3.865361e-02_rb,&
-       & 3.755473e-02_rb,3.649028e-02_rb,3.545361e-02_rb,3.444361e-02_rb,3.345666e-02_rb,&
-       & 3.249167e-02_rb,3.154722e-02_rb,3.062083e-02_rb,2.971250e-02_rb,2.882083e-02_rb,&
-       & 2.794611e-02_rb,2.708778e-02_rb,2.624500e-02_rb,2.541750e-02_rb,2.460528e-02_rb,&
-       & 2.381194e-02_rb,2.303250e-02_rb,2.226833e-02_rb /)
+       & 4.298416e-01,4.391639e-01,3.975030e-01,3.443028e-01,2.957345e-01,&
+       & 2.556461e-01,2.234755e-01,1.976636e-01,1.767428e-01,1.595611e-01,&
+       & 1.452636e-01,1.332156e-01,1.229481e-01,1.141059e-01,1.064208e-01,&
+       & 9.968527e-02,9.373833e-02,8.845221e-02,8.372112e-02,7.946667e-02,&
+       & 7.561807e-02,7.212029e-02,6.893166e-02,6.600944e-02,6.332277e-02,&
+       & 6.084277e-02,5.854721e-02,5.641361e-02,5.442639e-02,5.256750e-02,&
+       & 5.082499e-02,4.918556e-02,4.763694e-02,4.617222e-02,4.477861e-02,&
+       & 4.344861e-02,4.217999e-02,4.096111e-02,3.978638e-02,3.865361e-02,&
+       & 3.755473e-02,3.649028e-02,3.545361e-02,3.444361e-02,3.345666e-02,&
+       & 3.249167e-02,3.154722e-02,3.062083e-02,2.971250e-02,2.882083e-02,&
+       & 2.794611e-02,2.708778e-02,2.624500e-02,2.541750e-02,2.460528e-02,&
+       & 2.381194e-02,2.303250e-02,2.226833e-02 /)
+
+! Single scattering albedo     
 !     BAND  16
       ssaliq1(:, 16) = (/ &
-       & 8.362119e-01_rb,8.098460e-01_rb,7.762291e-01_rb,7.486042e-01_rb,7.294172e-01_rb,&
-       & 7.161000e-01_rb,7.060656e-01_rb,6.978387e-01_rb,6.907193e-01_rb,6.843551e-01_rb,&
-       & 6.785668e-01_rb,6.732450e-01_rb,6.683191e-01_rb,6.637264e-01_rb,6.594307e-01_rb,&
-       & 6.554033e-01_rb,6.516115e-01_rb,6.480295e-01_rb,6.446429e-01_rb,6.414306e-01_rb,&
-       & 6.383783e-01_rb,6.354750e-01_rb,6.327068e-01_rb,6.300665e-01_rb,6.275376e-01_rb,&
-       & 6.251245e-01_rb,6.228136e-01_rb,6.205944e-01_rb,6.184720e-01_rb,6.164330e-01_rb,&
-       & 6.144742e-01_rb,6.125962e-01_rb,6.108004e-01_rb,6.090740e-01_rb,6.074200e-01_rb,&
-       & 6.058381e-01_rb,6.043209e-01_rb,6.028681e-01_rb,6.014836e-01_rb,6.001626e-01_rb,&
-       & 5.988957e-01_rb,5.976864e-01_rb,5.965390e-01_rb,5.954379e-01_rb,5.943972e-01_rb,&
-       & 5.934019e-01_rb,5.924624e-01_rb,5.915579e-01_rb,5.907025e-01_rb,5.898913e-01_rb,&
-       & 5.891213e-01_rb,5.883815e-01_rb,5.876851e-01_rb,5.870158e-01_rb,5.863868e-01_rb,&
-       & 5.857821e-01_rb,5.852111e-01_rb,5.846579e-01_rb /)
+       & 8.362119e-01,8.098460e-01,7.762291e-01,7.486042e-01,7.294172e-01,&
+       & 7.161000e-01,7.060656e-01,6.978387e-01,6.907193e-01,6.843551e-01,&
+       & 6.785668e-01,6.732450e-01,6.683191e-01,6.637264e-01,6.594307e-01,&
+       & 6.554033e-01,6.516115e-01,6.480295e-01,6.446429e-01,6.414306e-01,&
+       & 6.383783e-01,6.354750e-01,6.327068e-01,6.300665e-01,6.275376e-01,&
+       & 6.251245e-01,6.228136e-01,6.205944e-01,6.184720e-01,6.164330e-01,&
+       & 6.144742e-01,6.125962e-01,6.108004e-01,6.090740e-01,6.074200e-01,&
+       & 6.058381e-01,6.043209e-01,6.028681e-01,6.014836e-01,6.001626e-01,&
+       & 5.988957e-01,5.976864e-01,5.965390e-01,5.954379e-01,5.943972e-01,&
+       & 5.934019e-01,5.924624e-01,5.915579e-01,5.907025e-01,5.898913e-01,&
+       & 5.891213e-01,5.883815e-01,5.876851e-01,5.870158e-01,5.863868e-01,&
+       & 5.857821e-01,5.852111e-01,5.846579e-01 /)
 !     BAND  17
       ssaliq1(:, 17) = (/ &
-       & 6.995459e-01_rb,7.158012e-01_rb,7.076001e-01_rb,6.927244e-01_rb,6.786434e-01_rb,&
-       & 6.673545e-01_rb,6.585859e-01_rb,6.516314e-01_rb,6.459010e-01_rb,6.410225e-01_rb,&
-       & 6.367574e-01_rb,6.329554e-01_rb,6.295119e-01_rb,6.263595e-01_rb,6.234462e-01_rb,&
-       & 6.207274e-01_rb,6.181755e-01_rb,6.157678e-01_rb,6.134880e-01_rb,6.113173e-01_rb,&
-       & 6.092495e-01_rb,6.072689e-01_rb,6.053717e-01_rb,6.035507e-01_rb,6.018001e-01_rb,&
-       & 6.001134e-01_rb,5.984951e-01_rb,5.969294e-01_rb,5.954256e-01_rb,5.939698e-01_rb,&
-       & 5.925716e-01_rb,5.912265e-01_rb,5.899270e-01_rb,5.886771e-01_rb,5.874746e-01_rb,&
-       & 5.863185e-01_rb,5.852077e-01_rb,5.841460e-01_rb,5.831249e-01_rb,5.821474e-01_rb,&
-       & 5.812078e-01_rb,5.803173e-01_rb,5.794616e-01_rb,5.786443e-01_rb,5.778617e-01_rb,&
-       & 5.771236e-01_rb,5.764191e-01_rb,5.757400e-01_rb,5.750971e-01_rb,5.744842e-01_rb,&
-       & 5.739012e-01_rb,5.733482e-01_rb,5.728175e-01_rb,5.723214e-01_rb,5.718383e-01_rb,&
-       & 5.713827e-01_rb,5.709471e-01_rb,5.705330e-01_rb /)
+       & 6.995459e-01,7.158012e-01,7.076001e-01,6.927244e-01,6.786434e-01,&
+       & 6.673545e-01,6.585859e-01,6.516314e-01,6.459010e-01,6.410225e-01,&
+       & 6.367574e-01,6.329554e-01,6.295119e-01,6.263595e-01,6.234462e-01,&
+       & 6.207274e-01,6.181755e-01,6.157678e-01,6.134880e-01,6.113173e-01,&
+       & 6.092495e-01,6.072689e-01,6.053717e-01,6.035507e-01,6.018001e-01,&
+       & 6.001134e-01,5.984951e-01,5.969294e-01,5.954256e-01,5.939698e-01,&
+       & 5.925716e-01,5.912265e-01,5.899270e-01,5.886771e-01,5.874746e-01,&
+       & 5.863185e-01,5.852077e-01,5.841460e-01,5.831249e-01,5.821474e-01,&
+       & 5.812078e-01,5.803173e-01,5.794616e-01,5.786443e-01,5.778617e-01,&
+       & 5.771236e-01,5.764191e-01,5.757400e-01,5.750971e-01,5.744842e-01,&
+       & 5.739012e-01,5.733482e-01,5.728175e-01,5.723214e-01,5.718383e-01,&
+       & 5.713827e-01,5.709471e-01,5.705330e-01 /)
 !     BAND  18
       ssaliq1(:, 18) = (/ &
-       & 9.929711e-01_rb,9.896942e-01_rb,9.852408e-01_rb,9.806820e-01_rb,9.764512e-01_rb,&
-       & 9.725375e-01_rb,9.688677e-01_rb,9.653832e-01_rb,9.620552e-01_rb,9.588522e-01_rb,&
-       & 9.557475e-01_rb,9.527265e-01_rb,9.497731e-01_rb,9.468756e-01_rb,9.440270e-01_rb,&
-       & 9.412230e-01_rb,9.384592e-01_rb,9.357287e-01_rb,9.330369e-01_rb,9.303778e-01_rb,&
-       & 9.277502e-01_rb,9.251546e-01_rb,9.225907e-01_rb,9.200553e-01_rb,9.175521e-01_rb,&
-       & 9.150773e-01_rb,9.126352e-01_rb,9.102260e-01_rb,9.078485e-01_rb,9.055057e-01_rb,&
-       & 9.031978e-01_rb,9.009306e-01_rb,8.987010e-01_rb,8.965177e-01_rb,8.943774e-01_rb,&
-       & 8.922869e-01_rb,8.902430e-01_rb,8.882551e-01_rb,8.863182e-01_rb,8.844373e-01_rb,&
-       & 8.826143e-01_rb,8.808499e-01_rb,8.791413e-01_rb,8.774940e-01_rb,8.759019e-01_rb,&
-       & 8.743650e-01_rb,8.728941e-01_rb,8.714712e-01_rb,8.701065e-01_rb,8.688008e-01_rb,&
-       & 8.675409e-01_rb,8.663295e-01_rb,8.651714e-01_rb,8.640637e-01_rb,8.629943e-01_rb,&
-       & 8.619762e-01_rb,8.609995e-01_rb,8.600581e-01_rb /)
+       & 9.929711e-01,9.896942e-01,9.852408e-01,9.806820e-01,9.764512e-01,&
+       & 9.725375e-01,9.688677e-01,9.653832e-01,9.620552e-01,9.588522e-01,&
+       & 9.557475e-01,9.527265e-01,9.497731e-01,9.468756e-01,9.440270e-01,&
+       & 9.412230e-01,9.384592e-01,9.357287e-01,9.330369e-01,9.303778e-01,&
+       & 9.277502e-01,9.251546e-01,9.225907e-01,9.200553e-01,9.175521e-01,&
+       & 9.150773e-01,9.126352e-01,9.102260e-01,9.078485e-01,9.055057e-01,&
+       & 9.031978e-01,9.009306e-01,8.987010e-01,8.965177e-01,8.943774e-01,&
+       & 8.922869e-01,8.902430e-01,8.882551e-01,8.863182e-01,8.844373e-01,&
+       & 8.826143e-01,8.808499e-01,8.791413e-01,8.774940e-01,8.759019e-01,&
+       & 8.743650e-01,8.728941e-01,8.714712e-01,8.701065e-01,8.688008e-01,&
+       & 8.675409e-01,8.663295e-01,8.651714e-01,8.640637e-01,8.629943e-01,&
+       & 8.619762e-01,8.609995e-01,8.600581e-01 /)
 !     BAND  19
       ssaliq1(:, 19) = (/ &
-       & 9.910612e-01_rb,9.854226e-01_rb,9.795008e-01_rb,9.742920e-01_rb,9.695996e-01_rb,&
-       & 9.652274e-01_rb,9.610648e-01_rb,9.570521e-01_rb,9.531397e-01_rb,9.493086e-01_rb,&
-       & 9.455413e-01_rb,9.418362e-01_rb,9.381902e-01_rb,9.346016e-01_rb,9.310718e-01_rb,&
-       & 9.275957e-01_rb,9.241757e-01_rb,9.208038e-01_rb,9.174802e-01_rb,9.142058e-01_rb,&
-       & 9.109753e-01_rb,9.077895e-01_rb,9.046433e-01_rb,9.015409e-01_rb,8.984784e-01_rb,&
-       & 8.954572e-01_rb,8.924748e-01_rb,8.895367e-01_rb,8.866395e-01_rb,8.837864e-01_rb,&
-       & 8.809819e-01_rb,8.782267e-01_rb,8.755231e-01_rb,8.728712e-01_rb,8.702802e-01_rb,&
-       & 8.677443e-01_rb,8.652733e-01_rb,8.628678e-01_rb,8.605300e-01_rb,8.582593e-01_rb,&
-       & 8.560596e-01_rb,8.539352e-01_rb,8.518782e-01_rb,8.498915e-01_rb,8.479790e-01_rb,&
-       & 8.461384e-01_rb,8.443645e-01_rb,8.426613e-01_rb,8.410229e-01_rb,8.394495e-01_rb,&
-       & 8.379428e-01_rb,8.364967e-01_rb,8.351117e-01_rb,8.337820e-01_rb,8.325091e-01_rb,&
-       & 8.312874e-01_rb,8.301169e-01_rb,8.289985e-01_rb /)
+       & 9.910612e-01,9.854226e-01,9.795008e-01,9.742920e-01,9.695996e-01,&
+       & 9.652274e-01,9.610648e-01,9.570521e-01,9.531397e-01,9.493086e-01,&
+       & 9.455413e-01,9.418362e-01,9.381902e-01,9.346016e-01,9.310718e-01,&
+       & 9.275957e-01,9.241757e-01,9.208038e-01,9.174802e-01,9.142058e-01,&
+       & 9.109753e-01,9.077895e-01,9.046433e-01,9.015409e-01,8.984784e-01,&
+       & 8.954572e-01,8.924748e-01,8.895367e-01,8.866395e-01,8.837864e-01,&
+       & 8.809819e-01,8.782267e-01,8.755231e-01,8.728712e-01,8.702802e-01,&
+       & 8.677443e-01,8.652733e-01,8.628678e-01,8.605300e-01,8.582593e-01,&
+       & 8.560596e-01,8.539352e-01,8.518782e-01,8.498915e-01,8.479790e-01,&
+       & 8.461384e-01,8.443645e-01,8.426613e-01,8.410229e-01,8.394495e-01,&
+       & 8.379428e-01,8.364967e-01,8.351117e-01,8.337820e-01,8.325091e-01,&
+       & 8.312874e-01,8.301169e-01,8.289985e-01 /)
 !     BAND  20
       ssaliq1(:, 20) = (/ &
-       & 9.969802e-01_rb,9.950445e-01_rb,9.931448e-01_rb,9.914272e-01_rb,9.898652e-01_rb,&
-       & 9.884250e-01_rb,9.870637e-01_rb,9.857482e-01_rb,9.844558e-01_rb,9.831755e-01_rb,&
-       & 9.819068e-01_rb,9.806477e-01_rb,9.794000e-01_rb,9.781666e-01_rb,9.769461e-01_rb,&
-       & 9.757386e-01_rb,9.745459e-01_rb,9.733650e-01_rb,9.721953e-01_rb,9.710398e-01_rb,&
-       & 9.698936e-01_rb,9.687583e-01_rb,9.676334e-01_rb,9.665192e-01_rb,9.654132e-01_rb,&
-       & 9.643208e-01_rb,9.632374e-01_rb,9.621625e-01_rb,9.611003e-01_rb,9.600518e-01_rb,&
-       & 9.590144e-01_rb,9.579922e-01_rb,9.569864e-01_rb,9.559948e-01_rb,9.550239e-01_rb,&
-       & 9.540698e-01_rb,9.531382e-01_rb,9.522280e-01_rb,9.513409e-01_rb,9.504772e-01_rb,&
-       & 9.496360e-01_rb,9.488220e-01_rb,9.480327e-01_rb,9.472693e-01_rb,9.465333e-01_rb,&
-       & 9.458211e-01_rb,9.451344e-01_rb,9.444732e-01_rb,9.438372e-01_rb,9.432268e-01_rb,&
-       & 9.426391e-01_rb,9.420757e-01_rb,9.415308e-01_rb,9.410102e-01_rb,9.405115e-01_rb,&
-       & 9.400326e-01_rb,9.395716e-01_rb,9.391313e-01_rb /)
+       & 9.969802e-01,9.950445e-01,9.931448e-01,9.914272e-01,9.898652e-01,&
+       & 9.884250e-01,9.870637e-01,9.857482e-01,9.844558e-01,9.831755e-01,&
+       & 9.819068e-01,9.806477e-01,9.794000e-01,9.781666e-01,9.769461e-01,&
+       & 9.757386e-01,9.745459e-01,9.733650e-01,9.721953e-01,9.710398e-01,&
+       & 9.698936e-01,9.687583e-01,9.676334e-01,9.665192e-01,9.654132e-01,&
+       & 9.643208e-01,9.632374e-01,9.621625e-01,9.611003e-01,9.600518e-01,&
+       & 9.590144e-01,9.579922e-01,9.569864e-01,9.559948e-01,9.550239e-01,&
+       & 9.540698e-01,9.531382e-01,9.522280e-01,9.513409e-01,9.504772e-01,&
+       & 9.496360e-01,9.488220e-01,9.480327e-01,9.472693e-01,9.465333e-01,&
+       & 9.458211e-01,9.451344e-01,9.444732e-01,9.438372e-01,9.432268e-01,&
+       & 9.426391e-01,9.420757e-01,9.415308e-01,9.410102e-01,9.405115e-01,&
+       & 9.400326e-01,9.395716e-01,9.391313e-01 /)
 !     BAND  21
       ssaliq1(:, 21) = (/ &
-       & 9.980034e-01_rb,9.968572e-01_rb,9.958696e-01_rb,9.949747e-01_rb,9.941241e-01_rb,&
-       & 9.933043e-01_rb,9.924971e-01_rb,9.916978e-01_rb,9.909023e-01_rb,9.901046e-01_rb,&
-       & 9.893087e-01_rb,9.885146e-01_rb,9.877195e-01_rb,9.869283e-01_rb,9.861379e-01_rb,&
-       & 9.853523e-01_rb,9.845715e-01_rb,9.837945e-01_rb,9.830217e-01_rb,9.822567e-01_rb,&
-       & 9.814935e-01_rb,9.807356e-01_rb,9.799815e-01_rb,9.792332e-01_rb,9.784845e-01_rb,&
-       & 9.777424e-01_rb,9.770042e-01_rb,9.762695e-01_rb,9.755416e-01_rb,9.748152e-01_rb,&
-       & 9.740974e-01_rb,9.733873e-01_rb,9.726813e-01_rb,9.719861e-01_rb,9.713010e-01_rb,&
-       & 9.706262e-01_rb,9.699647e-01_rb,9.693144e-01_rb,9.686794e-01_rb,9.680596e-01_rb,&
-       & 9.674540e-01_rb,9.668657e-01_rb,9.662926e-01_rb,9.657390e-01_rb,9.652019e-01_rb,&
-       & 9.646820e-01_rb,9.641784e-01_rb,9.636945e-01_rb,9.632260e-01_rb,9.627743e-01_rb,&
-       & 9.623418e-01_rb,9.619227e-01_rb,9.615194e-01_rb,9.611341e-01_rb,9.607629e-01_rb,&
-       & 9.604057e-01_rb,9.600622e-01_rb,9.597322e-01_rb /)
+       & 9.980034e-01,9.968572e-01,9.958696e-01,9.949747e-01,9.941241e-01,&
+       & 9.933043e-01,9.924971e-01,9.916978e-01,9.909023e-01,9.901046e-01,&
+       & 9.893087e-01,9.885146e-01,9.877195e-01,9.869283e-01,9.861379e-01,&
+       & 9.853523e-01,9.845715e-01,9.837945e-01,9.830217e-01,9.822567e-01,&
+       & 9.814935e-01,9.807356e-01,9.799815e-01,9.792332e-01,9.784845e-01,&
+       & 9.777424e-01,9.770042e-01,9.762695e-01,9.755416e-01,9.748152e-01,&
+       & 9.740974e-01,9.733873e-01,9.726813e-01,9.719861e-01,9.713010e-01,&
+       & 9.706262e-01,9.699647e-01,9.693144e-01,9.686794e-01,9.680596e-01,&
+       & 9.674540e-01,9.668657e-01,9.662926e-01,9.657390e-01,9.652019e-01,&
+       & 9.646820e-01,9.641784e-01,9.636945e-01,9.632260e-01,9.627743e-01,&
+       & 9.623418e-01,9.619227e-01,9.615194e-01,9.611341e-01,9.607629e-01,&
+       & 9.604057e-01,9.600622e-01,9.597322e-01 /)
 !     BAND  22
       ssaliq1(:, 22) = (/ &
-       & 9.988219e-01_rb,9.981767e-01_rb,9.976168e-01_rb,9.971066e-01_rb,9.966195e-01_rb,&
-       & 9.961566e-01_rb,9.956995e-01_rb,9.952481e-01_rb,9.947982e-01_rb,9.943495e-01_rb,&
-       & 9.938955e-01_rb,9.934368e-01_rb,9.929825e-01_rb,9.925239e-01_rb,9.920653e-01_rb,&
-       & 9.916096e-01_rb,9.911552e-01_rb,9.907067e-01_rb,9.902594e-01_rb,9.898178e-01_rb,&
-       & 9.893791e-01_rb,9.889453e-01_rb,9.885122e-01_rb,9.880837e-01_rb,9.876567e-01_rb,&
-       & 9.872331e-01_rb,9.868121e-01_rb,9.863938e-01_rb,9.859790e-01_rb,9.855650e-01_rb,&
-       & 9.851548e-01_rb,9.847491e-01_rb,9.843496e-01_rb,9.839521e-01_rb,9.835606e-01_rb,&
-       & 9.831771e-01_rb,9.827975e-01_rb,9.824292e-01_rb,9.820653e-01_rb,9.817124e-01_rb,&
-       & 9.813644e-01_rb,9.810291e-01_rb,9.807020e-01_rb,9.803864e-01_rb,9.800782e-01_rb,&
-       & 9.797821e-01_rb,9.794958e-01_rb,9.792179e-01_rb,9.789509e-01_rb,9.786940e-01_rb,&
-       & 9.784460e-01_rb,9.782090e-01_rb,9.779789e-01_rb,9.777553e-01_rb,9.775425e-01_rb,&
-       & 9.773387e-01_rb,9.771420e-01_rb,9.769529e-01_rb /)
+       & 9.988219e-01,9.981767e-01,9.976168e-01,9.971066e-01,9.966195e-01,&
+       & 9.961566e-01,9.956995e-01,9.952481e-01,9.947982e-01,9.943495e-01,&
+       & 9.938955e-01,9.934368e-01,9.929825e-01,9.925239e-01,9.920653e-01,&
+       & 9.916096e-01,9.911552e-01,9.907067e-01,9.902594e-01,9.898178e-01,&
+       & 9.893791e-01,9.889453e-01,9.885122e-01,9.880837e-01,9.876567e-01,&
+       & 9.872331e-01,9.868121e-01,9.863938e-01,9.859790e-01,9.855650e-01,&
+       & 9.851548e-01,9.847491e-01,9.843496e-01,9.839521e-01,9.835606e-01,&
+       & 9.831771e-01,9.827975e-01,9.824292e-01,9.820653e-01,9.817124e-01,&
+       & 9.813644e-01,9.810291e-01,9.807020e-01,9.803864e-01,9.800782e-01,&
+       & 9.797821e-01,9.794958e-01,9.792179e-01,9.789509e-01,9.786940e-01,&
+       & 9.784460e-01,9.782090e-01,9.779789e-01,9.777553e-01,9.775425e-01,&
+       & 9.773387e-01,9.771420e-01,9.769529e-01 /)
 !     BAND  23
       ssaliq1(:, 23) = (/ &
-       & 9.998902e-01_rb,9.998395e-01_rb,9.997915e-01_rb,9.997442e-01_rb,9.997016e-01_rb,&
-       & 9.996600e-01_rb,9.996200e-01_rb,9.995806e-01_rb,9.995411e-01_rb,9.995005e-01_rb,&
-       & 9.994589e-01_rb,9.994178e-01_rb,9.993766e-01_rb,9.993359e-01_rb,9.992948e-01_rb,&
-       & 9.992533e-01_rb,9.992120e-01_rb,9.991723e-01_rb,9.991313e-01_rb,9.990906e-01_rb,&
-       & 9.990510e-01_rb,9.990113e-01_rb,9.989716e-01_rb,9.989323e-01_rb,9.988923e-01_rb,&
-       & 9.988532e-01_rb,9.988140e-01_rb,9.987761e-01_rb,9.987373e-01_rb,9.986989e-01_rb,&
-       & 9.986597e-01_rb,9.986239e-01_rb,9.985861e-01_rb,9.985485e-01_rb,9.985123e-01_rb,&
-       & 9.984762e-01_rb,9.984415e-01_rb,9.984065e-01_rb,9.983722e-01_rb,9.983398e-01_rb,&
-       & 9.983078e-01_rb,9.982758e-01_rb,9.982461e-01_rb,9.982157e-01_rb,9.981872e-01_rb,&
-       & 9.981595e-01_rb,9.981324e-01_rb,9.981068e-01_rb,9.980811e-01_rb,9.980580e-01_rb,&
-       & 9.980344e-01_rb,9.980111e-01_rb,9.979908e-01_rb,9.979690e-01_rb,9.979492e-01_rb,&
-       & 9.979316e-01_rb,9.979116e-01_rb,9.978948e-01_rb /)
+       & 9.998902e-01,9.998395e-01,9.997915e-01,9.997442e-01,9.997016e-01,&
+       & 9.996600e-01,9.996200e-01,9.995806e-01,9.995411e-01,9.995005e-01,&
+       & 9.994589e-01,9.994178e-01,9.993766e-01,9.993359e-01,9.992948e-01,&
+       & 9.992533e-01,9.992120e-01,9.991723e-01,9.991313e-01,9.990906e-01,&
+       & 9.990510e-01,9.990113e-01,9.989716e-01,9.989323e-01,9.988923e-01,&
+       & 9.988532e-01,9.988140e-01,9.987761e-01,9.987373e-01,9.986989e-01,&
+       & 9.986597e-01,9.986239e-01,9.985861e-01,9.985485e-01,9.985123e-01,&
+       & 9.984762e-01,9.984415e-01,9.984065e-01,9.983722e-01,9.983398e-01,&
+       & 9.983078e-01,9.982758e-01,9.982461e-01,9.982157e-01,9.981872e-01,&
+       & 9.981595e-01,9.981324e-01,9.981068e-01,9.980811e-01,9.980580e-01,&
+       & 9.980344e-01,9.980111e-01,9.979908e-01,9.979690e-01,9.979492e-01,&
+       & 9.979316e-01,9.979116e-01,9.978948e-01 /)
 !     BAND  24
       ssaliq1(:, 24) = (/ &
-       & 9.999978e-01_rb,9.999948e-01_rb,9.999915e-01_rb,9.999905e-01_rb,9.999896e-01_rb,&
-       & 9.999887e-01_rb,9.999888e-01_rb,9.999888e-01_rb,9.999870e-01_rb,9.999854e-01_rb,&
-       & 9.999855e-01_rb,9.999856e-01_rb,9.999839e-01_rb,9.999834e-01_rb,9.999829e-01_rb,&
-       & 9.999809e-01_rb,9.999816e-01_rb,9.999793e-01_rb,9.999782e-01_rb,9.999779e-01_rb,&
-       & 9.999772e-01_rb,9.999764e-01_rb,9.999756e-01_rb,9.999744e-01_rb,9.999744e-01_rb,&
-       & 9.999736e-01_rb,9.999729e-01_rb,9.999716e-01_rb,9.999706e-01_rb,9.999692e-01_rb,&
-       & 9.999690e-01_rb,9.999675e-01_rb,9.999673e-01_rb,9.999660e-01_rb,9.999654e-01_rb,&
-       & 9.999647e-01_rb,9.999647e-01_rb,9.999625e-01_rb,9.999620e-01_rb,9.999614e-01_rb,&
-       & 9.999613e-01_rb,9.999607e-01_rb,9.999604e-01_rb,9.999594e-01_rb,9.999589e-01_rb,&
-       & 9.999586e-01_rb,9.999567e-01_rb,9.999550e-01_rb,9.999557e-01_rb,9.999542e-01_rb,&
-       & 9.999546e-01_rb,9.999539e-01_rb,9.999536e-01_rb,9.999526e-01_rb,9.999523e-01_rb,&
-       & 9.999508e-01_rb,9.999534e-01_rb,9.999507e-01_rb /)
+       & 9.999978e-01,9.999948e-01,9.999915e-01,9.999905e-01,9.999896e-01,&
+       & 9.999887e-01,9.999888e-01,9.999888e-01,9.999870e-01,9.999854e-01,&
+       & 9.999855e-01,9.999856e-01,9.999839e-01,9.999834e-01,9.999829e-01,&
+       & 9.999809e-01,9.999816e-01,9.999793e-01,9.999782e-01,9.999779e-01,&
+       & 9.999772e-01,9.999764e-01,9.999756e-01,9.999744e-01,9.999744e-01,&
+       & 9.999736e-01,9.999729e-01,9.999716e-01,9.999706e-01,9.999692e-01,&
+       & 9.999690e-01,9.999675e-01,9.999673e-01,9.999660e-01,9.999654e-01,&
+       & 9.999647e-01,9.999647e-01,9.999625e-01,9.999620e-01,9.999614e-01,&
+       & 9.999613e-01,9.999607e-01,9.999604e-01,9.999594e-01,9.999589e-01,&
+       & 9.999586e-01,9.999567e-01,9.999550e-01,9.999557e-01,9.999542e-01,&
+       & 9.999546e-01,9.999539e-01,9.999536e-01,9.999526e-01,9.999523e-01,&
+       & 9.999508e-01,9.999534e-01,9.999507e-01 /)
 !     BAND  25
       ssaliq1(:, 25) = (/ &
-       & 1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,&
-       & 1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,&
-       & 1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,&
-       & 1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,9.999995e-01_rb,&
-       & 9.999995e-01_rb,9.999990e-01_rb,9.999991e-01_rb,9.999991e-01_rb,9.999990e-01_rb,&
-       & 9.999989e-01_rb,9.999988e-01_rb,9.999988e-01_rb,9.999986e-01_rb,9.999988e-01_rb,&
-       & 9.999986e-01_rb,9.999987e-01_rb,9.999986e-01_rb,9.999985e-01_rb,9.999985e-01_rb,&
-       & 9.999985e-01_rb,9.999985e-01_rb,9.999983e-01_rb,9.999983e-01_rb,9.999981e-01_rb,&
-       & 9.999981e-01_rb,9.999986e-01_rb,9.999985e-01_rb,9.999983e-01_rb,9.999984e-01_rb,&
-       & 9.999982e-01_rb,9.999983e-01_rb,9.999982e-01_rb,9.999980e-01_rb,9.999981e-01_rb,&
-       & 9.999978e-01_rb,9.999979e-01_rb,9.999985e-01_rb,9.999985e-01_rb,9.999983e-01_rb,&
-       & 9.999983e-01_rb,9.999983e-01_rb,9.999983e-01_rb /)
+       & 1.000000e+00,1.000000e+00,1.000000e+00,1.000000e+00,1.000000e+00,&
+       & 1.000000e+00,1.000000e+00,1.000000e+00,1.000000e+00,1.000000e+00,&
+       & 1.000000e+00,1.000000e+00,1.000000e+00,1.000000e+00,1.000000e+00,&
+       & 1.000000e+00,1.000000e+00,1.000000e+00,1.000000e+00,9.999995e-01,&
+       & 9.999995e-01,9.999990e-01,9.999991e-01,9.999991e-01,9.999990e-01,&
+       & 9.999989e-01,9.999988e-01,9.999988e-01,9.999986e-01,9.999988e-01,&
+       & 9.999986e-01,9.999987e-01,9.999986e-01,9.999985e-01,9.999985e-01,&
+       & 9.999985e-01,9.999985e-01,9.999983e-01,9.999983e-01,9.999981e-01,&
+       & 9.999981e-01,9.999986e-01,9.999985e-01,9.999983e-01,9.999984e-01,&
+       & 9.999982e-01,9.999983e-01,9.999982e-01,9.999980e-01,9.999981e-01,&
+       & 9.999978e-01,9.999979e-01,9.999985e-01,9.999985e-01,9.999983e-01,&
+       & 9.999983e-01,9.999983e-01,9.999983e-01 /)
 !     BAND  26
       ssaliq1(:, 26) = (/ &
-       & 1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,&
-       & 1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,&
-       & 1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,&
-       & 1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,1.000000e+00_rb,9.999991e-01_rb,&
-       & 9.999990e-01_rb,9.999992e-01_rb,9.999995e-01_rb,9.999986e-01_rb,9.999994e-01_rb,&
-       & 9.999985e-01_rb,9.999980e-01_rb,9.999984e-01_rb,9.999983e-01_rb,9.999979e-01_rb,&
-       & 9.999969e-01_rb,9.999977e-01_rb,9.999971e-01_rb,9.999969e-01_rb,9.999969e-01_rb,&
-       & 9.999965e-01_rb,9.999970e-01_rb,9.999985e-01_rb,9.999973e-01_rb,9.999961e-01_rb,&
-       & 9.999968e-01_rb,9.999952e-01_rb,9.999970e-01_rb,9.999974e-01_rb,9.999965e-01_rb,&
-       & 9.999969e-01_rb,9.999970e-01_rb,9.999970e-01_rb,9.999960e-01_rb,9.999923e-01_rb,&
-       & 9.999958e-01_rb,9.999937e-01_rb,9.999960e-01_rb,9.999953e-01_rb,9.999946e-01_rb,&
-       & 9.999946e-01_rb,9.999957e-01_rb,9.999951e-01_rb /)
+       & 1.000000e+00,1.000000e+00,1.000000e+00,1.000000e+00,1.000000e+00,&
+       & 1.000000e+00,1.000000e+00,1.000000e+00,1.000000e+00,1.000000e+00,&
+       & 1.000000e+00,1.000000e+00,1.000000e+00,1.000000e+00,1.000000e+00,&
+       & 1.000000e+00,1.000000e+00,1.000000e+00,1.000000e+00,9.999991e-01,&
+       & 9.999990e-01,9.999992e-01,9.999995e-01,9.999986e-01,9.999994e-01,&
+       & 9.999985e-01,9.999980e-01,9.999984e-01,9.999983e-01,9.999979e-01,&
+       & 9.999969e-01,9.999977e-01,9.999971e-01,9.999969e-01,9.999969e-01,&
+       & 9.999965e-01,9.999970e-01,9.999985e-01,9.999973e-01,9.999961e-01,&
+       & 9.999968e-01,9.999952e-01,9.999970e-01,9.999974e-01,9.999965e-01,&
+       & 9.999969e-01,9.999970e-01,9.999970e-01,9.999960e-01,9.999923e-01,&
+       & 9.999958e-01,9.999937e-01,9.999960e-01,9.999953e-01,9.999946e-01,&
+       & 9.999946e-01,9.999957e-01,9.999951e-01 /)
 !     BAND  27
       ssaliq1(:, 27) = (/ &
-       & 1.000000e+00_rb,1.000000e+00_rb,9.999983e-01_rb,9.999979e-01_rb,9.999965e-01_rb,&
-       & 9.999949e-01_rb,9.999948e-01_rb,9.999918e-01_rb,9.999917e-01_rb,9.999923e-01_rb,&
-       & 9.999908e-01_rb,9.999889e-01_rb,9.999902e-01_rb,9.999895e-01_rb,9.999881e-01_rb,&
-       & 9.999882e-01_rb,9.999876e-01_rb,9.999866e-01_rb,9.999866e-01_rb,9.999858e-01_rb,&
-       & 9.999860e-01_rb,9.999852e-01_rb,9.999836e-01_rb,9.999831e-01_rb,9.999818e-01_rb,&
-       & 9.999808e-01_rb,9.999816e-01_rb,9.999800e-01_rb,9.999783e-01_rb,9.999780e-01_rb,&
-       & 9.999763e-01_rb,9.999746e-01_rb,9.999731e-01_rb,9.999713e-01_rb,9.999762e-01_rb,&
-       & 9.999740e-01_rb,9.999670e-01_rb,9.999703e-01_rb,9.999687e-01_rb,9.999666e-01_rb,&
-       & 9.999683e-01_rb,9.999667e-01_rb,9.999611e-01_rb,9.999635e-01_rb,9.999600e-01_rb,&
-       & 9.999635e-01_rb,9.999594e-01_rb,9.999601e-01_rb,9.999586e-01_rb,9.999559e-01_rb,&
-       & 9.999569e-01_rb,9.999558e-01_rb,9.999523e-01_rb,9.999535e-01_rb,9.999529e-01_rb,&
-       & 9.999553e-01_rb,9.999495e-01_rb,9.999490e-01_rb /)
+       & 1.000000e+00,1.000000e+00,9.999983e-01,9.999979e-01,9.999965e-01,&
+       & 9.999949e-01,9.999948e-01,9.999918e-01,9.999917e-01,9.999923e-01,&
+       & 9.999908e-01,9.999889e-01,9.999902e-01,9.999895e-01,9.999881e-01,&
+       & 9.999882e-01,9.999876e-01,9.999866e-01,9.999866e-01,9.999858e-01,&
+       & 9.999860e-01,9.999852e-01,9.999836e-01,9.999831e-01,9.999818e-01,&
+       & 9.999808e-01,9.999816e-01,9.999800e-01,9.999783e-01,9.999780e-01,&
+       & 9.999763e-01,9.999746e-01,9.999731e-01,9.999713e-01,9.999762e-01,&
+       & 9.999740e-01,9.999670e-01,9.999703e-01,9.999687e-01,9.999666e-01,&
+       & 9.999683e-01,9.999667e-01,9.999611e-01,9.999635e-01,9.999600e-01,&
+       & 9.999635e-01,9.999594e-01,9.999601e-01,9.999586e-01,9.999559e-01,&
+       & 9.999569e-01,9.999558e-01,9.999523e-01,9.999535e-01,9.999529e-01,&
+       & 9.999553e-01,9.999495e-01,9.999490e-01 /)
 !     BAND  28
       ssaliq1(:, 28) = (/ &
-       & 9.999920e-01_rb,9.999873e-01_rb,9.999855e-01_rb,9.999832e-01_rb,9.999807e-01_rb,&
-       & 9.999778e-01_rb,9.999754e-01_rb,9.999721e-01_rb,9.999692e-01_rb,9.999651e-01_rb,&
-       & 9.999621e-01_rb,9.999607e-01_rb,9.999567e-01_rb,9.999546e-01_rb,9.999521e-01_rb,&
-       & 9.999491e-01_rb,9.999457e-01_rb,9.999439e-01_rb,9.999403e-01_rb,9.999374e-01_rb,&
-       & 9.999353e-01_rb,9.999315e-01_rb,9.999282e-01_rb,9.999244e-01_rb,9.999234e-01_rb,&
-       & 9.999189e-01_rb,9.999130e-01_rb,9.999117e-01_rb,9.999073e-01_rb,9.999020e-01_rb,&
-       & 9.998993e-01_rb,9.998987e-01_rb,9.998922e-01_rb,9.998893e-01_rb,9.998869e-01_rb,&
-       & 9.998805e-01_rb,9.998778e-01_rb,9.998751e-01_rb,9.998708e-01_rb,9.998676e-01_rb,&
-       & 9.998624e-01_rb,9.998642e-01_rb,9.998582e-01_rb,9.998547e-01_rb,9.998546e-01_rb,&
-       & 9.998477e-01_rb,9.998487e-01_rb,9.998466e-01_rb,9.998403e-01_rb,9.998412e-01_rb,&
-       & 9.998406e-01_rb,9.998342e-01_rb,9.998326e-01_rb,9.998333e-01_rb,9.998328e-01_rb,&
-       & 9.998290e-01_rb,9.998276e-01_rb,9.998249e-01_rb /)
+       & 9.999920e-01,9.999873e-01,9.999855e-01,9.999832e-01,9.999807e-01,&
+       & 9.999778e-01,9.999754e-01,9.999721e-01,9.999692e-01,9.999651e-01,&
+       & 9.999621e-01,9.999607e-01,9.999567e-01,9.999546e-01,9.999521e-01,&
+       & 9.999491e-01,9.999457e-01,9.999439e-01,9.999403e-01,9.999374e-01,&
+       & 9.999353e-01,9.999315e-01,9.999282e-01,9.999244e-01,9.999234e-01,&
+       & 9.999189e-01,9.999130e-01,9.999117e-01,9.999073e-01,9.999020e-01,&
+       & 9.998993e-01,9.998987e-01,9.998922e-01,9.998893e-01,9.998869e-01,&
+       & 9.998805e-01,9.998778e-01,9.998751e-01,9.998708e-01,9.998676e-01,&
+       & 9.998624e-01,9.998642e-01,9.998582e-01,9.998547e-01,9.998546e-01,&
+       & 9.998477e-01,9.998487e-01,9.998466e-01,9.998403e-01,9.998412e-01,&
+       & 9.998406e-01,9.998342e-01,9.998326e-01,9.998333e-01,9.998328e-01,&
+       & 9.998290e-01,9.998276e-01,9.998249e-01 /)
 !     BAND  29
       ssaliq1(:, 29) = (/ &
-       & 8.383753e-01_rb,8.461471e-01_rb,8.373325e-01_rb,8.212889e-01_rb,8.023834e-01_rb,&
-       & 7.829501e-01_rb,7.641777e-01_rb,7.466000e-01_rb,7.304023e-01_rb,7.155998e-01_rb,&
-       & 7.021259e-01_rb,6.898840e-01_rb,6.787615e-01_rb,6.686479e-01_rb,6.594414e-01_rb,&
-       & 6.510417e-01_rb,6.433668e-01_rb,6.363335e-01_rb,6.298788e-01_rb,6.239398e-01_rb,&
-       & 6.184633e-01_rb,6.134055e-01_rb,6.087228e-01_rb,6.043786e-01_rb,6.003439e-01_rb,&
-       & 5.965910e-01_rb,5.930917e-01_rb,5.898280e-01_rb,5.867798e-01_rb,5.839264e-01_rb,&
-       & 5.812576e-01_rb,5.787592e-01_rb,5.764163e-01_rb,5.742189e-01_rb,5.721598e-01_rb,&
-       & 5.702286e-01_rb,5.684182e-01_rb,5.667176e-01_rb,5.651237e-01_rb,5.636253e-01_rb,&
-       & 5.622228e-01_rb,5.609074e-01_rb,5.596713e-01_rb,5.585089e-01_rb,5.574223e-01_rb,&
-       & 5.564002e-01_rb,5.554411e-01_rb,5.545397e-01_rb,5.536914e-01_rb,5.528967e-01_rb,&
-       & 5.521495e-01_rb,5.514457e-01_rb,5.507818e-01_rb,5.501623e-01_rb,5.495750e-01_rb,&
-       & 5.490192e-01_rb,5.484980e-01_rb,5.480046e-01_rb /)
+       & 8.383753e-01,8.461471e-01,8.373325e-01,8.212889e-01,8.023834e-01,&
+       & 7.829501e-01,7.641777e-01,7.466000e-01,7.304023e-01,7.155998e-01,&
+       & 7.021259e-01,6.898840e-01,6.787615e-01,6.686479e-01,6.594414e-01,&
+       & 6.510417e-01,6.433668e-01,6.363335e-01,6.298788e-01,6.239398e-01,&
+       & 6.184633e-01,6.134055e-01,6.087228e-01,6.043786e-01,6.003439e-01,&
+       & 5.965910e-01,5.930917e-01,5.898280e-01,5.867798e-01,5.839264e-01,&
+       & 5.812576e-01,5.787592e-01,5.764163e-01,5.742189e-01,5.721598e-01,&
+       & 5.702286e-01,5.684182e-01,5.667176e-01,5.651237e-01,5.636253e-01,&
+       & 5.622228e-01,5.609074e-01,5.596713e-01,5.585089e-01,5.574223e-01,&
+       & 5.564002e-01,5.554411e-01,5.545397e-01,5.536914e-01,5.528967e-01,&
+       & 5.521495e-01,5.514457e-01,5.507818e-01,5.501623e-01,5.495750e-01,&
+       & 5.490192e-01,5.484980e-01,5.480046e-01 /)
+
+! Asymmetry parameter
 !     BAND  16
       asyliq1(:, 16) = (/ &
-       & 8.038165e-01_rb,8.014154e-01_rb,7.942381e-01_rb,7.970521e-01_rb,8.086621e-01_rb,&
-       & 8.233392e-01_rb,8.374127e-01_rb,8.495742e-01_rb,8.596945e-01_rb,8.680497e-01_rb,&
-       & 8.750005e-01_rb,8.808589e-01_rb,8.858749e-01_rb,8.902403e-01_rb,8.940939e-01_rb,&
-       & 8.975379e-01_rb,9.006450e-01_rb,9.034741e-01_rb,9.060659e-01_rb,9.084561e-01_rb,&
-       & 9.106675e-01_rb,9.127198e-01_rb,9.146332e-01_rb,9.164194e-01_rb,9.180970e-01_rb,&
-       & 9.196658e-01_rb,9.211421e-01_rb,9.225352e-01_rb,9.238443e-01_rb,9.250841e-01_rb,&
-       & 9.262541e-01_rb,9.273620e-01_rb,9.284081e-01_rb,9.294002e-01_rb,9.303395e-01_rb,&
-       & 9.312285e-01_rb,9.320715e-01_rb,9.328716e-01_rb,9.336271e-01_rb,9.343427e-01_rb,&
-       & 9.350219e-01_rb,9.356647e-01_rb,9.362728e-01_rb,9.368495e-01_rb,9.373956e-01_rb,&
-       & 9.379113e-01_rb,9.383987e-01_rb,9.388608e-01_rb,9.392986e-01_rb,9.397132e-01_rb,&
-       & 9.401063e-01_rb,9.404776e-01_rb,9.408299e-01_rb,9.411641e-01_rb,9.414800e-01_rb,&
-       & 9.417787e-01_rb,9.420633e-01_rb,9.423364e-01_rb /)
+       & 8.038165e-01,8.014154e-01,7.942381e-01,7.970521e-01,8.086621e-01,&
+       & 8.233392e-01,8.374127e-01,8.495742e-01,8.596945e-01,8.680497e-01,&
+       & 8.750005e-01,8.808589e-01,8.858749e-01,8.902403e-01,8.940939e-01,&
+       & 8.975379e-01,9.006450e-01,9.034741e-01,9.060659e-01,9.084561e-01,&
+       & 9.106675e-01,9.127198e-01,9.146332e-01,9.164194e-01,9.180970e-01,&
+       & 9.196658e-01,9.211421e-01,9.225352e-01,9.238443e-01,9.250841e-01,&
+       & 9.262541e-01,9.273620e-01,9.284081e-01,9.294002e-01,9.303395e-01,&
+       & 9.312285e-01,9.320715e-01,9.328716e-01,9.336271e-01,9.343427e-01,&
+       & 9.350219e-01,9.356647e-01,9.362728e-01,9.368495e-01,9.373956e-01,&
+       & 9.379113e-01,9.383987e-01,9.388608e-01,9.392986e-01,9.397132e-01,&
+       & 9.401063e-01,9.404776e-01,9.408299e-01,9.411641e-01,9.414800e-01,&
+       & 9.417787e-01,9.420633e-01,9.423364e-01 /)
 !     BAND  17
       asyliq1(:, 17) = (/ &
-       & 8.941000e-01_rb,9.054049e-01_rb,9.049510e-01_rb,9.027216e-01_rb,9.021636e-01_rb,&
-       & 9.037878e-01_rb,9.069852e-01_rb,9.109817e-01_rb,9.152013e-01_rb,9.193040e-01_rb,&
-       & 9.231177e-01_rb,9.265712e-01_rb,9.296606e-01_rb,9.324048e-01_rb,9.348419e-01_rb,&
-       & 9.370131e-01_rb,9.389529e-01_rb,9.406954e-01_rb,9.422727e-01_rb,9.437088e-01_rb,&
-       & 9.450221e-01_rb,9.462308e-01_rb,9.473488e-01_rb,9.483830e-01_rb,9.493492e-01_rb,&
-       & 9.502541e-01_rb,9.510999e-01_rb,9.518971e-01_rb,9.526455e-01_rb,9.533554e-01_rb,&
-       & 9.540249e-01_rb,9.546571e-01_rb,9.552551e-01_rb,9.558258e-01_rb,9.563603e-01_rb,&
-       & 9.568713e-01_rb,9.573569e-01_rb,9.578141e-01_rb,9.582485e-01_rb,9.586604e-01_rb,&
-       & 9.590525e-01_rb,9.594218e-01_rb,9.597710e-01_rb,9.601052e-01_rb,9.604181e-01_rb,&
-       & 9.607159e-01_rb,9.609979e-01_rb,9.612655e-01_rb,9.615184e-01_rb,9.617564e-01_rb,&
-       & 9.619860e-01_rb,9.622009e-01_rb,9.624031e-01_rb,9.625957e-01_rb,9.627792e-01_rb,&
-       & 9.629530e-01_rb,9.631171e-01_rb,9.632746e-01_rb /)
+       & 8.941000e-01,9.054049e-01,9.049510e-01,9.027216e-01,9.021636e-01,&
+       & 9.037878e-01,9.069852e-01,9.109817e-01,9.152013e-01,9.193040e-01,&
+       & 9.231177e-01,9.265712e-01,9.296606e-01,9.324048e-01,9.348419e-01,&
+       & 9.370131e-01,9.389529e-01,9.406954e-01,9.422727e-01,9.437088e-01,&
+       & 9.450221e-01,9.462308e-01,9.473488e-01,9.483830e-01,9.493492e-01,&
+       & 9.502541e-01,9.510999e-01,9.518971e-01,9.526455e-01,9.533554e-01,&
+       & 9.540249e-01,9.546571e-01,9.552551e-01,9.558258e-01,9.563603e-01,&
+       & 9.568713e-01,9.573569e-01,9.578141e-01,9.582485e-01,9.586604e-01,&
+       & 9.590525e-01,9.594218e-01,9.597710e-01,9.601052e-01,9.604181e-01,&
+       & 9.607159e-01,9.609979e-01,9.612655e-01,9.615184e-01,9.617564e-01,&
+       & 9.619860e-01,9.622009e-01,9.624031e-01,9.625957e-01,9.627792e-01,&
+       & 9.629530e-01,9.631171e-01,9.632746e-01 /)
 !     BAND  18
       asyliq1(:, 18) = (/ &
-       & 8.574638e-01_rb,8.351383e-01_rb,8.142977e-01_rb,8.083068e-01_rb,8.129284e-01_rb,&
-       & 8.215827e-01_rb,8.307238e-01_rb,8.389963e-01_rb,8.460481e-01_rb,8.519273e-01_rb,&
-       & 8.568153e-01_rb,8.609116e-01_rb,8.643892e-01_rb,8.673941e-01_rb,8.700248e-01_rb,&
-       & 8.723707e-01_rb,8.744902e-01_rb,8.764240e-01_rb,8.782057e-01_rb,8.798593e-01_rb,&
-       & 8.814063e-01_rb,8.828573e-01_rb,8.842261e-01_rb,8.855196e-01_rb,8.867497e-01_rb,&
-       & 8.879164e-01_rb,8.890316e-01_rb,8.900941e-01_rb,8.911118e-01_rb,8.920832e-01_rb,&
-       & 8.930156e-01_rb,8.939091e-01_rb,8.947663e-01_rb,8.955888e-01_rb,8.963786e-01_rb,&
-       & 8.971350e-01_rb,8.978617e-01_rb,8.985590e-01_rb,8.992243e-01_rb,8.998631e-01_rb,&
-       & 9.004753e-01_rb,9.010602e-01_rb,9.016192e-01_rb,9.021542e-01_rb,9.026644e-01_rb,&
-       & 9.031535e-01_rb,9.036194e-01_rb,9.040656e-01_rb,9.044894e-01_rb,9.048933e-01_rb,&
-       & 9.052789e-01_rb,9.056481e-01_rb,9.060004e-01_rb,9.063343e-01_rb,9.066544e-01_rb,&
-       & 9.069604e-01_rb,9.072512e-01_rb,9.075290e-01_rb /)
+       & 8.574638e-01,8.351383e-01,8.142977e-01,8.083068e-01,8.129284e-01,&
+       & 8.215827e-01,8.307238e-01,8.389963e-01,8.460481e-01,8.519273e-01,&
+       & 8.568153e-01,8.609116e-01,8.643892e-01,8.673941e-01,8.700248e-01,&
+       & 8.723707e-01,8.744902e-01,8.764240e-01,8.782057e-01,8.798593e-01,&
+       & 8.814063e-01,8.828573e-01,8.842261e-01,8.855196e-01,8.867497e-01,&
+       & 8.879164e-01,8.890316e-01,8.900941e-01,8.911118e-01,8.920832e-01,&
+       & 8.930156e-01,8.939091e-01,8.947663e-01,8.955888e-01,8.963786e-01,&
+       & 8.971350e-01,8.978617e-01,8.985590e-01,8.992243e-01,8.998631e-01,&
+       & 9.004753e-01,9.010602e-01,9.016192e-01,9.021542e-01,9.026644e-01,&
+       & 9.031535e-01,9.036194e-01,9.040656e-01,9.044894e-01,9.048933e-01,&
+       & 9.052789e-01,9.056481e-01,9.060004e-01,9.063343e-01,9.066544e-01,&
+       & 9.069604e-01,9.072512e-01,9.075290e-01 /)
 !     BAND  19
       asyliq1(:, 19) = (/ &
-       & 8.349569e-01_rb,8.034579e-01_rb,7.932136e-01_rb,8.010156e-01_rb,8.137083e-01_rb,&
-       & 8.255339e-01_rb,8.351938e-01_rb,8.428286e-01_rb,8.488944e-01_rb,8.538187e-01_rb,&
-       & 8.579255e-01_rb,8.614473e-01_rb,8.645338e-01_rb,8.672908e-01_rb,8.697947e-01_rb,&
-       & 8.720843e-01_rb,8.742015e-01_rb,8.761718e-01_rb,8.780160e-01_rb,8.797479e-01_rb,&
-       & 8.813810e-01_rb,8.829250e-01_rb,8.843907e-01_rb,8.857822e-01_rb,8.871059e-01_rb,&
-       & 8.883724e-01_rb,8.895810e-01_rb,8.907384e-01_rb,8.918456e-01_rb,8.929083e-01_rb,&
-       & 8.939284e-01_rb,8.949060e-01_rb,8.958463e-01_rb,8.967486e-01_rb,8.976129e-01_rb,&
-       & 8.984463e-01_rb,8.992439e-01_rb,9.000094e-01_rb,9.007438e-01_rb,9.014496e-01_rb,&
-       & 9.021235e-01_rb,9.027699e-01_rb,9.033859e-01_rb,9.039772e-01_rb,9.045419e-01_rb,&
-       & 9.050819e-01_rb,9.055975e-01_rb,9.060907e-01_rb,9.065607e-01_rb,9.070093e-01_rb,&
-       & 9.074389e-01_rb,9.078475e-01_rb,9.082388e-01_rb,9.086117e-01_rb,9.089678e-01_rb,&
-       & 9.093081e-01_rb,9.096307e-01_rb,9.099410e-01_rb /)
+       & 8.349569e-01,8.034579e-01,7.932136e-01,8.010156e-01,8.137083e-01,&
+       & 8.255339e-01,8.351938e-01,8.428286e-01,8.488944e-01,8.538187e-01,&
+       & 8.579255e-01,8.614473e-01,8.645338e-01,8.672908e-01,8.697947e-01,&
+       & 8.720843e-01,8.742015e-01,8.761718e-01,8.780160e-01,8.797479e-01,&
+       & 8.813810e-01,8.829250e-01,8.843907e-01,8.857822e-01,8.871059e-01,&
+       & 8.883724e-01,8.895810e-01,8.907384e-01,8.918456e-01,8.929083e-01,&
+       & 8.939284e-01,8.949060e-01,8.958463e-01,8.967486e-01,8.976129e-01,&
+       & 8.984463e-01,8.992439e-01,9.000094e-01,9.007438e-01,9.014496e-01,&
+       & 9.021235e-01,9.027699e-01,9.033859e-01,9.039772e-01,9.045419e-01,&
+       & 9.050819e-01,9.055975e-01,9.060907e-01,9.065607e-01,9.070093e-01,&
+       & 9.074389e-01,9.078475e-01,9.082388e-01,9.086117e-01,9.089678e-01,&
+       & 9.093081e-01,9.096307e-01,9.099410e-01 /)
 !     BAND  20
       asyliq1(:, 20) = (/ &
-       & 8.109692e-01_rb,7.846657e-01_rb,7.881928e-01_rb,8.009509e-01_rb,8.131208e-01_rb,&
-       & 8.230400e-01_rb,8.309448e-01_rb,8.372920e-01_rb,8.424837e-01_rb,8.468166e-01_rb,&
-       & 8.504947e-01_rb,8.536642e-01_rb,8.564256e-01_rb,8.588513e-01_rb,8.610011e-01_rb,&
-       & 8.629122e-01_rb,8.646262e-01_rb,8.661720e-01_rb,8.675752e-01_rb,8.688582e-01_rb,&
-       & 8.700379e-01_rb,8.711300e-01_rb,8.721485e-01_rb,8.731027e-01_rb,8.740010e-01_rb,&
-       & 8.748499e-01_rb,8.756564e-01_rb,8.764239e-01_rb,8.771542e-01_rb,8.778523e-01_rb,&
-       & 8.785211e-01_rb,8.791601e-01_rb,8.797725e-01_rb,8.803589e-01_rb,8.809173e-01_rb,&
-       & 8.814552e-01_rb,8.819705e-01_rb,8.824611e-01_rb,8.829311e-01_rb,8.833791e-01_rb,&
-       & 8.838078e-01_rb,8.842148e-01_rb,8.846044e-01_rb,8.849756e-01_rb,8.853291e-01_rb,&
-       & 8.856645e-01_rb,8.859841e-01_rb,8.862904e-01_rb,8.865801e-01_rb,8.868551e-01_rb,&
-       & 8.871182e-01_rb,8.873673e-01_rb,8.876059e-01_rb,8.878307e-01_rb,8.880462e-01_rb,&
-       & 8.882501e-01_rb,8.884453e-01_rb,8.886339e-01_rb /)
+       & 8.109692e-01,7.846657e-01,7.881928e-01,8.009509e-01,8.131208e-01,&
+       & 8.230400e-01,8.309448e-01,8.372920e-01,8.424837e-01,8.468166e-01,&
+       & 8.504947e-01,8.536642e-01,8.564256e-01,8.588513e-01,8.610011e-01,&
+       & 8.629122e-01,8.646262e-01,8.661720e-01,8.675752e-01,8.688582e-01,&
+       & 8.700379e-01,8.711300e-01,8.721485e-01,8.731027e-01,8.740010e-01,&
+       & 8.748499e-01,8.756564e-01,8.764239e-01,8.771542e-01,8.778523e-01,&
+       & 8.785211e-01,8.791601e-01,8.797725e-01,8.803589e-01,8.809173e-01,&
+       & 8.814552e-01,8.819705e-01,8.824611e-01,8.829311e-01,8.833791e-01,&
+       & 8.838078e-01,8.842148e-01,8.846044e-01,8.849756e-01,8.853291e-01,&
+       & 8.856645e-01,8.859841e-01,8.862904e-01,8.865801e-01,8.868551e-01,&
+       & 8.871182e-01,8.873673e-01,8.876059e-01,8.878307e-01,8.880462e-01,&
+       & 8.882501e-01,8.884453e-01,8.886339e-01 /)
 !     BAND  21
       asyliq1(:, 21) = (/ &
-       & 7.838510e-01_rb,7.803151e-01_rb,7.980477e-01_rb,8.144160e-01_rb,8.261784e-01_rb,&
-       & 8.344240e-01_rb,8.404278e-01_rb,8.450391e-01_rb,8.487593e-01_rb,8.518741e-01_rb,&
-       & 8.545484e-01_rb,8.568890e-01_rb,8.589560e-01_rb,8.607983e-01_rb,8.624504e-01_rb,&
-       & 8.639408e-01_rb,8.652945e-01_rb,8.665301e-01_rb,8.676634e-01_rb,8.687121e-01_rb,&
-       & 8.696855e-01_rb,8.705933e-01_rb,8.714448e-01_rb,8.722454e-01_rb,8.730014e-01_rb,&
-       & 8.737180e-01_rb,8.743982e-01_rb,8.750436e-01_rb,8.756598e-01_rb,8.762481e-01_rb,&
-       & 8.768089e-01_rb,8.773427e-01_rb,8.778532e-01_rb,8.783434e-01_rb,8.788089e-01_rb,&
-       & 8.792530e-01_rb,8.796784e-01_rb,8.800845e-01_rb,8.804716e-01_rb,8.808411e-01_rb,&
-       & 8.811923e-01_rb,8.815276e-01_rb,8.818472e-01_rb,8.821504e-01_rb,8.824408e-01_rb,&
-       & 8.827155e-01_rb,8.829777e-01_rb,8.832269e-01_rb,8.834631e-01_rb,8.836892e-01_rb,&
-       & 8.839034e-01_rb,8.841075e-01_rb,8.843021e-01_rb,8.844866e-01_rb,8.846631e-01_rb,&
-       & 8.848304e-01_rb,8.849910e-01_rb,8.851425e-01_rb /)
+       & 7.838510e-01,7.803151e-01,7.980477e-01,8.144160e-01,8.261784e-01,&
+       & 8.344240e-01,8.404278e-01,8.450391e-01,8.487593e-01,8.518741e-01,&
+       & 8.545484e-01,8.568890e-01,8.589560e-01,8.607983e-01,8.624504e-01,&
+       & 8.639408e-01,8.652945e-01,8.665301e-01,8.676634e-01,8.687121e-01,&
+       & 8.696855e-01,8.705933e-01,8.714448e-01,8.722454e-01,8.730014e-01,&
+       & 8.737180e-01,8.743982e-01,8.750436e-01,8.756598e-01,8.762481e-01,&
+       & 8.768089e-01,8.773427e-01,8.778532e-01,8.783434e-01,8.788089e-01,&
+       & 8.792530e-01,8.796784e-01,8.800845e-01,8.804716e-01,8.808411e-01,&
+       & 8.811923e-01,8.815276e-01,8.818472e-01,8.821504e-01,8.824408e-01,&
+       & 8.827155e-01,8.829777e-01,8.832269e-01,8.834631e-01,8.836892e-01,&
+       & 8.839034e-01,8.841075e-01,8.843021e-01,8.844866e-01,8.846631e-01,&
+       & 8.848304e-01,8.849910e-01,8.851425e-01 /)
 !     BAND  22
       asyliq1(:, 22) = (/ &
-       & 7.760783e-01_rb,7.890215e-01_rb,8.090192e-01_rb,8.230252e-01_rb,8.321369e-01_rb,&
-       & 8.384258e-01_rb,8.431529e-01_rb,8.469558e-01_rb,8.501499e-01_rb,8.528899e-01_rb,&
-       & 8.552899e-01_rb,8.573956e-01_rb,8.592570e-01_rb,8.609098e-01_rb,8.623897e-01_rb,&
-       & 8.637169e-01_rb,8.649184e-01_rb,8.660097e-01_rb,8.670096e-01_rb,8.679338e-01_rb,&
-       & 8.687896e-01_rb,8.695880e-01_rb,8.703365e-01_rb,8.710422e-01_rb,8.717092e-01_rb,&
-       & 8.723378e-01_rb,8.729363e-01_rb,8.735063e-01_rb,8.740475e-01_rb,8.745661e-01_rb,&
-       & 8.750560e-01_rb,8.755275e-01_rb,8.759731e-01_rb,8.764000e-01_rb,8.768071e-01_rb,&
-       & 8.771942e-01_rb,8.775628e-01_rb,8.779126e-01_rb,8.782483e-01_rb,8.785626e-01_rb,&
-       & 8.788610e-01_rb,8.791482e-01_rb,8.794180e-01_rb,8.796765e-01_rb,8.799207e-01_rb,&
-       & 8.801522e-01_rb,8.803707e-01_rb,8.805777e-01_rb,8.807749e-01_rb,8.809605e-01_rb,&
-       & 8.811362e-01_rb,8.813047e-01_rb,8.814647e-01_rb,8.816131e-01_rb,8.817588e-01_rb,&
-       & 8.818930e-01_rb,8.820230e-01_rb,8.821445e-01_rb /)
+       & 7.760783e-01,7.890215e-01,8.090192e-01,8.230252e-01,8.321369e-01,&
+       & 8.384258e-01,8.431529e-01,8.469558e-01,8.501499e-01,8.528899e-01,&
+       & 8.552899e-01,8.573956e-01,8.592570e-01,8.609098e-01,8.623897e-01,&
+       & 8.637169e-01,8.649184e-01,8.660097e-01,8.670096e-01,8.679338e-01,&
+       & 8.687896e-01,8.695880e-01,8.703365e-01,8.710422e-01,8.717092e-01,&
+       & 8.723378e-01,8.729363e-01,8.735063e-01,8.740475e-01,8.745661e-01,&
+       & 8.750560e-01,8.755275e-01,8.759731e-01,8.764000e-01,8.768071e-01,&
+       & 8.771942e-01,8.775628e-01,8.779126e-01,8.782483e-01,8.785626e-01,&
+       & 8.788610e-01,8.791482e-01,8.794180e-01,8.796765e-01,8.799207e-01,&
+       & 8.801522e-01,8.803707e-01,8.805777e-01,8.807749e-01,8.809605e-01,&
+       & 8.811362e-01,8.813047e-01,8.814647e-01,8.816131e-01,8.817588e-01,&
+       & 8.818930e-01,8.820230e-01,8.821445e-01 /)
 !     BAND  23
       asyliq1(:, 23) = (/ &
-       & 7.847907e-01_rb,8.099917e-01_rb,8.257428e-01_rb,8.350423e-01_rb,8.411971e-01_rb,&
-       & 8.457241e-01_rb,8.493010e-01_rb,8.522565e-01_rb,8.547660e-01_rb,8.569311e-01_rb,&
-       & 8.588181e-01_rb,8.604729e-01_rb,8.619296e-01_rb,8.632208e-01_rb,8.643725e-01_rb,&
-       & 8.654050e-01_rb,8.663363e-01_rb,8.671835e-01_rb,8.679590e-01_rb,8.686707e-01_rb,&
-       & 8.693308e-01_rb,8.699433e-01_rb,8.705147e-01_rb,8.710490e-01_rb,8.715497e-01_rb,&
-       & 8.720219e-01_rb,8.724669e-01_rb,8.728849e-01_rb,8.732806e-01_rb,8.736550e-01_rb,&
-       & 8.740099e-01_rb,8.743435e-01_rb,8.746601e-01_rb,8.749610e-01_rb,8.752449e-01_rb,&
-       & 8.755143e-01_rb,8.757688e-01_rb,8.760095e-01_rb,8.762375e-01_rb,8.764532e-01_rb,&
-       & 8.766579e-01_rb,8.768506e-01_rb,8.770323e-01_rb,8.772049e-01_rb,8.773690e-01_rb,&
-       & 8.775226e-01_rb,8.776679e-01_rb,8.778062e-01_rb,8.779360e-01_rb,8.780587e-01_rb,&
-       & 8.781747e-01_rb,8.782852e-01_rb,8.783892e-01_rb,8.784891e-01_rb,8.785824e-01_rb,&
-       & 8.786705e-01_rb,8.787546e-01_rb,8.788336e-01_rb /)
+       & 7.847907e-01,8.099917e-01,8.257428e-01,8.350423e-01,8.411971e-01,&
+       & 8.457241e-01,8.493010e-01,8.522565e-01,8.547660e-01,8.569311e-01,&
+       & 8.588181e-01,8.604729e-01,8.619296e-01,8.632208e-01,8.643725e-01,&
+       & 8.654050e-01,8.663363e-01,8.671835e-01,8.679590e-01,8.686707e-01,&
+       & 8.693308e-01,8.699433e-01,8.705147e-01,8.710490e-01,8.715497e-01,&
+       & 8.720219e-01,8.724669e-01,8.728849e-01,8.732806e-01,8.736550e-01,&
+       & 8.740099e-01,8.743435e-01,8.746601e-01,8.749610e-01,8.752449e-01,&
+       & 8.755143e-01,8.757688e-01,8.760095e-01,8.762375e-01,8.764532e-01,&
+       & 8.766579e-01,8.768506e-01,8.770323e-01,8.772049e-01,8.773690e-01,&
+       & 8.775226e-01,8.776679e-01,8.778062e-01,8.779360e-01,8.780587e-01,&
+       & 8.781747e-01,8.782852e-01,8.783892e-01,8.784891e-01,8.785824e-01,&
+       & 8.786705e-01,8.787546e-01,8.788336e-01 /)
 !     BAND  24
       asyliq1(:, 24) = (/ &
-       & 8.054324e-01_rb,8.266282e-01_rb,8.378075e-01_rb,8.449848e-01_rb,8.502166e-01_rb,&
-       & 8.542268e-01_rb,8.573477e-01_rb,8.598022e-01_rb,8.617689e-01_rb,8.633859e-01_rb,&
-       & 8.647536e-01_rb,8.659354e-01_rb,8.669807e-01_rb,8.679143e-01_rb,8.687577e-01_rb,&
-       & 8.695222e-01_rb,8.702207e-01_rb,8.708591e-01_rb,8.714446e-01_rb,8.719836e-01_rb,&
-       & 8.724812e-01_rb,8.729426e-01_rb,8.733689e-01_rb,8.737665e-01_rb,8.741373e-01_rb,&
-       & 8.744834e-01_rb,8.748070e-01_rb,8.751131e-01_rb,8.754011e-01_rb,8.756676e-01_rb,&
-       & 8.759219e-01_rb,8.761599e-01_rb,8.763857e-01_rb,8.765984e-01_rb,8.767999e-01_rb,&
-       & 8.769889e-01_rb,8.771669e-01_rb,8.773373e-01_rb,8.774969e-01_rb,8.776469e-01_rb,&
-       & 8.777894e-01_rb,8.779237e-01_rb,8.780505e-01_rb,8.781703e-01_rb,8.782820e-01_rb,&
-       & 8.783886e-01_rb,8.784894e-01_rb,8.785844e-01_rb,8.786736e-01_rb,8.787584e-01_rb,&
-       & 8.788379e-01_rb,8.789130e-01_rb,8.789849e-01_rb,8.790506e-01_rb,8.791141e-01_rb,&
-       & 8.791750e-01_rb,8.792324e-01_rb,8.792867e-01_rb /)
+       & 8.054324e-01,8.266282e-01,8.378075e-01,8.449848e-01,8.502166e-01,&
+       & 8.542268e-01,8.573477e-01,8.598022e-01,8.617689e-01,8.633859e-01,&
+       & 8.647536e-01,8.659354e-01,8.669807e-01,8.679143e-01,8.687577e-01,&
+       & 8.695222e-01,8.702207e-01,8.708591e-01,8.714446e-01,8.719836e-01,&
+       & 8.724812e-01,8.729426e-01,8.733689e-01,8.737665e-01,8.741373e-01,&
+       & 8.744834e-01,8.748070e-01,8.751131e-01,8.754011e-01,8.756676e-01,&
+       & 8.759219e-01,8.761599e-01,8.763857e-01,8.765984e-01,8.767999e-01,&
+       & 8.769889e-01,8.771669e-01,8.773373e-01,8.774969e-01,8.776469e-01,&
+       & 8.777894e-01,8.779237e-01,8.780505e-01,8.781703e-01,8.782820e-01,&
+       & 8.783886e-01,8.784894e-01,8.785844e-01,8.786736e-01,8.787584e-01,&
+       & 8.788379e-01,8.789130e-01,8.789849e-01,8.790506e-01,8.791141e-01,&
+       & 8.791750e-01,8.792324e-01,8.792867e-01 /)
 !     BAND  25
       asyliq1(:, 25) = (/ &
-       & 8.249534e-01_rb,8.391988e-01_rb,8.474107e-01_rb,8.526860e-01_rb,8.563983e-01_rb,&
-       & 8.592389e-01_rb,8.615144e-01_rb,8.633790e-01_rb,8.649325e-01_rb,8.662504e-01_rb,&
-       & 8.673841e-01_rb,8.683741e-01_rb,8.692495e-01_rb,8.700309e-01_rb,8.707328e-01_rb,&
-       & 8.713650e-01_rb,8.719432e-01_rb,8.724676e-01_rb,8.729498e-01_rb,8.733922e-01_rb,&
-       & 8.737981e-01_rb,8.741745e-01_rb,8.745225e-01_rb,8.748467e-01_rb,8.751512e-01_rb,&
-       & 8.754315e-01_rb,8.756962e-01_rb,8.759450e-01_rb,8.761774e-01_rb,8.763945e-01_rb,&
-       & 8.766021e-01_rb,8.767970e-01_rb,8.769803e-01_rb,8.771511e-01_rb,8.773151e-01_rb,&
-       & 8.774689e-01_rb,8.776147e-01_rb,8.777533e-01_rb,8.778831e-01_rb,8.780050e-01_rb,&
-       & 8.781197e-01_rb,8.782301e-01_rb,8.783323e-01_rb,8.784312e-01_rb,8.785222e-01_rb,&
-       & 8.786096e-01_rb,8.786916e-01_rb,8.787688e-01_rb,8.788411e-01_rb,8.789122e-01_rb,&
-       & 8.789762e-01_rb,8.790373e-01_rb,8.790954e-01_rb,8.791514e-01_rb,8.792018e-01_rb,&
-       & 8.792517e-01_rb,8.792990e-01_rb,8.793429e-01_rb /)
+       & 8.249534e-01,8.391988e-01,8.474107e-01,8.526860e-01,8.563983e-01,&
+       & 8.592389e-01,8.615144e-01,8.633790e-01,8.649325e-01,8.662504e-01,&
+       & 8.673841e-01,8.683741e-01,8.692495e-01,8.700309e-01,8.707328e-01,&
+       & 8.713650e-01,8.719432e-01,8.724676e-01,8.729498e-01,8.733922e-01,&
+       & 8.737981e-01,8.741745e-01,8.745225e-01,8.748467e-01,8.751512e-01,&
+       & 8.754315e-01,8.756962e-01,8.759450e-01,8.761774e-01,8.763945e-01,&
+       & 8.766021e-01,8.767970e-01,8.769803e-01,8.771511e-01,8.773151e-01,&
+       & 8.774689e-01,8.776147e-01,8.777533e-01,8.778831e-01,8.780050e-01,&
+       & 8.781197e-01,8.782301e-01,8.783323e-01,8.784312e-01,8.785222e-01,&
+       & 8.786096e-01,8.786916e-01,8.787688e-01,8.788411e-01,8.789122e-01,&
+       & 8.789762e-01,8.790373e-01,8.790954e-01,8.791514e-01,8.792018e-01,&
+       & 8.792517e-01,8.792990e-01,8.793429e-01 /)
 !     BAND  26
       asyliq1(:, 26) = (/ &
-       & 8.323091e-01_rb,8.429776e-01_rb,8.498123e-01_rb,8.546929e-01_rb,8.584295e-01_rb,&
-       & 8.613489e-01_rb,8.636324e-01_rb,8.654303e-01_rb,8.668675e-01_rb,8.680404e-01_rb,&
-       & 8.690174e-01_rb,8.698495e-01_rb,8.705666e-01_rb,8.711961e-01_rb,8.717556e-01_rb,&
-       & 8.722546e-01_rb,8.727063e-01_rb,8.731170e-01_rb,8.734933e-01_rb,8.738382e-01_rb,&
-       & 8.741590e-01_rb,8.744525e-01_rb,8.747295e-01_rb,8.749843e-01_rb,8.752210e-01_rb,&
-       & 8.754437e-01_rb,8.756524e-01_rb,8.758472e-01_rb,8.760288e-01_rb,8.762030e-01_rb,&
-       & 8.763603e-01_rb,8.765122e-01_rb,8.766539e-01_rb,8.767894e-01_rb,8.769130e-01_rb,&
-       & 8.770310e-01_rb,8.771422e-01_rb,8.772437e-01_rb,8.773419e-01_rb,8.774355e-01_rb,&
-       & 8.775221e-01_rb,8.776047e-01_rb,8.776802e-01_rb,8.777539e-01_rb,8.778216e-01_rb,&
-       & 8.778859e-01_rb,8.779473e-01_rb,8.780031e-01_rb,8.780562e-01_rb,8.781097e-01_rb,&
-       & 8.781570e-01_rb,8.782021e-01_rb,8.782463e-01_rb,8.782845e-01_rb,8.783235e-01_rb,&
-       & 8.783610e-01_rb,8.783953e-01_rb,8.784273e-01_rb /)
+       & 8.323091e-01,8.429776e-01,8.498123e-01,8.546929e-01,8.584295e-01,&
+       & 8.613489e-01,8.636324e-01,8.654303e-01,8.668675e-01,8.680404e-01,&
+       & 8.690174e-01,8.698495e-01,8.705666e-01,8.711961e-01,8.717556e-01,&
+       & 8.722546e-01,8.727063e-01,8.731170e-01,8.734933e-01,8.738382e-01,&
+       & 8.741590e-01,8.744525e-01,8.747295e-01,8.749843e-01,8.752210e-01,&
+       & 8.754437e-01,8.756524e-01,8.758472e-01,8.760288e-01,8.762030e-01,&
+       & 8.763603e-01,8.765122e-01,8.766539e-01,8.767894e-01,8.769130e-01,&
+       & 8.770310e-01,8.771422e-01,8.772437e-01,8.773419e-01,8.774355e-01,&
+       & 8.775221e-01,8.776047e-01,8.776802e-01,8.777539e-01,8.778216e-01,&
+       & 8.778859e-01,8.779473e-01,8.780031e-01,8.780562e-01,8.781097e-01,&
+       & 8.781570e-01,8.782021e-01,8.782463e-01,8.782845e-01,8.783235e-01,&
+       & 8.783610e-01,8.783953e-01,8.784273e-01 /)
 !     BAND  27
       asyliq1(:, 27) = (/ &
-       & 8.396448e-01_rb,8.480172e-01_rb,8.535934e-01_rb,8.574145e-01_rb,8.600835e-01_rb,&
-       & 8.620347e-01_rb,8.635500e-01_rb,8.648003e-01_rb,8.658758e-01_rb,8.668248e-01_rb,&
-       & 8.676697e-01_rb,8.684220e-01_rb,8.690893e-01_rb,8.696807e-01_rb,8.702046e-01_rb,&
-       & 8.706676e-01_rb,8.710798e-01_rb,8.714478e-01_rb,8.717778e-01_rb,8.720747e-01_rb,&
-       & 8.723431e-01_rb,8.725889e-01_rb,8.728144e-01_rb,8.730201e-01_rb,8.732129e-01_rb,&
-       & 8.733907e-01_rb,8.735541e-01_rb,8.737100e-01_rb,8.738533e-01_rb,8.739882e-01_rb,&
-       & 8.741164e-01_rb,8.742362e-01_rb,8.743485e-01_rb,8.744530e-01_rb,8.745512e-01_rb,&
-       & 8.746471e-01_rb,8.747373e-01_rb,8.748186e-01_rb,8.748973e-01_rb,8.749732e-01_rb,&
-       & 8.750443e-01_rb,8.751105e-01_rb,8.751747e-01_rb,8.752344e-01_rb,8.752902e-01_rb,&
-       & 8.753412e-01_rb,8.753917e-01_rb,8.754393e-01_rb,8.754843e-01_rb,8.755282e-01_rb,&
-       & 8.755662e-01_rb,8.756039e-01_rb,8.756408e-01_rb,8.756722e-01_rb,8.757072e-01_rb,&
-       & 8.757352e-01_rb,8.757653e-01_rb,8.757932e-01_rb /)
+       & 8.396448e-01,8.480172e-01,8.535934e-01,8.574145e-01,8.600835e-01,&
+       & 8.620347e-01,8.635500e-01,8.648003e-01,8.658758e-01,8.668248e-01,&
+       & 8.676697e-01,8.684220e-01,8.690893e-01,8.696807e-01,8.702046e-01,&
+       & 8.706676e-01,8.710798e-01,8.714478e-01,8.717778e-01,8.720747e-01,&
+       & 8.723431e-01,8.725889e-01,8.728144e-01,8.730201e-01,8.732129e-01,&
+       & 8.733907e-01,8.735541e-01,8.737100e-01,8.738533e-01,8.739882e-01,&
+       & 8.741164e-01,8.742362e-01,8.743485e-01,8.744530e-01,8.745512e-01,&
+       & 8.746471e-01,8.747373e-01,8.748186e-01,8.748973e-01,8.749732e-01,&
+       & 8.750443e-01,8.751105e-01,8.751747e-01,8.752344e-01,8.752902e-01,&
+       & 8.753412e-01,8.753917e-01,8.754393e-01,8.754843e-01,8.755282e-01,&
+       & 8.755662e-01,8.756039e-01,8.756408e-01,8.756722e-01,8.757072e-01,&
+       & 8.757352e-01,8.757653e-01,8.757932e-01 /)
 !     BAND  28
       asyliq1(:, 28) = (/ &
-       & 8.374590e-01_rb,8.465669e-01_rb,8.518701e-01_rb,8.547627e-01_rb,8.565745e-01_rb,&
-       & 8.579065e-01_rb,8.589717e-01_rb,8.598632e-01_rb,8.606363e-01_rb,8.613268e-01_rb,&
-       & 8.619560e-01_rb,8.625340e-01_rb,8.630689e-01_rb,8.635601e-01_rb,8.640084e-01_rb,&
-       & 8.644180e-01_rb,8.647885e-01_rb,8.651220e-01_rb,8.654218e-01_rb,8.656908e-01_rb,&
-       & 8.659294e-01_rb,8.661422e-01_rb,8.663334e-01_rb,8.665037e-01_rb,8.666543e-01_rb,&
-       & 8.667913e-01_rb,8.669156e-01_rb,8.670242e-01_rb,8.671249e-01_rb,8.672161e-01_rb,&
-       & 8.672993e-01_rb,8.673733e-01_rb,8.674457e-01_rb,8.675103e-01_rb,8.675713e-01_rb,&
-       & 8.676267e-01_rb,8.676798e-01_rb,8.677286e-01_rb,8.677745e-01_rb,8.678178e-01_rb,&
-       & 8.678601e-01_rb,8.678986e-01_rb,8.679351e-01_rb,8.679693e-01_rb,8.680013e-01_rb,&
-       & 8.680334e-01_rb,8.680624e-01_rb,8.680915e-01_rb,8.681178e-01_rb,8.681428e-01_rb,&
-       & 8.681654e-01_rb,8.681899e-01_rb,8.682103e-01_rb,8.682317e-01_rb,8.682498e-01_rb,&
-       & 8.682677e-01_rb,8.682861e-01_rb,8.683041e-01_rb /)
+       & 8.374590e-01,8.465669e-01,8.518701e-01,8.547627e-01,8.565745e-01,&
+       & 8.579065e-01,8.589717e-01,8.598632e-01,8.606363e-01,8.613268e-01,&
+       & 8.619560e-01,8.625340e-01,8.630689e-01,8.635601e-01,8.640084e-01,&
+       & 8.644180e-01,8.647885e-01,8.651220e-01,8.654218e-01,8.656908e-01,&
+       & 8.659294e-01,8.661422e-01,8.663334e-01,8.665037e-01,8.666543e-01,&
+       & 8.667913e-01,8.669156e-01,8.670242e-01,8.671249e-01,8.672161e-01,&
+       & 8.672993e-01,8.673733e-01,8.674457e-01,8.675103e-01,8.675713e-01,&
+       & 8.676267e-01,8.676798e-01,8.677286e-01,8.677745e-01,8.678178e-01,&
+       & 8.678601e-01,8.678986e-01,8.679351e-01,8.679693e-01,8.680013e-01,&
+       & 8.680334e-01,8.680624e-01,8.680915e-01,8.681178e-01,8.681428e-01,&
+       & 8.681654e-01,8.681899e-01,8.682103e-01,8.682317e-01,8.682498e-01,&
+       & 8.682677e-01,8.682861e-01,8.683041e-01 /)
 !     BAND  29
       asyliq1(:, 29) = (/ &
-       & 7.877069e-01_rb,8.244281e-01_rb,8.367971e-01_rb,8.409074e-01_rb,8.429859e-01_rb,&
-       & 8.454386e-01_rb,8.489350e-01_rb,8.534141e-01_rb,8.585814e-01_rb,8.641267e-01_rb,&
-       & 8.697999e-01_rb,8.754223e-01_rb,8.808785e-01_rb,8.860944e-01_rb,8.910354e-01_rb,&
-       & 8.956837e-01_rb,9.000392e-01_rb,9.041091e-01_rb,9.079071e-01_rb,9.114479e-01_rb,&
-       & 9.147462e-01_rb,9.178234e-01_rb,9.206903e-01_rb,9.233663e-01_rb,9.258668e-01_rb,&
-       & 9.282006e-01_rb,9.303847e-01_rb,9.324288e-01_rb,9.343418e-01_rb,9.361356e-01_rb,&
-       & 9.378176e-01_rb,9.393939e-01_rb,9.408736e-01_rb,9.422622e-01_rb,9.435670e-01_rb,&
-       & 9.447900e-01_rb,9.459395e-01_rb,9.470199e-01_rb,9.480335e-01_rb,9.489852e-01_rb,&
-       & 9.498782e-01_rb,9.507168e-01_rb,9.515044e-01_rb,9.522470e-01_rb,9.529409e-01_rb,&
-       & 9.535946e-01_rb,9.542071e-01_rb,9.547838e-01_rb,9.553256e-01_rb,9.558351e-01_rb,&
-       & 9.563139e-01_rb,9.567660e-01_rb,9.571915e-01_rb,9.575901e-01_rb,9.579685e-01_rb,&
-       & 9.583239e-01_rb,9.586602e-01_rb,9.589766e-01_rb /)
+       & 7.877069e-01,8.244281e-01,8.367971e-01,8.409074e-01,8.429859e-01,&
+       & 8.454386e-01,8.489350e-01,8.534141e-01,8.585814e-01,8.641267e-01,&
+       & 8.697999e-01,8.754223e-01,8.808785e-01,8.860944e-01,8.910354e-01,&
+       & 8.956837e-01,9.000392e-01,9.041091e-01,9.079071e-01,9.114479e-01,&
+       & 9.147462e-01,9.178234e-01,9.206903e-01,9.233663e-01,9.258668e-01,&
+       & 9.282006e-01,9.303847e-01,9.324288e-01,9.343418e-01,9.361356e-01,&
+       & 9.378176e-01,9.393939e-01,9.408736e-01,9.422622e-01,9.435670e-01,&
+       & 9.447900e-01,9.459395e-01,9.470199e-01,9.480335e-01,9.489852e-01,&
+       & 9.498782e-01,9.507168e-01,9.515044e-01,9.522470e-01,9.529409e-01,&
+       & 9.535946e-01,9.542071e-01,9.547838e-01,9.553256e-01,9.558351e-01,&
+       & 9.563139e-01,9.567660e-01,9.571915e-01,9.575901e-01,9.579685e-01,&
+       & 9.583239e-01,9.586602e-01,9.589766e-01 /)
 
 
 ! Spherical Ice Particle Parameterization
 ! extinction units (ext coef/iwc): [(m^-1)/(g m^-3)]
       extice2(:, 16) = (/ &
 ! band 16
-        & 4.101824e-01_rb,2.435514e-01_rb,1.713697e-01_rb,1.314865e-01_rb,1.063406e-01_rb,&
-        & 8.910701e-02_rb,7.659480e-02_rb,6.711784e-02_rb,5.970353e-02_rb,5.375249e-02_rb,&
-        & 4.887577e-02_rb,4.481025e-02_rb,4.137171e-02_rb,3.842744e-02_rb,3.587948e-02_rb,&
-        & 3.365396e-02_rb,3.169419e-02_rb,2.995593e-02_rb,2.840419e-02_rb,2.701091e-02_rb,&
-        & 2.575336e-02_rb,2.461293e-02_rb,2.357423e-02_rb,2.262443e-02_rb,2.175276e-02_rb,&
-        & 2.095012e-02_rb,2.020875e-02_rb,1.952199e-02_rb,1.888412e-02_rb,1.829018e-02_rb,&
-        & 1.773586e-02_rb,1.721738e-02_rb,1.673144e-02_rb,1.627510e-02_rb,1.584579e-02_rb,&
-        & 1.544122e-02_rb,1.505934e-02_rb,1.469833e-02_rb,1.435654e-02_rb,1.403251e-02_rb,&
-        & 1.372492e-02_rb,1.343255e-02_rb,1.315433e-02_rb /)
+        & 4.101824e-01 ,2.435514e-01 ,1.713697e-01 ,1.314865e-01 ,1.063406e-01 ,&
+        & 8.910701e-02 ,7.659480e-02 ,6.711784e-02 ,5.970353e-02 ,5.375249e-02 ,&
+        & 4.887577e-02 ,4.481025e-02 ,4.137171e-02 ,3.842744e-02 ,3.587948e-02 ,&
+        & 3.365396e-02 ,3.169419e-02 ,2.995593e-02 ,2.840419e-02 ,2.701091e-02 ,&
+        & 2.575336e-02 ,2.461293e-02 ,2.357423e-02 ,2.262443e-02 ,2.175276e-02 ,&
+        & 2.095012e-02 ,2.020875e-02 ,1.952199e-02 ,1.888412e-02 ,1.829018e-02 ,&
+        & 1.773586e-02 ,1.721738e-02 ,1.673144e-02 ,1.627510e-02 ,1.584579e-02 ,&
+        & 1.544122e-02 ,1.505934e-02 ,1.469833e-02 ,1.435654e-02 ,1.403251e-02 ,&
+        & 1.372492e-02 ,1.343255e-02 ,1.315433e-02  /)
       extice2(:, 17) = (/ &
 ! band 17
-        & 3.836650e-01_rb,2.304055e-01_rb,1.637265e-01_rb,1.266681e-01_rb,1.031602e-01_rb,&
-        & 8.695191e-02_rb,7.511544e-02_rb,6.610009e-02_rb,5.900909e-02_rb,5.328833e-02_rb,&
-        & 4.857728e-02_rb,4.463133e-02_rb,4.127880e-02_rb,3.839567e-02_rb,3.589013e-02_rb,&
-        & 3.369280e-02_rb,3.175027e-02_rb,3.002079e-02_rb,2.847121e-02_rb,2.707493e-02_rb,&
-        & 2.581031e-02_rb,2.465962e-02_rb,2.360815e-02_rb,2.264363e-02_rb,2.175571e-02_rb,&
-        & 2.093563e-02_rb,2.017592e-02_rb,1.947015e-02_rb,1.881278e-02_rb,1.819901e-02_rb,&
-        & 1.762463e-02_rb,1.708598e-02_rb,1.657982e-02_rb,1.610330e-02_rb,1.565390e-02_rb,&
-        & 1.522937e-02_rb,1.482768e-02_rb,1.444706e-02_rb,1.408588e-02_rb,1.374270e-02_rb,&
-        & 1.341619e-02_rb,1.310517e-02_rb,1.280857e-02_rb /)
+        & 3.836650e-01 ,2.304055e-01 ,1.637265e-01 ,1.266681e-01 ,1.031602e-01 ,&
+        & 8.695191e-02 ,7.511544e-02 ,6.610009e-02 ,5.900909e-02 ,5.328833e-02 ,&
+        & 4.857728e-02 ,4.463133e-02 ,4.127880e-02 ,3.839567e-02 ,3.589013e-02 ,&
+        & 3.369280e-02 ,3.175027e-02 ,3.002079e-02 ,2.847121e-02 ,2.707493e-02 ,&
+        & 2.581031e-02 ,2.465962e-02 ,2.360815e-02 ,2.264363e-02 ,2.175571e-02 ,&
+        & 2.093563e-02 ,2.017592e-02 ,1.947015e-02 ,1.881278e-02 ,1.819901e-02 ,&
+        & 1.762463e-02 ,1.708598e-02 ,1.657982e-02 ,1.610330e-02 ,1.565390e-02 ,&
+        & 1.522937e-02 ,1.482768e-02 ,1.444706e-02 ,1.408588e-02 ,1.374270e-02 ,&
+        & 1.341619e-02 ,1.310517e-02 ,1.280857e-02  /)
       extice2(:, 18) = (/ &
 ! band 18
-        & 4.152673e-01_rb,2.436816e-01_rb,1.702243e-01_rb,1.299704e-01_rb,1.047528e-01_rb,&
-        & 8.756039e-02_rb,7.513327e-02_rb,6.575690e-02_rb,5.844616e-02_rb,5.259609e-02_rb,&
-        & 4.781531e-02_rb,4.383980e-02_rb,4.048517e-02_rb,3.761891e-02_rb,3.514342e-02_rb,&
-        & 3.298525e-02_rb,3.108814e-02_rb,2.940825e-02_rb,2.791096e-02_rb,2.656858e-02_rb,&
-        & 2.535869e-02_rb,2.426297e-02_rb,2.326627e-02_rb,2.235602e-02_rb,2.152164e-02_rb,&
-        & 2.075420e-02_rb,2.004613e-02_rb,1.939091e-02_rb,1.878296e-02_rb,1.821744e-02_rb,&
-        & 1.769015e-02_rb,1.719741e-02_rb,1.673600e-02_rb,1.630308e-02_rb,1.589615e-02_rb,&
-        & 1.551298e-02_rb,1.515159e-02_rb,1.481021e-02_rb,1.448726e-02_rb,1.418131e-02_rb,&
-        & 1.389109e-02_rb,1.361544e-02_rb,1.335330e-02_rb /)
+        & 4.152673e-01 ,2.436816e-01 ,1.702243e-01 ,1.299704e-01 ,1.047528e-01 ,&
+        & 8.756039e-02 ,7.513327e-02 ,6.575690e-02 ,5.844616e-02 ,5.259609e-02 ,&
+        & 4.781531e-02 ,4.383980e-02 ,4.048517e-02 ,3.761891e-02 ,3.514342e-02 ,&
+        & 3.298525e-02 ,3.108814e-02 ,2.940825e-02 ,2.791096e-02 ,2.656858e-02 ,&
+        & 2.535869e-02 ,2.426297e-02 ,2.326627e-02 ,2.235602e-02 ,2.152164e-02 ,&
+        & 2.075420e-02 ,2.004613e-02 ,1.939091e-02 ,1.878296e-02 ,1.821744e-02 ,&
+        & 1.769015e-02 ,1.719741e-02 ,1.673600e-02 ,1.630308e-02 ,1.589615e-02 ,&
+        & 1.551298e-02 ,1.515159e-02 ,1.481021e-02 ,1.448726e-02 ,1.418131e-02 ,&
+        & 1.389109e-02 ,1.361544e-02 ,1.335330e-02  /)
       extice2(:, 19) = (/ &
 ! band 19
-        & 3.873250e-01_rb,2.331609e-01_rb,1.655002e-01_rb,1.277753e-01_rb,1.038247e-01_rb,&
-        & 8.731780e-02_rb,7.527638e-02_rb,6.611873e-02_rb,5.892850e-02_rb,5.313885e-02_rb,&
-        & 4.838068e-02_rb,4.440356e-02_rb,4.103167e-02_rb,3.813804e-02_rb,3.562870e-02_rb,&
-        & 3.343269e-02_rb,3.149539e-02_rb,2.977414e-02_rb,2.823510e-02_rb,2.685112e-02_rb,&
-        & 2.560015e-02_rb,2.446411e-02_rb,2.342805e-02_rb,2.247948e-02_rb,2.160789e-02_rb,&
-        & 2.080438e-02_rb,2.006139e-02_rb,1.937238e-02_rb,1.873177e-02_rb,1.813469e-02_rb,&
-        & 1.757689e-02_rb,1.705468e-02_rb,1.656479e-02_rb,1.610435e-02_rb,1.567081e-02_rb,&
-        & 1.526192e-02_rb,1.487565e-02_rb,1.451020e-02_rb,1.416396e-02_rb,1.383546e-02_rb,&
-        & 1.352339e-02_rb,1.322657e-02_rb,1.294392e-02_rb /)
+        & 3.873250e-01 ,2.331609e-01 ,1.655002e-01 ,1.277753e-01 ,1.038247e-01 ,&
+        & 8.731780e-02 ,7.527638e-02 ,6.611873e-02 ,5.892850e-02 ,5.313885e-02 ,&
+        & 4.838068e-02 ,4.440356e-02 ,4.103167e-02 ,3.813804e-02 ,3.562870e-02 ,&
+        & 3.343269e-02 ,3.149539e-02 ,2.977414e-02 ,2.823510e-02 ,2.685112e-02 ,&
+        & 2.560015e-02 ,2.446411e-02 ,2.342805e-02 ,2.247948e-02 ,2.160789e-02 ,&
+        & 2.080438e-02 ,2.006139e-02 ,1.937238e-02 ,1.873177e-02 ,1.813469e-02 ,&
+        & 1.757689e-02 ,1.705468e-02 ,1.656479e-02 ,1.610435e-02 ,1.567081e-02 ,&
+        & 1.526192e-02 ,1.487565e-02 ,1.451020e-02 ,1.416396e-02 ,1.383546e-02 ,&
+        & 1.352339e-02 ,1.322657e-02 ,1.294392e-02  /)
       extice2(:, 20) = (/ &
 ! band 20
-        & 3.784280e-01_rb,2.291396e-01_rb,1.632551e-01_rb,1.263775e-01_rb,1.028944e-01_rb,&
-        & 8.666975e-02_rb,7.480952e-02_rb,6.577335e-02_rb,5.866714e-02_rb,5.293694e-02_rb,&
-        & 4.822153e-02_rb,4.427547e-02_rb,4.092626e-02_rb,3.804918e-02_rb,3.555184e-02_rb,&
-        & 3.336440e-02_rb,3.143307e-02_rb,2.971577e-02_rb,2.817912e-02_rb,2.679632e-02_rb,&
-        & 2.554558e-02_rb,2.440903e-02_rb,2.337187e-02_rb,2.242173e-02_rb,2.154821e-02_rb,&
-        & 2.074249e-02_rb,1.999706e-02_rb,1.930546e-02_rb,1.866212e-02_rb,1.806221e-02_rb,&
-        & 1.750152e-02_rb,1.697637e-02_rb,1.648352e-02_rb,1.602010e-02_rb,1.558358e-02_rb,&
-        & 1.517172e-02_rb,1.478250e-02_rb,1.441413e-02_rb,1.406498e-02_rb,1.373362e-02_rb,&
-        & 1.341872e-02_rb,1.311911e-02_rb,1.283371e-02_rb /)
+        & 3.784280e-01 ,2.291396e-01 ,1.632551e-01 ,1.263775e-01 ,1.028944e-01 ,&
+        & 8.666975e-02 ,7.480952e-02 ,6.577335e-02 ,5.866714e-02 ,5.293694e-02 ,&
+        & 4.822153e-02 ,4.427547e-02 ,4.092626e-02 ,3.804918e-02 ,3.555184e-02 ,&
+        & 3.336440e-02 ,3.143307e-02 ,2.971577e-02 ,2.817912e-02 ,2.679632e-02 ,&
+        & 2.554558e-02 ,2.440903e-02 ,2.337187e-02 ,2.242173e-02 ,2.154821e-02 ,&
+        & 2.074249e-02 ,1.999706e-02 ,1.930546e-02 ,1.866212e-02 ,1.806221e-02 ,&
+        & 1.750152e-02 ,1.697637e-02 ,1.648352e-02 ,1.602010e-02 ,1.558358e-02 ,&
+        & 1.517172e-02 ,1.478250e-02 ,1.441413e-02 ,1.406498e-02 ,1.373362e-02 ,&
+        & 1.341872e-02 ,1.311911e-02 ,1.283371e-02  /)
       extice2(:, 21) = (/ &
 ! band 21
-        & 3.719909e-01_rb,2.259490e-01_rb,1.613144e-01_rb,1.250648e-01_rb,1.019462e-01_rb,&
-        & 8.595358e-02_rb,7.425064e-02_rb,6.532618e-02_rb,5.830218e-02_rb,5.263421e-02_rb,&
-        & 4.796697e-02_rb,4.405891e-02_rb,4.074013e-02_rb,3.788776e-02_rb,3.541071e-02_rb,&
-        & 3.324008e-02_rb,3.132280e-02_rb,2.961733e-02_rb,2.809071e-02_rb,2.671645e-02_rb,&
-        & 2.547302e-02_rb,2.434276e-02_rb,2.331102e-02_rb,2.236558e-02_rb,2.149614e-02_rb,&
-        & 2.069397e-02_rb,1.995163e-02_rb,1.926272e-02_rb,1.862174e-02_rb,1.802389e-02_rb,&
-        & 1.746500e-02_rb,1.694142e-02_rb,1.644994e-02_rb,1.598772e-02_rb,1.555225e-02_rb,&
-        & 1.514129e-02_rb,1.475286e-02_rb,1.438515e-02_rb,1.403659e-02_rb,1.370572e-02_rb,&
-        & 1.339124e-02_rb,1.309197e-02_rb,1.280685e-02_rb /)
+        & 3.719909e-01 ,2.259490e-01 ,1.613144e-01 ,1.250648e-01 ,1.019462e-01 ,&
+        & 8.595358e-02 ,7.425064e-02 ,6.532618e-02 ,5.830218e-02 ,5.263421e-02 ,&
+        & 4.796697e-02 ,4.405891e-02 ,4.074013e-02 ,3.788776e-02 ,3.541071e-02 ,&
+        & 3.324008e-02 ,3.132280e-02 ,2.961733e-02 ,2.809071e-02 ,2.671645e-02 ,&
+        & 2.547302e-02 ,2.434276e-02 ,2.331102e-02 ,2.236558e-02 ,2.149614e-02 ,&
+        & 2.069397e-02 ,1.995163e-02 ,1.926272e-02 ,1.862174e-02 ,1.802389e-02 ,&
+        & 1.746500e-02 ,1.694142e-02 ,1.644994e-02 ,1.598772e-02 ,1.555225e-02 ,&
+        & 1.514129e-02 ,1.475286e-02 ,1.438515e-02 ,1.403659e-02 ,1.370572e-02 ,&
+        & 1.339124e-02 ,1.309197e-02 ,1.280685e-02  /)
       extice2(:, 22) = (/ &
 ! band 22
-        & 3.713158e-01_rb,2.253816e-01_rb,1.608461e-01_rb,1.246718e-01_rb,1.016109e-01_rb,&
-        & 8.566332e-02_rb,7.399666e-02_rb,6.510199e-02_rb,5.810290e-02_rb,5.245608e-02_rb,&
-        & 4.780702e-02_rb,4.391478e-02_rb,4.060989e-02_rb,3.776982e-02_rb,3.530374e-02_rb,&
-        & 3.314296e-02_rb,3.123458e-02_rb,2.953719e-02_rb,2.801794e-02_rb,2.665043e-02_rb,&
-        & 2.541321e-02_rb,2.428868e-02_rb,2.326224e-02_rb,2.232173e-02_rb,2.145688e-02_rb,&
-        & 2.065899e-02_rb,1.992067e-02_rb,1.923552e-02_rb,1.859808e-02_rb,1.800356e-02_rb,&
-        & 1.744782e-02_rb,1.692721e-02_rb,1.643855e-02_rb,1.597900e-02_rb,1.554606e-02_rb,&
-        & 1.513751e-02_rb,1.475137e-02_rb,1.438586e-02_rb,1.403938e-02_rb,1.371050e-02_rb,&
-        & 1.339793e-02_rb,1.310050e-02_rb,1.281713e-02_rb /)
+        & 3.713158e-01 ,2.253816e-01 ,1.608461e-01 ,1.246718e-01 ,1.016109e-01 ,&
+        & 8.566332e-02 ,7.399666e-02 ,6.510199e-02 ,5.810290e-02 ,5.245608e-02 ,&
+        & 4.780702e-02 ,4.391478e-02 ,4.060989e-02 ,3.776982e-02 ,3.530374e-02 ,&
+        & 3.314296e-02 ,3.123458e-02 ,2.953719e-02 ,2.801794e-02 ,2.665043e-02 ,&
+        & 2.541321e-02 ,2.428868e-02 ,2.326224e-02 ,2.232173e-02 ,2.145688e-02 ,&
+        & 2.065899e-02 ,1.992067e-02 ,1.923552e-02 ,1.859808e-02 ,1.800356e-02 ,&
+        & 1.744782e-02 ,1.692721e-02 ,1.643855e-02 ,1.597900e-02 ,1.554606e-02 ,&
+        & 1.513751e-02 ,1.475137e-02 ,1.438586e-02 ,1.403938e-02 ,1.371050e-02 ,&
+        & 1.339793e-02 ,1.310050e-02 ,1.281713e-02  /)
       extice2(:, 23) = (/ &
 ! band 23
-        & 3.605883e-01_rb,2.204388e-01_rb,1.580431e-01_rb,1.229033e-01_rb,1.004203e-01_rb,&
-        & 8.482616e-02_rb,7.338941e-02_rb,6.465105e-02_rb,5.776176e-02_rb,5.219398e-02_rb,&
-        & 4.760288e-02_rb,4.375369e-02_rb,4.048111e-02_rb,3.766539e-02_rb,3.521771e-02_rb,&
-        & 3.307079e-02_rb,3.117277e-02_rb,2.948303e-02_rb,2.796929e-02_rb,2.660560e-02_rb,&
-        & 2.537086e-02_rb,2.424772e-02_rb,2.322182e-02_rb,2.228114e-02_rb,2.141556e-02_rb,&
-        & 2.061649e-02_rb,1.987661e-02_rb,1.918962e-02_rb,1.855009e-02_rb,1.795330e-02_rb,&
-        & 1.739514e-02_rb,1.687199e-02_rb,1.638069e-02_rb,1.591845e-02_rb,1.548276e-02_rb,&
-        & 1.507143e-02_rb,1.468249e-02_rb,1.431416e-02_rb,1.396486e-02_rb,1.363318e-02_rb,&
-        & 1.331781e-02_rb,1.301759e-02_rb,1.273147e-02_rb /)
+        & 3.605883e-01 ,2.204388e-01 ,1.580431e-01 ,1.229033e-01 ,1.004203e-01 ,&
+        & 8.482616e-02 ,7.338941e-02 ,6.465105e-02 ,5.776176e-02 ,5.219398e-02 ,&
+        & 4.760288e-02 ,4.375369e-02 ,4.048111e-02 ,3.766539e-02 ,3.521771e-02 ,&
+        & 3.307079e-02 ,3.117277e-02 ,2.948303e-02 ,2.796929e-02 ,2.660560e-02 ,&
+        & 2.537086e-02 ,2.424772e-02 ,2.322182e-02 ,2.228114e-02 ,2.141556e-02 ,&
+        & 2.061649e-02 ,1.987661e-02 ,1.918962e-02 ,1.855009e-02 ,1.795330e-02 ,&
+        & 1.739514e-02 ,1.687199e-02 ,1.638069e-02 ,1.591845e-02 ,1.548276e-02 ,&
+        & 1.507143e-02 ,1.468249e-02 ,1.431416e-02 ,1.396486e-02 ,1.363318e-02 ,&
+        & 1.331781e-02 ,1.301759e-02 ,1.273147e-02  /)
       extice2(:, 24) = (/ &
 ! band 24
-        & 3.527890e-01_rb,2.168469e-01_rb,1.560090e-01_rb,1.216216e-01_rb,9.955787e-02_rb,&
-        & 8.421942e-02_rb,7.294827e-02_rb,6.432192e-02_rb,5.751081e-02_rb,5.199888e-02_rb,&
-        & 4.744835e-02_rb,4.362899e-02_rb,4.037847e-02_rb,3.757910e-02_rb,3.514351e-02_rb,&
-        & 3.300546e-02_rb,3.111382e-02_rb,2.942853e-02_rb,2.791775e-02_rb,2.655584e-02_rb,&
-        & 2.532195e-02_rb,2.419892e-02_rb,2.317255e-02_rb,2.223092e-02_rb,2.136402e-02_rb,&
-        & 2.056334e-02_rb,1.982160e-02_rb,1.913258e-02_rb,1.849087e-02_rb,1.789178e-02_rb,&
-        & 1.733124e-02_rb,1.680565e-02_rb,1.631187e-02_rb,1.584711e-02_rb,1.540889e-02_rb,&
-        & 1.499502e-02_rb,1.460354e-02_rb,1.423269e-02_rb,1.388088e-02_rb,1.354670e-02_rb,&
-        & 1.322887e-02_rb,1.292620e-02_rb,1.263767e-02_rb /)
+        & 3.527890e-01 ,2.168469e-01 ,1.560090e-01 ,1.216216e-01 ,9.955787e-02 ,&
+        & 8.421942e-02 ,7.294827e-02 ,6.432192e-02 ,5.751081e-02 ,5.199888e-02 ,&
+        & 4.744835e-02 ,4.362899e-02 ,4.037847e-02 ,3.757910e-02 ,3.514351e-02 ,&
+        & 3.300546e-02 ,3.111382e-02 ,2.942853e-02 ,2.791775e-02 ,2.655584e-02 ,&
+        & 2.532195e-02 ,2.419892e-02 ,2.317255e-02 ,2.223092e-02 ,2.136402e-02 ,&
+        & 2.056334e-02 ,1.982160e-02 ,1.913258e-02 ,1.849087e-02 ,1.789178e-02 ,&
+        & 1.733124e-02 ,1.680565e-02 ,1.631187e-02 ,1.584711e-02 ,1.540889e-02 ,&
+        & 1.499502e-02 ,1.460354e-02 ,1.423269e-02 ,1.388088e-02 ,1.354670e-02 ,&
+        & 1.322887e-02 ,1.292620e-02 ,1.263767e-02  /)
       extice2(:, 25) = (/ &
 ! band 25
-        & 3.477874e-01_rb,2.143515e-01_rb,1.544887e-01_rb,1.205942e-01_rb,9.881779e-02_rb,&
-        & 8.366261e-02_rb,7.251586e-02_rb,6.397790e-02_rb,5.723183e-02_rb,5.176908e-02_rb,&
-        & 4.725658e-02_rb,4.346715e-02_rb,4.024055e-02_rb,3.746055e-02_rb,3.504080e-02_rb,&
-        & 3.291583e-02_rb,3.103507e-02_rb,2.935891e-02_rb,2.785582e-02_rb,2.650042e-02_rb,&
-        & 2.527206e-02_rb,2.415376e-02_rb,2.313142e-02_rb,2.219326e-02_rb,2.132934e-02_rb,&
-        & 2.053122e-02_rb,1.979169e-02_rb,1.910456e-02_rb,1.846448e-02_rb,1.786680e-02_rb,&
-        & 1.730745e-02_rb,1.678289e-02_rb,1.628998e-02_rb,1.582595e-02_rb,1.538835e-02_rb,&
-        & 1.497499e-02_rb,1.458393e-02_rb,1.421341e-02_rb,1.386187e-02_rb,1.352788e-02_rb,&
-        & 1.321019e-02_rb,1.290762e-02_rb,1.261913e-02_rb /)
+        & 3.477874e-01 ,2.143515e-01 ,1.544887e-01 ,1.205942e-01 ,9.881779e-02 ,&
+        & 8.366261e-02 ,7.251586e-02 ,6.397790e-02 ,5.723183e-02 ,5.176908e-02 ,&
+        & 4.725658e-02 ,4.346715e-02 ,4.024055e-02 ,3.746055e-02 ,3.504080e-02 ,&
+        & 3.291583e-02 ,3.103507e-02 ,2.935891e-02 ,2.785582e-02 ,2.650042e-02 ,&
+        & 2.527206e-02 ,2.415376e-02 ,2.313142e-02 ,2.219326e-02 ,2.132934e-02 ,&
+        & 2.053122e-02 ,1.979169e-02 ,1.910456e-02 ,1.846448e-02 ,1.786680e-02 ,&
+        & 1.730745e-02 ,1.678289e-02 ,1.628998e-02 ,1.582595e-02 ,1.538835e-02 ,&
+        & 1.497499e-02 ,1.458393e-02 ,1.421341e-02 ,1.386187e-02 ,1.352788e-02 ,&
+        & 1.321019e-02 ,1.290762e-02 ,1.261913e-02  /)
       extice2(:, 26) = (/ &
 ! band 26
-        & 3.453721e-01_rb,2.130744e-01_rb,1.536698e-01_rb,1.200140e-01_rb,9.838078e-02_rb,&
-        & 8.331940e-02_rb,7.223803e-02_rb,6.374775e-02_rb,5.703770e-02_rb,5.160290e-02_rb,&
-        & 4.711259e-02_rb,4.334110e-02_rb,4.012923e-02_rb,3.736150e-02_rb,3.495208e-02_rb,&
-        & 3.283589e-02_rb,3.096267e-02_rb,2.929302e-02_rb,2.779560e-02_rb,2.644517e-02_rb,&
-        & 2.522119e-02_rb,2.410677e-02_rb,2.308788e-02_rb,2.215281e-02_rb,2.129165e-02_rb,&
-        & 2.049602e-02_rb,1.975874e-02_rb,1.907365e-02_rb,1.843542e-02_rb,1.783943e-02_rb,&
-        & 1.728162e-02_rb,1.675847e-02_rb,1.626685e-02_rb,1.580401e-02_rb,1.536750e-02_rb,&
-        & 1.495515e-02_rb,1.456502e-02_rb,1.419537e-02_rb,1.384463e-02_rb,1.351139e-02_rb,&
-        & 1.319438e-02_rb,1.289246e-02_rb,1.260456e-02_rb /)
+        & 3.453721e-01 ,2.130744e-01 ,1.536698e-01 ,1.200140e-01 ,9.838078e-02 ,&
+        & 8.331940e-02 ,7.223803e-02 ,6.374775e-02 ,5.703770e-02 ,5.160290e-02 ,&
+        & 4.711259e-02 ,4.334110e-02 ,4.012923e-02 ,3.736150e-02 ,3.495208e-02 ,&
+        & 3.283589e-02 ,3.096267e-02 ,2.929302e-02 ,2.779560e-02 ,2.644517e-02 ,&
+        & 2.522119e-02 ,2.410677e-02 ,2.308788e-02 ,2.215281e-02 ,2.129165e-02 ,&
+        & 2.049602e-02 ,1.975874e-02 ,1.907365e-02 ,1.843542e-02 ,1.783943e-02 ,&
+        & 1.728162e-02 ,1.675847e-02 ,1.626685e-02 ,1.580401e-02 ,1.536750e-02 ,&
+        & 1.495515e-02 ,1.456502e-02 ,1.419537e-02 ,1.384463e-02 ,1.351139e-02 ,&
+        & 1.319438e-02 ,1.289246e-02 ,1.260456e-02  /)
       extice2(:, 27) = (/ &
 ! band 27
-        & 3.417883e-01_rb,2.113379e-01_rb,1.526395e-01_rb,1.193347e-01_rb,9.790253e-02_rb,&
-        & 8.296715e-02_rb,7.196979e-02_rb,6.353806e-02_rb,5.687024e-02_rb,5.146670e-02_rb,&
-        & 4.700001e-02_rb,4.324667e-02_rb,4.004894e-02_rb,3.729233e-02_rb,3.489172e-02_rb,&
-        & 3.278257e-02_rb,3.091499e-02_rb,2.924987e-02_rb,2.775609e-02_rb,2.640859e-02_rb,&
-        & 2.518695e-02_rb,2.407439e-02_rb,2.305697e-02_rb,2.212303e-02_rb,2.126273e-02_rb,&
-        & 2.046774e-02_rb,1.973090e-02_rb,1.904610e-02_rb,1.840801e-02_rb,1.781204e-02_rb,&
-        & 1.725417e-02_rb,1.673086e-02_rb,1.623902e-02_rb,1.577590e-02_rb,1.533906e-02_rb,&
-        & 1.492634e-02_rb,1.453580e-02_rb,1.416571e-02_rb,1.381450e-02_rb,1.348078e-02_rb,&
-        & 1.316327e-02_rb,1.286082e-02_rb,1.257240e-02_rb /)
+        & 3.417883e-01 ,2.113379e-01 ,1.526395e-01 ,1.193347e-01 ,9.790253e-02 ,&
+        & 8.296715e-02 ,7.196979e-02 ,6.353806e-02 ,5.687024e-02 ,5.146670e-02 ,&
+        & 4.700001e-02 ,4.324667e-02 ,4.004894e-02 ,3.729233e-02 ,3.489172e-02 ,&
+        & 3.278257e-02 ,3.091499e-02 ,2.924987e-02 ,2.775609e-02 ,2.640859e-02 ,&
+        & 2.518695e-02 ,2.407439e-02 ,2.305697e-02 ,2.212303e-02 ,2.126273e-02 ,&
+        & 2.046774e-02 ,1.973090e-02 ,1.904610e-02 ,1.840801e-02 ,1.781204e-02 ,&
+        & 1.725417e-02 ,1.673086e-02 ,1.623902e-02 ,1.577590e-02 ,1.533906e-02 ,&
+        & 1.492634e-02 ,1.453580e-02 ,1.416571e-02 ,1.381450e-02 ,1.348078e-02 ,&
+        & 1.316327e-02 ,1.286082e-02 ,1.257240e-02  /)
       extice2(:, 28) = (/ &
 ! band 28
-        & 3.416111e-01_rb,2.114124e-01_rb,1.527734e-01_rb,1.194809e-01_rb,9.804612e-02_rb,&
-        & 8.310287e-02_rb,7.209595e-02_rb,6.365442e-02_rb,5.697710e-02_rb,5.156460e-02_rb,&
-        & 4.708957e-02_rb,4.332850e-02_rb,4.012361e-02_rb,3.736037e-02_rb,3.495364e-02_rb,&
-        & 3.283879e-02_rb,3.096593e-02_rb,2.929589e-02_rb,2.779751e-02_rb,2.644571e-02_rb,&
-        & 2.522004e-02_rb,2.410369e-02_rb,2.308271e-02_rb,2.214542e-02_rb,2.128195e-02_rb,&
-        & 2.048396e-02_rb,1.974429e-02_rb,1.905679e-02_rb,1.841614e-02_rb,1.781774e-02_rb,&
-        & 1.725754e-02_rb,1.673203e-02_rb,1.623807e-02_rb,1.577293e-02_rb,1.533416e-02_rb,&
-        & 1.491958e-02_rb,1.452727e-02_rb,1.415547e-02_rb,1.380262e-02_rb,1.346732e-02_rb,&
-        & 1.314830e-02_rb,1.284439e-02_rb,1.255456e-02_rb /)
+        & 3.416111e-01 ,2.114124e-01 ,1.527734e-01 ,1.194809e-01 ,9.804612e-02 ,&
+        & 8.310287e-02 ,7.209595e-02 ,6.365442e-02 ,5.697710e-02 ,5.156460e-02 ,&
+        & 4.708957e-02 ,4.332850e-02 ,4.012361e-02 ,3.736037e-02 ,3.495364e-02 ,&
+        & 3.283879e-02 ,3.096593e-02 ,2.929589e-02 ,2.779751e-02 ,2.644571e-02 ,&
+        & 2.522004e-02 ,2.410369e-02 ,2.308271e-02 ,2.214542e-02 ,2.128195e-02 ,&
+        & 2.048396e-02 ,1.974429e-02 ,1.905679e-02 ,1.841614e-02 ,1.781774e-02 ,&
+        & 1.725754e-02 ,1.673203e-02 ,1.623807e-02 ,1.577293e-02 ,1.533416e-02 ,&
+        & 1.491958e-02 ,1.452727e-02 ,1.415547e-02 ,1.380262e-02 ,1.346732e-02 ,&
+        & 1.314830e-02 ,1.284439e-02 ,1.255456e-02  /)
       extice2(:, 29) = (/ &
 ! band 29
-        & 4.196611e-01_rb,2.493642e-01_rb,1.761261e-01_rb,1.357197e-01_rb,1.102161e-01_rb,&
-        & 9.269376e-02_rb,7.992985e-02_rb,7.022538e-02_rb,6.260168e-02_rb,5.645603e-02_rb,&
-        & 5.139732e-02_rb,4.716088e-02_rb,4.356133e-02_rb,4.046498e-02_rb,3.777303e-02_rb,&
-        & 3.541094e-02_rb,3.332137e-02_rb,3.145954e-02_rb,2.978998e-02_rb,2.828419e-02_rb,&
-        & 2.691905e-02_rb,2.567559e-02_rb,2.453811e-02_rb,2.349350e-02_rb,2.253072e-02_rb,&
-        & 2.164042e-02_rb,2.081464e-02_rb,2.004652e-02_rb,1.933015e-02_rb,1.866041e-02_rb,&
-        & 1.803283e-02_rb,1.744348e-02_rb,1.688894e-02_rb,1.636616e-02_rb,1.587244e-02_rb,&
-        & 1.540539e-02_rb,1.496287e-02_rb,1.454295e-02_rb,1.414392e-02_rb,1.376423e-02_rb,&
-        & 1.340247e-02_rb,1.305739e-02_rb,1.272784e-02_rb /)
+        & 4.196611e-01 ,2.493642e-01 ,1.761261e-01 ,1.357197e-01 ,1.102161e-01 ,&
+        & 9.269376e-02 ,7.992985e-02 ,7.022538e-02 ,6.260168e-02 ,5.645603e-02 ,&
+        & 5.139732e-02 ,4.716088e-02 ,4.356133e-02 ,4.046498e-02 ,3.777303e-02 ,&
+        & 3.541094e-02 ,3.332137e-02 ,3.145954e-02 ,2.978998e-02 ,2.828419e-02 ,&
+        & 2.691905e-02 ,2.567559e-02 ,2.453811e-02 ,2.349350e-02 ,2.253072e-02 ,&
+        & 2.164042e-02 ,2.081464e-02 ,2.004652e-02 ,1.933015e-02 ,1.866041e-02 ,&
+        & 1.803283e-02 ,1.744348e-02 ,1.688894e-02 ,1.636616e-02 ,1.587244e-02 ,&
+        & 1.540539e-02 ,1.496287e-02 ,1.454295e-02 ,1.414392e-02 ,1.376423e-02 ,&
+        & 1.340247e-02 ,1.305739e-02 ,1.272784e-02  /)
 
 ! single-scattering albedo: unitless
       ssaice2(:, 16) = (/ &
 ! band 16
-        & 6.630615e-01_rb,6.451169e-01_rb,6.333696e-01_rb,6.246927e-01_rb,6.178420e-01_rb,&
-        & 6.121976e-01_rb,6.074069e-01_rb,6.032505e-01_rb,5.995830e-01_rb,5.963030e-01_rb,&
-        & 5.933372e-01_rb,5.906311e-01_rb,5.881427e-01_rb,5.858395e-01_rb,5.836955e-01_rb,&
-        & 5.816896e-01_rb,5.798046e-01_rb,5.780264e-01_rb,5.763429e-01_rb,5.747441e-01_rb,&
-        & 5.732213e-01_rb,5.717672e-01_rb,5.703754e-01_rb,5.690403e-01_rb,5.677571e-01_rb,&
-        & 5.665215e-01_rb,5.653297e-01_rb,5.641782e-01_rb,5.630643e-01_rb,5.619850e-01_rb,&
-        & 5.609381e-01_rb,5.599214e-01_rb,5.589328e-01_rb,5.579707e-01_rb,5.570333e-01_rb,&
-        & 5.561193e-01_rb,5.552272e-01_rb,5.543558e-01_rb,5.535041e-01_rb,5.526708e-01_rb,&
-        & 5.518551e-01_rb,5.510561e-01_rb,5.502729e-01_rb /)
+        & 6.630615e-01 ,6.451169e-01 ,6.333696e-01 ,6.246927e-01 ,6.178420e-01 ,&
+        & 6.121976e-01 ,6.074069e-01 ,6.032505e-01 ,5.995830e-01 ,5.963030e-01 ,&
+        & 5.933372e-01 ,5.906311e-01 ,5.881427e-01 ,5.858395e-01 ,5.836955e-01 ,&
+        & 5.816896e-01 ,5.798046e-01 ,5.780264e-01 ,5.763429e-01 ,5.747441e-01 ,&
+        & 5.732213e-01 ,5.717672e-01 ,5.703754e-01 ,5.690403e-01 ,5.677571e-01 ,&
+        & 5.665215e-01 ,5.653297e-01 ,5.641782e-01 ,5.630643e-01 ,5.619850e-01 ,&
+        & 5.609381e-01 ,5.599214e-01 ,5.589328e-01 ,5.579707e-01 ,5.570333e-01 ,&
+        & 5.561193e-01 ,5.552272e-01 ,5.543558e-01 ,5.535041e-01 ,5.526708e-01 ,&
+        & 5.518551e-01 ,5.510561e-01 ,5.502729e-01  /)
       ssaice2(:, 17) = (/ &
 ! band 17
-        & 7.689749e-01_rb,7.398171e-01_rb,7.205819e-01_rb,7.065690e-01_rb,6.956928e-01_rb,&
-        & 6.868989e-01_rb,6.795813e-01_rb,6.733606e-01_rb,6.679838e-01_rb,6.632742e-01_rb,&
-        & 6.591036e-01_rb,6.553766e-01_rb,6.520197e-01_rb,6.489757e-01_rb,6.461991e-01_rb,&
-        & 6.436531e-01_rb,6.413075e-01_rb,6.391375e-01_rb,6.371221e-01_rb,6.352438e-01_rb,&
-        & 6.334876e-01_rb,6.318406e-01_rb,6.302918e-01_rb,6.288315e-01_rb,6.274512e-01_rb,&
-        & 6.261436e-01_rb,6.249022e-01_rb,6.237211e-01_rb,6.225953e-01_rb,6.215201e-01_rb,&
-        & 6.204914e-01_rb,6.195055e-01_rb,6.185592e-01_rb,6.176492e-01_rb,6.167730e-01_rb,&
-        & 6.159280e-01_rb,6.151120e-01_rb,6.143228e-01_rb,6.135587e-01_rb,6.128177e-01_rb,&
-        & 6.120984e-01_rb,6.113993e-01_rb,6.107189e-01_rb /)
+        & 7.689749e-01 ,7.398171e-01 ,7.205819e-01 ,7.065690e-01 ,6.956928e-01 ,&
+        & 6.868989e-01 ,6.795813e-01 ,6.733606e-01 ,6.679838e-01 ,6.632742e-01 ,&
+        & 6.591036e-01 ,6.553766e-01 ,6.520197e-01 ,6.489757e-01 ,6.461991e-01 ,&
+        & 6.436531e-01 ,6.413075e-01 ,6.391375e-01 ,6.371221e-01 ,6.352438e-01 ,&
+        & 6.334876e-01 ,6.318406e-01 ,6.302918e-01 ,6.288315e-01 ,6.274512e-01 ,&
+        & 6.261436e-01 ,6.249022e-01 ,6.237211e-01 ,6.225953e-01 ,6.215201e-01 ,&
+        & 6.204914e-01 ,6.195055e-01 ,6.185592e-01 ,6.176492e-01 ,6.167730e-01 ,&
+        & 6.159280e-01 ,6.151120e-01 ,6.143228e-01 ,6.135587e-01 ,6.128177e-01 ,&
+        & 6.120984e-01 ,6.113993e-01 ,6.107189e-01  /)
       ssaice2(:, 18) = (/ &
 ! band 18
-        & 9.956167e-01_rb,9.814770e-01_rb,9.716104e-01_rb,9.639746e-01_rb,9.577179e-01_rb,&
-        & 9.524010e-01_rb,9.477672e-01_rb,9.436527e-01_rb,9.399467e-01_rb,9.365708e-01_rb,&
-        & 9.334672e-01_rb,9.305921e-01_rb,9.279118e-01_rb,9.253993e-01_rb,9.230330e-01_rb,&
-        & 9.207954e-01_rb,9.186719e-01_rb,9.166501e-01_rb,9.147199e-01_rb,9.128722e-01_rb,&
-        & 9.110997e-01_rb,9.093956e-01_rb,9.077544e-01_rb,9.061708e-01_rb,9.046406e-01_rb,&
-        & 9.031598e-01_rb,9.017248e-01_rb,9.003326e-01_rb,8.989804e-01_rb,8.976655e-01_rb,&
-        & 8.963857e-01_rb,8.951389e-01_rb,8.939233e-01_rb,8.927370e-01_rb,8.915785e-01_rb,&
-        & 8.904464e-01_rb,8.893392e-01_rb,8.882559e-01_rb,8.871951e-01_rb,8.861559e-01_rb,&
-        & 8.851373e-01_rb,8.841383e-01_rb,8.831581e-01_rb /)
+        & 9.956167e-01 ,9.814770e-01 ,9.716104e-01 ,9.639746e-01 ,9.577179e-01 ,&
+        & 9.524010e-01 ,9.477672e-01 ,9.436527e-01 ,9.399467e-01 ,9.365708e-01 ,&
+        & 9.334672e-01 ,9.305921e-01 ,9.279118e-01 ,9.253993e-01 ,9.230330e-01 ,&
+        & 9.207954e-01 ,9.186719e-01 ,9.166501e-01 ,9.147199e-01 ,9.128722e-01 ,&
+        & 9.110997e-01 ,9.093956e-01 ,9.077544e-01 ,9.061708e-01 ,9.046406e-01 ,&
+        & 9.031598e-01 ,9.017248e-01 ,9.003326e-01 ,8.989804e-01 ,8.976655e-01 ,&
+        & 8.963857e-01 ,8.951389e-01 ,8.939233e-01 ,8.927370e-01 ,8.915785e-01 ,&
+        & 8.904464e-01 ,8.893392e-01 ,8.882559e-01 ,8.871951e-01 ,8.861559e-01 ,&
+        & 8.851373e-01 ,8.841383e-01 ,8.831581e-01  /)
       ssaice2(:, 19) = (/ &
 ! band 19
-        & 9.723177e-01_rb,9.452119e-01_rb,9.267592e-01_rb,9.127393e-01_rb,9.014238e-01_rb,&
-        & 8.919334e-01_rb,8.837584e-01_rb,8.765773e-01_rb,8.701736e-01_rb,8.643950e-01_rb,&
-        & 8.591299e-01_rb,8.542942e-01_rb,8.498230e-01_rb,8.456651e-01_rb,8.417794e-01_rb,&
-        & 8.381324e-01_rb,8.346964e-01_rb,8.314484e-01_rb,8.283687e-01_rb,8.254408e-01_rb,&
-        & 8.226505e-01_rb,8.199854e-01_rb,8.174348e-01_rb,8.149891e-01_rb,8.126403e-01_rb,&
-        & 8.103808e-01_rb,8.082041e-01_rb,8.061044e-01_rb,8.040765e-01_rb,8.021156e-01_rb,&
-        & 8.002174e-01_rb,7.983781e-01_rb,7.965941e-01_rb,7.948622e-01_rb,7.931795e-01_rb,&
-        & 7.915432e-01_rb,7.899508e-01_rb,7.884002e-01_rb,7.868891e-01_rb,7.854156e-01_rb,&
-        & 7.839779e-01_rb,7.825742e-01_rb,7.812031e-01_rb /)
+        & 9.723177e-01 ,9.452119e-01 ,9.267592e-01 ,9.127393e-01 ,9.014238e-01 ,&
+        & 8.919334e-01 ,8.837584e-01 ,8.765773e-01 ,8.701736e-01 ,8.643950e-01 ,&
+        & 8.591299e-01 ,8.542942e-01 ,8.498230e-01 ,8.456651e-01 ,8.417794e-01 ,&
+        & 8.381324e-01 ,8.346964e-01 ,8.314484e-01 ,8.283687e-01 ,8.254408e-01 ,&
+        & 8.226505e-01 ,8.199854e-01 ,8.174348e-01 ,8.149891e-01 ,8.126403e-01 ,&
+        & 8.103808e-01 ,8.082041e-01 ,8.061044e-01 ,8.040765e-01 ,8.021156e-01 ,&
+        & 8.002174e-01 ,7.983781e-01 ,7.965941e-01 ,7.948622e-01 ,7.931795e-01 ,&
+        & 7.915432e-01 ,7.899508e-01 ,7.884002e-01 ,7.868891e-01 ,7.854156e-01 ,&
+        & 7.839779e-01 ,7.825742e-01 ,7.812031e-01  /)
       ssaice2(:, 20) = (/ &
 ! band 20
-        & 9.933294e-01_rb,9.860917e-01_rb,9.811564e-01_rb,9.774008e-01_rb,9.743652e-01_rb,&
-        & 9.718155e-01_rb,9.696159e-01_rb,9.676810e-01_rb,9.659531e-01_rb,9.643915e-01_rb,&
-        & 9.629667e-01_rb,9.616561e-01_rb,9.604426e-01_rb,9.593125e-01_rb,9.582548e-01_rb,&
-        & 9.572607e-01_rb,9.563227e-01_rb,9.554347e-01_rb,9.545915e-01_rb,9.537888e-01_rb,&
-        & 9.530226e-01_rb,9.522898e-01_rb,9.515874e-01_rb,9.509130e-01_rb,9.502643e-01_rb,&
-        & 9.496394e-01_rb,9.490366e-01_rb,9.484542e-01_rb,9.478910e-01_rb,9.473456e-01_rb,&
-        & 9.468169e-01_rb,9.463039e-01_rb,9.458056e-01_rb,9.453212e-01_rb,9.448499e-01_rb,&
-        & 9.443910e-01_rb,9.439438e-01_rb,9.435077e-01_rb,9.430821e-01_rb,9.426666e-01_rb,&
-        & 9.422607e-01_rb,9.418638e-01_rb,9.414756e-01_rb /)
+        & 9.933294e-01 ,9.860917e-01 ,9.811564e-01 ,9.774008e-01 ,9.743652e-01 ,&
+        & 9.718155e-01 ,9.696159e-01 ,9.676810e-01 ,9.659531e-01 ,9.643915e-01 ,&
+        & 9.629667e-01 ,9.616561e-01 ,9.604426e-01 ,9.593125e-01 ,9.582548e-01 ,&
+        & 9.572607e-01 ,9.563227e-01 ,9.554347e-01 ,9.545915e-01 ,9.537888e-01 ,&
+        & 9.530226e-01 ,9.522898e-01 ,9.515874e-01 ,9.509130e-01 ,9.502643e-01 ,&
+        & 9.496394e-01 ,9.490366e-01 ,9.484542e-01 ,9.478910e-01 ,9.473456e-01 ,&
+        & 9.468169e-01 ,9.463039e-01 ,9.458056e-01 ,9.453212e-01 ,9.448499e-01 ,&
+        & 9.443910e-01 ,9.439438e-01 ,9.435077e-01 ,9.430821e-01 ,9.426666e-01 ,&
+        & 9.422607e-01 ,9.418638e-01 ,9.414756e-01  /)
       ssaice2(:, 21) = (/ &
 ! band 21
-        & 9.900787e-01_rb,9.828880e-01_rb,9.779258e-01_rb,9.741173e-01_rb,9.710184e-01_rb,&
-        & 9.684012e-01_rb,9.661332e-01_rb,9.641301e-01_rb,9.623352e-01_rb,9.607083e-01_rb,&
-        & 9.592198e-01_rb,9.578474e-01_rb,9.565739e-01_rb,9.553856e-01_rb,9.542715e-01_rb,&
-        & 9.532226e-01_rb,9.522314e-01_rb,9.512919e-01_rb,9.503986e-01_rb,9.495472e-01_rb,&
-        & 9.487337e-01_rb,9.479549e-01_rb,9.472077e-01_rb,9.464897e-01_rb,9.457985e-01_rb,&
-        & 9.451322e-01_rb,9.444890e-01_rb,9.438673e-01_rb,9.432656e-01_rb,9.426826e-01_rb,&
-        & 9.421173e-01_rb,9.415684e-01_rb,9.410351e-01_rb,9.405164e-01_rb,9.400115e-01_rb,&
-        & 9.395198e-01_rb,9.390404e-01_rb,9.385728e-01_rb,9.381164e-01_rb,9.376707e-01_rb,&
-        & 9.372350e-01_rb,9.368091e-01_rb,9.363923e-01_rb /)
+        & 9.900787e-01 ,9.828880e-01 ,9.779258e-01 ,9.741173e-01 ,9.710184e-01 ,&
+        & 9.684012e-01 ,9.661332e-01 ,9.641301e-01 ,9.623352e-01 ,9.607083e-01 ,&
+        & 9.592198e-01 ,9.578474e-01 ,9.565739e-01 ,9.553856e-01 ,9.542715e-01 ,&
+        & 9.532226e-01 ,9.522314e-01 ,9.512919e-01 ,9.503986e-01 ,9.495472e-01 ,&
+        & 9.487337e-01 ,9.479549e-01 ,9.472077e-01 ,9.464897e-01 ,9.457985e-01 ,&
+        & 9.451322e-01 ,9.444890e-01 ,9.438673e-01 ,9.432656e-01 ,9.426826e-01 ,&
+        & 9.421173e-01 ,9.415684e-01 ,9.410351e-01 ,9.405164e-01 ,9.400115e-01 ,&
+        & 9.395198e-01 ,9.390404e-01 ,9.385728e-01 ,9.381164e-01 ,9.376707e-01 ,&
+        & 9.372350e-01 ,9.368091e-01 ,9.363923e-01  /)
       ssaice2(:, 22) = (/ &
 ! band 22
-        & 9.986793e-01_rb,9.985239e-01_rb,9.983911e-01_rb,9.982715e-01_rb,9.981606e-01_rb,&
-        & 9.980562e-01_rb,9.979567e-01_rb,9.978613e-01_rb,9.977691e-01_rb,9.976798e-01_rb,&
-        & 9.975929e-01_rb,9.975081e-01_rb,9.974251e-01_rb,9.973438e-01_rb,9.972640e-01_rb,&
-        & 9.971855e-01_rb,9.971083e-01_rb,9.970322e-01_rb,9.969571e-01_rb,9.968830e-01_rb,&
-        & 9.968099e-01_rb,9.967375e-01_rb,9.966660e-01_rb,9.965951e-01_rb,9.965250e-01_rb,&
-        & 9.964555e-01_rb,9.963867e-01_rb,9.963185e-01_rb,9.962508e-01_rb,9.961836e-01_rb,&
-        & 9.961170e-01_rb,9.960508e-01_rb,9.959851e-01_rb,9.959198e-01_rb,9.958550e-01_rb,&
-        & 9.957906e-01_rb,9.957266e-01_rb,9.956629e-01_rb,9.955997e-01_rb,9.955367e-01_rb,&
-        & 9.954742e-01_rb,9.954119e-01_rb,9.953500e-01_rb /)
+        & 9.986793e-01 ,9.985239e-01 ,9.983911e-01 ,9.982715e-01 ,9.981606e-01 ,&
+        & 9.980562e-01 ,9.979567e-01 ,9.978613e-01 ,9.977691e-01 ,9.976798e-01 ,&
+        & 9.975929e-01 ,9.975081e-01 ,9.974251e-01 ,9.973438e-01 ,9.972640e-01 ,&
+        & 9.971855e-01 ,9.971083e-01 ,9.970322e-01 ,9.969571e-01 ,9.968830e-01 ,&
+        & 9.968099e-01 ,9.967375e-01 ,9.966660e-01 ,9.965951e-01 ,9.965250e-01 ,&
+        & 9.964555e-01 ,9.963867e-01 ,9.963185e-01 ,9.962508e-01 ,9.961836e-01 ,&
+        & 9.961170e-01 ,9.960508e-01 ,9.959851e-01 ,9.959198e-01 ,9.958550e-01 ,&
+        & 9.957906e-01 ,9.957266e-01 ,9.956629e-01 ,9.955997e-01 ,9.955367e-01 ,&
+        & 9.954742e-01 ,9.954119e-01 ,9.953500e-01  /)
       ssaice2(:, 23) = (/ &
 ! band 23
-        & 9.997944e-01_rb,9.997791e-01_rb,9.997664e-01_rb,9.997547e-01_rb,9.997436e-01_rb,&
-        & 9.997327e-01_rb,9.997219e-01_rb,9.997110e-01_rb,9.996999e-01_rb,9.996886e-01_rb,&
-        & 9.996771e-01_rb,9.996653e-01_rb,9.996533e-01_rb,9.996409e-01_rb,9.996282e-01_rb,&
-        & 9.996152e-01_rb,9.996019e-01_rb,9.995883e-01_rb,9.995743e-01_rb,9.995599e-01_rb,&
-        & 9.995453e-01_rb,9.995302e-01_rb,9.995149e-01_rb,9.994992e-01_rb,9.994831e-01_rb,&
-        & 9.994667e-01_rb,9.994500e-01_rb,9.994329e-01_rb,9.994154e-01_rb,9.993976e-01_rb,&
-        & 9.993795e-01_rb,9.993610e-01_rb,9.993422e-01_rb,9.993230e-01_rb,9.993035e-01_rb,&
-        & 9.992837e-01_rb,9.992635e-01_rb,9.992429e-01_rb,9.992221e-01_rb,9.992008e-01_rb,&
-        & 9.991793e-01_rb,9.991574e-01_rb,9.991352e-01_rb /)
+        & 9.997944e-01 ,9.997791e-01 ,9.997664e-01 ,9.997547e-01 ,9.997436e-01 ,&
+        & 9.997327e-01 ,9.997219e-01 ,9.997110e-01 ,9.996999e-01 ,9.996886e-01 ,&
+        & 9.996771e-01 ,9.996653e-01 ,9.996533e-01 ,9.996409e-01 ,9.996282e-01 ,&
+        & 9.996152e-01 ,9.996019e-01 ,9.995883e-01 ,9.995743e-01 ,9.995599e-01 ,&
+        & 9.995453e-01 ,9.995302e-01 ,9.995149e-01 ,9.994992e-01 ,9.994831e-01 ,&
+        & 9.994667e-01 ,9.994500e-01 ,9.994329e-01 ,9.994154e-01 ,9.993976e-01 ,&
+        & 9.993795e-01 ,9.993610e-01 ,9.993422e-01 ,9.993230e-01 ,9.993035e-01 ,&
+        & 9.992837e-01 ,9.992635e-01 ,9.992429e-01 ,9.992221e-01 ,9.992008e-01 ,&
+        & 9.991793e-01 ,9.991574e-01 ,9.991352e-01  /)
       ssaice2(:, 24) = (/ &
 ! band 24
-        & 9.999949e-01_rb,9.999947e-01_rb,9.999943e-01_rb,9.999939e-01_rb,9.999934e-01_rb,&
-        & 9.999927e-01_rb,9.999920e-01_rb,9.999913e-01_rb,9.999904e-01_rb,9.999895e-01_rb,&
-        & 9.999885e-01_rb,9.999874e-01_rb,9.999863e-01_rb,9.999851e-01_rb,9.999838e-01_rb,&
-        & 9.999824e-01_rb,9.999810e-01_rb,9.999795e-01_rb,9.999780e-01_rb,9.999764e-01_rb,&
-        & 9.999747e-01_rb,9.999729e-01_rb,9.999711e-01_rb,9.999692e-01_rb,9.999673e-01_rb,&
-        & 9.999653e-01_rb,9.999632e-01_rb,9.999611e-01_rb,9.999589e-01_rb,9.999566e-01_rb,&
-        & 9.999543e-01_rb,9.999519e-01_rb,9.999495e-01_rb,9.999470e-01_rb,9.999444e-01_rb,&
-        & 9.999418e-01_rb,9.999392e-01_rb,9.999364e-01_rb,9.999336e-01_rb,9.999308e-01_rb,&
-        & 9.999279e-01_rb,9.999249e-01_rb,9.999219e-01_rb /)
+        & 9.999949e-01 ,9.999947e-01 ,9.999943e-01 ,9.999939e-01 ,9.999934e-01 ,&
+        & 9.999927e-01 ,9.999920e-01 ,9.999913e-01 ,9.999904e-01 ,9.999895e-01 ,&
+        & 9.999885e-01 ,9.999874e-01 ,9.999863e-01 ,9.999851e-01 ,9.999838e-01 ,&
+        & 9.999824e-01 ,9.999810e-01 ,9.999795e-01 ,9.999780e-01 ,9.999764e-01 ,&
+        & 9.999747e-01 ,9.999729e-01 ,9.999711e-01 ,9.999692e-01 ,9.999673e-01 ,&
+        & 9.999653e-01 ,9.999632e-01 ,9.999611e-01 ,9.999589e-01 ,9.999566e-01 ,&
+        & 9.999543e-01 ,9.999519e-01 ,9.999495e-01 ,9.999470e-01 ,9.999444e-01 ,&
+        & 9.999418e-01 ,9.999392e-01 ,9.999364e-01 ,9.999336e-01 ,9.999308e-01 ,&
+        & 9.999279e-01 ,9.999249e-01 ,9.999219e-01  /)
       ssaice2(:, 25) = (/ &
 ! band 25
-        & 9.999997e-01_rb,9.999997e-01_rb,9.999997e-01_rb,9.999996e-01_rb,9.999996e-01_rb,&
-        & 9.999995e-01_rb,9.999994e-01_rb,9.999993e-01_rb,9.999993e-01_rb,9.999992e-01_rb,&
-        & 9.999991e-01_rb,9.999989e-01_rb,9.999988e-01_rb,9.999987e-01_rb,9.999986e-01_rb,&
-        & 9.999984e-01_rb,9.999983e-01_rb,9.999981e-01_rb,9.999980e-01_rb,9.999978e-01_rb,&
-        & 9.999976e-01_rb,9.999974e-01_rb,9.999972e-01_rb,9.999971e-01_rb,9.999969e-01_rb,&
-        & 9.999966e-01_rb,9.999964e-01_rb,9.999962e-01_rb,9.999960e-01_rb,9.999957e-01_rb,&
-        & 9.999955e-01_rb,9.999953e-01_rb,9.999950e-01_rb,9.999947e-01_rb,9.999945e-01_rb,&
-        & 9.999942e-01_rb,9.999939e-01_rb,9.999936e-01_rb,9.999934e-01_rb,9.999931e-01_rb,&
-        & 9.999928e-01_rb,9.999925e-01_rb,9.999921e-01_rb /)
+        & 9.999997e-01 ,9.999997e-01 ,9.999997e-01 ,9.999996e-01 ,9.999996e-01 ,&
+        & 9.999995e-01 ,9.999994e-01 ,9.999993e-01 ,9.999993e-01 ,9.999992e-01 ,&
+        & 9.999991e-01 ,9.999989e-01 ,9.999988e-01 ,9.999987e-01 ,9.999986e-01 ,&
+        & 9.999984e-01 ,9.999983e-01 ,9.999981e-01 ,9.999980e-01 ,9.999978e-01 ,&
+        & 9.999976e-01 ,9.999974e-01 ,9.999972e-01 ,9.999971e-01 ,9.999969e-01 ,&
+        & 9.999966e-01 ,9.999964e-01 ,9.999962e-01 ,9.999960e-01 ,9.999957e-01 ,&
+        & 9.999955e-01 ,9.999953e-01 ,9.999950e-01 ,9.999947e-01 ,9.999945e-01 ,&
+        & 9.999942e-01 ,9.999939e-01 ,9.999936e-01 ,9.999934e-01 ,9.999931e-01 ,&
+        & 9.999928e-01 ,9.999925e-01 ,9.999921e-01  /)
       ssaice2(:, 26) = (/ &
 ! band 26
-        & 9.999997e-01_rb,9.999996e-01_rb,9.999996e-01_rb,9.999995e-01_rb,9.999994e-01_rb,&
-        & 9.999993e-01_rb,9.999992e-01_rb,9.999991e-01_rb,9.999990e-01_rb,9.999989e-01_rb,&
-        & 9.999987e-01_rb,9.999986e-01_rb,9.999984e-01_rb,9.999982e-01_rb,9.999980e-01_rb,&
-        & 9.999978e-01_rb,9.999976e-01_rb,9.999974e-01_rb,9.999972e-01_rb,9.999970e-01_rb,&
-        & 9.999967e-01_rb,9.999965e-01_rb,9.999962e-01_rb,9.999959e-01_rb,9.999956e-01_rb,&
-        & 9.999954e-01_rb,9.999951e-01_rb,9.999947e-01_rb,9.999944e-01_rb,9.999941e-01_rb,&
-        & 9.999938e-01_rb,9.999934e-01_rb,9.999931e-01_rb,9.999927e-01_rb,9.999923e-01_rb,&
-        & 9.999920e-01_rb,9.999916e-01_rb,9.999912e-01_rb,9.999908e-01_rb,9.999904e-01_rb,&
-        & 9.999899e-01_rb,9.999895e-01_rb,9.999891e-01_rb /)
+        & 9.999997e-01 ,9.999996e-01 ,9.999996e-01 ,9.999995e-01 ,9.999994e-01 ,&
+        & 9.999993e-01 ,9.999992e-01 ,9.999991e-01 ,9.999990e-01 ,9.999989e-01 ,&
+        & 9.999987e-01 ,9.999986e-01 ,9.999984e-01 ,9.999982e-01 ,9.999980e-01 ,&
+        & 9.999978e-01 ,9.999976e-01 ,9.999974e-01 ,9.999972e-01 ,9.999970e-01 ,&
+        & 9.999967e-01 ,9.999965e-01 ,9.999962e-01 ,9.999959e-01 ,9.999956e-01 ,&
+        & 9.999954e-01 ,9.999951e-01 ,9.999947e-01 ,9.999944e-01 ,9.999941e-01 ,&
+        & 9.999938e-01 ,9.999934e-01 ,9.999931e-01 ,9.999927e-01 ,9.999923e-01 ,&
+        & 9.999920e-01 ,9.999916e-01 ,9.999912e-01 ,9.999908e-01 ,9.999904e-01 ,&
+        & 9.999899e-01 ,9.999895e-01 ,9.999891e-01  /)
       ssaice2(:, 27) = (/ &
 ! band 27
-        & 9.999987e-01_rb,9.999987e-01_rb,9.999985e-01_rb,9.999984e-01_rb,9.999982e-01_rb,&
-        & 9.999980e-01_rb,9.999978e-01_rb,9.999976e-01_rb,9.999973e-01_rb,9.999970e-01_rb,&
-        & 9.999967e-01_rb,9.999964e-01_rb,9.999960e-01_rb,9.999956e-01_rb,9.999952e-01_rb,&
-        & 9.999948e-01_rb,9.999944e-01_rb,9.999939e-01_rb,9.999934e-01_rb,9.999929e-01_rb,&
-        & 9.999924e-01_rb,9.999918e-01_rb,9.999913e-01_rb,9.999907e-01_rb,9.999901e-01_rb,&
-        & 9.999894e-01_rb,9.999888e-01_rb,9.999881e-01_rb,9.999874e-01_rb,9.999867e-01_rb,&
-        & 9.999860e-01_rb,9.999853e-01_rb,9.999845e-01_rb,9.999837e-01_rb,9.999829e-01_rb,&
-        & 9.999821e-01_rb,9.999813e-01_rb,9.999804e-01_rb,9.999796e-01_rb,9.999787e-01_rb,&
-        & 9.999778e-01_rb,9.999768e-01_rb,9.999759e-01_rb /)
+        & 9.999987e-01 ,9.999987e-01 ,9.999985e-01 ,9.999984e-01 ,9.999982e-01 ,&
+        & 9.999980e-01 ,9.999978e-01 ,9.999976e-01 ,9.999973e-01 ,9.999970e-01 ,&
+        & 9.999967e-01 ,9.999964e-01 ,9.999960e-01 ,9.999956e-01 ,9.999952e-01 ,&
+        & 9.999948e-01 ,9.999944e-01 ,9.999939e-01 ,9.999934e-01 ,9.999929e-01 ,&
+        & 9.999924e-01 ,9.999918e-01 ,9.999913e-01 ,9.999907e-01 ,9.999901e-01 ,&
+        & 9.999894e-01 ,9.999888e-01 ,9.999881e-01 ,9.999874e-01 ,9.999867e-01 ,&
+        & 9.999860e-01 ,9.999853e-01 ,9.999845e-01 ,9.999837e-01 ,9.999829e-01 ,&
+        & 9.999821e-01 ,9.999813e-01 ,9.999804e-01 ,9.999796e-01 ,9.999787e-01 ,&
+        & 9.999778e-01 ,9.999768e-01 ,9.999759e-01  /)
       ssaice2(:, 28) = (/ &
 ! band 28
-        & 9.999989e-01_rb,9.999989e-01_rb,9.999987e-01_rb,9.999986e-01_rb,9.999984e-01_rb,&
-        & 9.999982e-01_rb,9.999980e-01_rb,9.999978e-01_rb,9.999975e-01_rb,9.999972e-01_rb,&
-        & 9.999969e-01_rb,9.999966e-01_rb,9.999962e-01_rb,9.999958e-01_rb,9.999954e-01_rb,&
-        & 9.999950e-01_rb,9.999945e-01_rb,9.999941e-01_rb,9.999936e-01_rb,9.999931e-01_rb,&
-        & 9.999925e-01_rb,9.999920e-01_rb,9.999914e-01_rb,9.999908e-01_rb,9.999902e-01_rb,&
-        & 9.999896e-01_rb,9.999889e-01_rb,9.999883e-01_rb,9.999876e-01_rb,9.999869e-01_rb,&
-        & 9.999861e-01_rb,9.999854e-01_rb,9.999846e-01_rb,9.999838e-01_rb,9.999830e-01_rb,&
-        & 9.999822e-01_rb,9.999814e-01_rb,9.999805e-01_rb,9.999796e-01_rb,9.999787e-01_rb,&
-        & 9.999778e-01_rb,9.999769e-01_rb,9.999759e-01_rb /)
+        & 9.999989e-01 ,9.999989e-01 ,9.999987e-01 ,9.999986e-01 ,9.999984e-01 ,&
+        & 9.999982e-01 ,9.999980e-01 ,9.999978e-01 ,9.999975e-01 ,9.999972e-01 ,&
+        & 9.999969e-01 ,9.999966e-01 ,9.999962e-01 ,9.999958e-01 ,9.999954e-01 ,&
+        & 9.999950e-01 ,9.999945e-01 ,9.999941e-01 ,9.999936e-01 ,9.999931e-01 ,&
+        & 9.999925e-01 ,9.999920e-01 ,9.999914e-01 ,9.999908e-01 ,9.999902e-01 ,&
+        & 9.999896e-01 ,9.999889e-01 ,9.999883e-01 ,9.999876e-01 ,9.999869e-01 ,&
+        & 9.999861e-01 ,9.999854e-01 ,9.999846e-01 ,9.999838e-01 ,9.999830e-01 ,&
+        & 9.999822e-01 ,9.999814e-01 ,9.999805e-01 ,9.999796e-01 ,9.999787e-01 ,&
+        & 9.999778e-01 ,9.999769e-01 ,9.999759e-01  /)
       ssaice2(:, 29) = (/ &
 ! band 29
-        & 7.042143e-01_rb,6.691161e-01_rb,6.463240e-01_rb,6.296590e-01_rb,6.166381e-01_rb,&
-        & 6.060183e-01_rb,5.970908e-01_rb,5.894144e-01_rb,5.826968e-01_rb,5.767343e-01_rb,&
-        & 5.713804e-01_rb,5.665256e-01_rb,5.620867e-01_rb,5.579987e-01_rb,5.542101e-01_rb,&
-        & 5.506794e-01_rb,5.473727e-01_rb,5.442620e-01_rb,5.413239e-01_rb,5.385389e-01_rb,&
-        & 5.358901e-01_rb,5.333633e-01_rb,5.309460e-01_rb,5.286277e-01_rb,5.263988e-01_rb,&
-        & 5.242512e-01_rb,5.221777e-01_rb,5.201719e-01_rb,5.182280e-01_rb,5.163410e-01_rb,&
-        & 5.145062e-01_rb,5.127197e-01_rb,5.109776e-01_rb,5.092766e-01_rb,5.076137e-01_rb,&
-        & 5.059860e-01_rb,5.043911e-01_rb,5.028266e-01_rb,5.012904e-01_rb,4.997805e-01_rb,&
-        & 4.982951e-01_rb,4.968326e-01_rb,4.953913e-01_rb /)
+        & 7.042143e-01 ,6.691161e-01 ,6.463240e-01 ,6.296590e-01 ,6.166381e-01 ,&
+        & 6.060183e-01 ,5.970908e-01 ,5.894144e-01 ,5.826968e-01 ,5.767343e-01 ,&
+        & 5.713804e-01 ,5.665256e-01 ,5.620867e-01 ,5.579987e-01 ,5.542101e-01 ,&
+        & 5.506794e-01 ,5.473727e-01 ,5.442620e-01 ,5.413239e-01 ,5.385389e-01 ,&
+        & 5.358901e-01 ,5.333633e-01 ,5.309460e-01 ,5.286277e-01 ,5.263988e-01 ,&
+        & 5.242512e-01 ,5.221777e-01 ,5.201719e-01 ,5.182280e-01 ,5.163410e-01 ,&
+        & 5.145062e-01 ,5.127197e-01 ,5.109776e-01 ,5.092766e-01 ,5.076137e-01 ,&
+        & 5.059860e-01 ,5.043911e-01 ,5.028266e-01 ,5.012904e-01 ,4.997805e-01 ,&
+        & 4.982951e-01 ,4.968326e-01 ,4.953913e-01  /)
 
 ! asymmetry factor: unitless
       asyice2(:, 16) = (/ &
 ! band 16
-        & 7.946655e-01_rb,8.547685e-01_rb,8.806016e-01_rb,8.949880e-01_rb,9.041676e-01_rb,&
-        & 9.105399e-01_rb,9.152249e-01_rb,9.188160e-01_rb,9.216573e-01_rb,9.239620e-01_rb,&
-        & 9.258695e-01_rb,9.274745e-01_rb,9.288441e-01_rb,9.300267e-01_rb,9.310584e-01_rb,&
-        & 9.319665e-01_rb,9.327721e-01_rb,9.334918e-01_rb,9.341387e-01_rb,9.347236e-01_rb,&
-        & 9.352551e-01_rb,9.357402e-01_rb,9.361850e-01_rb,9.365942e-01_rb,9.369722e-01_rb,&
-        & 9.373225e-01_rb,9.376481e-01_rb,9.379516e-01_rb,9.382352e-01_rb,9.385010e-01_rb,&
-        & 9.387505e-01_rb,9.389854e-01_rb,9.392070e-01_rb,9.394163e-01_rb,9.396145e-01_rb,&
-        & 9.398024e-01_rb,9.399809e-01_rb,9.401508e-01_rb,9.403126e-01_rb,9.404670e-01_rb,&
-        & 9.406144e-01_rb,9.407555e-01_rb,9.408906e-01_rb /)
+        & 7.946655e-01 ,8.547685e-01 ,8.806016e-01 ,8.949880e-01 ,9.041676e-01 ,&
+        & 9.105399e-01 ,9.152249e-01 ,9.188160e-01 ,9.216573e-01 ,9.239620e-01 ,&
+        & 9.258695e-01 ,9.274745e-01 ,9.288441e-01 ,9.300267e-01 ,9.310584e-01 ,&
+        & 9.319665e-01 ,9.327721e-01 ,9.334918e-01 ,9.341387e-01 ,9.347236e-01 ,&
+        & 9.352551e-01 ,9.357402e-01 ,9.361850e-01 ,9.365942e-01 ,9.369722e-01 ,&
+        & 9.373225e-01 ,9.376481e-01 ,9.379516e-01 ,9.382352e-01 ,9.385010e-01 ,&
+        & 9.387505e-01 ,9.389854e-01 ,9.392070e-01 ,9.394163e-01 ,9.396145e-01 ,&
+        & 9.398024e-01 ,9.399809e-01 ,9.401508e-01 ,9.403126e-01 ,9.404670e-01 ,&
+        & 9.406144e-01 ,9.407555e-01 ,9.408906e-01  /)
       asyice2(:, 17) = (/ &
 ! band 17
-        & 9.078091e-01_rb,9.195850e-01_rb,9.267250e-01_rb,9.317083e-01_rb,9.354632e-01_rb,&
-        & 9.384323e-01_rb,9.408597e-01_rb,9.428935e-01_rb,9.446301e-01_rb,9.461351e-01_rb,&
-        & 9.474555e-01_rb,9.486259e-01_rb,9.496722e-01_rb,9.506146e-01_rb,9.514688e-01_rb,&
-        & 9.522476e-01_rb,9.529612e-01_rb,9.536181e-01_rb,9.542251e-01_rb,9.547883e-01_rb,&
-        & 9.553124e-01_rb,9.558019e-01_rb,9.562601e-01_rb,9.566904e-01_rb,9.570953e-01_rb,&
-        & 9.574773e-01_rb,9.578385e-01_rb,9.581806e-01_rb,9.585054e-01_rb,9.588142e-01_rb,&
-        & 9.591083e-01_rb,9.593888e-01_rb,9.596569e-01_rb,9.599135e-01_rb,9.601593e-01_rb,&
-        & 9.603952e-01_rb,9.606219e-01_rb,9.608399e-01_rb,9.610499e-01_rb,9.612523e-01_rb,&
-        & 9.614477e-01_rb,9.616365e-01_rb,9.618192e-01_rb /)
+        & 9.078091e-01 ,9.195850e-01 ,9.267250e-01 ,9.317083e-01 ,9.354632e-01 ,&
+        & 9.384323e-01 ,9.408597e-01 ,9.428935e-01 ,9.446301e-01 ,9.461351e-01 ,&
+        & 9.474555e-01 ,9.486259e-01 ,9.496722e-01 ,9.506146e-01 ,9.514688e-01 ,&
+        & 9.522476e-01 ,9.529612e-01 ,9.536181e-01 ,9.542251e-01 ,9.547883e-01 ,&
+        & 9.553124e-01 ,9.558019e-01 ,9.562601e-01 ,9.566904e-01 ,9.570953e-01 ,&
+        & 9.574773e-01 ,9.578385e-01 ,9.581806e-01 ,9.585054e-01 ,9.588142e-01 ,&
+        & 9.591083e-01 ,9.593888e-01 ,9.596569e-01 ,9.599135e-01 ,9.601593e-01 ,&
+        & 9.603952e-01 ,9.606219e-01 ,9.608399e-01 ,9.610499e-01 ,9.612523e-01 ,&
+        & 9.614477e-01 ,9.616365e-01 ,9.618192e-01  /)
       asyice2(:, 18) = (/ &
 ! band 18
-        & 8.322045e-01_rb,8.528693e-01_rb,8.648167e-01_rb,8.729163e-01_rb,8.789054e-01_rb,&
-        & 8.835845e-01_rb,8.873819e-01_rb,8.905511e-01_rb,8.932532e-01_rb,8.955965e-01_rb,&
-        & 8.976567e-01_rb,8.994887e-01_rb,9.011334e-01_rb,9.026221e-01_rb,9.039791e-01_rb,&
-        & 9.052237e-01_rb,9.063715e-01_rb,9.074349e-01_rb,9.084245e-01_rb,9.093489e-01_rb,&
-        & 9.102154e-01_rb,9.110303e-01_rb,9.117987e-01_rb,9.125253e-01_rb,9.132140e-01_rb,&
-        & 9.138682e-01_rb,9.144910e-01_rb,9.150850e-01_rb,9.156524e-01_rb,9.161955e-01_rb,&
-        & 9.167160e-01_rb,9.172157e-01_rb,9.176959e-01_rb,9.181581e-01_rb,9.186034e-01_rb,&
-        & 9.190330e-01_rb,9.194478e-01_rb,9.198488e-01_rb,9.202368e-01_rb,9.206126e-01_rb,&
-        & 9.209768e-01_rb,9.213301e-01_rb,9.216731e-01_rb /)
+        & 8.322045e-01 ,8.528693e-01 ,8.648167e-01 ,8.729163e-01 ,8.789054e-01 ,&
+        & 8.835845e-01 ,8.873819e-01 ,8.905511e-01 ,8.932532e-01 ,8.955965e-01 ,&
+        & 8.976567e-01 ,8.994887e-01 ,9.011334e-01 ,9.026221e-01 ,9.039791e-01 ,&
+        & 9.052237e-01 ,9.063715e-01 ,9.074349e-01 ,9.084245e-01 ,9.093489e-01 ,&
+        & 9.102154e-01 ,9.110303e-01 ,9.117987e-01 ,9.125253e-01 ,9.132140e-01 ,&
+        & 9.138682e-01 ,9.144910e-01 ,9.150850e-01 ,9.156524e-01 ,9.161955e-01 ,&
+        & 9.167160e-01 ,9.172157e-01 ,9.176959e-01 ,9.181581e-01 ,9.186034e-01 ,&
+        & 9.190330e-01 ,9.194478e-01 ,9.198488e-01 ,9.202368e-01 ,9.206126e-01 ,&
+        & 9.209768e-01 ,9.213301e-01 ,9.216731e-01  /)
       asyice2(:, 19) = (/ &
 ! band 19
-        & 8.116560e-01_rb,8.488278e-01_rb,8.674331e-01_rb,8.788148e-01_rb,8.865810e-01_rb,&
-        & 8.922595e-01_rb,8.966149e-01_rb,9.000747e-01_rb,9.028980e-01_rb,9.052513e-01_rb,&
-        & 9.072468e-01_rb,9.089632e-01_rb,9.104574e-01_rb,9.117713e-01_rb,9.129371e-01_rb,&
-        & 9.139793e-01_rb,9.149174e-01_rb,9.157668e-01_rb,9.165400e-01_rb,9.172473e-01_rb,&
-        & 9.178970e-01_rb,9.184962e-01_rb,9.190508e-01_rb,9.195658e-01_rb,9.200455e-01_rb,&
-        & 9.204935e-01_rb,9.209130e-01_rb,9.213067e-01_rb,9.216771e-01_rb,9.220262e-01_rb,&
-        & 9.223560e-01_rb,9.226680e-01_rb,9.229636e-01_rb,9.232443e-01_rb,9.235112e-01_rb,&
-        & 9.237652e-01_rb,9.240074e-01_rb,9.242385e-01_rb,9.244594e-01_rb,9.246708e-01_rb,&
-        & 9.248733e-01_rb,9.250674e-01_rb,9.252536e-01_rb /)
+        & 8.116560e-01 ,8.488278e-01 ,8.674331e-01 ,8.788148e-01 ,8.865810e-01 ,&
+        & 8.922595e-01 ,8.966149e-01 ,9.000747e-01 ,9.028980e-01 ,9.052513e-01 ,&
+        & 9.072468e-01 ,9.089632e-01 ,9.104574e-01 ,9.117713e-01 ,9.129371e-01 ,&
+        & 9.139793e-01 ,9.149174e-01 ,9.157668e-01 ,9.165400e-01 ,9.172473e-01 ,&
+        & 9.178970e-01 ,9.184962e-01 ,9.190508e-01 ,9.195658e-01 ,9.200455e-01 ,&
+        & 9.204935e-01 ,9.209130e-01 ,9.213067e-01 ,9.216771e-01 ,9.220262e-01 ,&
+        & 9.223560e-01 ,9.226680e-01 ,9.229636e-01 ,9.232443e-01 ,9.235112e-01 ,&
+        & 9.237652e-01 ,9.240074e-01 ,9.242385e-01 ,9.244594e-01 ,9.246708e-01 ,&
+        & 9.248733e-01 ,9.250674e-01 ,9.252536e-01  /)
       asyice2(:, 20) = (/ &
 ! band 20
-        & 8.047113e-01_rb,8.402864e-01_rb,8.570332e-01_rb,8.668455e-01_rb,8.733206e-01_rb,&
-        & 8.779272e-01_rb,8.813796e-01_rb,8.840676e-01_rb,8.862225e-01_rb,8.879904e-01_rb,&
-        & 8.894682e-01_rb,8.907228e-01_rb,8.918019e-01_rb,8.927404e-01_rb,8.935645e-01_rb,&
-        & 8.942943e-01_rb,8.949452e-01_rb,8.955296e-01_rb,8.960574e-01_rb,8.965366e-01_rb,&
-        & 8.969736e-01_rb,8.973740e-01_rb,8.977422e-01_rb,8.980820e-01_rb,8.983966e-01_rb,&
-        & 8.986889e-01_rb,8.989611e-01_rb,8.992153e-01_rb,8.994533e-01_rb,8.996766e-01_rb,&
-        & 8.998865e-01_rb,9.000843e-01_rb,9.002709e-01_rb,9.004474e-01_rb,9.006146e-01_rb,&
-        & 9.007731e-01_rb,9.009237e-01_rb,9.010670e-01_rb,9.012034e-01_rb,9.013336e-01_rb,&
-        & 9.014579e-01_rb,9.015767e-01_rb,9.016904e-01_rb /)
+        & 8.047113e-01 ,8.402864e-01 ,8.570332e-01 ,8.668455e-01 ,8.733206e-01 ,&
+        & 8.779272e-01 ,8.813796e-01 ,8.840676e-01 ,8.862225e-01 ,8.879904e-01 ,&
+        & 8.894682e-01 ,8.907228e-01 ,8.918019e-01 ,8.927404e-01 ,8.935645e-01 ,&
+        & 8.942943e-01 ,8.949452e-01 ,8.955296e-01 ,8.960574e-01 ,8.965366e-01 ,&
+        & 8.969736e-01 ,8.973740e-01 ,8.977422e-01 ,8.980820e-01 ,8.983966e-01 ,&
+        & 8.986889e-01 ,8.989611e-01 ,8.992153e-01 ,8.994533e-01 ,8.996766e-01 ,&
+        & 8.998865e-01 ,9.000843e-01 ,9.002709e-01 ,9.004474e-01 ,9.006146e-01 ,&
+        & 9.007731e-01 ,9.009237e-01 ,9.010670e-01 ,9.012034e-01 ,9.013336e-01 ,&
+        & 9.014579e-01 ,9.015767e-01 ,9.016904e-01  /)
       asyice2(:, 21) = (/ &
 ! band 21
-        & 8.179122e-01_rb,8.480726e-01_rb,8.621945e-01_rb,8.704354e-01_rb,8.758555e-01_rb,&
-        & 8.797007e-01_rb,8.825750e-01_rb,8.848078e-01_rb,8.865939e-01_rb,8.880564e-01_rb,&
-        & 8.892765e-01_rb,8.903105e-01_rb,8.911982e-01_rb,8.919689e-01_rb,8.926446e-01_rb,&
-        & 8.932419e-01_rb,8.937738e-01_rb,8.942506e-01_rb,8.946806e-01_rb,8.950702e-01_rb,&
-        & 8.954251e-01_rb,8.957497e-01_rb,8.960477e-01_rb,8.963223e-01_rb,8.965762e-01_rb,&
-        & 8.968116e-01_rb,8.970306e-01_rb,8.972347e-01_rb,8.974255e-01_rb,8.976042e-01_rb,&
-        & 8.977720e-01_rb,8.979298e-01_rb,8.980784e-01_rb,8.982188e-01_rb,8.983515e-01_rb,&
-        & 8.984771e-01_rb,8.985963e-01_rb,8.987095e-01_rb,8.988171e-01_rb,8.989195e-01_rb,&
-        & 8.990172e-01_rb,8.991104e-01_rb,8.991994e-01_rb /)
+        & 8.179122e-01 ,8.480726e-01 ,8.621945e-01 ,8.704354e-01 ,8.758555e-01 ,&
+        & 8.797007e-01 ,8.825750e-01 ,8.848078e-01 ,8.865939e-01 ,8.880564e-01 ,&
+        & 8.892765e-01 ,8.903105e-01 ,8.911982e-01 ,8.919689e-01 ,8.926446e-01 ,&
+        & 8.932419e-01 ,8.937738e-01 ,8.942506e-01 ,8.946806e-01 ,8.950702e-01 ,&
+        & 8.954251e-01 ,8.957497e-01 ,8.960477e-01 ,8.963223e-01 ,8.965762e-01 ,&
+        & 8.968116e-01 ,8.970306e-01 ,8.972347e-01 ,8.974255e-01 ,8.976042e-01 ,&
+        & 8.977720e-01 ,8.979298e-01 ,8.980784e-01 ,8.982188e-01 ,8.983515e-01 ,&
+        & 8.984771e-01 ,8.985963e-01 ,8.987095e-01 ,8.988171e-01 ,8.989195e-01 ,&
+        & 8.990172e-01 ,8.991104e-01 ,8.991994e-01  /)
       asyice2(:, 22) = (/ &
 ! band 22
-        & 8.169789e-01_rb,8.455024e-01_rb,8.586925e-01_rb,8.663283e-01_rb,8.713217e-01_rb,&
-        & 8.748488e-01_rb,8.774765e-01_rb,8.795122e-01_rb,8.811370e-01_rb,8.824649e-01_rb,&
-        & 8.835711e-01_rb,8.845073e-01_rb,8.853103e-01_rb,8.860068e-01_rb,8.866170e-01_rb,&
-        & 8.871560e-01_rb,8.876358e-01_rb,8.880658e-01_rb,8.884533e-01_rb,8.888044e-01_rb,&
-        & 8.891242e-01_rb,8.894166e-01_rb,8.896851e-01_rb,8.899324e-01_rb,8.901612e-01_rb,&
-        & 8.903733e-01_rb,8.905706e-01_rb,8.907545e-01_rb,8.909265e-01_rb,8.910876e-01_rb,&
-        & 8.912388e-01_rb,8.913812e-01_rb,8.915153e-01_rb,8.916419e-01_rb,8.917617e-01_rb,&
-        & 8.918752e-01_rb,8.919829e-01_rb,8.920851e-01_rb,8.921824e-01_rb,8.922751e-01_rb,&
-        & 8.923635e-01_rb,8.924478e-01_rb,8.925284e-01_rb /)
+        & 8.169789e-01 ,8.455024e-01 ,8.586925e-01 ,8.663283e-01 ,8.713217e-01 ,&
+        & 8.748488e-01 ,8.774765e-01 ,8.795122e-01 ,8.811370e-01 ,8.824649e-01 ,&
+        & 8.835711e-01 ,8.845073e-01 ,8.853103e-01 ,8.860068e-01 ,8.866170e-01 ,&
+        & 8.871560e-01 ,8.876358e-01 ,8.880658e-01 ,8.884533e-01 ,8.888044e-01 ,&
+        & 8.891242e-01 ,8.894166e-01 ,8.896851e-01 ,8.899324e-01 ,8.901612e-01 ,&
+        & 8.903733e-01 ,8.905706e-01 ,8.907545e-01 ,8.909265e-01 ,8.910876e-01 ,&
+        & 8.912388e-01 ,8.913812e-01 ,8.915153e-01 ,8.916419e-01 ,8.917617e-01 ,&
+        & 8.918752e-01 ,8.919829e-01 ,8.920851e-01 ,8.921824e-01 ,8.922751e-01 ,&
+        & 8.923635e-01 ,8.924478e-01 ,8.925284e-01  /)
       asyice2(:, 23) = (/ &
 ! band 23
-        & 8.387642e-01_rb,8.569979e-01_rb,8.658630e-01_rb,8.711825e-01_rb,8.747605e-01_rb,&
-        & 8.773472e-01_rb,8.793129e-01_rb,8.808621e-01_rb,8.821179e-01_rb,8.831583e-01_rb,&
-        & 8.840361e-01_rb,8.847875e-01_rb,8.854388e-01_rb,8.860094e-01_rb,8.865138e-01_rb,&
-        & 8.869634e-01_rb,8.873668e-01_rb,8.877310e-01_rb,8.880617e-01_rb,8.883635e-01_rb,&
-        & 8.886401e-01_rb,8.888947e-01_rb,8.891298e-01_rb,8.893477e-01_rb,8.895504e-01_rb,&
-        & 8.897393e-01_rb,8.899159e-01_rb,8.900815e-01_rb,8.902370e-01_rb,8.903833e-01_rb,&
-        & 8.905214e-01_rb,8.906518e-01_rb,8.907753e-01_rb,8.908924e-01_rb,8.910036e-01_rb,&
-        & 8.911094e-01_rb,8.912101e-01_rb,8.913062e-01_rb,8.913979e-01_rb,8.914856e-01_rb,&
-        & 8.915695e-01_rb,8.916498e-01_rb,8.917269e-01_rb /)
+        & 8.387642e-01 ,8.569979e-01 ,8.658630e-01 ,8.711825e-01 ,8.747605e-01 ,&
+        & 8.773472e-01 ,8.793129e-01 ,8.808621e-01 ,8.821179e-01 ,8.831583e-01 ,&
+        & 8.840361e-01 ,8.847875e-01 ,8.854388e-01 ,8.860094e-01 ,8.865138e-01 ,&
+        & 8.869634e-01 ,8.873668e-01 ,8.877310e-01 ,8.880617e-01 ,8.883635e-01 ,&
+        & 8.886401e-01 ,8.888947e-01 ,8.891298e-01 ,8.893477e-01 ,8.895504e-01 ,&
+        & 8.897393e-01 ,8.899159e-01 ,8.900815e-01 ,8.902370e-01 ,8.903833e-01 ,&
+        & 8.905214e-01 ,8.906518e-01 ,8.907753e-01 ,8.908924e-01 ,8.910036e-01 ,&
+        & 8.911094e-01 ,8.912101e-01 ,8.913062e-01 ,8.913979e-01 ,8.914856e-01 ,&
+        & 8.915695e-01 ,8.916498e-01 ,8.917269e-01  /)
       asyice2(:, 24) = (/ &
 ! band 24
-        & 8.522208e-01_rb,8.648132e-01_rb,8.711224e-01_rb,8.749901e-01_rb,8.776354e-01_rb,&
-        & 8.795743e-01_rb,8.810649e-01_rb,8.822518e-01_rb,8.832225e-01_rb,8.840333e-01_rb,&
-        & 8.847224e-01_rb,8.853162e-01_rb,8.858342e-01_rb,8.862906e-01_rb,8.866962e-01_rb,&
-        & 8.870595e-01_rb,8.873871e-01_rb,8.876842e-01_rb,8.879551e-01_rb,8.882032e-01_rb,&
-        & 8.884316e-01_rb,8.886425e-01_rb,8.888380e-01_rb,8.890199e-01_rb,8.891895e-01_rb,&
-        & 8.893481e-01_rb,8.894968e-01_rb,8.896366e-01_rb,8.897683e-01_rb,8.898926e-01_rb,&
-        & 8.900102e-01_rb,8.901215e-01_rb,8.902272e-01_rb,8.903276e-01_rb,8.904232e-01_rb,&
-        & 8.905144e-01_rb,8.906014e-01_rb,8.906845e-01_rb,8.907640e-01_rb,8.908402e-01_rb,&
-        & 8.909132e-01_rb,8.909834e-01_rb,8.910507e-01_rb /)
+        & 8.522208e-01 ,8.648132e-01 ,8.711224e-01 ,8.749901e-01 ,8.776354e-01 ,&
+        & 8.795743e-01 ,8.810649e-01 ,8.822518e-01 ,8.832225e-01 ,8.840333e-01 ,&
+        & 8.847224e-01 ,8.853162e-01 ,8.858342e-01 ,8.862906e-01 ,8.866962e-01 ,&
+        & 8.870595e-01 ,8.873871e-01 ,8.876842e-01 ,8.879551e-01 ,8.882032e-01 ,&
+        & 8.884316e-01 ,8.886425e-01 ,8.888380e-01 ,8.890199e-01 ,8.891895e-01 ,&
+        & 8.893481e-01 ,8.894968e-01 ,8.896366e-01 ,8.897683e-01 ,8.898926e-01 ,&
+        & 8.900102e-01 ,8.901215e-01 ,8.902272e-01 ,8.903276e-01 ,8.904232e-01 ,&
+        & 8.905144e-01 ,8.906014e-01 ,8.906845e-01 ,8.907640e-01 ,8.908402e-01 ,&
+        & 8.909132e-01 ,8.909834e-01 ,8.910507e-01  /)
       asyice2(:, 25) = (/ &
 ! band 25
-        & 8.578202e-01_rb,8.683033e-01_rb,8.735431e-01_rb,8.767488e-01_rb,8.789378e-01_rb,&
-        & 8.805399e-01_rb,8.817701e-01_rb,8.827485e-01_rb,8.835480e-01_rb,8.842152e-01_rb,&
-        & 8.847817e-01_rb,8.852696e-01_rb,8.856949e-01_rb,8.860694e-01_rb,8.864020e-01_rb,&
-        & 8.866997e-01_rb,8.869681e-01_rb,8.872113e-01_rb,8.874330e-01_rb,8.876360e-01_rb,&
-        & 8.878227e-01_rb,8.879951e-01_rb,8.881548e-01_rb,8.883033e-01_rb,8.884418e-01_rb,&
-        & 8.885712e-01_rb,8.886926e-01_rb,8.888066e-01_rb,8.889139e-01_rb,8.890152e-01_rb,&
-        & 8.891110e-01_rb,8.892017e-01_rb,8.892877e-01_rb,8.893695e-01_rb,8.894473e-01_rb,&
-        & 8.895214e-01_rb,8.895921e-01_rb,8.896597e-01_rb,8.897243e-01_rb,8.897862e-01_rb,&
-        & 8.898456e-01_rb,8.899025e-01_rb,8.899572e-01_rb /)
+        & 8.578202e-01 ,8.683033e-01 ,8.735431e-01 ,8.767488e-01 ,8.789378e-01 ,&
+        & 8.805399e-01 ,8.817701e-01 ,8.827485e-01 ,8.835480e-01 ,8.842152e-01 ,&
+        & 8.847817e-01 ,8.852696e-01 ,8.856949e-01 ,8.860694e-01 ,8.864020e-01 ,&
+        & 8.866997e-01 ,8.869681e-01 ,8.872113e-01 ,8.874330e-01 ,8.876360e-01 ,&
+        & 8.878227e-01 ,8.879951e-01 ,8.881548e-01 ,8.883033e-01 ,8.884418e-01 ,&
+        & 8.885712e-01 ,8.886926e-01 ,8.888066e-01 ,8.889139e-01 ,8.890152e-01 ,&
+        & 8.891110e-01 ,8.892017e-01 ,8.892877e-01 ,8.893695e-01 ,8.894473e-01 ,&
+        & 8.895214e-01 ,8.895921e-01 ,8.896597e-01 ,8.897243e-01 ,8.897862e-01 ,&
+        & 8.898456e-01 ,8.899025e-01 ,8.899572e-01  /)
       asyice2(:, 26) = (/ &
 ! band 26
-        & 8.625615e-01_rb,8.713831e-01_rb,8.755799e-01_rb,8.780560e-01_rb,8.796983e-01_rb,&
-        & 8.808714e-01_rb,8.817534e-01_rb,8.824420e-01_rb,8.829953e-01_rb,8.834501e-01_rb,&
-        & 8.838310e-01_rb,8.841549e-01_rb,8.844338e-01_rb,8.846767e-01_rb,8.848902e-01_rb,&
-        & 8.850795e-01_rb,8.852484e-01_rb,8.854002e-01_rb,8.855374e-01_rb,8.856620e-01_rb,&
-        & 8.857758e-01_rb,8.858800e-01_rb,8.859759e-01_rb,8.860644e-01_rb,8.861464e-01_rb,&
-        & 8.862225e-01_rb,8.862935e-01_rb,8.863598e-01_rb,8.864218e-01_rb,8.864800e-01_rb,&
-        & 8.865347e-01_rb,8.865863e-01_rb,8.866349e-01_rb,8.866809e-01_rb,8.867245e-01_rb,&
-        & 8.867658e-01_rb,8.868050e-01_rb,8.868423e-01_rb,8.868778e-01_rb,8.869117e-01_rb,&
-        & 8.869440e-01_rb,8.869749e-01_rb,8.870044e-01_rb /)
+        & 8.625615e-01 ,8.713831e-01 ,8.755799e-01 ,8.780560e-01 ,8.796983e-01 ,&
+        & 8.808714e-01 ,8.817534e-01 ,8.824420e-01 ,8.829953e-01 ,8.834501e-01 ,&
+        & 8.838310e-01 ,8.841549e-01 ,8.844338e-01 ,8.846767e-01 ,8.848902e-01 ,&
+        & 8.850795e-01 ,8.852484e-01 ,8.854002e-01 ,8.855374e-01 ,8.856620e-01 ,&
+        & 8.857758e-01 ,8.858800e-01 ,8.859759e-01 ,8.860644e-01 ,8.861464e-01 ,&
+        & 8.862225e-01 ,8.862935e-01 ,8.863598e-01 ,8.864218e-01 ,8.864800e-01 ,&
+        & 8.865347e-01 ,8.865863e-01 ,8.866349e-01 ,8.866809e-01 ,8.867245e-01 ,&
+        & 8.867658e-01 ,8.868050e-01 ,8.868423e-01 ,8.868778e-01 ,8.869117e-01 ,&
+        & 8.869440e-01 ,8.869749e-01 ,8.870044e-01  /)
       asyice2(:, 27) = (/ &
 ! band 27
-        & 8.587495e-01_rb,8.684764e-01_rb,8.728189e-01_rb,8.752872e-01_rb,8.768846e-01_rb,&
-        & 8.780060e-01_rb,8.788386e-01_rb,8.794824e-01_rb,8.799960e-01_rb,8.804159e-01_rb,&
-        & 8.807660e-01_rb,8.810626e-01_rb,8.813175e-01_rb,8.815390e-01_rb,8.817335e-01_rb,&
-        & 8.819057e-01_rb,8.820593e-01_rb,8.821973e-01_rb,8.823220e-01_rb,8.824353e-01_rb,&
-        & 8.825387e-01_rb,8.826336e-01_rb,8.827209e-01_rb,8.828016e-01_rb,8.828764e-01_rb,&
-        & 8.829459e-01_rb,8.830108e-01_rb,8.830715e-01_rb,8.831283e-01_rb,8.831817e-01_rb,&
-        & 8.832320e-01_rb,8.832795e-01_rb,8.833244e-01_rb,8.833668e-01_rb,8.834071e-01_rb,&
-        & 8.834454e-01_rb,8.834817e-01_rb,8.835164e-01_rb,8.835495e-01_rb,8.835811e-01_rb,&
-        & 8.836113e-01_rb,8.836402e-01_rb,8.836679e-01_rb /)
+        & 8.587495e-01 ,8.684764e-01 ,8.728189e-01 ,8.752872e-01 ,8.768846e-01 ,&
+        & 8.780060e-01 ,8.788386e-01 ,8.794824e-01 ,8.799960e-01 ,8.804159e-01 ,&
+        & 8.807660e-01 ,8.810626e-01 ,8.813175e-01 ,8.815390e-01 ,8.817335e-01 ,&
+        & 8.819057e-01 ,8.820593e-01 ,8.821973e-01 ,8.823220e-01 ,8.824353e-01 ,&
+        & 8.825387e-01 ,8.826336e-01 ,8.827209e-01 ,8.828016e-01 ,8.828764e-01 ,&
+        & 8.829459e-01 ,8.830108e-01 ,8.830715e-01 ,8.831283e-01 ,8.831817e-01 ,&
+        & 8.832320e-01 ,8.832795e-01 ,8.833244e-01 ,8.833668e-01 ,8.834071e-01 ,&
+        & 8.834454e-01 ,8.834817e-01 ,8.835164e-01 ,8.835495e-01 ,8.835811e-01 ,&
+        & 8.836113e-01 ,8.836402e-01 ,8.836679e-01  /)
       asyice2(:, 28) = (/ &
 ! band 28
-        & 8.561110e-01_rb,8.678583e-01_rb,8.727554e-01_rb,8.753892e-01_rb,8.770154e-01_rb,&
-        & 8.781109e-01_rb,8.788949e-01_rb,8.794812e-01_rb,8.799348e-01_rb,8.802952e-01_rb,&
-        & 8.805880e-01_rb,8.808300e-01_rb,8.810331e-01_rb,8.812058e-01_rb,8.813543e-01_rb,&
-        & 8.814832e-01_rb,8.815960e-01_rb,8.816956e-01_rb,8.817839e-01_rb,8.818629e-01_rb,&
-        & 8.819339e-01_rb,8.819979e-01_rb,8.820560e-01_rb,8.821089e-01_rb,8.821573e-01_rb,&
-        & 8.822016e-01_rb,8.822425e-01_rb,8.822801e-01_rb,8.823150e-01_rb,8.823474e-01_rb,&
-        & 8.823775e-01_rb,8.824056e-01_rb,8.824318e-01_rb,8.824564e-01_rb,8.824795e-01_rb,&
-        & 8.825011e-01_rb,8.825215e-01_rb,8.825408e-01_rb,8.825589e-01_rb,8.825761e-01_rb,&
-        & 8.825924e-01_rb,8.826078e-01_rb,8.826224e-01_rb /)
+        & 8.561110e-01 ,8.678583e-01 ,8.727554e-01 ,8.753892e-01 ,8.770154e-01 ,&
+        & 8.781109e-01 ,8.788949e-01 ,8.794812e-01 ,8.799348e-01 ,8.802952e-01 ,&
+        & 8.805880e-01 ,8.808300e-01 ,8.810331e-01 ,8.812058e-01 ,8.813543e-01 ,&
+        & 8.814832e-01 ,8.815960e-01 ,8.816956e-01 ,8.817839e-01 ,8.818629e-01 ,&
+        & 8.819339e-01 ,8.819979e-01 ,8.820560e-01 ,8.821089e-01 ,8.821573e-01 ,&
+        & 8.822016e-01 ,8.822425e-01 ,8.822801e-01 ,8.823150e-01 ,8.823474e-01 ,&
+        & 8.823775e-01 ,8.824056e-01 ,8.824318e-01 ,8.824564e-01 ,8.824795e-01 ,&
+        & 8.825011e-01 ,8.825215e-01 ,8.825408e-01 ,8.825589e-01 ,8.825761e-01 ,&
+        & 8.825924e-01 ,8.826078e-01 ,8.826224e-01  /)
       asyice2(:, 29) = (/ &
 ! band 29
-        & 8.311124e-01_rb,8.688197e-01_rb,8.900274e-01_rb,9.040696e-01_rb,9.142334e-01_rb,&
-        & 9.220181e-01_rb,9.282195e-01_rb,9.333048e-01_rb,9.375689e-01_rb,9.412085e-01_rb,&
-        & 9.443604e-01_rb,9.471230e-01_rb,9.495694e-01_rb,9.517549e-01_rb,9.537224e-01_rb,&
-        & 9.555057e-01_rb,9.571316e-01_rb,9.586222e-01_rb,9.599952e-01_rb,9.612656e-01_rb,&
-        & 9.624458e-01_rb,9.635461e-01_rb,9.645756e-01_rb,9.655418e-01_rb,9.664513e-01_rb,&
-        & 9.673098e-01_rb,9.681222e-01_rb,9.688928e-01_rb,9.696256e-01_rb,9.703237e-01_rb,&
-        & 9.709903e-01_rb,9.716280e-01_rb,9.722391e-01_rb,9.728258e-01_rb,9.733901e-01_rb,&
-        & 9.739336e-01_rb,9.744579e-01_rb,9.749645e-01_rb,9.754546e-01_rb,9.759294e-01_rb,&
-        & 9.763901e-01_rb,9.768376e-01_rb,9.772727e-01_rb /)
+        & 8.311124e-01 ,8.688197e-01 ,8.900274e-01 ,9.040696e-01 ,9.142334e-01 ,&
+        & 9.220181e-01 ,9.282195e-01 ,9.333048e-01 ,9.375689e-01 ,9.412085e-01 ,&
+        & 9.443604e-01 ,9.471230e-01 ,9.495694e-01 ,9.517549e-01 ,9.537224e-01 ,&
+        & 9.555057e-01 ,9.571316e-01 ,9.586222e-01 ,9.599952e-01 ,9.612656e-01 ,&
+        & 9.624458e-01 ,9.635461e-01 ,9.645756e-01 ,9.655418e-01 ,9.664513e-01 ,&
+        & 9.673098e-01 ,9.681222e-01 ,9.688928e-01 ,9.696256e-01 ,9.703237e-01 ,&
+        & 9.709903e-01 ,9.716280e-01 ,9.722391e-01 ,9.728258e-01 ,9.733901e-01 ,&
+        & 9.739336e-01 ,9.744579e-01 ,9.749645e-01 ,9.754546e-01 ,9.759294e-01 ,&
+        & 9.763901e-01 ,9.768376e-01 ,9.772727e-01  /)
 
 ! Hexagonal Ice Particle Parameterization
 ! extinction units (ext coef/iwc): [(m^-1)/(g m^-3)]
       extice3(:, 16) = (/ &
 ! band 16
-        & 5.194013e-01_rb,3.215089e-01_rb,2.327917e-01_rb,1.824424e-01_rb,1.499977e-01_rb,&
-        & 1.273492e-01_rb,1.106421e-01_rb,9.780982e-02_rb,8.764435e-02_rb,7.939266e-02_rb,&
-        & 7.256081e-02_rb,6.681137e-02_rb,6.190600e-02_rb,5.767154e-02_rb,5.397915e-02_rb,&
-        & 5.073102e-02_rb,4.785151e-02_rb,4.528125e-02_rb,4.297296e-02_rb,4.088853e-02_rb,&
-        & 3.899690e-02_rb,3.727251e-02_rb,3.569411e-02_rb,3.424393e-02_rb,3.290694e-02_rb,&
-        & 3.167040e-02_rb,3.052340e-02_rb,2.945654e-02_rb,2.846172e-02_rb,2.753188e-02_rb,&
-        & 2.666085e-02_rb,2.584322e-02_rb,2.507423e-02_rb,2.434967e-02_rb,2.366579e-02_rb,&
-        & 2.301926e-02_rb,2.240711e-02_rb,2.182666e-02_rb,2.127551e-02_rb,2.075150e-02_rb,&
-        & 2.025267e-02_rb,1.977725e-02_rb,1.932364e-02_rb,1.889035e-02_rb,1.847607e-02_rb,&
-        & 1.807956e-02_rb /)
+        & 5.194013e-01 ,3.215089e-01 ,2.327917e-01 ,1.824424e-01 ,1.499977e-01 ,&
+        & 1.273492e-01 ,1.106421e-01 ,9.780982e-02 ,8.764435e-02 ,7.939266e-02 ,&
+        & 7.256081e-02 ,6.681137e-02 ,6.190600e-02 ,5.767154e-02 ,5.397915e-02 ,&
+        & 5.073102e-02 ,4.785151e-02 ,4.528125e-02 ,4.297296e-02 ,4.088853e-02 ,&
+        & 3.899690e-02 ,3.727251e-02 ,3.569411e-02 ,3.424393e-02 ,3.290694e-02 ,&
+        & 3.167040e-02 ,3.052340e-02 ,2.945654e-02 ,2.846172e-02 ,2.753188e-02 ,&
+        & 2.666085e-02 ,2.584322e-02 ,2.507423e-02 ,2.434967e-02 ,2.366579e-02 ,&
+        & 2.301926e-02 ,2.240711e-02 ,2.182666e-02 ,2.127551e-02 ,2.075150e-02 ,&
+        & 2.025267e-02 ,1.977725e-02 ,1.932364e-02 ,1.889035e-02 ,1.847607e-02 ,&
+        & 1.807956e-02  /)
       extice3(:, 17) = (/ &
 ! band 17
-        & 4.901155e-01_rb,3.065286e-01_rb,2.230800e-01_rb,1.753951e-01_rb,1.445402e-01_rb,&
-        & 1.229417e-01_rb,1.069777e-01_rb,9.469760e-02_rb,8.495824e-02_rb,7.704501e-02_rb,&
-        & 7.048834e-02_rb,6.496693e-02_rb,6.025353e-02_rb,5.618286e-02_rb,5.263186e-02_rb,&
-        & 4.950698e-02_rb,4.673585e-02_rb,4.426164e-02_rb,4.203904e-02_rb,4.003153e-02_rb,&
-        & 3.820932e-02_rb,3.654790e-02_rb,3.502688e-02_rb,3.362919e-02_rb,3.234041e-02_rb,&
-        & 3.114829e-02_rb,3.004234e-02_rb,2.901356e-02_rb,2.805413e-02_rb,2.715727e-02_rb,&
-        & 2.631705e-02_rb,2.552828e-02_rb,2.478637e-02_rb,2.408725e-02_rb,2.342734e-02_rb,&
-        & 2.280343e-02_rb,2.221264e-02_rb,2.165242e-02_rb,2.112043e-02_rb,2.061461e-02_rb,&
-        & 2.013308e-02_rb,1.967411e-02_rb,1.923616e-02_rb,1.881783e-02_rb,1.841781e-02_rb,&
-        & 1.803494e-02_rb /)
+        & 4.901155e-01 ,3.065286e-01 ,2.230800e-01 ,1.753951e-01 ,1.445402e-01 ,&
+        & 1.229417e-01 ,1.069777e-01 ,9.469760e-02 ,8.495824e-02 ,7.704501e-02 ,&
+        & 7.048834e-02 ,6.496693e-02 ,6.025353e-02 ,5.618286e-02 ,5.263186e-02 ,&
+        & 4.950698e-02 ,4.673585e-02 ,4.426164e-02 ,4.203904e-02 ,4.003153e-02 ,&
+        & 3.820932e-02 ,3.654790e-02 ,3.502688e-02 ,3.362919e-02 ,3.234041e-02 ,&
+        & 3.114829e-02 ,3.004234e-02 ,2.901356e-02 ,2.805413e-02 ,2.715727e-02 ,&
+        & 2.631705e-02 ,2.552828e-02 ,2.478637e-02 ,2.408725e-02 ,2.342734e-02 ,&
+        & 2.280343e-02 ,2.221264e-02 ,2.165242e-02 ,2.112043e-02 ,2.061461e-02 ,&
+        & 2.013308e-02 ,1.967411e-02 ,1.923616e-02 ,1.881783e-02 ,1.841781e-02 ,&
+        & 1.803494e-02  /)
       extice3(:, 18) = (/ &
 ! band 18
-        & 5.056264e-01_rb,3.160261e-01_rb,2.298442e-01_rb,1.805973e-01_rb,1.487318e-01_rb,&
-        & 1.264258e-01_rb,1.099389e-01_rb,9.725656e-02_rb,8.719819e-02_rb,7.902576e-02_rb,&
-        & 7.225433e-02_rb,6.655206e-02_rb,6.168427e-02_rb,5.748028e-02_rb,5.381296e-02_rb,&
-        & 5.058572e-02_rb,4.772383e-02_rb,4.516857e-02_rb,4.287317e-02_rb,4.079990e-02_rb,&
-        & 3.891801e-02_rb,3.720217e-02_rb,3.563133e-02_rb,3.418786e-02_rb,3.285686e-02_rb,&
-        & 3.162569e-02_rb,3.048352e-02_rb,2.942104e-02_rb,2.843018e-02_rb,2.750395e-02_rb,&
-        & 2.663621e-02_rb,2.582160e-02_rb,2.505539e-02_rb,2.433337e-02_rb,2.365185e-02_rb,&
-        & 2.300750e-02_rb,2.239736e-02_rb,2.181878e-02_rb,2.126937e-02_rb,2.074699e-02_rb,&
-        & 2.024968e-02_rb,1.977567e-02_rb,1.932338e-02_rb,1.889134e-02_rb,1.847823e-02_rb,&
-        & 1.808281e-02_rb /)
+        & 5.056264e-01 ,3.160261e-01 ,2.298442e-01 ,1.805973e-01 ,1.487318e-01 ,&
+        & 1.264258e-01 ,1.099389e-01 ,9.725656e-02 ,8.719819e-02 ,7.902576e-02 ,&
+        & 7.225433e-02 ,6.655206e-02 ,6.168427e-02 ,5.748028e-02 ,5.381296e-02 ,&
+        & 5.058572e-02 ,4.772383e-02 ,4.516857e-02 ,4.287317e-02 ,4.079990e-02 ,&
+        & 3.891801e-02 ,3.720217e-02 ,3.563133e-02 ,3.418786e-02 ,3.285686e-02 ,&
+        & 3.162569e-02 ,3.048352e-02 ,2.942104e-02 ,2.843018e-02 ,2.750395e-02 ,&
+        & 2.663621e-02 ,2.582160e-02 ,2.505539e-02 ,2.433337e-02 ,2.365185e-02 ,&
+        & 2.300750e-02 ,2.239736e-02 ,2.181878e-02 ,2.126937e-02 ,2.074699e-02 ,&
+        & 2.024968e-02 ,1.977567e-02 ,1.932338e-02 ,1.889134e-02 ,1.847823e-02 ,&
+        & 1.808281e-02  /)
       extice3(:, 19) = (/ &
 ! band 19
-        & 4.881605e-01_rb,3.055237e-01_rb,2.225070e-01_rb,1.750688e-01_rb,1.443736e-01_rb,&
-        & 1.228869e-01_rb,1.070054e-01_rb,9.478893e-02_rb,8.509997e-02_rb,7.722769e-02_rb,&
-        & 7.070495e-02_rb,6.521211e-02_rb,6.052311e-02_rb,5.647351e-02_rb,5.294088e-02_rb,&
-        & 4.983217e-02_rb,4.707539e-02_rb,4.461398e-02_rb,4.240288e-02_rb,4.040575e-02_rb,&
-        & 3.859298e-02_rb,3.694016e-02_rb,3.542701e-02_rb,3.403655e-02_rb,3.275444e-02_rb,&
-        & 3.156849e-02_rb,3.046827e-02_rb,2.944481e-02_rb,2.849034e-02_rb,2.759812e-02_rb,&
-        & 2.676226e-02_rb,2.597757e-02_rb,2.523949e-02_rb,2.454400e-02_rb,2.388750e-02_rb,&
-        & 2.326682e-02_rb,2.267909e-02_rb,2.212176e-02_rb,2.159253e-02_rb,2.108933e-02_rb,&
-        & 2.061028e-02_rb,2.015369e-02_rb,1.971801e-02_rb,1.930184e-02_rb,1.890389e-02_rb,&
-        & 1.852300e-02_rb /)
+        & 4.881605e-01 ,3.055237e-01 ,2.225070e-01 ,1.750688e-01 ,1.443736e-01 ,&
+        & 1.228869e-01 ,1.070054e-01 ,9.478893e-02 ,8.509997e-02 ,7.722769e-02 ,&
+        & 7.070495e-02 ,6.521211e-02 ,6.052311e-02 ,5.647351e-02 ,5.294088e-02 ,&
+        & 4.983217e-02 ,4.707539e-02 ,4.461398e-02 ,4.240288e-02 ,4.040575e-02 ,&
+        & 3.859298e-02 ,3.694016e-02 ,3.542701e-02 ,3.403655e-02 ,3.275444e-02 ,&
+        & 3.156849e-02 ,3.046827e-02 ,2.944481e-02 ,2.849034e-02 ,2.759812e-02 ,&
+        & 2.676226e-02 ,2.597757e-02 ,2.523949e-02 ,2.454400e-02 ,2.388750e-02 ,&
+        & 2.326682e-02 ,2.267909e-02 ,2.212176e-02 ,2.159253e-02 ,2.108933e-02 ,&
+        & 2.061028e-02 ,2.015369e-02 ,1.971801e-02 ,1.930184e-02 ,1.890389e-02 ,&
+        & 1.852300e-02  /)
       extice3(:, 20) = (/ &
 ! band 20
-        & 5.103703e-01_rb,3.188144e-01_rb,2.317435e-01_rb,1.819887e-01_rb,1.497944e-01_rb,&
-        & 1.272584e-01_rb,1.106013e-01_rb,9.778822e-02_rb,8.762610e-02_rb,7.936938e-02_rb,&
-        & 7.252809e-02_rb,6.676701e-02_rb,6.184901e-02_rb,5.760165e-02_rb,5.389651e-02_rb,&
-        & 5.063598e-02_rb,4.774457e-02_rb,4.516295e-02_rb,4.284387e-02_rb,4.074922e-02_rb,&
-        & 3.884792e-02_rb,3.711438e-02_rb,3.552734e-02_rb,3.406898e-02_rb,3.272425e-02_rb,&
-        & 3.148038e-02_rb,3.032643e-02_rb,2.925299e-02_rb,2.825191e-02_rb,2.731612e-02_rb,&
-        & 2.643943e-02_rb,2.561642e-02_rb,2.484230e-02_rb,2.411284e-02_rb,2.342429e-02_rb,&
-        & 2.277329e-02_rb,2.215686e-02_rb,2.157231e-02_rb,2.101724e-02_rb,2.048946e-02_rb,&
-        & 1.998702e-02_rb,1.950813e-02_rb,1.905118e-02_rb,1.861468e-02_rb,1.819730e-02_rb,&
-        & 1.779781e-02_rb /)
+        & 5.103703e-01 ,3.188144e-01 ,2.317435e-01 ,1.819887e-01 ,1.497944e-01 ,&
+        & 1.272584e-01 ,1.106013e-01 ,9.778822e-02 ,8.762610e-02 ,7.936938e-02 ,&
+        & 7.252809e-02 ,6.676701e-02 ,6.184901e-02 ,5.760165e-02 ,5.389651e-02 ,&
+        & 5.063598e-02 ,4.774457e-02 ,4.516295e-02 ,4.284387e-02 ,4.074922e-02 ,&
+        & 3.884792e-02 ,3.711438e-02 ,3.552734e-02 ,3.406898e-02 ,3.272425e-02 ,&
+        & 3.148038e-02 ,3.032643e-02 ,2.925299e-02 ,2.825191e-02 ,2.731612e-02 ,&
+        & 2.643943e-02 ,2.561642e-02 ,2.484230e-02 ,2.411284e-02 ,2.342429e-02 ,&
+        & 2.277329e-02 ,2.215686e-02 ,2.157231e-02 ,2.101724e-02 ,2.048946e-02 ,&
+        & 1.998702e-02 ,1.950813e-02 ,1.905118e-02 ,1.861468e-02 ,1.819730e-02 ,&
+        & 1.779781e-02  /)
       extice3(:, 21) = (/ &
 ! band 21
-        & 5.031161e-01_rb,3.144511e-01_rb,2.286942e-01_rb,1.796903e-01_rb,1.479819e-01_rb,&
-        & 1.257860e-01_rb,1.093803e-01_rb,9.676059e-02_rb,8.675183e-02_rb,7.861971e-02_rb,&
-        & 7.188168e-02_rb,6.620754e-02_rb,6.136376e-02_rb,5.718050e-02_rb,5.353127e-02_rb,&
-        & 5.031995e-02_rb,4.747218e-02_rb,4.492952e-02_rb,4.264544e-02_rb,4.058240e-02_rb,&
-        & 3.870979e-02_rb,3.700242e-02_rb,3.543933e-02_rb,3.400297e-02_rb,3.267854e-02_rb,&
-        & 3.145345e-02_rb,3.031691e-02_rb,2.925967e-02_rb,2.827370e-02_rb,2.735203e-02_rb,&
-        & 2.648858e-02_rb,2.567798e-02_rb,2.491555e-02_rb,2.419710e-02_rb,2.351893e-02_rb,&
-        & 2.287776e-02_rb,2.227063e-02_rb,2.169491e-02_rb,2.114821e-02_rb,2.062840e-02_rb,&
-        & 2.013354e-02_rb,1.966188e-02_rb,1.921182e-02_rb,1.878191e-02_rb,1.837083e-02_rb,&
-        & 1.797737e-02_rb /)
+        & 5.031161e-01 ,3.144511e-01 ,2.286942e-01 ,1.796903e-01 ,1.479819e-01 ,&
+        & 1.257860e-01 ,1.093803e-01 ,9.676059e-02 ,8.675183e-02 ,7.861971e-02 ,&
+        & 7.188168e-02 ,6.620754e-02 ,6.136376e-02 ,5.718050e-02 ,5.353127e-02 ,&
+        & 5.031995e-02 ,4.747218e-02 ,4.492952e-02 ,4.264544e-02 ,4.058240e-02 ,&
+        & 3.870979e-02 ,3.700242e-02 ,3.543933e-02 ,3.400297e-02 ,3.267854e-02 ,&
+        & 3.145345e-02 ,3.031691e-02 ,2.925967e-02 ,2.827370e-02 ,2.735203e-02 ,&
+        & 2.648858e-02 ,2.567798e-02 ,2.491555e-02 ,2.419710e-02 ,2.351893e-02 ,&
+        & 2.287776e-02 ,2.227063e-02 ,2.169491e-02 ,2.114821e-02 ,2.062840e-02 ,&
+        & 2.013354e-02 ,1.966188e-02 ,1.921182e-02 ,1.878191e-02 ,1.837083e-02 ,&
+        & 1.797737e-02  /)
       extice3(:, 22) = (/ &
 ! band 22
-        & 4.949453e-01_rb,3.095918e-01_rb,2.253402e-01_rb,1.771964e-01_rb,1.460446e-01_rb,&
-        & 1.242383e-01_rb,1.081206e-01_rb,9.572235e-02_rb,8.588928e-02_rb,7.789990e-02_rb,&
-        & 7.128013e-02_rb,6.570559e-02_rb,6.094684e-02_rb,5.683701e-02_rb,5.325183e-02_rb,&
-        & 5.009688e-02_rb,4.729909e-02_rb,4.480106e-02_rb,4.255708e-02_rb,4.053025e-02_rb,&
-        & 3.869051e-02_rb,3.701310e-02_rb,3.547745e-02_rb,3.406631e-02_rb,3.276512e-02_rb,&
-        & 3.156153e-02_rb,3.044494e-02_rb,2.940626e-02_rb,2.843759e-02_rb,2.753211e-02_rb,&
-        & 2.668381e-02_rb,2.588744e-02_rb,2.513839e-02_rb,2.443255e-02_rb,2.376629e-02_rb,&
-        & 2.313637e-02_rb,2.253990e-02_rb,2.197428e-02_rb,2.143718e-02_rb,2.092649e-02_rb,&
-        & 2.044032e-02_rb,1.997694e-02_rb,1.953478e-02_rb,1.911241e-02_rb,1.870855e-02_rb,&
-        & 1.832199e-02_rb /)
+        & 4.949453e-01 ,3.095918e-01 ,2.253402e-01 ,1.771964e-01 ,1.460446e-01 ,&
+        & 1.242383e-01 ,1.081206e-01 ,9.572235e-02 ,8.588928e-02 ,7.789990e-02 ,&
+        & 7.128013e-02 ,6.570559e-02 ,6.094684e-02 ,5.683701e-02 ,5.325183e-02 ,&
+        & 5.009688e-02 ,4.729909e-02 ,4.480106e-02 ,4.255708e-02 ,4.053025e-02 ,&
+        & 3.869051e-02 ,3.701310e-02 ,3.547745e-02 ,3.406631e-02 ,3.276512e-02 ,&
+        & 3.156153e-02 ,3.044494e-02 ,2.940626e-02 ,2.843759e-02 ,2.753211e-02 ,&
+        & 2.668381e-02 ,2.588744e-02 ,2.513839e-02 ,2.443255e-02 ,2.376629e-02 ,&
+        & 2.313637e-02 ,2.253990e-02 ,2.197428e-02 ,2.143718e-02 ,2.092649e-02 ,&
+        & 2.044032e-02 ,1.997694e-02 ,1.953478e-02 ,1.911241e-02 ,1.870855e-02 ,&
+        & 1.832199e-02  /)
       extice3(:, 23) = (/ &
 ! band 23
-        & 5.052816e-01_rb,3.157665e-01_rb,2.296233e-01_rb,1.803986e-01_rb,1.485473e-01_rb,&
-        & 1.262514e-01_rb,1.097718e-01_rb,9.709524e-02_rb,8.704139e-02_rb,7.887264e-02_rb,&
-        & 7.210424e-02_rb,6.640454e-02_rb,6.153894e-02_rb,5.733683e-02_rb,5.367116e-02_rb,&
-        & 5.044537e-02_rb,4.758477e-02_rb,4.503066e-02_rb,4.273629e-02_rb,4.066395e-02_rb,&
-        & 3.878291e-02_rb,3.706784e-02_rb,3.549771e-02_rb,3.405488e-02_rb,3.272448e-02_rb,&
-        & 3.149387e-02_rb,3.035221e-02_rb,2.929020e-02_rb,2.829979e-02_rb,2.737397e-02_rb,&
-        & 2.650663e-02_rb,2.569238e-02_rb,2.492651e-02_rb,2.420482e-02_rb,2.352361e-02_rb,&
-        & 2.287954e-02_rb,2.226968e-02_rb,2.169136e-02_rb,2.114220e-02_rb,2.062005e-02_rb,&
-        & 2.012296e-02_rb,1.964917e-02_rb,1.919709e-02_rb,1.876524e-02_rb,1.835231e-02_rb,&
-        & 1.795707e-02_rb /)
+        & 5.052816e-01 ,3.157665e-01 ,2.296233e-01 ,1.803986e-01 ,1.485473e-01 ,&
+        & 1.262514e-01 ,1.097718e-01 ,9.709524e-02 ,8.704139e-02 ,7.887264e-02 ,&
+        & 7.210424e-02 ,6.640454e-02 ,6.153894e-02 ,5.733683e-02 ,5.367116e-02 ,&
+        & 5.044537e-02 ,4.758477e-02 ,4.503066e-02 ,4.273629e-02 ,4.066395e-02 ,&
+        & 3.878291e-02 ,3.706784e-02 ,3.549771e-02 ,3.405488e-02 ,3.272448e-02 ,&
+        & 3.149387e-02 ,3.035221e-02 ,2.929020e-02 ,2.829979e-02 ,2.737397e-02 ,&
+        & 2.650663e-02 ,2.569238e-02 ,2.492651e-02 ,2.420482e-02 ,2.352361e-02 ,&
+        & 2.287954e-02 ,2.226968e-02 ,2.169136e-02 ,2.114220e-02 ,2.062005e-02 ,&
+        & 2.012296e-02 ,1.964917e-02 ,1.919709e-02 ,1.876524e-02 ,1.835231e-02 ,&
+        & 1.795707e-02  /)
       extice3(:, 24) = (/ &
 ! band 24
-        & 5.042067e-01_rb,3.151195e-01_rb,2.291708e-01_rb,1.800573e-01_rb,1.482779e-01_rb,&
-        & 1.260324e-01_rb,1.095900e-01_rb,9.694202e-02_rb,8.691087e-02_rb,7.876056e-02_rb,&
-        & 7.200745e-02_rb,6.632062e-02_rb,6.146600e-02_rb,5.727338e-02_rb,5.361599e-02_rb,&
-        & 5.039749e-02_rb,4.754334e-02_rb,4.499500e-02_rb,4.270580e-02_rb,4.063815e-02_rb,&
-        & 3.876135e-02_rb,3.705016e-02_rb,3.548357e-02_rb,3.404400e-02_rb,3.271661e-02_rb,&
-        & 3.148877e-02_rb,3.034969e-02_rb,2.929008e-02_rb,2.830191e-02_rb,2.737818e-02_rb,&
-        & 2.651279e-02_rb,2.570039e-02_rb,2.493624e-02_rb,2.421618e-02_rb,2.353650e-02_rb,&
-        & 2.289390e-02_rb,2.228541e-02_rb,2.170840e-02_rb,2.116048e-02_rb,2.063950e-02_rb,&
-        & 2.014354e-02_rb,1.967082e-02_rb,1.921975e-02_rb,1.878888e-02_rb,1.837688e-02_rb,&
-        & 1.798254e-02_rb /)
+        & 5.042067e-01 ,3.151195e-01 ,2.291708e-01 ,1.800573e-01 ,1.482779e-01 ,&
+        & 1.260324e-01 ,1.095900e-01 ,9.694202e-02 ,8.691087e-02 ,7.876056e-02 ,&
+        & 7.200745e-02 ,6.632062e-02 ,6.146600e-02 ,5.727338e-02 ,5.361599e-02 ,&
+        & 5.039749e-02 ,4.754334e-02 ,4.499500e-02 ,4.270580e-02 ,4.063815e-02 ,&
+        & 3.876135e-02 ,3.705016e-02 ,3.548357e-02 ,3.404400e-02 ,3.271661e-02 ,&
+        & 3.148877e-02 ,3.034969e-02 ,2.929008e-02 ,2.830191e-02 ,2.737818e-02 ,&
+        & 2.651279e-02 ,2.570039e-02 ,2.493624e-02 ,2.421618e-02 ,2.353650e-02 ,&
+        & 2.289390e-02 ,2.228541e-02 ,2.170840e-02 ,2.116048e-02 ,2.063950e-02 ,&
+        & 2.014354e-02 ,1.967082e-02 ,1.921975e-02 ,1.878888e-02 ,1.837688e-02 ,&
+        & 1.798254e-02  /)
       extice3(:, 25) = (/ &
 ! band 25
-        & 5.022507e-01_rb,3.139246e-01_rb,2.283218e-01_rb,1.794059e-01_rb,1.477544e-01_rb,&
-        & 1.255984e-01_rb,1.092222e-01_rb,9.662516e-02_rb,8.663439e-02_rb,7.851688e-02_rb,&
-        & 7.179095e-02_rb,6.612700e-02_rb,6.129193e-02_rb,5.711618e-02_rb,5.347351e-02_rb,&
-        & 5.026796e-02_rb,4.742530e-02_rb,4.488721e-02_rb,4.260724e-02_rb,4.054790e-02_rb,&
-        & 3.867866e-02_rb,3.697435e-02_rb,3.541407e-02_rb,3.398029e-02_rb,3.265824e-02_rb,&
-        & 3.143535e-02_rb,3.030085e-02_rb,2.924551e-02_rb,2.826131e-02_rb,2.734130e-02_rb,&
-        & 2.647939e-02_rb,2.567026e-02_rb,2.490919e-02_rb,2.419203e-02_rb,2.351509e-02_rb,&
-        & 2.287507e-02_rb,2.226903e-02_rb,2.169434e-02_rb,2.114862e-02_rb,2.062975e-02_rb,&
-        & 2.013578e-02_rb,1.966496e-02_rb,1.921571e-02_rb,1.878658e-02_rb,1.837623e-02_rb,&
-        & 1.798348e-02_rb /)
+        & 5.022507e-01 ,3.139246e-01 ,2.283218e-01 ,1.794059e-01 ,1.477544e-01 ,&
+        & 1.255984e-01 ,1.092222e-01 ,9.662516e-02 ,8.663439e-02 ,7.851688e-02 ,&
+        & 7.179095e-02 ,6.612700e-02 ,6.129193e-02 ,5.711618e-02 ,5.347351e-02 ,&
+        & 5.026796e-02 ,4.742530e-02 ,4.488721e-02 ,4.260724e-02 ,4.054790e-02 ,&
+        & 3.867866e-02 ,3.697435e-02 ,3.541407e-02 ,3.398029e-02 ,3.265824e-02 ,&
+        & 3.143535e-02 ,3.030085e-02 ,2.924551e-02 ,2.826131e-02 ,2.734130e-02 ,&
+        & 2.647939e-02 ,2.567026e-02 ,2.490919e-02 ,2.419203e-02 ,2.351509e-02 ,&
+        & 2.287507e-02 ,2.226903e-02 ,2.169434e-02 ,2.114862e-02 ,2.062975e-02 ,&
+        & 2.013578e-02 ,1.966496e-02 ,1.921571e-02 ,1.878658e-02 ,1.837623e-02 ,&
+        & 1.798348e-02  /)
       extice3(:, 26) = (/ &
 ! band 26
-        & 5.068316e-01_rb,3.166869e-01_rb,2.302576e-01_rb,1.808693e-01_rb,1.489122e-01_rb,&
-        & 1.265423e-01_rb,1.100080e-01_rb,9.728926e-02_rb,8.720201e-02_rb,7.900612e-02_rb,&
-        & 7.221524e-02_rb,6.649660e-02_rb,6.161484e-02_rb,5.739877e-02_rb,5.372093e-02_rb,&
-        & 5.048442e-02_rb,4.761431e-02_rb,4.505172e-02_rb,4.274972e-02_rb,4.067050e-02_rb,&
-        & 3.878321e-02_rb,3.706244e-02_rb,3.548710e-02_rb,3.403948e-02_rb,3.270466e-02_rb,&
-        & 3.146995e-02_rb,3.032450e-02_rb,2.925897e-02_rb,2.826527e-02_rb,2.733638e-02_rb,&
-        & 2.646615e-02_rb,2.564920e-02_rb,2.488078e-02_rb,2.415670e-02_rb,2.347322e-02_rb,&
-        & 2.282702e-02_rb,2.221513e-02_rb,2.163489e-02_rb,2.108390e-02_rb,2.056002e-02_rb,&
-        & 2.006128e-02_rb,1.958591e-02_rb,1.913232e-02_rb,1.869904e-02_rb,1.828474e-02_rb,&
-        & 1.788819e-02_rb /)
+        & 5.068316e-01 ,3.166869e-01 ,2.302576e-01 ,1.808693e-01 ,1.489122e-01 ,&
+        & 1.265423e-01 ,1.100080e-01 ,9.728926e-02 ,8.720201e-02 ,7.900612e-02 ,&
+        & 7.221524e-02 ,6.649660e-02 ,6.161484e-02 ,5.739877e-02 ,5.372093e-02 ,&
+        & 5.048442e-02 ,4.761431e-02 ,4.505172e-02 ,4.274972e-02 ,4.067050e-02 ,&
+        & 3.878321e-02 ,3.706244e-02 ,3.548710e-02 ,3.403948e-02 ,3.270466e-02 ,&
+        & 3.146995e-02 ,3.032450e-02 ,2.925897e-02 ,2.826527e-02 ,2.733638e-02 ,&
+        & 2.646615e-02 ,2.564920e-02 ,2.488078e-02 ,2.415670e-02 ,2.347322e-02 ,&
+        & 2.282702e-02 ,2.221513e-02 ,2.163489e-02 ,2.108390e-02 ,2.056002e-02 ,&
+        & 2.006128e-02 ,1.958591e-02 ,1.913232e-02 ,1.869904e-02 ,1.828474e-02 ,&
+        & 1.788819e-02  /)
       extice3(:, 27) = (/ &
 ! band 27
-        & 5.077707e-01_rb,3.172636e-01_rb,2.306695e-01_rb,1.811871e-01_rb,1.491691e-01_rb,&
-        & 1.267565e-01_rb,1.101907e-01_rb,9.744773e-02_rb,8.734125e-02_rb,7.912973e-02_rb,&
-        & 7.232591e-02_rb,6.659637e-02_rb,6.170530e-02_rb,5.748120e-02_rb,5.379634e-02_rb,&
-        & 5.055367e-02_rb,4.767809e-02_rb,4.511061e-02_rb,4.280423e-02_rb,4.072104e-02_rb,&
-        & 3.883015e-02_rb,3.710611e-02_rb,3.552776e-02_rb,3.407738e-02_rb,3.274002e-02_rb,&
-        & 3.150296e-02_rb,3.035532e-02_rb,2.928776e-02_rb,2.829216e-02_rb,2.736150e-02_rb,&
-        & 2.648961e-02_rb,2.567111e-02_rb,2.490123e-02_rb,2.417576e-02_rb,2.349098e-02_rb,&
-        & 2.284354e-02_rb,2.223049e-02_rb,2.164914e-02_rb,2.109711e-02_rb,2.057222e-02_rb,&
-        & 2.007253e-02_rb,1.959626e-02_rb,1.914181e-02_rb,1.870770e-02_rb,1.829261e-02_rb,&
-        & 1.789531e-02_rb /)
+        & 5.077707e-01 ,3.172636e-01 ,2.306695e-01 ,1.811871e-01 ,1.491691e-01 ,&
+        & 1.267565e-01 ,1.101907e-01 ,9.744773e-02 ,8.734125e-02 ,7.912973e-02 ,&
+        & 7.232591e-02 ,6.659637e-02 ,6.170530e-02 ,5.748120e-02 ,5.379634e-02 ,&
+        & 5.055367e-02 ,4.767809e-02 ,4.511061e-02 ,4.280423e-02 ,4.072104e-02 ,&
+        & 3.883015e-02 ,3.710611e-02 ,3.552776e-02 ,3.407738e-02 ,3.274002e-02 ,&
+        & 3.150296e-02 ,3.035532e-02 ,2.928776e-02 ,2.829216e-02 ,2.736150e-02 ,&
+        & 2.648961e-02 ,2.567111e-02 ,2.490123e-02 ,2.417576e-02 ,2.349098e-02 ,&
+        & 2.284354e-02 ,2.223049e-02 ,2.164914e-02 ,2.109711e-02 ,2.057222e-02 ,&
+        & 2.007253e-02 ,1.959626e-02 ,1.914181e-02 ,1.870770e-02 ,1.829261e-02 ,&
+        & 1.789531e-02  /)
       extice3(:, 28) = (/ &
 ! band 28
-        & 5.062281e-01_rb,3.163402e-01_rb,2.300275e-01_rb,1.807060e-01_rb,1.487921e-01_rb,&
-        & 1.264523e-01_rb,1.099403e-01_rb,9.723879e-02_rb,8.716516e-02_rb,7.898034e-02_rb,&
-        & 7.219863e-02_rb,6.648771e-02_rb,6.161254e-02_rb,5.740217e-02_rb,5.372929e-02_rb,&
-        & 5.049716e-02_rb,4.763092e-02_rb,4.507179e-02_rb,4.277290e-02_rb,4.069649e-02_rb,&
-        & 3.881175e-02_rb,3.709331e-02_rb,3.552008e-02_rb,3.407442e-02_rb,3.274141e-02_rb,&
-        & 3.150837e-02_rb,3.036447e-02_rb,2.930037e-02_rb,2.830801e-02_rb,2.738037e-02_rb,&
-        & 2.651132e-02_rb,2.569547e-02_rb,2.492810e-02_rb,2.420499e-02_rb,2.352243e-02_rb,&
-        & 2.287710e-02_rb,2.226604e-02_rb,2.168658e-02_rb,2.113634e-02_rb,2.061316e-02_rb,&
-        & 2.011510e-02_rb,1.964038e-02_rb,1.918740e-02_rb,1.875471e-02_rb,1.834096e-02_rb,&
-        & 1.794495e-02_rb /)
+        & 5.062281e-01 ,3.163402e-01 ,2.300275e-01 ,1.807060e-01 ,1.487921e-01 ,&
+        & 1.264523e-01 ,1.099403e-01 ,9.723879e-02 ,8.716516e-02 ,7.898034e-02 ,&
+        & 7.219863e-02 ,6.648771e-02 ,6.161254e-02 ,5.740217e-02 ,5.372929e-02 ,&
+        & 5.049716e-02 ,4.763092e-02 ,4.507179e-02 ,4.277290e-02 ,4.069649e-02 ,&
+        & 3.881175e-02 ,3.709331e-02 ,3.552008e-02 ,3.407442e-02 ,3.274141e-02 ,&
+        & 3.150837e-02 ,3.036447e-02 ,2.930037e-02 ,2.830801e-02 ,2.738037e-02 ,&
+        & 2.651132e-02 ,2.569547e-02 ,2.492810e-02 ,2.420499e-02 ,2.352243e-02 ,&
+        & 2.287710e-02 ,2.226604e-02 ,2.168658e-02 ,2.113634e-02 ,2.061316e-02 ,&
+        & 2.011510e-02 ,1.964038e-02 ,1.918740e-02 ,1.875471e-02 ,1.834096e-02 ,&
+        & 1.794495e-02  /)
       extice3(:, 29) = (/ &
 ! band 29
-        & 1.338834e-01_rb,1.924912e-01_rb,1.755523e-01_rb,1.534793e-01_rb,1.343937e-01_rb,&
-        & 1.187883e-01_rb,1.060654e-01_rb,9.559106e-02_rb,8.685880e-02_rb,7.948698e-02_rb,&
-        & 7.319086e-02_rb,6.775669e-02_rb,6.302215e-02_rb,5.886236e-02_rb,5.517996e-02_rb,&
-        & 5.189810e-02_rb,4.895539e-02_rb,4.630225e-02_rb,4.389823e-02_rb,4.171002e-02_rb,&
-        & 3.970998e-02_rb,3.787493e-02_rb,3.618537e-02_rb,3.462471e-02_rb,3.317880e-02_rb,&
-        & 3.183547e-02_rb,3.058421e-02_rb,2.941590e-02_rb,2.832256e-02_rb,2.729724e-02_rb,&
-        & 2.633377e-02_rb,2.542675e-02_rb,2.457136e-02_rb,2.376332e-02_rb,2.299882e-02_rb,&
-        & 2.227443e-02_rb,2.158707e-02_rb,2.093400e-02_rb,2.031270e-02_rb,1.972091e-02_rb,&
-        & 1.915659e-02_rb,1.861787e-02_rb,1.810304e-02_rb,1.761055e-02_rb,1.713899e-02_rb,&
-        & 1.668704e-02_rb /)
+        & 1.338834e-01 ,1.924912e-01 ,1.755523e-01 ,1.534793e-01 ,1.343937e-01 ,&
+        & 1.187883e-01 ,1.060654e-01 ,9.559106e-02 ,8.685880e-02 ,7.948698e-02 ,&
+        & 7.319086e-02 ,6.775669e-02 ,6.302215e-02 ,5.886236e-02 ,5.517996e-02 ,&
+        & 5.189810e-02 ,4.895539e-02 ,4.630225e-02 ,4.389823e-02 ,4.171002e-02 ,&
+        & 3.970998e-02 ,3.787493e-02 ,3.618537e-02 ,3.462471e-02 ,3.317880e-02 ,&
+        & 3.183547e-02 ,3.058421e-02 ,2.941590e-02 ,2.832256e-02 ,2.729724e-02 ,&
+        & 2.633377e-02 ,2.542675e-02 ,2.457136e-02 ,2.376332e-02 ,2.299882e-02 ,&
+        & 2.227443e-02 ,2.158707e-02 ,2.093400e-02 ,2.031270e-02 ,1.972091e-02 ,&
+        & 1.915659e-02 ,1.861787e-02 ,1.810304e-02 ,1.761055e-02 ,1.713899e-02 ,&
+        & 1.668704e-02  /)
 
 ! single-scattering albedo: unitless
       ssaice3(:, 16) = (/ &
 ! band 16
-        & 6.749442e-01_rb,6.649947e-01_rb,6.565828e-01_rb,6.489928e-01_rb,6.420046e-01_rb,&
-        & 6.355231e-01_rb,6.294964e-01_rb,6.238901e-01_rb,6.186783e-01_rb,6.138395e-01_rb,&
-        & 6.093543e-01_rb,6.052049e-01_rb,6.013742e-01_rb,5.978457e-01_rb,5.946030e-01_rb,&
-        & 5.916302e-01_rb,5.889115e-01_rb,5.864310e-01_rb,5.841731e-01_rb,5.821221e-01_rb,&
-        & 5.802624e-01_rb,5.785785e-01_rb,5.770549e-01_rb,5.756759e-01_rb,5.744262e-01_rb,&
-        & 5.732901e-01_rb,5.722524e-01_rb,5.712974e-01_rb,5.704097e-01_rb,5.695739e-01_rb,&
-        & 5.687747e-01_rb,5.679964e-01_rb,5.672238e-01_rb,5.664415e-01_rb,5.656340e-01_rb,&
-        & 5.647860e-01_rb,5.638821e-01_rb,5.629070e-01_rb,5.618452e-01_rb,5.606815e-01_rb,&
-        & 5.594006e-01_rb,5.579870e-01_rb,5.564255e-01_rb,5.547008e-01_rb,5.527976e-01_rb,&
-        & 5.507005e-01_rb /)
+        & 6.749442e-01 ,6.649947e-01 ,6.565828e-01 ,6.489928e-01 ,6.420046e-01 ,&
+        & 6.355231e-01 ,6.294964e-01 ,6.238901e-01 ,6.186783e-01 ,6.138395e-01 ,&
+        & 6.093543e-01 ,6.052049e-01 ,6.013742e-01 ,5.978457e-01 ,5.946030e-01 ,&
+        & 5.916302e-01 ,5.889115e-01 ,5.864310e-01 ,5.841731e-01 ,5.821221e-01 ,&
+        & 5.802624e-01 ,5.785785e-01 ,5.770549e-01 ,5.756759e-01 ,5.744262e-01 ,&
+        & 5.732901e-01 ,5.722524e-01 ,5.712974e-01 ,5.704097e-01 ,5.695739e-01 ,&
+        & 5.687747e-01 ,5.679964e-01 ,5.672238e-01 ,5.664415e-01 ,5.656340e-01 ,&
+        & 5.647860e-01 ,5.638821e-01 ,5.629070e-01 ,5.618452e-01 ,5.606815e-01 ,&
+        & 5.594006e-01 ,5.579870e-01 ,5.564255e-01 ,5.547008e-01 ,5.527976e-01 ,&
+        & 5.507005e-01  /)
       ssaice3(:, 17) = (/ &
 ! band 17
-        & 7.628550e-01_rb,7.567297e-01_rb,7.508463e-01_rb,7.451972e-01_rb,7.397745e-01_rb,&
-        & 7.345705e-01_rb,7.295775e-01_rb,7.247881e-01_rb,7.201945e-01_rb,7.157894e-01_rb,&
-        & 7.115652e-01_rb,7.075145e-01_rb,7.036300e-01_rb,6.999044e-01_rb,6.963304e-01_rb,&
-        & 6.929007e-01_rb,6.896083e-01_rb,6.864460e-01_rb,6.834067e-01_rb,6.804833e-01_rb,&
-        & 6.776690e-01_rb,6.749567e-01_rb,6.723397e-01_rb,6.698109e-01_rb,6.673637e-01_rb,&
-        & 6.649913e-01_rb,6.626870e-01_rb,6.604441e-01_rb,6.582561e-01_rb,6.561163e-01_rb,&
-        & 6.540182e-01_rb,6.519554e-01_rb,6.499215e-01_rb,6.479099e-01_rb,6.459145e-01_rb,&
-        & 6.439289e-01_rb,6.419468e-01_rb,6.399621e-01_rb,6.379686e-01_rb,6.359601e-01_rb,&
-        & 6.339306e-01_rb,6.318740e-01_rb,6.297845e-01_rb,6.276559e-01_rb,6.254825e-01_rb,&
-        & 6.232583e-01_rb /)
+        & 7.628550e-01 ,7.567297e-01 ,7.508463e-01 ,7.451972e-01 ,7.397745e-01 ,&
+        & 7.345705e-01 ,7.295775e-01 ,7.247881e-01 ,7.201945e-01 ,7.157894e-01 ,&
+        & 7.115652e-01 ,7.075145e-01 ,7.036300e-01 ,6.999044e-01 ,6.963304e-01 ,&
+        & 6.929007e-01 ,6.896083e-01 ,6.864460e-01 ,6.834067e-01 ,6.804833e-01 ,&
+        & 6.776690e-01 ,6.749567e-01 ,6.723397e-01 ,6.698109e-01 ,6.673637e-01 ,&
+        & 6.649913e-01 ,6.626870e-01 ,6.604441e-01 ,6.582561e-01 ,6.561163e-01 ,&
+        & 6.540182e-01 ,6.519554e-01 ,6.499215e-01 ,6.479099e-01 ,6.459145e-01 ,&
+        & 6.439289e-01 ,6.419468e-01 ,6.399621e-01 ,6.379686e-01 ,6.359601e-01 ,&
+        & 6.339306e-01 ,6.318740e-01 ,6.297845e-01 ,6.276559e-01 ,6.254825e-01 ,&
+        & 6.232583e-01  /)
       ssaice3(:, 18) = (/ &
 ! band 18
-        & 9.924147e-01_rb,9.882792e-01_rb,9.842257e-01_rb,9.802522e-01_rb,9.763566e-01_rb,&
-        & 9.725367e-01_rb,9.687905e-01_rb,9.651157e-01_rb,9.615104e-01_rb,9.579725e-01_rb,&
-        & 9.544997e-01_rb,9.510901e-01_rb,9.477416e-01_rb,9.444520e-01_rb,9.412194e-01_rb,&
-        & 9.380415e-01_rb,9.349165e-01_rb,9.318421e-01_rb,9.288164e-01_rb,9.258373e-01_rb,&
-        & 9.229027e-01_rb,9.200106e-01_rb,9.171589e-01_rb,9.143457e-01_rb,9.115688e-01_rb,&
-        & 9.088263e-01_rb,9.061161e-01_rb,9.034362e-01_rb,9.007846e-01_rb,8.981592e-01_rb,&
-        & 8.955581e-01_rb,8.929792e-01_rb,8.904206e-01_rb,8.878803e-01_rb,8.853562e-01_rb,&
-        & 8.828464e-01_rb,8.803488e-01_rb,8.778616e-01_rb,8.753827e-01_rb,8.729102e-01_rb,&
-        & 8.704421e-01_rb,8.679764e-01_rb,8.655112e-01_rb,8.630445e-01_rb,8.605744e-01_rb,&
-        & 8.580989e-01_rb /)
+        & 9.924147e-01 ,9.882792e-01 ,9.842257e-01 ,9.802522e-01 ,9.763566e-01 ,&
+        & 9.725367e-01 ,9.687905e-01 ,9.651157e-01 ,9.615104e-01 ,9.579725e-01 ,&
+        & 9.544997e-01 ,9.510901e-01 ,9.477416e-01 ,9.444520e-01 ,9.412194e-01 ,&
+        & 9.380415e-01 ,9.349165e-01 ,9.318421e-01 ,9.288164e-01 ,9.258373e-01 ,&
+        & 9.229027e-01 ,9.200106e-01 ,9.171589e-01 ,9.143457e-01 ,9.115688e-01 ,&
+        & 9.088263e-01 ,9.061161e-01 ,9.034362e-01 ,9.007846e-01 ,8.981592e-01 ,&
+        & 8.955581e-01 ,8.929792e-01 ,8.904206e-01 ,8.878803e-01 ,8.853562e-01 ,&
+        & 8.828464e-01 ,8.803488e-01 ,8.778616e-01 ,8.753827e-01 ,8.729102e-01 ,&
+        & 8.704421e-01 ,8.679764e-01 ,8.655112e-01 ,8.630445e-01 ,8.605744e-01 ,&
+        & 8.580989e-01  /)
       ssaice3(:, 19) = (/ &
 ! band 19
-        & 9.629413e-01_rb,9.517182e-01_rb,9.409209e-01_rb,9.305366e-01_rb,9.205529e-01_rb,&
-        & 9.109569e-01_rb,9.017362e-01_rb,8.928780e-01_rb,8.843699e-01_rb,8.761992e-01_rb,&
-        & 8.683536e-01_rb,8.608204e-01_rb,8.535873e-01_rb,8.466417e-01_rb,8.399712e-01_rb,&
-        & 8.335635e-01_rb,8.274062e-01_rb,8.214868e-01_rb,8.157932e-01_rb,8.103129e-01_rb,&
-        & 8.050336e-01_rb,7.999432e-01_rb,7.950294e-01_rb,7.902798e-01_rb,7.856825e-01_rb,&
-        & 7.812250e-01_rb,7.768954e-01_rb,7.726815e-01_rb,7.685711e-01_rb,7.645522e-01_rb,&
-        & 7.606126e-01_rb,7.567404e-01_rb,7.529234e-01_rb,7.491498e-01_rb,7.454074e-01_rb,&
-        & 7.416844e-01_rb,7.379688e-01_rb,7.342485e-01_rb,7.305118e-01_rb,7.267468e-01_rb,&
-        & 7.229415e-01_rb,7.190841e-01_rb,7.151628e-01_rb,7.111657e-01_rb,7.070811e-01_rb,&
-        & 7.028972e-01_rb /)
+        & 9.629413e-01 ,9.517182e-01 ,9.409209e-01 ,9.305366e-01 ,9.205529e-01 ,&
+        & 9.109569e-01 ,9.017362e-01 ,8.928780e-01 ,8.843699e-01 ,8.761992e-01 ,&
+        & 8.683536e-01 ,8.608204e-01 ,8.535873e-01 ,8.466417e-01 ,8.399712e-01 ,&
+        & 8.335635e-01 ,8.274062e-01 ,8.214868e-01 ,8.157932e-01 ,8.103129e-01 ,&
+        & 8.050336e-01 ,7.999432e-01 ,7.950294e-01 ,7.902798e-01 ,7.856825e-01 ,&
+        & 7.812250e-01 ,7.768954e-01 ,7.726815e-01 ,7.685711e-01 ,7.645522e-01 ,&
+        & 7.606126e-01 ,7.567404e-01 ,7.529234e-01 ,7.491498e-01 ,7.454074e-01 ,&
+        & 7.416844e-01 ,7.379688e-01 ,7.342485e-01 ,7.305118e-01 ,7.267468e-01 ,&
+        & 7.229415e-01 ,7.190841e-01 ,7.151628e-01 ,7.111657e-01 ,7.070811e-01 ,&
+        & 7.028972e-01  /)
       ssaice3(:, 20) = (/ &
 ! band 20
-        & 9.942270e-01_rb,9.909206e-01_rb,9.876775e-01_rb,9.844960e-01_rb,9.813746e-01_rb,&
-        & 9.783114e-01_rb,9.753049e-01_rb,9.723535e-01_rb,9.694553e-01_rb,9.666088e-01_rb,&
-        & 9.638123e-01_rb,9.610641e-01_rb,9.583626e-01_rb,9.557060e-01_rb,9.530928e-01_rb,&
-        & 9.505211e-01_rb,9.479895e-01_rb,9.454961e-01_rb,9.430393e-01_rb,9.406174e-01_rb,&
-        & 9.382288e-01_rb,9.358717e-01_rb,9.335446e-01_rb,9.312456e-01_rb,9.289731e-01_rb,&
-        & 9.267255e-01_rb,9.245010e-01_rb,9.222980e-01_rb,9.201147e-01_rb,9.179496e-01_rb,&
-        & 9.158008e-01_rb,9.136667e-01_rb,9.115457e-01_rb,9.094359e-01_rb,9.073358e-01_rb,&
-        & 9.052436e-01_rb,9.031577e-01_rb,9.010763e-01_rb,8.989977e-01_rb,8.969203e-01_rb,&
-        & 8.948423e-01_rb,8.927620e-01_rb,8.906778e-01_rb,8.885879e-01_rb,8.864907e-01_rb,&
-        & 8.843843e-01_rb /)
+        & 9.942270e-01 ,9.909206e-01 ,9.876775e-01 ,9.844960e-01 ,9.813746e-01 ,&
+        & 9.783114e-01 ,9.753049e-01 ,9.723535e-01 ,9.694553e-01 ,9.666088e-01 ,&
+        & 9.638123e-01 ,9.610641e-01 ,9.583626e-01 ,9.557060e-01 ,9.530928e-01 ,&
+        & 9.505211e-01 ,9.479895e-01 ,9.454961e-01 ,9.430393e-01 ,9.406174e-01 ,&
+        & 9.382288e-01 ,9.358717e-01 ,9.335446e-01 ,9.312456e-01 ,9.289731e-01 ,&
+        & 9.267255e-01 ,9.245010e-01 ,9.222980e-01 ,9.201147e-01 ,9.179496e-01 ,&
+        & 9.158008e-01 ,9.136667e-01 ,9.115457e-01 ,9.094359e-01 ,9.073358e-01 ,&
+        & 9.052436e-01 ,9.031577e-01 ,9.010763e-01 ,8.989977e-01 ,8.969203e-01 ,&
+        & 8.948423e-01 ,8.927620e-01 ,8.906778e-01 ,8.885879e-01 ,8.864907e-01 ,&
+        & 8.843843e-01  /)
       ssaice3(:, 21) = (/ &
 ! band 21
-        & 9.934014e-01_rb,9.899331e-01_rb,9.865537e-01_rb,9.832610e-01_rb,9.800523e-01_rb,&
-        & 9.769254e-01_rb,9.738777e-01_rb,9.709069e-01_rb,9.680106e-01_rb,9.651862e-01_rb,&
-        & 9.624315e-01_rb,9.597439e-01_rb,9.571212e-01_rb,9.545608e-01_rb,9.520605e-01_rb,&
-        & 9.496177e-01_rb,9.472301e-01_rb,9.448954e-01_rb,9.426111e-01_rb,9.403749e-01_rb,&
-        & 9.381843e-01_rb,9.360370e-01_rb,9.339307e-01_rb,9.318629e-01_rb,9.298313e-01_rb,&
-        & 9.278336e-01_rb,9.258673e-01_rb,9.239302e-01_rb,9.220198e-01_rb,9.201338e-01_rb,&
-        & 9.182700e-01_rb,9.164258e-01_rb,9.145991e-01_rb,9.127874e-01_rb,9.109884e-01_rb,&
-        & 9.091999e-01_rb,9.074194e-01_rb,9.056447e-01_rb,9.038735e-01_rb,9.021033e-01_rb,&
-        & 9.003320e-01_rb,8.985572e-01_rb,8.967766e-01_rb,8.949879e-01_rb,8.931888e-01_rb,&
-        & 8.913770e-01_rb /)
+        & 9.934014e-01 ,9.899331e-01 ,9.865537e-01 ,9.832610e-01 ,9.800523e-01 ,&
+        & 9.769254e-01 ,9.738777e-01 ,9.709069e-01 ,9.680106e-01 ,9.651862e-01 ,&
+        & 9.624315e-01 ,9.597439e-01 ,9.571212e-01 ,9.545608e-01 ,9.520605e-01 ,&
+        & 9.496177e-01 ,9.472301e-01 ,9.448954e-01 ,9.426111e-01 ,9.403749e-01 ,&
+        & 9.381843e-01 ,9.360370e-01 ,9.339307e-01 ,9.318629e-01 ,9.298313e-01 ,&
+        & 9.278336e-01 ,9.258673e-01 ,9.239302e-01 ,9.220198e-01 ,9.201338e-01 ,&
+        & 9.182700e-01 ,9.164258e-01 ,9.145991e-01 ,9.127874e-01 ,9.109884e-01 ,&
+        & 9.091999e-01 ,9.074194e-01 ,9.056447e-01 ,9.038735e-01 ,9.021033e-01 ,&
+        & 9.003320e-01 ,8.985572e-01 ,8.967766e-01 ,8.949879e-01 ,8.931888e-01 ,&
+        & 8.913770e-01  /)
       ssaice3(:, 22) = (/ &
 ! band 22
-        & 9.994833e-01_rb,9.992055e-01_rb,9.989278e-01_rb,9.986500e-01_rb,9.983724e-01_rb,&
-        & 9.980947e-01_rb,9.978172e-01_rb,9.975397e-01_rb,9.972623e-01_rb,9.969849e-01_rb,&
-        & 9.967077e-01_rb,9.964305e-01_rb,9.961535e-01_rb,9.958765e-01_rb,9.955997e-01_rb,&
-        & 9.953230e-01_rb,9.950464e-01_rb,9.947699e-01_rb,9.944936e-01_rb,9.942174e-01_rb,&
-        & 9.939414e-01_rb,9.936656e-01_rb,9.933899e-01_rb,9.931144e-01_rb,9.928390e-01_rb,&
-        & 9.925639e-01_rb,9.922889e-01_rb,9.920141e-01_rb,9.917396e-01_rb,9.914652e-01_rb,&
-        & 9.911911e-01_rb,9.909171e-01_rb,9.906434e-01_rb,9.903700e-01_rb,9.900967e-01_rb,&
-        & 9.898237e-01_rb,9.895510e-01_rb,9.892784e-01_rb,9.890062e-01_rb,9.887342e-01_rb,&
-        & 9.884625e-01_rb,9.881911e-01_rb,9.879199e-01_rb,9.876490e-01_rb,9.873784e-01_rb,&
-        & 9.871081e-01_rb /)
+        & 9.994833e-01 ,9.992055e-01 ,9.989278e-01 ,9.986500e-01 ,9.983724e-01 ,&
+        & 9.980947e-01 ,9.978172e-01 ,9.975397e-01 ,9.972623e-01 ,9.969849e-01 ,&
+        & 9.967077e-01 ,9.964305e-01 ,9.961535e-01 ,9.958765e-01 ,9.955997e-01 ,&
+        & 9.953230e-01 ,9.950464e-01 ,9.947699e-01 ,9.944936e-01 ,9.942174e-01 ,&
+        & 9.939414e-01 ,9.936656e-01 ,9.933899e-01 ,9.931144e-01 ,9.928390e-01 ,&
+        & 9.925639e-01 ,9.922889e-01 ,9.920141e-01 ,9.917396e-01 ,9.914652e-01 ,&
+        & 9.911911e-01 ,9.909171e-01 ,9.906434e-01 ,9.903700e-01 ,9.900967e-01 ,&
+        & 9.898237e-01 ,9.895510e-01 ,9.892784e-01 ,9.890062e-01 ,9.887342e-01 ,&
+        & 9.884625e-01 ,9.881911e-01 ,9.879199e-01 ,9.876490e-01 ,9.873784e-01 ,&
+        & 9.871081e-01  /)
       ssaice3(:, 23) = (/ &
 ! band 23
-        & 9.999343e-01_rb,9.998917e-01_rb,9.998492e-01_rb,9.998067e-01_rb,9.997642e-01_rb,&
-        & 9.997218e-01_rb,9.996795e-01_rb,9.996372e-01_rb,9.995949e-01_rb,9.995528e-01_rb,&
-        & 9.995106e-01_rb,9.994686e-01_rb,9.994265e-01_rb,9.993845e-01_rb,9.993426e-01_rb,&
-        & 9.993007e-01_rb,9.992589e-01_rb,9.992171e-01_rb,9.991754e-01_rb,9.991337e-01_rb,&
-        & 9.990921e-01_rb,9.990505e-01_rb,9.990089e-01_rb,9.989674e-01_rb,9.989260e-01_rb,&
-        & 9.988846e-01_rb,9.988432e-01_rb,9.988019e-01_rb,9.987606e-01_rb,9.987194e-01_rb,&
-        & 9.986782e-01_rb,9.986370e-01_rb,9.985959e-01_rb,9.985549e-01_rb,9.985139e-01_rb,&
-        & 9.984729e-01_rb,9.984319e-01_rb,9.983910e-01_rb,9.983502e-01_rb,9.983094e-01_rb,&
-        & 9.982686e-01_rb,9.982279e-01_rb,9.981872e-01_rb,9.981465e-01_rb,9.981059e-01_rb,&
-        & 9.980653e-01_rb /)
+        & 9.999343e-01 ,9.998917e-01 ,9.998492e-01 ,9.998067e-01 ,9.997642e-01 ,&
+        & 9.997218e-01 ,9.996795e-01 ,9.996372e-01 ,9.995949e-01 ,9.995528e-01 ,&
+        & 9.995106e-01 ,9.994686e-01 ,9.994265e-01 ,9.993845e-01 ,9.993426e-01 ,&
+        & 9.993007e-01 ,9.992589e-01 ,9.992171e-01 ,9.991754e-01 ,9.991337e-01 ,&
+        & 9.990921e-01 ,9.990505e-01 ,9.990089e-01 ,9.989674e-01 ,9.989260e-01 ,&
+        & 9.988846e-01 ,9.988432e-01 ,9.988019e-01 ,9.987606e-01 ,9.987194e-01 ,&
+        & 9.986782e-01 ,9.986370e-01 ,9.985959e-01 ,9.985549e-01 ,9.985139e-01 ,&
+        & 9.984729e-01 ,9.984319e-01 ,9.983910e-01 ,9.983502e-01 ,9.983094e-01 ,&
+        & 9.982686e-01 ,9.982279e-01 ,9.981872e-01 ,9.981465e-01 ,9.981059e-01 ,&
+        & 9.980653e-01  /)
       ssaice3(:, 24) = (/ &
 ! band 24
-        & 9.999978e-01_rb,9.999965e-01_rb,9.999952e-01_rb,9.999939e-01_rb,9.999926e-01_rb,&
-        & 9.999913e-01_rb,9.999900e-01_rb,9.999887e-01_rb,9.999873e-01_rb,9.999860e-01_rb,&
-        & 9.999847e-01_rb,9.999834e-01_rb,9.999821e-01_rb,9.999808e-01_rb,9.999795e-01_rb,&
-        & 9.999782e-01_rb,9.999769e-01_rb,9.999756e-01_rb,9.999743e-01_rb,9.999730e-01_rb,&
-        & 9.999717e-01_rb,9.999704e-01_rb,9.999691e-01_rb,9.999678e-01_rb,9.999665e-01_rb,&
-        & 9.999652e-01_rb,9.999639e-01_rb,9.999626e-01_rb,9.999613e-01_rb,9.999600e-01_rb,&
-        & 9.999587e-01_rb,9.999574e-01_rb,9.999561e-01_rb,9.999548e-01_rb,9.999535e-01_rb,&
-        & 9.999522e-01_rb,9.999509e-01_rb,9.999496e-01_rb,9.999483e-01_rb,9.999470e-01_rb,&
-        & 9.999457e-01_rb,9.999444e-01_rb,9.999431e-01_rb,9.999418e-01_rb,9.999405e-01_rb,&
-        & 9.999392e-01_rb /)
+        & 9.999978e-01 ,9.999965e-01 ,9.999952e-01 ,9.999939e-01 ,9.999926e-01 ,&
+        & 9.999913e-01 ,9.999900e-01 ,9.999887e-01 ,9.999873e-01 ,9.999860e-01 ,&
+        & 9.999847e-01 ,9.999834e-01 ,9.999821e-01 ,9.999808e-01 ,9.999795e-01 ,&
+        & 9.999782e-01 ,9.999769e-01 ,9.999756e-01 ,9.999743e-01 ,9.999730e-01 ,&
+        & 9.999717e-01 ,9.999704e-01 ,9.999691e-01 ,9.999678e-01 ,9.999665e-01 ,&
+        & 9.999652e-01 ,9.999639e-01 ,9.999626e-01 ,9.999613e-01 ,9.999600e-01 ,&
+        & 9.999587e-01 ,9.999574e-01 ,9.999561e-01 ,9.999548e-01 ,9.999535e-01 ,&
+        & 9.999522e-01 ,9.999509e-01 ,9.999496e-01 ,9.999483e-01 ,9.999470e-01 ,&
+        & 9.999457e-01 ,9.999444e-01 ,9.999431e-01 ,9.999418e-01 ,9.999405e-01 ,&
+        & 9.999392e-01  /)
       ssaice3(:, 25) = (/ &
 ! band 25
-        & 9.999994e-01_rb,9.999993e-01_rb,9.999991e-01_rb,9.999990e-01_rb,9.999989e-01_rb,&
-        & 9.999987e-01_rb,9.999986e-01_rb,9.999984e-01_rb,9.999983e-01_rb,9.999982e-01_rb,&
-        & 9.999980e-01_rb,9.999979e-01_rb,9.999977e-01_rb,9.999976e-01_rb,9.999975e-01_rb,&
-        & 9.999973e-01_rb,9.999972e-01_rb,9.999970e-01_rb,9.999969e-01_rb,9.999967e-01_rb,&
-        & 9.999966e-01_rb,9.999965e-01_rb,9.999963e-01_rb,9.999962e-01_rb,9.999960e-01_rb,&
-        & 9.999959e-01_rb,9.999957e-01_rb,9.999956e-01_rb,9.999954e-01_rb,9.999953e-01_rb,&
-        & 9.999952e-01_rb,9.999950e-01_rb,9.999949e-01_rb,9.999947e-01_rb,9.999946e-01_rb,&
-        & 9.999944e-01_rb,9.999943e-01_rb,9.999941e-01_rb,9.999940e-01_rb,9.999939e-01_rb,&
-        & 9.999937e-01_rb,9.999936e-01_rb,9.999934e-01_rb,9.999933e-01_rb,9.999931e-01_rb,&
-        & 9.999930e-01_rb /)
+        & 9.999994e-01 ,9.999993e-01 ,9.999991e-01 ,9.999990e-01 ,9.999989e-01 ,&
+        & 9.999987e-01 ,9.999986e-01 ,9.999984e-01 ,9.999983e-01 ,9.999982e-01 ,&
+        & 9.999980e-01 ,9.999979e-01 ,9.999977e-01 ,9.999976e-01 ,9.999975e-01 ,&
+        & 9.999973e-01 ,9.999972e-01 ,9.999970e-01 ,9.999969e-01 ,9.999967e-01 ,&
+        & 9.999966e-01 ,9.999965e-01 ,9.999963e-01 ,9.999962e-01 ,9.999960e-01 ,&
+        & 9.999959e-01 ,9.999957e-01 ,9.999956e-01 ,9.999954e-01 ,9.999953e-01 ,&
+        & 9.999952e-01 ,9.999950e-01 ,9.999949e-01 ,9.999947e-01 ,9.999946e-01 ,&
+        & 9.999944e-01 ,9.999943e-01 ,9.999941e-01 ,9.999940e-01 ,9.999939e-01 ,&
+        & 9.999937e-01 ,9.999936e-01 ,9.999934e-01 ,9.999933e-01 ,9.999931e-01 ,&
+        & 9.999930e-01  /)
       ssaice3(:, 26) = (/ &
 ! band 26
-        & 9.999997e-01_rb,9.999995e-01_rb,9.999992e-01_rb,9.999990e-01_rb,9.999987e-01_rb,&
-        & 9.999985e-01_rb,9.999983e-01_rb,9.999980e-01_rb,9.999978e-01_rb,9.999976e-01_rb,&
-        & 9.999973e-01_rb,9.999971e-01_rb,9.999969e-01_rb,9.999967e-01_rb,9.999965e-01_rb,&
-        & 9.999963e-01_rb,9.999960e-01_rb,9.999958e-01_rb,9.999956e-01_rb,9.999954e-01_rb,&
-        & 9.999952e-01_rb,9.999950e-01_rb,9.999948e-01_rb,9.999946e-01_rb,9.999944e-01_rb,&
-        & 9.999942e-01_rb,9.999939e-01_rb,9.999937e-01_rb,9.999935e-01_rb,9.999933e-01_rb,&
-        & 9.999931e-01_rb,9.999929e-01_rb,9.999927e-01_rb,9.999925e-01_rb,9.999923e-01_rb,&
-        & 9.999920e-01_rb,9.999918e-01_rb,9.999916e-01_rb,9.999914e-01_rb,9.999911e-01_rb,&
-        & 9.999909e-01_rb,9.999907e-01_rb,9.999905e-01_rb,9.999902e-01_rb,9.999900e-01_rb,&
-        & 9.999897e-01_rb /)
+        & 9.999997e-01 ,9.999995e-01 ,9.999992e-01 ,9.999990e-01 ,9.999987e-01 ,&
+        & 9.999985e-01 ,9.999983e-01 ,9.999980e-01 ,9.999978e-01 ,9.999976e-01 ,&
+        & 9.999973e-01 ,9.999971e-01 ,9.999969e-01 ,9.999967e-01 ,9.999965e-01 ,&
+        & 9.999963e-01 ,9.999960e-01 ,9.999958e-01 ,9.999956e-01 ,9.999954e-01 ,&
+        & 9.999952e-01 ,9.999950e-01 ,9.999948e-01 ,9.999946e-01 ,9.999944e-01 ,&
+        & 9.999942e-01 ,9.999939e-01 ,9.999937e-01 ,9.999935e-01 ,9.999933e-01 ,&
+        & 9.999931e-01 ,9.999929e-01 ,9.999927e-01 ,9.999925e-01 ,9.999923e-01 ,&
+        & 9.999920e-01 ,9.999918e-01 ,9.999916e-01 ,9.999914e-01 ,9.999911e-01 ,&
+        & 9.999909e-01 ,9.999907e-01 ,9.999905e-01 ,9.999902e-01 ,9.999900e-01 ,&
+        & 9.999897e-01  /)
       ssaice3(:, 27) = (/ &
 ! band 27
-        & 9.999991e-01_rb,9.999985e-01_rb,9.999980e-01_rb,9.999974e-01_rb,9.999968e-01_rb,&
-        & 9.999963e-01_rb,9.999957e-01_rb,9.999951e-01_rb,9.999946e-01_rb,9.999940e-01_rb,&
-        & 9.999934e-01_rb,9.999929e-01_rb,9.999923e-01_rb,9.999918e-01_rb,9.999912e-01_rb,&
-        & 9.999907e-01_rb,9.999901e-01_rb,9.999896e-01_rb,9.999891e-01_rb,9.999885e-01_rb,&
-        & 9.999880e-01_rb,9.999874e-01_rb,9.999869e-01_rb,9.999863e-01_rb,9.999858e-01_rb,&
-        & 9.999853e-01_rb,9.999847e-01_rb,9.999842e-01_rb,9.999836e-01_rb,9.999831e-01_rb,&
-        & 9.999826e-01_rb,9.999820e-01_rb,9.999815e-01_rb,9.999809e-01_rb,9.999804e-01_rb,&
-        & 9.999798e-01_rb,9.999793e-01_rb,9.999787e-01_rb,9.999782e-01_rb,9.999776e-01_rb,&
-        & 9.999770e-01_rb,9.999765e-01_rb,9.999759e-01_rb,9.999754e-01_rb,9.999748e-01_rb,&
-        & 9.999742e-01_rb /)
+        & 9.999991e-01 ,9.999985e-01 ,9.999980e-01 ,9.999974e-01 ,9.999968e-01 ,&
+        & 9.999963e-01 ,9.999957e-01 ,9.999951e-01 ,9.999946e-01 ,9.999940e-01 ,&
+        & 9.999934e-01 ,9.999929e-01 ,9.999923e-01 ,9.999918e-01 ,9.999912e-01 ,&
+        & 9.999907e-01 ,9.999901e-01 ,9.999896e-01 ,9.999891e-01 ,9.999885e-01 ,&
+        & 9.999880e-01 ,9.999874e-01 ,9.999869e-01 ,9.999863e-01 ,9.999858e-01 ,&
+        & 9.999853e-01 ,9.999847e-01 ,9.999842e-01 ,9.999836e-01 ,9.999831e-01 ,&
+        & 9.999826e-01 ,9.999820e-01 ,9.999815e-01 ,9.999809e-01 ,9.999804e-01 ,&
+        & 9.999798e-01 ,9.999793e-01 ,9.999787e-01 ,9.999782e-01 ,9.999776e-01 ,&
+        & 9.999770e-01 ,9.999765e-01 ,9.999759e-01 ,9.999754e-01 ,9.999748e-01 ,&
+        & 9.999742e-01  /)
       ssaice3(:, 28) = (/ &
 ! band 28
-        & 9.999975e-01_rb,9.999961e-01_rb,9.999946e-01_rb,9.999931e-01_rb,9.999917e-01_rb,&
-        & 9.999903e-01_rb,9.999888e-01_rb,9.999874e-01_rb,9.999859e-01_rb,9.999845e-01_rb,&
-        & 9.999831e-01_rb,9.999816e-01_rb,9.999802e-01_rb,9.999788e-01_rb,9.999774e-01_rb,&
-        & 9.999759e-01_rb,9.999745e-01_rb,9.999731e-01_rb,9.999717e-01_rb,9.999702e-01_rb,&
-        & 9.999688e-01_rb,9.999674e-01_rb,9.999660e-01_rb,9.999646e-01_rb,9.999631e-01_rb,&
-        & 9.999617e-01_rb,9.999603e-01_rb,9.999589e-01_rb,9.999574e-01_rb,9.999560e-01_rb,&
-        & 9.999546e-01_rb,9.999532e-01_rb,9.999517e-01_rb,9.999503e-01_rb,9.999489e-01_rb,&
-        & 9.999474e-01_rb,9.999460e-01_rb,9.999446e-01_rb,9.999431e-01_rb,9.999417e-01_rb,&
-        & 9.999403e-01_rb,9.999388e-01_rb,9.999374e-01_rb,9.999359e-01_rb,9.999345e-01_rb,&
-        & 9.999330e-01_rb /)
+        & 9.999975e-01 ,9.999961e-01 ,9.999946e-01 ,9.999931e-01 ,9.999917e-01 ,&
+        & 9.999903e-01 ,9.999888e-01 ,9.999874e-01 ,9.999859e-01 ,9.999845e-01 ,&
+        & 9.999831e-01 ,9.999816e-01 ,9.999802e-01 ,9.999788e-01 ,9.999774e-01 ,&
+        & 9.999759e-01 ,9.999745e-01 ,9.999731e-01 ,9.999717e-01 ,9.999702e-01 ,&
+        & 9.999688e-01 ,9.999674e-01 ,9.999660e-01 ,9.999646e-01 ,9.999631e-01 ,&
+        & 9.999617e-01 ,9.999603e-01 ,9.999589e-01 ,9.999574e-01 ,9.999560e-01 ,&
+        & 9.999546e-01 ,9.999532e-01 ,9.999517e-01 ,9.999503e-01 ,9.999489e-01 ,&
+        & 9.999474e-01 ,9.999460e-01 ,9.999446e-01 ,9.999431e-01 ,9.999417e-01 ,&
+        & 9.999403e-01 ,9.999388e-01 ,9.999374e-01 ,9.999359e-01 ,9.999345e-01 ,&
+        & 9.999330e-01  /)
       ssaice3(:, 29) = (/ &
 ! band 29
-        & 4.526500e-01_rb,5.287890e-01_rb,5.410487e-01_rb,5.459865e-01_rb,5.485149e-01_rb,&
-        & 5.498914e-01_rb,5.505895e-01_rb,5.508310e-01_rb,5.507364e-01_rb,5.503793e-01_rb,&
-        & 5.498090e-01_rb,5.490612e-01_rb,5.481637e-01_rb,5.471395e-01_rb,5.460083e-01_rb,&
-        & 5.447878e-01_rb,5.434946e-01_rb,5.421442e-01_rb,5.407514e-01_rb,5.393309e-01_rb,&
-        & 5.378970e-01_rb,5.364641e-01_rb,5.350464e-01_rb,5.336582e-01_rb,5.323140e-01_rb,&
-        & 5.310283e-01_rb,5.298158e-01_rb,5.286914e-01_rb,5.276704e-01_rb,5.267680e-01_rb,&
-        & 5.260000e-01_rb,5.253823e-01_rb,5.249311e-01_rb,5.246629e-01_rb,5.245946e-01_rb,&
-        & 5.247434e-01_rb,5.251268e-01_rb,5.257626e-01_rb,5.266693e-01_rb,5.278653e-01_rb,&
-        & 5.293698e-01_rb,5.312022e-01_rb,5.333823e-01_rb,5.359305e-01_rb,5.388676e-01_rb,&
-        & 5.422146e-01_rb /)
+        & 4.526500e-01 ,5.287890e-01 ,5.410487e-01 ,5.459865e-01 ,5.485149e-01 ,&
+        & 5.498914e-01 ,5.505895e-01 ,5.508310e-01 ,5.507364e-01 ,5.503793e-01 ,&
+        & 5.498090e-01 ,5.490612e-01 ,5.481637e-01 ,5.471395e-01 ,5.460083e-01 ,&
+        & 5.447878e-01 ,5.434946e-01 ,5.421442e-01 ,5.407514e-01 ,5.393309e-01 ,&
+        & 5.378970e-01 ,5.364641e-01 ,5.350464e-01 ,5.336582e-01 ,5.323140e-01 ,&
+        & 5.310283e-01 ,5.298158e-01 ,5.286914e-01 ,5.276704e-01 ,5.267680e-01 ,&
+        & 5.260000e-01 ,5.253823e-01 ,5.249311e-01 ,5.246629e-01 ,5.245946e-01 ,&
+        & 5.247434e-01 ,5.251268e-01 ,5.257626e-01 ,5.266693e-01 ,5.278653e-01 ,&
+        & 5.293698e-01 ,5.312022e-01 ,5.333823e-01 ,5.359305e-01 ,5.388676e-01 ,&
+        & 5.422146e-01  /)
 
 ! asymmetry factor: unitless
       asyice3(:, 16) = (/ &
 ! band 16
-        & 8.340752e-01_rb,8.435170e-01_rb,8.517487e-01_rb,8.592064e-01_rb,8.660387e-01_rb,&
-        & 8.723204e-01_rb,8.780997e-01_rb,8.834137e-01_rb,8.882934e-01_rb,8.927662e-01_rb,&
-        & 8.968577e-01_rb,9.005914e-01_rb,9.039899e-01_rb,9.070745e-01_rb,9.098659e-01_rb,&
-        & 9.123836e-01_rb,9.146466e-01_rb,9.166734e-01_rb,9.184817e-01_rb,9.200886e-01_rb,&
-        & 9.215109e-01_rb,9.227648e-01_rb,9.238661e-01_rb,9.248304e-01_rb,9.256727e-01_rb,&
-        & 9.264078e-01_rb,9.270505e-01_rb,9.276150e-01_rb,9.281156e-01_rb,9.285662e-01_rb,&
-        & 9.289806e-01_rb,9.293726e-01_rb,9.297557e-01_rb,9.301435e-01_rb,9.305491e-01_rb,&
-        & 9.309859e-01_rb,9.314671e-01_rb,9.320055e-01_rb,9.326140e-01_rb,9.333053e-01_rb,&
-        & 9.340919e-01_rb,9.349861e-01_rb,9.360000e-01_rb,9.371451e-01_rb,9.384329e-01_rb,&
-        & 9.398744e-01_rb /)
+        & 8.340752e-01 ,8.435170e-01 ,8.517487e-01 ,8.592064e-01 ,8.660387e-01 ,&
+        & 8.723204e-01 ,8.780997e-01 ,8.834137e-01 ,8.882934e-01 ,8.927662e-01 ,&
+        & 8.968577e-01 ,9.005914e-01 ,9.039899e-01 ,9.070745e-01 ,9.098659e-01 ,&
+        & 9.123836e-01 ,9.146466e-01 ,9.166734e-01 ,9.184817e-01 ,9.200886e-01 ,&
+        & 9.215109e-01 ,9.227648e-01 ,9.238661e-01 ,9.248304e-01 ,9.256727e-01 ,&
+        & 9.264078e-01 ,9.270505e-01 ,9.276150e-01 ,9.281156e-01 ,9.285662e-01 ,&
+        & 9.289806e-01 ,9.293726e-01 ,9.297557e-01 ,9.301435e-01 ,9.305491e-01 ,&
+        & 9.309859e-01 ,9.314671e-01 ,9.320055e-01 ,9.326140e-01 ,9.333053e-01 ,&
+        & 9.340919e-01 ,9.349861e-01 ,9.360000e-01 ,9.371451e-01 ,9.384329e-01 ,&
+        & 9.398744e-01  /)
       asyice3(:, 17) = (/ &
 ! band 17
-        & 8.728160e-01_rb,8.777333e-01_rb,8.823754e-01_rb,8.867535e-01_rb,8.908785e-01_rb,&
-        & 8.947611e-01_rb,8.984118e-01_rb,9.018408e-01_rb,9.050582e-01_rb,9.080739e-01_rb,&
-        & 9.108976e-01_rb,9.135388e-01_rb,9.160068e-01_rb,9.183106e-01_rb,9.204595e-01_rb,&
-        & 9.224620e-01_rb,9.243271e-01_rb,9.260632e-01_rb,9.276788e-01_rb,9.291822e-01_rb,&
-        & 9.305817e-01_rb,9.318853e-01_rb,9.331012e-01_rb,9.342372e-01_rb,9.353013e-01_rb,&
-        & 9.363013e-01_rb,9.372450e-01_rb,9.381400e-01_rb,9.389939e-01_rb,9.398145e-01_rb,&
-        & 9.406092e-01_rb,9.413856e-01_rb,9.421511e-01_rb,9.429131e-01_rb,9.436790e-01_rb,&
-        & 9.444561e-01_rb,9.452517e-01_rb,9.460729e-01_rb,9.469270e-01_rb,9.478209e-01_rb,&
-        & 9.487617e-01_rb,9.497562e-01_rb,9.508112e-01_rb,9.519335e-01_rb,9.531294e-01_rb,&
-        & 9.544055e-01_rb /)
+        & 8.728160e-01 ,8.777333e-01 ,8.823754e-01 ,8.867535e-01 ,8.908785e-01 ,&
+        & 8.947611e-01 ,8.984118e-01 ,9.018408e-01 ,9.050582e-01 ,9.080739e-01 ,&
+        & 9.108976e-01 ,9.135388e-01 ,9.160068e-01 ,9.183106e-01 ,9.204595e-01 ,&
+        & 9.224620e-01 ,9.243271e-01 ,9.260632e-01 ,9.276788e-01 ,9.291822e-01 ,&
+        & 9.305817e-01 ,9.318853e-01 ,9.331012e-01 ,9.342372e-01 ,9.353013e-01 ,&
+        & 9.363013e-01 ,9.372450e-01 ,9.381400e-01 ,9.389939e-01 ,9.398145e-01 ,&
+        & 9.406092e-01 ,9.413856e-01 ,9.421511e-01 ,9.429131e-01 ,9.436790e-01 ,&
+        & 9.444561e-01 ,9.452517e-01 ,9.460729e-01 ,9.469270e-01 ,9.478209e-01 ,&
+        & 9.487617e-01 ,9.497562e-01 ,9.508112e-01 ,9.519335e-01 ,9.531294e-01 ,&
+        & 9.544055e-01  /)
       asyice3(:, 18) = (/ &
 ! band 18
-        & 7.897566e-01_rb,7.948704e-01_rb,7.998041e-01_rb,8.045623e-01_rb,8.091495e-01_rb,&
-        & 8.135702e-01_rb,8.178290e-01_rb,8.219305e-01_rb,8.258790e-01_rb,8.296792e-01_rb,&
-        & 8.333355e-01_rb,8.368524e-01_rb,8.402343e-01_rb,8.434856e-01_rb,8.466108e-01_rb,&
-        & 8.496143e-01_rb,8.525004e-01_rb,8.552737e-01_rb,8.579384e-01_rb,8.604990e-01_rb,&
-        & 8.629597e-01_rb,8.653250e-01_rb,8.675992e-01_rb,8.697867e-01_rb,8.718916e-01_rb,&
-        & 8.739185e-01_rb,8.758715e-01_rb,8.777551e-01_rb,8.795734e-01_rb,8.813308e-01_rb,&
-        & 8.830315e-01_rb,8.846799e-01_rb,8.862802e-01_rb,8.878366e-01_rb,8.893534e-01_rb,&
-        & 8.908350e-01_rb,8.922854e-01_rb,8.937090e-01_rb,8.951099e-01_rb,8.964925e-01_rb,&
-        & 8.978609e-01_rb,8.992192e-01_rb,9.005718e-01_rb,9.019229e-01_rb,9.032765e-01_rb,&
-        & 9.046369e-01_rb /)
+        & 7.897566e-01 ,7.948704e-01 ,7.998041e-01 ,8.045623e-01 ,8.091495e-01 ,&
+        & 8.135702e-01 ,8.178290e-01 ,8.219305e-01 ,8.258790e-01 ,8.296792e-01 ,&
+        & 8.333355e-01 ,8.368524e-01 ,8.402343e-01 ,8.434856e-01 ,8.466108e-01 ,&
+        & 8.496143e-01 ,8.525004e-01 ,8.552737e-01 ,8.579384e-01 ,8.604990e-01 ,&
+        & 8.629597e-01 ,8.653250e-01 ,8.675992e-01 ,8.697867e-01 ,8.718916e-01 ,&
+        & 8.739185e-01 ,8.758715e-01 ,8.777551e-01 ,8.795734e-01 ,8.813308e-01 ,&
+        & 8.830315e-01 ,8.846799e-01 ,8.862802e-01 ,8.878366e-01 ,8.893534e-01 ,&
+        & 8.908350e-01 ,8.922854e-01 ,8.937090e-01 ,8.951099e-01 ,8.964925e-01 ,&
+        & 8.978609e-01 ,8.992192e-01 ,9.005718e-01 ,9.019229e-01 ,9.032765e-01 ,&
+        & 9.046369e-01  /)
       asyice3(:, 19) = (/ &
 ! band 19
-        & 7.812615e-01_rb,7.887764e-01_rb,7.959664e-01_rb,8.028413e-01_rb,8.094109e-01_rb,&
-        & 8.156849e-01_rb,8.216730e-01_rb,8.273846e-01_rb,8.328294e-01_rb,8.380166e-01_rb,&
-        & 8.429556e-01_rb,8.476556e-01_rb,8.521258e-01_rb,8.563753e-01_rb,8.604131e-01_rb,&
-        & 8.642481e-01_rb,8.678893e-01_rb,8.713455e-01_rb,8.746254e-01_rb,8.777378e-01_rb,&
-        & 8.806914e-01_rb,8.834948e-01_rb,8.861566e-01_rb,8.886854e-01_rb,8.910897e-01_rb,&
-        & 8.933779e-01_rb,8.955586e-01_rb,8.976402e-01_rb,8.996311e-01_rb,9.015398e-01_rb,&
-        & 9.033745e-01_rb,9.051436e-01_rb,9.068555e-01_rb,9.085185e-01_rb,9.101410e-01_rb,&
-        & 9.117311e-01_rb,9.132972e-01_rb,9.148476e-01_rb,9.163905e-01_rb,9.179340e-01_rb,&
-        & 9.194864e-01_rb,9.210559e-01_rb,9.226505e-01_rb,9.242784e-01_rb,9.259476e-01_rb,&
-        & 9.276661e-01_rb /)
+        & 7.812615e-01 ,7.887764e-01 ,7.959664e-01 ,8.028413e-01 ,8.094109e-01 ,&
+        & 8.156849e-01 ,8.216730e-01 ,8.273846e-01 ,8.328294e-01 ,8.380166e-01 ,&
+        & 8.429556e-01 ,8.476556e-01 ,8.521258e-01 ,8.563753e-01 ,8.604131e-01 ,&
+        & 8.642481e-01 ,8.678893e-01 ,8.713455e-01 ,8.746254e-01 ,8.777378e-01 ,&
+        & 8.806914e-01 ,8.834948e-01 ,8.861566e-01 ,8.886854e-01 ,8.910897e-01 ,&
+        & 8.933779e-01 ,8.955586e-01 ,8.976402e-01 ,8.996311e-01 ,9.015398e-01 ,&
+        & 9.033745e-01 ,9.051436e-01 ,9.068555e-01 ,9.085185e-01 ,9.101410e-01 ,&
+        & 9.117311e-01 ,9.132972e-01 ,9.148476e-01 ,9.163905e-01 ,9.179340e-01 ,&
+        & 9.194864e-01 ,9.210559e-01 ,9.226505e-01 ,9.242784e-01 ,9.259476e-01 ,&
+        & 9.276661e-01  /)
       asyice3(:, 20) = (/ &
 ! band 20
-        & 7.640720e-01_rb,7.691119e-01_rb,7.739941e-01_rb,7.787222e-01_rb,7.832998e-01_rb,&
-        & 7.877304e-01_rb,7.920177e-01_rb,7.961652e-01_rb,8.001765e-01_rb,8.040551e-01_rb,&
-        & 8.078044e-01_rb,8.114280e-01_rb,8.149294e-01_rb,8.183119e-01_rb,8.215791e-01_rb,&
-        & 8.247344e-01_rb,8.277812e-01_rb,8.307229e-01_rb,8.335629e-01_rb,8.363046e-01_rb,&
-        & 8.389514e-01_rb,8.415067e-01_rb,8.439738e-01_rb,8.463560e-01_rb,8.486568e-01_rb,&
-        & 8.508795e-01_rb,8.530274e-01_rb,8.551039e-01_rb,8.571122e-01_rb,8.590558e-01_rb,&
-        & 8.609378e-01_rb,8.627618e-01_rb,8.645309e-01_rb,8.662485e-01_rb,8.679178e-01_rb,&
-        & 8.695423e-01_rb,8.711251e-01_rb,8.726697e-01_rb,8.741792e-01_rb,8.756571e-01_rb,&
-        & 8.771065e-01_rb,8.785307e-01_rb,8.799331e-01_rb,8.813169e-01_rb,8.826854e-01_rb,&
-        & 8.840419e-01_rb /)
+        & 7.640720e-01 ,7.691119e-01 ,7.739941e-01 ,7.787222e-01 ,7.832998e-01 ,&
+        & 7.877304e-01 ,7.920177e-01 ,7.961652e-01 ,8.001765e-01 ,8.040551e-01 ,&
+        & 8.078044e-01 ,8.114280e-01 ,8.149294e-01 ,8.183119e-01 ,8.215791e-01 ,&
+        & 8.247344e-01 ,8.277812e-01 ,8.307229e-01 ,8.335629e-01 ,8.363046e-01 ,&
+        & 8.389514e-01 ,8.415067e-01 ,8.439738e-01 ,8.463560e-01 ,8.486568e-01 ,&
+        & 8.508795e-01 ,8.530274e-01 ,8.551039e-01 ,8.571122e-01 ,8.590558e-01 ,&
+        & 8.609378e-01 ,8.627618e-01 ,8.645309e-01 ,8.662485e-01 ,8.679178e-01 ,&
+        & 8.695423e-01 ,8.711251e-01 ,8.726697e-01 ,8.741792e-01 ,8.756571e-01 ,&
+        & 8.771065e-01 ,8.785307e-01 ,8.799331e-01 ,8.813169e-01 ,8.826854e-01 ,&
+        & 8.840419e-01  /)
       asyice3(:, 21) = (/ &
 ! band 21
-        & 7.602598e-01_rb,7.651572e-01_rb,7.699014e-01_rb,7.744962e-01_rb,7.789452e-01_rb,&
-        & 7.832522e-01_rb,7.874205e-01_rb,7.914538e-01_rb,7.953555e-01_rb,7.991290e-01_rb,&
-        & 8.027777e-01_rb,8.063049e-01_rb,8.097140e-01_rb,8.130081e-01_rb,8.161906e-01_rb,&
-        & 8.192645e-01_rb,8.222331e-01_rb,8.250993e-01_rb,8.278664e-01_rb,8.305374e-01_rb,&
-        & 8.331153e-01_rb,8.356030e-01_rb,8.380037e-01_rb,8.403201e-01_rb,8.425553e-01_rb,&
-        & 8.447121e-01_rb,8.467935e-01_rb,8.488022e-01_rb,8.507412e-01_rb,8.526132e-01_rb,&
-        & 8.544210e-01_rb,8.561675e-01_rb,8.578554e-01_rb,8.594875e-01_rb,8.610665e-01_rb,&
-        & 8.625951e-01_rb,8.640760e-01_rb,8.655119e-01_rb,8.669055e-01_rb,8.682594e-01_rb,&
-        & 8.695763e-01_rb,8.708587e-01_rb,8.721094e-01_rb,8.733308e-01_rb,8.745255e-01_rb,&
-        & 8.756961e-01_rb /)
+        & 7.602598e-01 ,7.651572e-01 ,7.699014e-01 ,7.744962e-01 ,7.789452e-01 ,&
+        & 7.832522e-01 ,7.874205e-01 ,7.914538e-01 ,7.953555e-01 ,7.991290e-01 ,&
+        & 8.027777e-01 ,8.063049e-01 ,8.097140e-01 ,8.130081e-01 ,8.161906e-01 ,&
+        & 8.192645e-01 ,8.222331e-01 ,8.250993e-01 ,8.278664e-01 ,8.305374e-01 ,&
+        & 8.331153e-01 ,8.356030e-01 ,8.380037e-01 ,8.403201e-01 ,8.425553e-01 ,&
+        & 8.447121e-01 ,8.467935e-01 ,8.488022e-01 ,8.507412e-01 ,8.526132e-01 ,&
+        & 8.544210e-01 ,8.561675e-01 ,8.578554e-01 ,8.594875e-01 ,8.610665e-01 ,&
+        & 8.625951e-01 ,8.640760e-01 ,8.655119e-01 ,8.669055e-01 ,8.682594e-01 ,&
+        & 8.695763e-01 ,8.708587e-01 ,8.721094e-01 ,8.733308e-01 ,8.745255e-01 ,&
+        & 8.756961e-01  /)
       asyice3(:, 22) = (/ &
 ! band 22
-        & 7.568957e-01_rb,7.606995e-01_rb,7.644072e-01_rb,7.680204e-01_rb,7.715402e-01_rb,&
-        & 7.749682e-01_rb,7.783057e-01_rb,7.815541e-01_rb,7.847148e-01_rb,7.877892e-01_rb,&
-        & 7.907786e-01_rb,7.936846e-01_rb,7.965084e-01_rb,7.992515e-01_rb,8.019153e-01_rb,&
-        & 8.045011e-01_rb,8.070103e-01_rb,8.094444e-01_rb,8.118048e-01_rb,8.140927e-01_rb,&
-        & 8.163097e-01_rb,8.184571e-01_rb,8.205364e-01_rb,8.225488e-01_rb,8.244958e-01_rb,&
-        & 8.263789e-01_rb,8.281993e-01_rb,8.299586e-01_rb,8.316580e-01_rb,8.332991e-01_rb,&
-        & 8.348831e-01_rb,8.364115e-01_rb,8.378857e-01_rb,8.393071e-01_rb,8.406770e-01_rb,&
-        & 8.419969e-01_rb,8.432682e-01_rb,8.444923e-01_rb,8.456706e-01_rb,8.468044e-01_rb,&
-        & 8.478952e-01_rb,8.489444e-01_rb,8.499533e-01_rb,8.509234e-01_rb,8.518561e-01_rb,&
-        & 8.527528e-01_rb /)
+        & 7.568957e-01 ,7.606995e-01 ,7.644072e-01 ,7.680204e-01 ,7.715402e-01 ,&
+        & 7.749682e-01 ,7.783057e-01 ,7.815541e-01 ,7.847148e-01 ,7.877892e-01 ,&
+        & 7.907786e-01 ,7.936846e-01 ,7.965084e-01 ,7.992515e-01 ,8.019153e-01 ,&
+        & 8.045011e-01 ,8.070103e-01 ,8.094444e-01 ,8.118048e-01 ,8.140927e-01 ,&
+        & 8.163097e-01 ,8.184571e-01 ,8.205364e-01 ,8.225488e-01 ,8.244958e-01 ,&
+        & 8.263789e-01 ,8.281993e-01 ,8.299586e-01 ,8.316580e-01 ,8.332991e-01 ,&
+        & 8.348831e-01 ,8.364115e-01 ,8.378857e-01 ,8.393071e-01 ,8.406770e-01 ,&
+        & 8.419969e-01 ,8.432682e-01 ,8.444923e-01 ,8.456706e-01 ,8.468044e-01 ,&
+        & 8.478952e-01 ,8.489444e-01 ,8.499533e-01 ,8.509234e-01 ,8.518561e-01 ,&
+        & 8.527528e-01  /)
       asyice3(:, 23) = (/ &
 ! band 23
-        & 7.575066e-01_rb,7.606912e-01_rb,7.638236e-01_rb,7.669035e-01_rb,7.699306e-01_rb,&
-        & 7.729046e-01_rb,7.758254e-01_rb,7.786926e-01_rb,7.815060e-01_rb,7.842654e-01_rb,&
-        & 7.869705e-01_rb,7.896211e-01_rb,7.922168e-01_rb,7.947574e-01_rb,7.972428e-01_rb,&
-        & 7.996726e-01_rb,8.020466e-01_rb,8.043646e-01_rb,8.066262e-01_rb,8.088313e-01_rb,&
-        & 8.109796e-01_rb,8.130709e-01_rb,8.151049e-01_rb,8.170814e-01_rb,8.190001e-01_rb,&
-        & 8.208608e-01_rb,8.226632e-01_rb,8.244071e-01_rb,8.260924e-01_rb,8.277186e-01_rb,&
-        & 8.292856e-01_rb,8.307932e-01_rb,8.322411e-01_rb,8.336291e-01_rb,8.349570e-01_rb,&
-        & 8.362244e-01_rb,8.374312e-01_rb,8.385772e-01_rb,8.396621e-01_rb,8.406856e-01_rb,&
-        & 8.416476e-01_rb,8.425479e-01_rb,8.433861e-01_rb,8.441620e-01_rb,8.448755e-01_rb,&
-        & 8.455263e-01_rb /)
+        & 7.575066e-01 ,7.606912e-01 ,7.638236e-01 ,7.669035e-01 ,7.699306e-01 ,&
+        & 7.729046e-01 ,7.758254e-01 ,7.786926e-01 ,7.815060e-01 ,7.842654e-01 ,&
+        & 7.869705e-01 ,7.896211e-01 ,7.922168e-01 ,7.947574e-01 ,7.972428e-01 ,&
+        & 7.996726e-01 ,8.020466e-01 ,8.043646e-01 ,8.066262e-01 ,8.088313e-01 ,&
+        & 8.109796e-01 ,8.130709e-01 ,8.151049e-01 ,8.170814e-01 ,8.190001e-01 ,&
+        & 8.208608e-01 ,8.226632e-01 ,8.244071e-01 ,8.260924e-01 ,8.277186e-01 ,&
+        & 8.292856e-01 ,8.307932e-01 ,8.322411e-01 ,8.336291e-01 ,8.349570e-01 ,&
+        & 8.362244e-01 ,8.374312e-01 ,8.385772e-01 ,8.396621e-01 ,8.406856e-01 ,&
+        & 8.416476e-01 ,8.425479e-01 ,8.433861e-01 ,8.441620e-01 ,8.448755e-01 ,&
+        & 8.455263e-01  /)
       asyice3(:, 24) = (/ &
 ! band 24
-        & 7.568829e-01_rb,7.597947e-01_rb,7.626745e-01_rb,7.655212e-01_rb,7.683337e-01_rb,&
-        & 7.711111e-01_rb,7.738523e-01_rb,7.765565e-01_rb,7.792225e-01_rb,7.818494e-01_rb,&
-        & 7.844362e-01_rb,7.869819e-01_rb,7.894854e-01_rb,7.919459e-01_rb,7.943623e-01_rb,&
-        & 7.967337e-01_rb,7.990590e-01_rb,8.013373e-01_rb,8.035676e-01_rb,8.057488e-01_rb,&
-        & 8.078802e-01_rb,8.099605e-01_rb,8.119890e-01_rb,8.139645e-01_rb,8.158862e-01_rb,&
-        & 8.177530e-01_rb,8.195641e-01_rb,8.213183e-01_rb,8.230149e-01_rb,8.246527e-01_rb,&
-        & 8.262308e-01_rb,8.277483e-01_rb,8.292042e-01_rb,8.305976e-01_rb,8.319275e-01_rb,&
-        & 8.331929e-01_rb,8.343929e-01_rb,8.355265e-01_rb,8.365928e-01_rb,8.375909e-01_rb,&
-        & 8.385197e-01_rb,8.393784e-01_rb,8.401659e-01_rb,8.408815e-01_rb,8.415240e-01_rb,&
-        & 8.420926e-01_rb /)
+        & 7.568829e-01 ,7.597947e-01 ,7.626745e-01 ,7.655212e-01 ,7.683337e-01 ,&
+        & 7.711111e-01 ,7.738523e-01 ,7.765565e-01 ,7.792225e-01 ,7.818494e-01 ,&
+        & 7.844362e-01 ,7.869819e-01 ,7.894854e-01 ,7.919459e-01 ,7.943623e-01 ,&
+        & 7.967337e-01 ,7.990590e-01 ,8.013373e-01 ,8.035676e-01 ,8.057488e-01 ,&
+        & 8.078802e-01 ,8.099605e-01 ,8.119890e-01 ,8.139645e-01 ,8.158862e-01 ,&
+        & 8.177530e-01 ,8.195641e-01 ,8.213183e-01 ,8.230149e-01 ,8.246527e-01 ,&
+        & 8.262308e-01 ,8.277483e-01 ,8.292042e-01 ,8.305976e-01 ,8.319275e-01 ,&
+        & 8.331929e-01 ,8.343929e-01 ,8.355265e-01 ,8.365928e-01 ,8.375909e-01 ,&
+        & 8.385197e-01 ,8.393784e-01 ,8.401659e-01 ,8.408815e-01 ,8.415240e-01 ,&
+        & 8.420926e-01  /)
       asyice3(:, 25) = (/ &
 ! band 25
-        & 7.548616e-01_rb,7.575454e-01_rb,7.602153e-01_rb,7.628696e-01_rb,7.655067e-01_rb,&
-        & 7.681249e-01_rb,7.707225e-01_rb,7.732978e-01_rb,7.758492e-01_rb,7.783750e-01_rb,&
-        & 7.808735e-01_rb,7.833430e-01_rb,7.857819e-01_rb,7.881886e-01_rb,7.905612e-01_rb,&
-        & 7.928983e-01_rb,7.951980e-01_rb,7.974588e-01_rb,7.996789e-01_rb,8.018567e-01_rb,&
-        & 8.039905e-01_rb,8.060787e-01_rb,8.081196e-01_rb,8.101115e-01_rb,8.120527e-01_rb,&
-        & 8.139416e-01_rb,8.157764e-01_rb,8.175557e-01_rb,8.192776e-01_rb,8.209405e-01_rb,&
-        & 8.225427e-01_rb,8.240826e-01_rb,8.255585e-01_rb,8.269688e-01_rb,8.283117e-01_rb,&
-        & 8.295856e-01_rb,8.307889e-01_rb,8.319198e-01_rb,8.329767e-01_rb,8.339579e-01_rb,&
-        & 8.348619e-01_rb,8.356868e-01_rb,8.364311e-01_rb,8.370930e-01_rb,8.376710e-01_rb,&
-        & 8.381633e-01_rb /)
+        & 7.548616e-01 ,7.575454e-01 ,7.602153e-01 ,7.628696e-01 ,7.655067e-01 ,&
+        & 7.681249e-01 ,7.707225e-01 ,7.732978e-01 ,7.758492e-01 ,7.783750e-01 ,&
+        & 7.808735e-01 ,7.833430e-01 ,7.857819e-01 ,7.881886e-01 ,7.905612e-01 ,&
+        & 7.928983e-01 ,7.951980e-01 ,7.974588e-01 ,7.996789e-01 ,8.018567e-01 ,&
+        & 8.039905e-01 ,8.060787e-01 ,8.081196e-01 ,8.101115e-01 ,8.120527e-01 ,&
+        & 8.139416e-01 ,8.157764e-01 ,8.175557e-01 ,8.192776e-01 ,8.209405e-01 ,&
+        & 8.225427e-01 ,8.240826e-01 ,8.255585e-01 ,8.269688e-01 ,8.283117e-01 ,&
+        & 8.295856e-01 ,8.307889e-01 ,8.319198e-01 ,8.329767e-01 ,8.339579e-01 ,&
+        & 8.348619e-01 ,8.356868e-01 ,8.364311e-01 ,8.370930e-01 ,8.376710e-01 ,&
+        & 8.381633e-01  /)
       asyice3(:, 26) = (/ &
 ! band 26
-        & 7.491854e-01_rb,7.518523e-01_rb,7.545089e-01_rb,7.571534e-01_rb,7.597839e-01_rb,&
-        & 7.623987e-01_rb,7.649959e-01_rb,7.675737e-01_rb,7.701303e-01_rb,7.726639e-01_rb,&
-        & 7.751727e-01_rb,7.776548e-01_rb,7.801084e-01_rb,7.825318e-01_rb,7.849230e-01_rb,&
-        & 7.872804e-01_rb,7.896020e-01_rb,7.918862e-01_rb,7.941309e-01_rb,7.963345e-01_rb,&
-        & 7.984951e-01_rb,8.006109e-01_rb,8.026802e-01_rb,8.047009e-01_rb,8.066715e-01_rb,&
-        & 8.085900e-01_rb,8.104546e-01_rb,8.122636e-01_rb,8.140150e-01_rb,8.157072e-01_rb,&
-        & 8.173382e-01_rb,8.189063e-01_rb,8.204096e-01_rb,8.218464e-01_rb,8.232148e-01_rb,&
-        & 8.245130e-01_rb,8.257391e-01_rb,8.268915e-01_rb,8.279682e-01_rb,8.289675e-01_rb,&
-        & 8.298875e-01_rb,8.307264e-01_rb,8.314824e-01_rb,8.321537e-01_rb,8.327385e-01_rb,&
-        & 8.332350e-01_rb /)
+        & 7.491854e-01 ,7.518523e-01 ,7.545089e-01 ,7.571534e-01 ,7.597839e-01 ,&
+        & 7.623987e-01 ,7.649959e-01 ,7.675737e-01 ,7.701303e-01 ,7.726639e-01 ,&
+        & 7.751727e-01 ,7.776548e-01 ,7.801084e-01 ,7.825318e-01 ,7.849230e-01 ,&
+        & 7.872804e-01 ,7.896020e-01 ,7.918862e-01 ,7.941309e-01 ,7.963345e-01 ,&
+        & 7.984951e-01 ,8.006109e-01 ,8.026802e-01 ,8.047009e-01 ,8.066715e-01 ,&
+        & 8.085900e-01 ,8.104546e-01 ,8.122636e-01 ,8.140150e-01 ,8.157072e-01 ,&
+        & 8.173382e-01 ,8.189063e-01 ,8.204096e-01 ,8.218464e-01 ,8.232148e-01 ,&
+        & 8.245130e-01 ,8.257391e-01 ,8.268915e-01 ,8.279682e-01 ,8.289675e-01 ,&
+        & 8.298875e-01 ,8.307264e-01 ,8.314824e-01 ,8.321537e-01 ,8.327385e-01 ,&
+        & 8.332350e-01  /)
       asyice3(:, 27) = (/ &
 ! band 27
-        & 7.397086e-01_rb,7.424069e-01_rb,7.450955e-01_rb,7.477725e-01_rb,7.504362e-01_rb,&
-        & 7.530846e-01_rb,7.557159e-01_rb,7.583283e-01_rb,7.609199e-01_rb,7.634888e-01_rb,&
-        & 7.660332e-01_rb,7.685512e-01_rb,7.710411e-01_rb,7.735009e-01_rb,7.759288e-01_rb,&
-        & 7.783229e-01_rb,7.806814e-01_rb,7.830024e-01_rb,7.852841e-01_rb,7.875246e-01_rb,&
-        & 7.897221e-01_rb,7.918748e-01_rb,7.939807e-01_rb,7.960380e-01_rb,7.980449e-01_rb,&
-        & 7.999995e-01_rb,8.019000e-01_rb,8.037445e-01_rb,8.055311e-01_rb,8.072581e-01_rb,&
-        & 8.089235e-01_rb,8.105255e-01_rb,8.120623e-01_rb,8.135319e-01_rb,8.149326e-01_rb,&
-        & 8.162626e-01_rb,8.175198e-01_rb,8.187025e-01_rb,8.198089e-01_rb,8.208371e-01_rb,&
-        & 8.217852e-01_rb,8.226514e-01_rb,8.234338e-01_rb,8.241306e-01_rb,8.247399e-01_rb,&
-        & 8.252599e-01_rb /)
+        & 7.397086e-01 ,7.424069e-01 ,7.450955e-01 ,7.477725e-01 ,7.504362e-01 ,&
+        & 7.530846e-01 ,7.557159e-01 ,7.583283e-01 ,7.609199e-01 ,7.634888e-01 ,&
+        & 7.660332e-01 ,7.685512e-01 ,7.710411e-01 ,7.735009e-01 ,7.759288e-01 ,&
+        & 7.783229e-01 ,7.806814e-01 ,7.830024e-01 ,7.852841e-01 ,7.875246e-01 ,&
+        & 7.897221e-01 ,7.918748e-01 ,7.939807e-01 ,7.960380e-01 ,7.980449e-01 ,&
+        & 7.999995e-01 ,8.019000e-01 ,8.037445e-01 ,8.055311e-01 ,8.072581e-01 ,&
+        & 8.089235e-01 ,8.105255e-01 ,8.120623e-01 ,8.135319e-01 ,8.149326e-01 ,&
+        & 8.162626e-01 ,8.175198e-01 ,8.187025e-01 ,8.198089e-01 ,8.208371e-01 ,&
+        & 8.217852e-01 ,8.226514e-01 ,8.234338e-01 ,8.241306e-01 ,8.247399e-01 ,&
+        & 8.252599e-01  /)
       asyice3(:, 28) = (/ &
 ! band 28
-        & 7.224533e-01_rb,7.251681e-01_rb,7.278728e-01_rb,7.305654e-01_rb,7.332444e-01_rb,&
-        & 7.359078e-01_rb,7.385539e-01_rb,7.411808e-01_rb,7.437869e-01_rb,7.463702e-01_rb,&
-        & 7.489291e-01_rb,7.514616e-01_rb,7.539661e-01_rb,7.564408e-01_rb,7.588837e-01_rb,&
-        & 7.612933e-01_rb,7.636676e-01_rb,7.660049e-01_rb,7.683034e-01_rb,7.705612e-01_rb,&
-        & 7.727767e-01_rb,7.749480e-01_rb,7.770733e-01_rb,7.791509e-01_rb,7.811789e-01_rb,&
-        & 7.831556e-01_rb,7.850791e-01_rb,7.869478e-01_rb,7.887597e-01_rb,7.905131e-01_rb,&
-        & 7.922062e-01_rb,7.938372e-01_rb,7.954044e-01_rb,7.969059e-01_rb,7.983399e-01_rb,&
-        & 7.997047e-01_rb,8.009985e-01_rb,8.022195e-01_rb,8.033658e-01_rb,8.044357e-01_rb,&
-        & 8.054275e-01_rb,8.063392e-01_rb,8.071692e-01_rb,8.079157e-01_rb,8.085768e-01_rb,&
-        & 8.091507e-01_rb /)
+        & 7.224533e-01 ,7.251681e-01 ,7.278728e-01 ,7.305654e-01 ,7.332444e-01 ,&
+        & 7.359078e-01 ,7.385539e-01 ,7.411808e-01 ,7.437869e-01 ,7.463702e-01 ,&
+        & 7.489291e-01 ,7.514616e-01 ,7.539661e-01 ,7.564408e-01 ,7.588837e-01 ,&
+        & 7.612933e-01 ,7.636676e-01 ,7.660049e-01 ,7.683034e-01 ,7.705612e-01 ,&
+        & 7.727767e-01 ,7.749480e-01 ,7.770733e-01 ,7.791509e-01 ,7.811789e-01 ,&
+        & 7.831556e-01 ,7.850791e-01 ,7.869478e-01 ,7.887597e-01 ,7.905131e-01 ,&
+        & 7.922062e-01 ,7.938372e-01 ,7.954044e-01 ,7.969059e-01 ,7.983399e-01 ,&
+        & 7.997047e-01 ,8.009985e-01 ,8.022195e-01 ,8.033658e-01 ,8.044357e-01 ,&
+        & 8.054275e-01 ,8.063392e-01 ,8.071692e-01 ,8.079157e-01 ,8.085768e-01 ,&
+        & 8.091507e-01  /)
       asyice3(:, 29) = (/ &
 ! band 29
-        & 8.850026e-01_rb,9.005489e-01_rb,9.069242e-01_rb,9.121799e-01_rb,9.168987e-01_rb,&
-        & 9.212259e-01_rb,9.252176e-01_rb,9.289028e-01_rb,9.323000e-01_rb,9.354235e-01_rb,&
-        & 9.382858e-01_rb,9.408985e-01_rb,9.432734e-01_rb,9.454218e-01_rb,9.473557e-01_rb,&
-        & 9.490871e-01_rb,9.506282e-01_rb,9.519917e-01_rb,9.531904e-01_rb,9.542374e-01_rb,&
-        & 9.551461e-01_rb,9.559298e-01_rb,9.566023e-01_rb,9.571775e-01_rb,9.576692e-01_rb,&
-        & 9.580916e-01_rb,9.584589e-01_rb,9.587853e-01_rb,9.590851e-01_rb,9.593729e-01_rb,&
-        & 9.596632e-01_rb,9.599705e-01_rb,9.603096e-01_rb,9.606954e-01_rb,9.611427e-01_rb,&
-        & 9.616667e-01_rb,9.622826e-01_rb,9.630060e-01_rb,9.638524e-01_rb,9.648379e-01_rb,&
-        & 9.659788e-01_rb,9.672916e-01_rb,9.687933e-01_rb,9.705014e-01_rb,9.724337e-01_rb,&
-        & 9.746084e-01_rb /)
+        & 8.850026e-01 ,9.005489e-01 ,9.069242e-01 ,9.121799e-01 ,9.168987e-01 ,&
+        & 9.212259e-01 ,9.252176e-01 ,9.289028e-01 ,9.323000e-01 ,9.354235e-01 ,&
+        & 9.382858e-01 ,9.408985e-01 ,9.432734e-01 ,9.454218e-01 ,9.473557e-01 ,&
+        & 9.490871e-01 ,9.506282e-01 ,9.519917e-01 ,9.531904e-01 ,9.542374e-01 ,&
+        & 9.551461e-01 ,9.559298e-01 ,9.566023e-01 ,9.571775e-01 ,9.576692e-01 ,&
+        & 9.580916e-01 ,9.584589e-01 ,9.587853e-01 ,9.590851e-01 ,9.593729e-01 ,&
+        & 9.596632e-01 ,9.599705e-01 ,9.603096e-01 ,9.606954e-01 ,9.611427e-01 ,&
+        & 9.616667e-01 ,9.622826e-01 ,9.630060e-01 ,9.638524e-01 ,9.648379e-01 ,&
+        & 9.659788e-01 ,9.672916e-01 ,9.687933e-01 ,9.705014e-01 ,9.724337e-01 ,&
+        & 9.746084e-01  /)
 
 ! fdelta: unitless
       fdlice3(:, 16) = (/ &
 ! band 16
-        & 4.959277e-02_rb,4.685292e-02_rb,4.426104e-02_rb,4.181231e-02_rb,3.950191e-02_rb,&
-        & 3.732500e-02_rb,3.527675e-02_rb,3.335235e-02_rb,3.154697e-02_rb,2.985578e-02_rb,&
-        & 2.827395e-02_rb,2.679666e-02_rb,2.541909e-02_rb,2.413640e-02_rb,2.294378e-02_rb,&
-        & 2.183639e-02_rb,2.080940e-02_rb,1.985801e-02_rb,1.897736e-02_rb,1.816265e-02_rb,&
-        & 1.740905e-02_rb,1.671172e-02_rb,1.606585e-02_rb,1.546661e-02_rb,1.490917e-02_rb,&
-        & 1.438870e-02_rb,1.390038e-02_rb,1.343939e-02_rb,1.300089e-02_rb,1.258006e-02_rb,&
-        & 1.217208e-02_rb,1.177212e-02_rb,1.137536e-02_rb,1.097696e-02_rb,1.057210e-02_rb,&
-        & 1.015596e-02_rb,9.723704e-03_rb,9.270516e-03_rb,8.791565e-03_rb,8.282026e-03_rb,&
-        & 7.737072e-03_rb,7.151879e-03_rb,6.521619e-03_rb,5.841467e-03_rb,5.106597e-03_rb,&
-        & 4.312183e-03_rb /)
+        & 4.959277e-02 ,4.685292e-02 ,4.426104e-02 ,4.181231e-02 ,3.950191e-02 ,&
+        & 3.732500e-02 ,3.527675e-02 ,3.335235e-02 ,3.154697e-02 ,2.985578e-02 ,&
+        & 2.827395e-02 ,2.679666e-02 ,2.541909e-02 ,2.413640e-02 ,2.294378e-02 ,&
+        & 2.183639e-02 ,2.080940e-02 ,1.985801e-02 ,1.897736e-02 ,1.816265e-02 ,&
+        & 1.740905e-02 ,1.671172e-02 ,1.606585e-02 ,1.546661e-02 ,1.490917e-02 ,&
+        & 1.438870e-02 ,1.390038e-02 ,1.343939e-02 ,1.300089e-02 ,1.258006e-02 ,&
+        & 1.217208e-02 ,1.177212e-02 ,1.137536e-02 ,1.097696e-02 ,1.057210e-02 ,&
+        & 1.015596e-02 ,9.723704e-03 ,9.270516e-03 ,8.791565e-03 ,8.282026e-03 ,&
+        & 7.737072e-03 ,7.151879e-03 ,6.521619e-03 ,5.841467e-03 ,5.106597e-03 ,&
+        & 4.312183e-03  /)
       fdlice3(:, 17) = (/ &
 ! band 17
-        & 5.071224e-02_rb,5.000217e-02_rb,4.933872e-02_rb,4.871992e-02_rb,4.814380e-02_rb,&
-        & 4.760839e-02_rb,4.711170e-02_rb,4.665177e-02_rb,4.622662e-02_rb,4.583426e-02_rb,&
-        & 4.547274e-02_rb,4.514007e-02_rb,4.483428e-02_rb,4.455340e-02_rb,4.429544e-02_rb,&
-        & 4.405844e-02_rb,4.384041e-02_rb,4.363939e-02_rb,4.345340e-02_rb,4.328047e-02_rb,&
-        & 4.311861e-02_rb,4.296586e-02_rb,4.282024e-02_rb,4.267977e-02_rb,4.254248e-02_rb,&
-        & 4.240640e-02_rb,4.226955e-02_rb,4.212995e-02_rb,4.198564e-02_rb,4.183462e-02_rb,&
-        & 4.167494e-02_rb,4.150462e-02_rb,4.132167e-02_rb,4.112413e-02_rb,4.091003e-02_rb,&
-        & 4.067737e-02_rb,4.042420e-02_rb,4.014854e-02_rb,3.984840e-02_rb,3.952183e-02_rb,&
-        & 3.916683e-02_rb,3.878144e-02_rb,3.836368e-02_rb,3.791158e-02_rb,3.742316e-02_rb,&
-        & 3.689645e-02_rb /)
+        & 5.071224e-02 ,5.000217e-02 ,4.933872e-02 ,4.871992e-02 ,4.814380e-02 ,&
+        & 4.760839e-02 ,4.711170e-02 ,4.665177e-02 ,4.622662e-02 ,4.583426e-02 ,&
+        & 4.547274e-02 ,4.514007e-02 ,4.483428e-02 ,4.455340e-02 ,4.429544e-02 ,&
+        & 4.405844e-02 ,4.384041e-02 ,4.363939e-02 ,4.345340e-02 ,4.328047e-02 ,&
+        & 4.311861e-02 ,4.296586e-02 ,4.282024e-02 ,4.267977e-02 ,4.254248e-02 ,&
+        & 4.240640e-02 ,4.226955e-02 ,4.212995e-02 ,4.198564e-02 ,4.183462e-02 ,&
+        & 4.167494e-02 ,4.150462e-02 ,4.132167e-02 ,4.112413e-02 ,4.091003e-02 ,&
+        & 4.067737e-02 ,4.042420e-02 ,4.014854e-02 ,3.984840e-02 ,3.952183e-02 ,&
+        & 3.916683e-02 ,3.878144e-02 ,3.836368e-02 ,3.791158e-02 ,3.742316e-02 ,&
+        & 3.689645e-02  /)
       fdlice3(:, 18) = (/ &
 ! band 18
-        & 1.062938e-01_rb,1.065234e-01_rb,1.067822e-01_rb,1.070682e-01_rb,1.073793e-01_rb,&
-        & 1.077137e-01_rb,1.080693e-01_rb,1.084442e-01_rb,1.088364e-01_rb,1.092439e-01_rb,&
-        & 1.096647e-01_rb,1.100970e-01_rb,1.105387e-01_rb,1.109878e-01_rb,1.114423e-01_rb,&
-        & 1.119004e-01_rb,1.123599e-01_rb,1.128190e-01_rb,1.132757e-01_rb,1.137279e-01_rb,&
-        & 1.141738e-01_rb,1.146113e-01_rb,1.150385e-01_rb,1.154534e-01_rb,1.158540e-01_rb,&
-        & 1.162383e-01_rb,1.166045e-01_rb,1.169504e-01_rb,1.172741e-01_rb,1.175738e-01_rb,&
-        & 1.178472e-01_rb,1.180926e-01_rb,1.183080e-01_rb,1.184913e-01_rb,1.186405e-01_rb,&
-        & 1.187538e-01_rb,1.188291e-01_rb,1.188645e-01_rb,1.188580e-01_rb,1.188076e-01_rb,&
-        & 1.187113e-01_rb,1.185672e-01_rb,1.183733e-01_rb,1.181277e-01_rb,1.178282e-01_rb,&
-        & 1.174731e-01_rb /)
+        & 1.062938e-01 ,1.065234e-01 ,1.067822e-01 ,1.070682e-01 ,1.073793e-01 ,&
+        & 1.077137e-01 ,1.080693e-01 ,1.084442e-01 ,1.088364e-01 ,1.092439e-01 ,&
+        & 1.096647e-01 ,1.100970e-01 ,1.105387e-01 ,1.109878e-01 ,1.114423e-01 ,&
+        & 1.119004e-01 ,1.123599e-01 ,1.128190e-01 ,1.132757e-01 ,1.137279e-01 ,&
+        & 1.141738e-01 ,1.146113e-01 ,1.150385e-01 ,1.154534e-01 ,1.158540e-01 ,&
+        & 1.162383e-01 ,1.166045e-01 ,1.169504e-01 ,1.172741e-01 ,1.175738e-01 ,&
+        & 1.178472e-01 ,1.180926e-01 ,1.183080e-01 ,1.184913e-01 ,1.186405e-01 ,&
+        & 1.187538e-01 ,1.188291e-01 ,1.188645e-01 ,1.188580e-01 ,1.188076e-01 ,&
+        & 1.187113e-01 ,1.185672e-01 ,1.183733e-01 ,1.181277e-01 ,1.178282e-01 ,&
+        & 1.174731e-01  /)
       fdlice3(:, 19) = (/ &
 ! band 19
-        & 1.076195e-01_rb,1.065195e-01_rb,1.054696e-01_rb,1.044673e-01_rb,1.035099e-01_rb,&
-        & 1.025951e-01_rb,1.017203e-01_rb,1.008831e-01_rb,1.000808e-01_rb,9.931116e-02_rb,&
-        & 9.857151e-02_rb,9.785939e-02_rb,9.717230e-02_rb,9.650774e-02_rb,9.586322e-02_rb,&
-        & 9.523623e-02_rb,9.462427e-02_rb,9.402484e-02_rb,9.343544e-02_rb,9.285358e-02_rb,&
-        & 9.227675e-02_rb,9.170245e-02_rb,9.112818e-02_rb,9.055144e-02_rb,8.996974e-02_rb,&
-        & 8.938056e-02_rb,8.878142e-02_rb,8.816981e-02_rb,8.754323e-02_rb,8.689919e-02_rb,&
-        & 8.623517e-02_rb,8.554869e-02_rb,8.483724e-02_rb,8.409832e-02_rb,8.332943e-02_rb,&
-        & 8.252807e-02_rb,8.169175e-02_rb,8.081795e-02_rb,7.990419e-02_rb,7.894796e-02_rb,&
-        & 7.794676e-02_rb,7.689809e-02_rb,7.579945e-02_rb,7.464834e-02_rb,7.344227e-02_rb,&
-        & 7.217872e-02_rb /)
+        & 1.076195e-01 ,1.065195e-01 ,1.054696e-01 ,1.044673e-01 ,1.035099e-01 ,&
+        & 1.025951e-01 ,1.017203e-01 ,1.008831e-01 ,1.000808e-01 ,9.931116e-02 ,&
+        & 9.857151e-02 ,9.785939e-02 ,9.717230e-02 ,9.650774e-02 ,9.586322e-02 ,&
+        & 9.523623e-02 ,9.462427e-02 ,9.402484e-02 ,9.343544e-02 ,9.285358e-02 ,&
+        & 9.227675e-02 ,9.170245e-02 ,9.112818e-02 ,9.055144e-02 ,8.996974e-02 ,&
+        & 8.938056e-02 ,8.878142e-02 ,8.816981e-02 ,8.754323e-02 ,8.689919e-02 ,&
+        & 8.623517e-02 ,8.554869e-02 ,8.483724e-02 ,8.409832e-02 ,8.332943e-02 ,&
+        & 8.252807e-02 ,8.169175e-02 ,8.081795e-02 ,7.990419e-02 ,7.894796e-02 ,&
+        & 7.794676e-02 ,7.689809e-02 ,7.579945e-02 ,7.464834e-02 ,7.344227e-02 ,&
+        & 7.217872e-02  /)
       fdlice3(:, 20) = (/ &
 ! band 20
-        & 1.119014e-01_rb,1.122706e-01_rb,1.126690e-01_rb,1.130947e-01_rb,1.135456e-01_rb,&
-        & 1.140199e-01_rb,1.145154e-01_rb,1.150302e-01_rb,1.155623e-01_rb,1.161096e-01_rb,&
-        & 1.166703e-01_rb,1.172422e-01_rb,1.178233e-01_rb,1.184118e-01_rb,1.190055e-01_rb,&
-        & 1.196025e-01_rb,1.202008e-01_rb,1.207983e-01_rb,1.213931e-01_rb,1.219832e-01_rb,&
-        & 1.225665e-01_rb,1.231411e-01_rb,1.237050e-01_rb,1.242561e-01_rb,1.247926e-01_rb,&
-        & 1.253122e-01_rb,1.258132e-01_rb,1.262934e-01_rb,1.267509e-01_rb,1.271836e-01_rb,&
-        & 1.275896e-01_rb,1.279669e-01_rb,1.283134e-01_rb,1.286272e-01_rb,1.289063e-01_rb,&
-        & 1.291486e-01_rb,1.293522e-01_rb,1.295150e-01_rb,1.296351e-01_rb,1.297104e-01_rb,&
-        & 1.297390e-01_rb,1.297189e-01_rb,1.296480e-01_rb,1.295244e-01_rb,1.293460e-01_rb,&
-        & 1.291109e-01_rb /)
+        & 1.119014e-01 ,1.122706e-01 ,1.126690e-01 ,1.130947e-01 ,1.135456e-01 ,&
+        & 1.140199e-01 ,1.145154e-01 ,1.150302e-01 ,1.155623e-01 ,1.161096e-01 ,&
+        & 1.166703e-01 ,1.172422e-01 ,1.178233e-01 ,1.184118e-01 ,1.190055e-01 ,&
+        & 1.196025e-01 ,1.202008e-01 ,1.207983e-01 ,1.213931e-01 ,1.219832e-01 ,&
+        & 1.225665e-01 ,1.231411e-01 ,1.237050e-01 ,1.242561e-01 ,1.247926e-01 ,&
+        & 1.253122e-01 ,1.258132e-01 ,1.262934e-01 ,1.267509e-01 ,1.271836e-01 ,&
+        & 1.275896e-01 ,1.279669e-01 ,1.283134e-01 ,1.286272e-01 ,1.289063e-01 ,&
+        & 1.291486e-01 ,1.293522e-01 ,1.295150e-01 ,1.296351e-01 ,1.297104e-01 ,&
+        & 1.297390e-01 ,1.297189e-01 ,1.296480e-01 ,1.295244e-01 ,1.293460e-01 ,&
+        & 1.291109e-01  /)
       fdlice3(:, 21) = (/ &
 ! band 21
-        & 1.133298e-01_rb,1.136777e-01_rb,1.140556e-01_rb,1.144615e-01_rb,1.148934e-01_rb,&
-        & 1.153492e-01_rb,1.158269e-01_rb,1.163243e-01_rb,1.168396e-01_rb,1.173706e-01_rb,&
-        & 1.179152e-01_rb,1.184715e-01_rb,1.190374e-01_rb,1.196108e-01_rb,1.201897e-01_rb,&
-        & 1.207720e-01_rb,1.213558e-01_rb,1.219389e-01_rb,1.225194e-01_rb,1.230951e-01_rb,&
-        & 1.236640e-01_rb,1.242241e-01_rb,1.247733e-01_rb,1.253096e-01_rb,1.258309e-01_rb,&
-        & 1.263352e-01_rb,1.268205e-01_rb,1.272847e-01_rb,1.277257e-01_rb,1.281415e-01_rb,&
-        & 1.285300e-01_rb,1.288893e-01_rb,1.292173e-01_rb,1.295118e-01_rb,1.297710e-01_rb,&
-        & 1.299927e-01_rb,1.301748e-01_rb,1.303154e-01_rb,1.304124e-01_rb,1.304637e-01_rb,&
-        & 1.304673e-01_rb,1.304212e-01_rb,1.303233e-01_rb,1.301715e-01_rb,1.299638e-01_rb,&
-        & 1.296983e-01_rb /)
+        & 1.133298e-01 ,1.136777e-01 ,1.140556e-01 ,1.144615e-01 ,1.148934e-01 ,&
+        & 1.153492e-01 ,1.158269e-01 ,1.163243e-01 ,1.168396e-01 ,1.173706e-01 ,&
+        & 1.179152e-01 ,1.184715e-01 ,1.190374e-01 ,1.196108e-01 ,1.201897e-01 ,&
+        & 1.207720e-01 ,1.213558e-01 ,1.219389e-01 ,1.225194e-01 ,1.230951e-01 ,&
+        & 1.236640e-01 ,1.242241e-01 ,1.247733e-01 ,1.253096e-01 ,1.258309e-01 ,&
+        & 1.263352e-01 ,1.268205e-01 ,1.272847e-01 ,1.277257e-01 ,1.281415e-01 ,&
+        & 1.285300e-01 ,1.288893e-01 ,1.292173e-01 ,1.295118e-01 ,1.297710e-01 ,&
+        & 1.299927e-01 ,1.301748e-01 ,1.303154e-01 ,1.304124e-01 ,1.304637e-01 ,&
+        & 1.304673e-01 ,1.304212e-01 ,1.303233e-01 ,1.301715e-01 ,1.299638e-01 ,&
+        & 1.296983e-01  /)
       fdlice3(:, 22) = (/ &
 ! band 22
-        & 1.145360e-01_rb,1.153256e-01_rb,1.161453e-01_rb,1.169929e-01_rb,1.178666e-01_rb,&
-        & 1.187641e-01_rb,1.196835e-01_rb,1.206227e-01_rb,1.215796e-01_rb,1.225522e-01_rb,&
-        & 1.235383e-01_rb,1.245361e-01_rb,1.255433e-01_rb,1.265579e-01_rb,1.275779e-01_rb,&
-        & 1.286011e-01_rb,1.296257e-01_rb,1.306494e-01_rb,1.316703e-01_rb,1.326862e-01_rb,&
-        & 1.336951e-01_rb,1.346950e-01_rb,1.356838e-01_rb,1.366594e-01_rb,1.376198e-01_rb,&
-        & 1.385629e-01_rb,1.394866e-01_rb,1.403889e-01_rb,1.412678e-01_rb,1.421212e-01_rb,&
-        & 1.429469e-01_rb,1.437430e-01_rb,1.445074e-01_rb,1.452381e-01_rb,1.459329e-01_rb,&
-        & 1.465899e-01_rb,1.472069e-01_rb,1.477819e-01_rb,1.483128e-01_rb,1.487976e-01_rb,&
-        & 1.492343e-01_rb,1.496207e-01_rb,1.499548e-01_rb,1.502346e-01_rb,1.504579e-01_rb,&
-        & 1.506227e-01_rb /)
+        & 1.145360e-01 ,1.153256e-01 ,1.161453e-01 ,1.169929e-01 ,1.178666e-01 ,&
+        & 1.187641e-01 ,1.196835e-01 ,1.206227e-01 ,1.215796e-01 ,1.225522e-01 ,&
+        & 1.235383e-01 ,1.245361e-01 ,1.255433e-01 ,1.265579e-01 ,1.275779e-01 ,&
+        & 1.286011e-01 ,1.296257e-01 ,1.306494e-01 ,1.316703e-01 ,1.326862e-01 ,&
+        & 1.336951e-01 ,1.346950e-01 ,1.356838e-01 ,1.366594e-01 ,1.376198e-01 ,&
+        & 1.385629e-01 ,1.394866e-01 ,1.403889e-01 ,1.412678e-01 ,1.421212e-01 ,&
+        & 1.429469e-01 ,1.437430e-01 ,1.445074e-01 ,1.452381e-01 ,1.459329e-01 ,&
+        & 1.465899e-01 ,1.472069e-01 ,1.477819e-01 ,1.483128e-01 ,1.487976e-01 ,&
+        & 1.492343e-01 ,1.496207e-01 ,1.499548e-01 ,1.502346e-01 ,1.504579e-01 ,&
+        & 1.506227e-01  /)
       fdlice3(:, 23) = (/ &
 ! band 23
-        & 1.153263e-01_rb,1.161445e-01_rb,1.169932e-01_rb,1.178703e-01_rb,1.187738e-01_rb,&
-        & 1.197016e-01_rb,1.206516e-01_rb,1.216217e-01_rb,1.226099e-01_rb,1.236141e-01_rb,&
-        & 1.246322e-01_rb,1.256621e-01_rb,1.267017e-01_rb,1.277491e-01_rb,1.288020e-01_rb,&
-        & 1.298584e-01_rb,1.309163e-01_rb,1.319736e-01_rb,1.330281e-01_rb,1.340778e-01_rb,&
-        & 1.351207e-01_rb,1.361546e-01_rb,1.371775e-01_rb,1.381873e-01_rb,1.391820e-01_rb,&
-        & 1.401593e-01_rb,1.411174e-01_rb,1.420540e-01_rb,1.429671e-01_rb,1.438547e-01_rb,&
-        & 1.447146e-01_rb,1.455449e-01_rb,1.463433e-01_rb,1.471078e-01_rb,1.478364e-01_rb,&
-        & 1.485270e-01_rb,1.491774e-01_rb,1.497857e-01_rb,1.503497e-01_rb,1.508674e-01_rb,&
-        & 1.513367e-01_rb,1.517554e-01_rb,1.521216e-01_rb,1.524332e-01_rb,1.526880e-01_rb,&
-        & 1.528840e-01_rb /)
+        & 1.153263e-01 ,1.161445e-01 ,1.169932e-01 ,1.178703e-01 ,1.187738e-01 ,&
+        & 1.197016e-01 ,1.206516e-01 ,1.216217e-01 ,1.226099e-01 ,1.236141e-01 ,&
+        & 1.246322e-01 ,1.256621e-01 ,1.267017e-01 ,1.277491e-01 ,1.288020e-01 ,&
+        & 1.298584e-01 ,1.309163e-01 ,1.319736e-01 ,1.330281e-01 ,1.340778e-01 ,&
+        & 1.351207e-01 ,1.361546e-01 ,1.371775e-01 ,1.381873e-01 ,1.391820e-01 ,&
+        & 1.401593e-01 ,1.411174e-01 ,1.420540e-01 ,1.429671e-01 ,1.438547e-01 ,&
+        & 1.447146e-01 ,1.455449e-01 ,1.463433e-01 ,1.471078e-01 ,1.478364e-01 ,&
+        & 1.485270e-01 ,1.491774e-01 ,1.497857e-01 ,1.503497e-01 ,1.508674e-01 ,&
+        & 1.513367e-01 ,1.517554e-01 ,1.521216e-01 ,1.524332e-01 ,1.526880e-01 ,&
+        & 1.528840e-01  /)
       fdlice3(:, 24) = (/ &
 ! band 24
-        & 1.160842e-01_rb,1.169118e-01_rb,1.177697e-01_rb,1.186556e-01_rb,1.195676e-01_rb,&
-        & 1.205036e-01_rb,1.214616e-01_rb,1.224394e-01_rb,1.234349e-01_rb,1.244463e-01_rb,&
-        & 1.254712e-01_rb,1.265078e-01_rb,1.275539e-01_rb,1.286075e-01_rb,1.296664e-01_rb,&
-        & 1.307287e-01_rb,1.317923e-01_rb,1.328550e-01_rb,1.339149e-01_rb,1.349699e-01_rb,&
-        & 1.360179e-01_rb,1.370567e-01_rb,1.380845e-01_rb,1.390991e-01_rb,1.400984e-01_rb,&
-        & 1.410803e-01_rb,1.420429e-01_rb,1.429840e-01_rb,1.439016e-01_rb,1.447936e-01_rb,&
-        & 1.456579e-01_rb,1.464925e-01_rb,1.472953e-01_rb,1.480642e-01_rb,1.487972e-01_rb,&
-        & 1.494923e-01_rb,1.501472e-01_rb,1.507601e-01_rb,1.513287e-01_rb,1.518511e-01_rb,&
-        & 1.523252e-01_rb,1.527489e-01_rb,1.531201e-01_rb,1.534368e-01_rb,1.536969e-01_rb,&
-        & 1.538984e-01_rb /)
+        & 1.160842e-01 ,1.169118e-01 ,1.177697e-01 ,1.186556e-01 ,1.195676e-01 ,&
+        & 1.205036e-01 ,1.214616e-01 ,1.224394e-01 ,1.234349e-01 ,1.244463e-01 ,&
+        & 1.254712e-01 ,1.265078e-01 ,1.275539e-01 ,1.286075e-01 ,1.296664e-01 ,&
+        & 1.307287e-01 ,1.317923e-01 ,1.328550e-01 ,1.339149e-01 ,1.349699e-01 ,&
+        & 1.360179e-01 ,1.370567e-01 ,1.380845e-01 ,1.390991e-01 ,1.400984e-01 ,&
+        & 1.410803e-01 ,1.420429e-01 ,1.429840e-01 ,1.439016e-01 ,1.447936e-01 ,&
+        & 1.456579e-01 ,1.464925e-01 ,1.472953e-01 ,1.480642e-01 ,1.487972e-01 ,&
+        & 1.494923e-01 ,1.501472e-01 ,1.507601e-01 ,1.513287e-01 ,1.518511e-01 ,&
+        & 1.523252e-01 ,1.527489e-01 ,1.531201e-01 ,1.534368e-01 ,1.536969e-01 ,&
+        & 1.538984e-01  /)
       fdlice3(:, 25) = (/ &
 ! band 25
-        & 1.168725e-01_rb,1.177088e-01_rb,1.185747e-01_rb,1.194680e-01_rb,1.203867e-01_rb,&
-        & 1.213288e-01_rb,1.222923e-01_rb,1.232750e-01_rb,1.242750e-01_rb,1.252903e-01_rb,&
-        & 1.263187e-01_rb,1.273583e-01_rb,1.284069e-01_rb,1.294626e-01_rb,1.305233e-01_rb,&
-        & 1.315870e-01_rb,1.326517e-01_rb,1.337152e-01_rb,1.347756e-01_rb,1.358308e-01_rb,&
-        & 1.368788e-01_rb,1.379175e-01_rb,1.389449e-01_rb,1.399590e-01_rb,1.409577e-01_rb,&
-        & 1.419389e-01_rb,1.429007e-01_rb,1.438410e-01_rb,1.447577e-01_rb,1.456488e-01_rb,&
-        & 1.465123e-01_rb,1.473461e-01_rb,1.481483e-01_rb,1.489166e-01_rb,1.496492e-01_rb,&
-        & 1.503439e-01_rb,1.509988e-01_rb,1.516118e-01_rb,1.521808e-01_rb,1.527038e-01_rb,&
-        & 1.531788e-01_rb,1.536037e-01_rb,1.539764e-01_rb,1.542951e-01_rb,1.545575e-01_rb,&
-        & 1.547617e-01_rb /)
+        & 1.168725e-01 ,1.177088e-01 ,1.185747e-01 ,1.194680e-01 ,1.203867e-01 ,&
+        & 1.213288e-01 ,1.222923e-01 ,1.232750e-01 ,1.242750e-01 ,1.252903e-01 ,&
+        & 1.263187e-01 ,1.273583e-01 ,1.284069e-01 ,1.294626e-01 ,1.305233e-01 ,&
+        & 1.315870e-01 ,1.326517e-01 ,1.337152e-01 ,1.347756e-01 ,1.358308e-01 ,&
+        & 1.368788e-01 ,1.379175e-01 ,1.389449e-01 ,1.399590e-01 ,1.409577e-01 ,&
+        & 1.419389e-01 ,1.429007e-01 ,1.438410e-01 ,1.447577e-01 ,1.456488e-01 ,&
+        & 1.465123e-01 ,1.473461e-01 ,1.481483e-01 ,1.489166e-01 ,1.496492e-01 ,&
+        & 1.503439e-01 ,1.509988e-01 ,1.516118e-01 ,1.521808e-01 ,1.527038e-01 ,&
+        & 1.531788e-01 ,1.536037e-01 ,1.539764e-01 ,1.542951e-01 ,1.545575e-01 ,&
+        & 1.547617e-01  /)
       fdlice3(:, 26) = (/ &
 !band 26
-        & 1.180509e-01_rb,1.189025e-01_rb,1.197820e-01_rb,1.206875e-01_rb,1.216171e-01_rb,&
-        & 1.225687e-01_rb,1.235404e-01_rb,1.245303e-01_rb,1.255363e-01_rb,1.265564e-01_rb,&
-        & 1.275888e-01_rb,1.286313e-01_rb,1.296821e-01_rb,1.307392e-01_rb,1.318006e-01_rb,&
-        & 1.328643e-01_rb,1.339284e-01_rb,1.349908e-01_rb,1.360497e-01_rb,1.371029e-01_rb,&
-        & 1.381486e-01_rb,1.391848e-01_rb,1.402095e-01_rb,1.412208e-01_rb,1.422165e-01_rb,&
-        & 1.431949e-01_rb,1.441539e-01_rb,1.450915e-01_rb,1.460058e-01_rb,1.468947e-01_rb,&
-        & 1.477564e-01_rb,1.485888e-01_rb,1.493900e-01_rb,1.501580e-01_rb,1.508907e-01_rb,&
-        & 1.515864e-01_rb,1.522428e-01_rb,1.528582e-01_rb,1.534305e-01_rb,1.539578e-01_rb,&
-        & 1.544380e-01_rb,1.548692e-01_rb,1.552494e-01_rb,1.555767e-01_rb,1.558490e-01_rb,&
-        & 1.560645e-01_rb /)
+        & 1.180509e-01 ,1.189025e-01 ,1.197820e-01 ,1.206875e-01 ,1.216171e-01 ,&
+        & 1.225687e-01 ,1.235404e-01 ,1.245303e-01 ,1.255363e-01 ,1.265564e-01 ,&
+        & 1.275888e-01 ,1.286313e-01 ,1.296821e-01 ,1.307392e-01 ,1.318006e-01 ,&
+        & 1.328643e-01 ,1.339284e-01 ,1.349908e-01 ,1.360497e-01 ,1.371029e-01 ,&
+        & 1.381486e-01 ,1.391848e-01 ,1.402095e-01 ,1.412208e-01 ,1.422165e-01 ,&
+        & 1.431949e-01 ,1.441539e-01 ,1.450915e-01 ,1.460058e-01 ,1.468947e-01 ,&
+        & 1.477564e-01 ,1.485888e-01 ,1.493900e-01 ,1.501580e-01 ,1.508907e-01 ,&
+        & 1.515864e-01 ,1.522428e-01 ,1.528582e-01 ,1.534305e-01 ,1.539578e-01 ,&
+        & 1.544380e-01 ,1.548692e-01 ,1.552494e-01 ,1.555767e-01 ,1.558490e-01 ,&
+        & 1.560645e-01  /)
       fdlice3(:, 27) = (/ &
 ! band 27
-        & 1.200480e-01_rb,1.209267e-01_rb,1.218304e-01_rb,1.227575e-01_rb,1.237059e-01_rb,&
-        & 1.246739e-01_rb,1.256595e-01_rb,1.266610e-01_rb,1.276765e-01_rb,1.287041e-01_rb,&
-        & 1.297420e-01_rb,1.307883e-01_rb,1.318412e-01_rb,1.328988e-01_rb,1.339593e-01_rb,&
-        & 1.350207e-01_rb,1.360813e-01_rb,1.371393e-01_rb,1.381926e-01_rb,1.392396e-01_rb,&
-        & 1.402783e-01_rb,1.413069e-01_rb,1.423235e-01_rb,1.433263e-01_rb,1.443134e-01_rb,&
-        & 1.452830e-01_rb,1.462332e-01_rb,1.471622e-01_rb,1.480681e-01_rb,1.489490e-01_rb,&
-        & 1.498032e-01_rb,1.506286e-01_rb,1.514236e-01_rb,1.521863e-01_rb,1.529147e-01_rb,&
-        & 1.536070e-01_rb,1.542614e-01_rb,1.548761e-01_rb,1.554491e-01_rb,1.559787e-01_rb,&
-        & 1.564629e-01_rb,1.568999e-01_rb,1.572879e-01_rb,1.576249e-01_rb,1.579093e-01_rb,&
-        & 1.581390e-01_rb /)
+        & 1.200480e-01 ,1.209267e-01 ,1.218304e-01 ,1.227575e-01 ,1.237059e-01 ,&
+        & 1.246739e-01 ,1.256595e-01 ,1.266610e-01 ,1.276765e-01 ,1.287041e-01 ,&
+        & 1.297420e-01 ,1.307883e-01 ,1.318412e-01 ,1.328988e-01 ,1.339593e-01 ,&
+        & 1.350207e-01 ,1.360813e-01 ,1.371393e-01 ,1.381926e-01 ,1.392396e-01 ,&
+        & 1.402783e-01 ,1.413069e-01 ,1.423235e-01 ,1.433263e-01 ,1.443134e-01 ,&
+        & 1.452830e-01 ,1.462332e-01 ,1.471622e-01 ,1.480681e-01 ,1.489490e-01 ,&
+        & 1.498032e-01 ,1.506286e-01 ,1.514236e-01 ,1.521863e-01 ,1.529147e-01 ,&
+        & 1.536070e-01 ,1.542614e-01 ,1.548761e-01 ,1.554491e-01 ,1.559787e-01 ,&
+        & 1.564629e-01 ,1.568999e-01 ,1.572879e-01 ,1.576249e-01 ,1.579093e-01 ,&
+        & 1.581390e-01  /)
       fdlice3(:, 28) = (/ &
 ! band 28
-        & 1.247813e-01_rb,1.256496e-01_rb,1.265417e-01_rb,1.274560e-01_rb,1.283905e-01_rb,&
-        & 1.293436e-01_rb,1.303135e-01_rb,1.312983e-01_rb,1.322964e-01_rb,1.333060e-01_rb,&
-        & 1.343252e-01_rb,1.353523e-01_rb,1.363855e-01_rb,1.374231e-01_rb,1.384632e-01_rb,&
-        & 1.395042e-01_rb,1.405441e-01_rb,1.415813e-01_rb,1.426140e-01_rb,1.436404e-01_rb,&
-        & 1.446587e-01_rb,1.456672e-01_rb,1.466640e-01_rb,1.476475e-01_rb,1.486157e-01_rb,&
-        & 1.495671e-01_rb,1.504997e-01_rb,1.514117e-01_rb,1.523016e-01_rb,1.531673e-01_rb,&
-        & 1.540073e-01_rb,1.548197e-01_rb,1.556026e-01_rb,1.563545e-01_rb,1.570734e-01_rb,&
-        & 1.577576e-01_rb,1.584054e-01_rb,1.590149e-01_rb,1.595843e-01_rb,1.601120e-01_rb,&
-        & 1.605962e-01_rb,1.610349e-01_rb,1.614266e-01_rb,1.617693e-01_rb,1.620614e-01_rb,&
-        & 1.623011e-01_rb /)
+        & 1.247813e-01 ,1.256496e-01 ,1.265417e-01 ,1.274560e-01 ,1.283905e-01 ,&
+        & 1.293436e-01 ,1.303135e-01 ,1.312983e-01 ,1.322964e-01 ,1.333060e-01 ,&
+        & 1.343252e-01 ,1.353523e-01 ,1.363855e-01 ,1.374231e-01 ,1.384632e-01 ,&
+        & 1.395042e-01 ,1.405441e-01 ,1.415813e-01 ,1.426140e-01 ,1.436404e-01 ,&
+        & 1.446587e-01 ,1.456672e-01 ,1.466640e-01 ,1.476475e-01 ,1.486157e-01 ,&
+        & 1.495671e-01 ,1.504997e-01 ,1.514117e-01 ,1.523016e-01 ,1.531673e-01 ,&
+        & 1.540073e-01 ,1.548197e-01 ,1.556026e-01 ,1.563545e-01 ,1.570734e-01 ,&
+        & 1.577576e-01 ,1.584054e-01 ,1.590149e-01 ,1.595843e-01 ,1.601120e-01 ,&
+        & 1.605962e-01 ,1.610349e-01 ,1.614266e-01 ,1.617693e-01 ,1.620614e-01 ,&
+        & 1.623011e-01  /)
       fdlice3(:, 29) = (/ &
 ! band 29
-        & 1.006055e-01_rb,9.549582e-02_rb,9.063960e-02_rb,8.602900e-02_rb,8.165612e-02_rb,&
-        & 7.751308e-02_rb,7.359199e-02_rb,6.988496e-02_rb,6.638412e-02_rb,6.308156e-02_rb,&
-        & 5.996942e-02_rb,5.703979e-02_rb,5.428481e-02_rb,5.169657e-02_rb,4.926719e-02_rb,&
-        & 4.698880e-02_rb,4.485349e-02_rb,4.285339e-02_rb,4.098061e-02_rb,3.922727e-02_rb,&
-        & 3.758547e-02_rb,3.604733e-02_rb,3.460497e-02_rb,3.325051e-02_rb,3.197604e-02_rb,&
-        & 3.077369e-02_rb,2.963558e-02_rb,2.855381e-02_rb,2.752050e-02_rb,2.652776e-02_rb,&
-        & 2.556772e-02_rb,2.463247e-02_rb,2.371415e-02_rb,2.280485e-02_rb,2.189670e-02_rb,&
-        & 2.098180e-02_rb,2.005228e-02_rb,1.910024e-02_rb,1.811781e-02_rb,1.709709e-02_rb,&
-        & 1.603020e-02_rb,1.490925e-02_rb,1.372635e-02_rb,1.247363e-02_rb,1.114319e-02_rb,&
-        & 9.727157e-03_rb /)
+        & 1.006055e-01 ,9.549582e-02 ,9.063960e-02 ,8.602900e-02 ,8.165612e-02 ,&
+        & 7.751308e-02 ,7.359199e-02 ,6.988496e-02 ,6.638412e-02 ,6.308156e-02 ,&
+        & 5.996942e-02 ,5.703979e-02 ,5.428481e-02 ,5.169657e-02 ,4.926719e-02 ,&
+        & 4.698880e-02 ,4.485349e-02 ,4.285339e-02 ,4.098061e-02 ,3.922727e-02 ,&
+        & 3.758547e-02 ,3.604733e-02 ,3.460497e-02 ,3.325051e-02 ,3.197604e-02 ,&
+        & 3.077369e-02 ,2.963558e-02 ,2.855381e-02 ,2.752050e-02 ,2.652776e-02 ,&
+        & 2.556772e-02 ,2.463247e-02 ,2.371415e-02 ,2.280485e-02 ,2.189670e-02 ,&
+        & 2.098180e-02 ,2.005228e-02 ,1.910024e-02 ,1.811781e-02 ,1.709709e-02 ,&
+        & 1.603020e-02 ,1.490925e-02 ,1.372635e-02 ,1.247363e-02 ,1.114319e-02 ,&
+        & 9.727157e-03  /)
 
       end subroutine swcldpr
 
       end module rrtmg_sw_init
 
-!     path:      $Source: /cvsroot/NWP/WRFV3/phys/module_ra_rrtmg_sw.F,v $
-!     author:    $Author: trn $
-!     revision:  $Revision: 1.3 $
-!     created:   $Date: 2009/04/16 19:54:22 $
-!
-      module rrtmg_sw_vrtqdr
-
-!  --------------------------------------------------------------------------
-! |                                                                          |
-! |  Copyright 2002-2008, Atmospheric & Environmental Research, Inc. (AER).  |
-! |  This software may be used, copied, or redistributed as long as it is    |
-! |  not sold and this copyright notice is reproduced on each copy made.     |
-! |  This model is provided as is without any express or implied warranties. |
-! |                       (http://www.rtweb.aer.com/)                        |
-! |                                                                          |
-!  --------------------------------------------------------------------------
-
-! ------- Modules -------
-
-      use parkind, only: im => kind_im, rb => kind_rb
-!      use parrrsw, only: ngptsw
-
-      implicit none
-
-      contains
-
-! --------------------------------------------------------------------------
-      subroutine vrtqdr_sw(klev, kw, &
-                           pref, prefd, ptra, ptrad, &
-                           pdbt, prdnd, prup, prupd, ptdbt, &
-                           pfd, pfu)
-! --------------------------------------------------------------------------
- 
-! Purpose: This routine performs the vertical quadrature integration
-!
-! Interface:  *vrtqdr_sw* is called from *spcvrt_sw* and *spcvmc_sw*
-!
-! Modifications.
-! 
-! Original: H. Barker
-! Revision: Integrated with rrtmg_sw, J.-J. Morcrette, ECMWF, Oct 2002
-! Revision: Reformatted for consistency with rrtmg_lw: MJIacono, AER, Jul 2006
-!
-!-----------------------------------------------------------------------
-
-! ------- Declarations -------
-
-! Input
-
-      integer(kind=im), intent (in) :: klev                   ! number of model layers
-      integer(kind=im), intent (in) :: kw                     ! g-point index
-
-      real(kind=rb), intent(in) :: pref(:)                    ! direct beam reflectivity
-                                                              !   Dimensions: (nlayers+1)
-      real(kind=rb), intent(in) :: prefd(:)                   ! diffuse beam reflectivity
-                                                              !   Dimensions: (nlayers+1)
-      real(kind=rb), intent(in) :: ptra(:)                    ! direct beam transmissivity
-                                                              !   Dimensions: (nlayers+1)
-      real(kind=rb), intent(in) :: ptrad(:)                   ! diffuse beam transmissivity
-                                                              !   Dimensions: (nlayers+1)
-
-      real(kind=rb), intent(in) :: pdbt(:)
-                                                              !   Dimensions: (nlayers+1)
-      real(kind=rb), intent(in) :: ptdbt(:)
-                                                              !   Dimensions: (nlayers+1)
-
-      real(kind=rb), intent(inout) :: prdnd(:)
-                                                              !   Dimensions: (nlayers+1)
-      real(kind=rb), intent(inout) :: prup(:)
-                                                              !   Dimensions: (nlayers+1)
-      real(kind=rb), intent(inout) :: prupd(:)
-                                                              !   Dimensions: (nlayers+1)
-
-! Output
-      real(kind=rb), intent(out) :: pfd(:,:)                  ! downwelling flux (W/m2)
-                                                              !   Dimensions: (nlayers+1,ngptsw)
-                                                              ! unadjusted for earth/sun distance or zenith angle
-      real(kind=rb), intent(out) :: pfu(:,:)                  ! upwelling flux (W/m2)
-                                                              !   Dimensions: (nlayers+1,ngptsw)
-                                                              ! unadjusted for earth/sun distance or zenith angle
-
-! Local
-
-      integer(kind=im) :: ikp, ikx, jk
-
-      real(kind=rb) :: zreflect
-      real(kind=rb) :: ztdn(klev+1)  
-
-! Definitions
-!
-! pref(jk)   direct reflectance
-! prefd(jk)  diffuse reflectance
-! ptra(jk)   direct transmittance
-! ptrad(jk)  diffuse transmittance
-!
-! pdbt(jk)   layer mean direct beam transmittance
-! ptdbt(jk)  total direct beam transmittance at levels
-!
-!-----------------------------------------------------------------------------
-                   
-! Link lowest layer with surface
-             
-      zreflect = 1._rb / (1._rb - prefd(klev+1) * prefd(klev))
-      prup(klev) = pref(klev) + (ptrad(klev) * &
-                 ((ptra(klev) - pdbt(klev)) * prefd(klev+1) + &
-                   pdbt(klev) * pref(klev+1))) * zreflect
-      prupd(klev) = prefd(klev) + ptrad(klev) * ptrad(klev) * &
-                    prefd(klev+1) * zreflect
-
-! Pass from bottom to top 
-
-      do jk = 1,klev-1
-         ikp = klev+1-jk                       
-         ikx = ikp-1
-         zreflect = 1._rb / (1._rb -prupd(ikp) * prefd(ikx))
-         prup(ikx) = pref(ikx) + (ptrad(ikx) * &
-                   ((ptra(ikx) - pdbt(ikx)) * prupd(ikp) + &
-                     pdbt(ikx) * prup(ikp))) * zreflect
-         prupd(ikx) = prefd(ikx) + ptrad(ikx) * ptrad(ikx) * &
-                      prupd(ikp) * zreflect
-      enddo
-    
-! Upper boundary conditions
-
-      ztdn(1) = 1._rb
-      prdnd(1) = 0._rb
-      ztdn(2) = ptra(1)
-      prdnd(2) = prefd(1)
-
-! Pass from top to bottom
-
-      do jk = 2,klev
-         ikp = jk+1
-         zreflect = 1._rb / (1._rb - prefd(jk) * prdnd(jk))
-         ztdn(ikp) = ptdbt(jk) * ptra(jk) + &
-                    (ptrad(jk) * ((ztdn(jk) - ptdbt(jk)) + &
-                     ptdbt(jk) * pref(jk) * prdnd(jk))) * zreflect
-         prdnd(ikp) = prefd(jk) + ptrad(jk) * ptrad(jk) * &
-                      prdnd(jk) * zreflect
-      enddo
-    
-! Up and down-welling fluxes at levels
-
-      do jk = 1,klev+1
-         zreflect = 1._rb / (1._rb - prdnd(jk) * prupd(jk))
-         pfu(jk,kw) = (ptdbt(jk) * prup(jk) + &
-                      (ztdn(jk) - ptdbt(jk)) * prupd(jk)) * zreflect
-         pfd(jk,kw) = ptdbt(jk) + (ztdn(jk) - ptdbt(jk)+ &
-                      ptdbt(jk) * prup(jk) * prdnd(jk)) * zreflect
-      enddo
-
-      end subroutine vrtqdr_sw
-
-      end module rrtmg_sw_vrtqdr
-
-!     path:      $Source: /cvsroot/NWP/WRFV3/phys/module_ra_rrtmg_sw.F,v $
-!     author:    $Author: trn $
-!     revision:  $Revision: 1.3 $
-!     created:   $Date: 2009/04/16 19:54:22 $
-
       module rrtmg_sw_spcvmc
 
-!  --------------------------------------------------------------------------
-! |                                                                          |
-! |  Copyright 2002-2008, Atmospheric & Environmental Research, Inc. (AER).  |
-! |  This software may be used, copied, or redistributed as long as it is    |
-! |  not sold and this copyright notice is reproduced on each copy made.     |
-! |  This model is provided as is without any express or implied warranties. |
-! |                       (http://www.rtweb.aer.com/)                        |
-! |                                                                          |
-!  --------------------------------------------------------------------------
-
 ! ------- Modules -------
 
-      use parkind, only : im => kind_im, rb => kind_rb
-      use parrrsw, only : nbndsw, ngptsw, mxmol, jpband
+      use parrrsw, only : nbndsw, ngptsw, mxmol, jpband, mxlay
       use rrsw_tbl, only : tblint, bpade, od_lo, exp_tbl
       use rrsw_vsn, only : hvrspc, hnamspc
-      use rrsw_wvn, only : ngc, ngs
-      use rrtmg_sw_reftra, only: reftra_sw
+      use rrsw_wvn, only : ngc, ngs, ngb
+      
       use rrtmg_sw_taumol, only: taumol_sw
-      use rrtmg_sw_vrtqdr, only: vrtqdr_sw
-
+     
       implicit none
 
       contains
 
 ! ---------------------------------------------------------------------------
       subroutine spcvmc_sw &
-            (nlayers, istart, iend, icpr, iout, &
+            (cc,tncol, ncol, nlayers, istart, iend, icpr, idelm, iout, &
              pavel, tavel, pz, tz, tbound, palbd, palbp, &
              pcldfmc, ptaucmc, pasycmc, pomgcmc, ptaormc, &
-             ptaua, pasya, pomga, prmu0, coldry, wkl, adjflux, &
+             ptaua, pasya, pomga, prmu0, coldry,  adjflux, &
              laytrop, layswtch, laylow, jp, jt, jt1, &
              co2mult, colch4, colco2, colh2o, colmol, coln2o, colo2, colo3, &
              fac00, fac01, fac10, fac11, &
              selffac, selffrac, indself, forfac, forfrac, indfor, &
              pbbfd, pbbfu, pbbcd, pbbcu, puvfd, puvcd, pnifd, pnicd, &
-             pbbfddir, pbbcddir, puvfddir, puvcddir, pnifddir, pnicddir)
+             pbbfddir, pbbcddir, puvfddir, puvcddir, pnifddir, pnicddir, &
+             zgco,zomco,zrdnd,zref,zrefo,zrefd,zrefdo,ztauo,zdbt,ztdbt, &
+             ztra,ztrao,ztrad,ztrado,zfd,zfu,ztaug, ztaur, zsflxzen)
+! For GSFC, not needed for WRF
+!             znirr,znirf,zparr,zparf,zuvrr,zuvrf)
 ! ---------------------------------------------------------------------------
 !
 ! Purpose: Contains spectral loop to compute the shortwave radiative fluxes, 
@@ -8122,543 +8420,978 @@
 
 ! ------- Input -------
 
-      integer(kind=im), intent(in) :: nlayers
-      integer(kind=im), intent(in) :: istart
-      integer(kind=im), intent(in) :: iend
-      integer(kind=im), intent(in) :: icpr
-      integer(kind=im), intent(in) :: iout
-      integer(kind=im), intent(in) :: laytrop
-      integer(kind=im), intent(in) :: layswtch
-      integer(kind=im), intent(in) :: laylow
+      integer , intent(in) :: tncol, ncol,cc
+      integer , intent(in) :: nlayers
+      integer , intent(in) :: istart
+      integer , intent(in) :: iend
+      integer , intent(in) :: icpr
+      integer , intent(in) :: idelm   ! delta-m scaling flag
+                                              ! [0 = direct and diffuse fluxes are unscaled]
+                                              ! [1 = direct and diffuse fluxes are scaled]
+      integer , intent(in) :: iout
+      integer , intent(in) :: laytrop(:)
+      integer , intent(in) :: layswtch(:)
+      integer , intent(in) :: laylow(:)
 
-      integer(kind=im), intent(in) :: indfor(:)
-                                                               !   Dimensions: (nlayers)
-      integer(kind=im), intent(in) :: indself(:)
-                                                               !   Dimensions: (nlayers)
-      integer(kind=im), intent(in) :: jp(:)
-                                                               !   Dimensions: (nlayers)
-      integer(kind=im), intent(in) :: jt(:)
-                                                               !   Dimensions: (nlayers)
-      integer(kind=im), intent(in) :: jt1(:)
-                                                               !   Dimensions: (nlayers)
+      integer , intent(in) :: indfor(:,:) 
+      integer , intent(in) :: indself(:,:) 
+      integer , intent(in) :: jp(:,:) 
+      integer , intent(in) :: jt(:,:) 
+      integer , intent(in) :: jt1(:,:) 
+                                                          !   Dimensions: (ncol,nlayers)
 
-      real(kind=rb), intent(in) :: pavel(:)                    ! layer pressure (hPa, mb) 
-                                                               !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: tavel(:)                    ! layer temperature (K)
-                                                               !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: pz(0:)                      ! level (interface) pressure (hPa, mb)
-                                                               !   Dimensions: (0:nlayers)
-      real(kind=rb), intent(in) :: tz(0:)                      ! level temperatures (hPa, mb)
-                                                               !   Dimensions: (0:nlayers)
-      real(kind=rb), intent(in) :: tbound                      ! surface temperature (K)
-      real(kind=rb), intent(in) :: wkl(:,:)                    ! molecular amounts (mol/cm2) 
-                                                               !   Dimensions: (mxmol,nlayers)
-      real(kind=rb), intent(in) :: coldry(:)                   ! dry air column density (mol/cm2)
-                                                               !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: colmol(:)
-                                                               !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: adjflux(:)                  ! Earth/Sun distance adjustment
-                                                               !   Dimensions: (jpband)
+      real , intent(in) :: pavel(:,:)                     ! layer pressure (hPa, mb) 
+                                                          !   Dimensions: (ncol,nlayers)
+      real , intent(in) :: tavel(:,:)                     ! layer temperature (K)
+                                                          !   Dimensions: (ncol,nlayers)
+      real , intent(in) :: pz(:,0:)                       ! level (interface) pressure (hPa, mb)
+                                                          !   Dimensions: (ncol,0:nlayers)
+      real , intent(in) :: tz(:,0:)                       ! level temperatures (hPa, mb)
+                                                          !   Dimensions: (ncol,0:nlayers)
+      real , intent(in) :: tbound(:)                      ! surface temperature (K)
+                                                          !   Dimensions: (ncol)
+      real , intent(in) :: coldry(:,:)                    ! dry air column density (mol/cm2)
+                                                          !   Dimensions: (ncol,nlayers)
+      real , intent(in) :: colmol(:,:) 
+                                                          !   Dimensions: (ncol,nlayers)
+      real , intent(in) :: adjflux(:)                     ! Earth/Sun distance adjustment
+                                                          !   Dimensions: (jpband)
 
-      real(kind=rb), intent(in) :: palbd(:)                    ! surface albedo (diffuse)
-                                                               !   Dimensions: (nbndsw)
-      real(kind=rb), intent(in) :: palbp(:)                    ! surface albedo (direct)
-                                                               !   Dimensions: (nbndsw)
-      real(kind=rb), intent(in) :: prmu0                       ! cosine of solar zenith angle
-      real(kind=rb), intent(in) :: pcldfmc(:,:)                ! cloud fraction [mcica]
-                                                               !   Dimensions: (nlayers,ngptsw)
-      real(kind=rb), intent(in) :: ptaucmc(:,:)                ! cloud optical depth [mcica]
-                                                               !   Dimensions: (nlayers,ngptsw)
-      real(kind=rb), intent(in) :: pasycmc(:,:)                ! cloud asymmetry parameter [mcica]
-                                                               !   Dimensions: (nlayers,ngptsw)
-      real(kind=rb), intent(in) :: pomgcmc(:,:)                ! cloud single scattering albedo [mcica]
-                                                               !   Dimensions: (nlayers,ngptsw)
-      real(kind=rb), intent(in) :: ptaormc(:,:)                ! cloud optical depth, non-delta scaled [mcica]
-                                                               !   Dimensions: (nlayers,ngptsw)
-      real(kind=rb), intent(in) :: ptaua(:,:)                  ! aerosol optical depth
-                                                               !   Dimensions: (nlayers,nbndsw)
-      real(kind=rb), intent(in) :: pasya(:,:)                  ! aerosol asymmetry parameter
-                                                               !   Dimensions: (nlayers,nbndsw)
-      real(kind=rb), intent(in) :: pomga(:,:)                  ! aerosol single scattering albedo
-                                                               !   Dimensions: (nlayers,nbndsw)
+      real , intent(in) :: palbd(:,:)                     ! surface albedo (diffuse)
+                                                          !   Dimensions: (ncol,nbndsw)
+      real , intent(in) :: palbp(:,:)                     ! surface albedo (direct)
+                                                          !   Dimensions: (ncol,nbndsw)
+      real , intent(in) :: prmu0(:)                       ! cosine of solar zenith angle
+                                                          !   Dimensions: (ncol)
 
-      real(kind=rb), intent(in) :: colh2o(:)
-                                                               !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: colco2(:)
-                                                               !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: colch4(:)
-                                                               !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: co2mult(:)
-                                                               !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: colo3(:)
-                                                               !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: colo2(:)
-                                                               !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: coln2o(:)
-                                                               !   Dimensions: (nlayers)
+      real , intent(in) :: pcldfmc(:,:,:)                 ! cloud fraction [mcica]
+      real , intent(in) :: ptaucmc(:,:,:)                 ! cloud optical depth [mcica]
+      real , intent(in) :: pasycmc(:,:,:)                 ! cloud asymmetry parameter [mcica]
+      real , intent(in) :: pomgcmc(:,:,:)                 ! cloud single scattering albedo [mcica]
+      real , intent(in) :: ptaormc(:,:,:)                 ! cloud optical depth, non-delta scaled [mcica]
+                                                          !   Dimensions: (ncol,nlayers,ngptsw)
+   
+      real , intent(in) :: ptaua(:,:,:)                   ! aerosol optical depth
+      real , intent(in) :: pasya(:,:,:)                   ! aerosol asymmetry parameter
+      real , intent(in) :: pomga(:,:,:)                   ! aerosol single scattering albedo
+                                                          !   Dimensions: (ncol,nlayers,nbndsw)
+                                                               
+      real , intent(in) :: colh2o(:,:) 
+      real , intent(in) :: colco2(:,:) 
+      real , intent(in) :: colch4(:,:) 
+      real , intent(in) :: co2mult(:,:) 
+      real , intent(in) :: colo3(:,:) 
+      real , intent(in) :: colo2(:,:) 
+      real , intent(in) :: coln2o(:,:) 
+                                                          !   Dimensions: (ncol,nlayers)
 
-      real(kind=rb), intent(in) :: forfac(:)
-                                                               !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: forfrac(:)
-                                                               !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: selffac(:)
-                                                               !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: selffrac(:)
-                                                               !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: fac00(:)
-                                                               !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: fac01(:)
-                                                               !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: fac10(:)
-                                                               !   Dimensions: (nlayers)
-      real(kind=rb), intent(in) :: fac11(:)
-                                                               !   Dimensions: (nlayers)
+      real , intent(in) :: forfac(:,:) 
+      real , intent(in) :: forfrac(:,:) 
+      real , intent(in) :: selffac(:,:) 
+      real , intent(in) :: selffrac(:,:) 
+      real , intent(in) :: fac00(:,:) 
+      real , intent(in) :: fac01(:,:) 
+      real , intent(in) :: fac10(:,:) 
+      real , intent(in) :: fac11(:,:) 
+                                                          !   Dimensions: (ncol,nlayers)
+                                                               
+      real, intent(inout) gpu_device  :: zgco(tncol,ngptsw,nlayers+1), zomco(tncol,ngptsw,nlayers+1)  
+      real, intent(inout) gpu_device  :: zrdnd(tncol,ngptsw,nlayers+1) 
+      real, intent(inout) gpu_device  :: zref(tncol,ngptsw,nlayers+1)  , zrefo(tncol,ngptsw,nlayers+1)  
+      real, intent(inout) gpu_device  :: zrefd(tncol,ngptsw,nlayers+1)  , zrefdo(tncol,ngptsw,nlayers+1)  
+      real, intent(inout) gpu_device  :: ztauo(tncol,ngptsw,nlayers)  
+      real, intent(inout) gpu_device  :: zdbt(tncol,ngptsw,nlayers+1)  ,ztdbt(tncol,ngptsw,nlayers+1)   
+      real, intent(inout) gpu_device  :: ztra(tncol,ngptsw,nlayers+1)  , ztrao(tncol,ngptsw,nlayers+1)  
+      real, intent(inout) gpu_device  :: ztrad(tncol,ngptsw,nlayers+1)  , ztrado(tncol,ngptsw,nlayers+1)  
+      real, intent(inout) gpu_device  :: zfd(tncol,ngptsw,nlayers+1)  , zfu(tncol,ngptsw,nlayers+1)   
+      real, intent(inout) gpu_device :: ztaur(tncol,nlayers,ngptsw), ztaug(tncol,nlayers,ngptsw) 
+      real, intent(inout) gpu_device :: zsflxzen(tncol,ngptsw)
+   
 
 ! ------- Output -------
-                                                               !   All Dimensions: (nlayers+1)
-      real(kind=rb), intent(out) :: pbbcd(:)
-      real(kind=rb), intent(out) :: pbbcu(:)
-      real(kind=rb), intent(out) :: pbbfd(:)
-      real(kind=rb), intent(out) :: pbbfu(:)
-      real(kind=rb), intent(out) :: pbbfddir(:)
-      real(kind=rb), intent(out) :: pbbcddir(:)
+                                                               !   All Dimensions: (ncol,nlayers+1)
+      real , intent(out) :: pbbcd(:,:) 
+      real , intent(out) :: pbbcu(:,:) 
+      real , intent(out) :: pbbfd(:,:) 
+      real , intent(out) :: pbbfu(:,:) 
+      real , intent(out) :: pbbfddir(:,:) 
+      real , intent(out) :: pbbcddir(:,:) 
 
-      real(kind=rb), intent(out) :: puvcd(:)
-      real(kind=rb), intent(out) :: puvfd(:)
-      real(kind=rb), intent(out) :: puvcddir(:)
-      real(kind=rb), intent(out) :: puvfddir(:)
+      real , intent(out) :: puvcd(:,:) 
+      real , intent(out) :: puvfd(:,:) 
+      real , intent(out) :: puvcddir(:,:) 
+      real , intent(out) :: puvfddir(:,:) 
 
-      real(kind=rb), intent(out) :: pnicd(:)
-      real(kind=rb), intent(out) :: pnifd(:)
-      real(kind=rb), intent(out) :: pnicddir(:)
-      real(kind=rb), intent(out) :: pnifddir(:)
-
-! Output - inactive                                            !   All Dimensions: (nlayers+1)
-!      real(kind=rb), intent(out) :: puvcu(:)
-!      real(kind=rb), intent(out) :: puvfu(:)
-!      real(kind=rb), intent(out) :: pnicu(:)
-!      real(kind=rb), intent(out) :: pnifu(:)
-!      real(kind=rb), intent(out) :: pvscd(:)
-!      real(kind=rb), intent(out) :: pvscu(:)
-!      real(kind=rb), intent(out) :: pvsfd(:)
-!      real(kind=rb), intent(out) :: pvsfu(:)
+      real , intent(out) :: pnicd(:,:) 
+      real , intent(out) :: pnifd(:,:) 
+      real , intent(out) :: pnicddir(:,:) 
+      real , intent(out) :: pnifddir(:,:) 
+      
+! For GSFC, not needed for WRF
+!      real, intent(out), dimension(:) :: znirr,znirf,zparr,zparf,zuvrr,zuvrf
+                                                               !   Dimensions: (ncol)
 
 ! ------- Local -------
+  
+      integer   :: klev
+      integer  :: ibm, ikl, ikp, ikx
+      integer  :: iw, jb, jg, jl, jk
 
-      logical :: lrtchkclr(nlayers),lrtchkcld(nlayers)
+      integer  :: itind
 
-      integer(kind=im)  :: klev
-      integer(kind=im) :: ib1, ib2, ibm, igt, ikl, ikp, ikx
-      integer(kind=im) :: iw, jb, jg, jl, jk
-!      integer(kind=im), parameter :: nuv = ?? 
-!      integer(kind=im), parameter :: nvs = ?? 
-      integer(kind=im) :: itind
+      real  :: tblind, ze1
+      real  :: zclear, zcloud
+        
+      real  :: zincflx, ze2
 
-      real(kind=rb) :: tblind, ze1
-      real(kind=rb) :: zclear, zcloud
-      real(kind=rb) :: zdbt(nlayers+1), zdbt_nodel(nlayers+1)
-      real(kind=rb) :: zgc(nlayers), zgcc(nlayers), zgco(nlayers)
-      real(kind=rb) :: zomc(nlayers), zomcc(nlayers), zomco(nlayers)
-      real(kind=rb) :: zrdnd(nlayers+1), zrdndc(nlayers+1)
-      real(kind=rb) :: zref(nlayers+1), zrefc(nlayers+1), zrefo(nlayers+1)
-      real(kind=rb) :: zrefd(nlayers+1), zrefdc(nlayers+1), zrefdo(nlayers+1)
-      real(kind=rb) :: zrup(nlayers+1), zrupd(nlayers+1)
-      real(kind=rb) :: zrupc(nlayers+1), zrupdc(nlayers+1)
-      real(kind=rb) :: zs1(nlayers+1)
-      real(kind=rb) :: ztauc(nlayers), ztauo(nlayers)
-      real(kind=rb) :: ztdn(nlayers+1), ztdnd(nlayers+1), ztdbt(nlayers+1)
-      real(kind=rb) :: ztoc(nlayers), ztor(nlayers)
-      real(kind=rb) :: ztra(nlayers+1), ztrac(nlayers+1), ztrao(nlayers+1)
-      real(kind=rb) :: ztrad(nlayers+1), ztradc(nlayers+1), ztrado(nlayers+1)
-      real(kind=rb) :: zdbtc(nlayers+1), ztdbtc(nlayers+1)
-      real(kind=rb) :: zincflx(ngptsw), zdbtc_nodel(nlayers+1) 
-      real(kind=rb) :: ztdbt_nodel(nlayers+1), ztdbtc_nodel(nlayers+1)
+      real  :: zdbtmc, zdbtmo, zf, zgw, zreflect
+      real  :: zwf, tauorig, repclc
 
-      real(kind=rb) :: zdbtmc, zdbtmo, zf, zgw, zreflect
-      real(kind=rb) :: zwf, tauorig, repclc
-!     real(kind=rb) :: zincflux                                   ! inactive
-
-! Arrays from rrtmg_sw_taumoln routines
-
-!      real(kind=rb) :: ztaug(nlayers,16), ztaur(nlayers,16)
-!      real(kind=rb) :: zsflxzen(16)
-      real(kind=rb) :: ztaug(nlayers,ngptsw), ztaur(nlayers,ngptsw)
-      real(kind=rb) :: zsflxzen(ngptsw)
 
 ! Arrays from rrtmg_sw_vrtqdr routine
-
-      real(kind=rb) :: zcd(nlayers+1,ngptsw), zcu(nlayers+1,ngptsw)
-      real(kind=rb) :: zfd(nlayers+1,ngptsw), zfu(nlayers+1,ngptsw)
-
-! Inactive arrays
-!     real(kind=rb) :: zbbcd(nlayers+1), zbbcu(nlayers+1)
-!     real(kind=rb) :: zbbfd(nlayers+1), zbbfu(nlayers+1)
-!     real(kind=rb) :: zbbfddir(nlayers+1), zbbcddir(nlayers+1)
+  
+      integer :: iplon
 
 ! ------------------------------------------------------------------
 
-! Initializations
-
-      ib1 = istart
-      ib2 = iend
-      klev = nlayers
-      iw = 0
-      repclc = 1.e-12_rb
-!      zincflux = 0.0_rb
-
-      do jk=1,klev+1
-         pbbcd(jk)=0._rb
-         pbbcu(jk)=0._rb
-         pbbfd(jk)=0._rb
-         pbbfu(jk)=0._rb
-         pbbcddir(jk)=0._rb
-         pbbfddir(jk)=0._rb
-         puvcd(jk)=0._rb
-         puvfd(jk)=0._rb
-         puvcddir(jk)=0._rb
-         puvfddir(jk)=0._rb
-         pnicd(jk)=0._rb
-         pnifd(jk)=0._rb
-         pnicddir(jk)=0._rb
-         pnifddir(jk)=0._rb
-      enddo
+!$acc update host(pomga, ptaua)
+  
+!print *, "aerosol values"
+!print *, pomga(1, :, :)
+!print *, ptaua(1, :, :)
 
 
-! Calculate the optical depths for gaseous absorption and Rayleigh scattering
+!$acc kernels     
+         pbbcd =0. 
+         pbbcu =0. 
+         pbbfd =0. 
+         pbbfu =0. 
+         pbbcddir =0. 
+         pbbfddir =0. 
+         puvcd =0. 
+         puvfd =0. 
+         puvcddir =0. 
+         puvfddir =0. 
+         pnicd =0. 
+         pnifd =0. 
+         pnicddir =0. 
+         pnifddir =0.
+         zsflxzen = 0.
+!         znirr=0.
+!         znirf=0.
+!         zparr=0.
+!         zparf=0.
+!         zuvrr=0.
+!         zuvrf=0.
+         klev = nlayers
+!$acc end kernels      
 
-      call taumol_sw(klev, &
-                     colh2o, colco2, colch4, colo2, colo3, colmol, &
-                     laytrop, jp, jt, jt1, &
-                     fac00, fac01, fac10, fac11, &
-                     selffac, selffrac, indself, forfac, forfrac, indfor, &
-                     zsflxzen, ztaug, ztaur)
+         
+! Calculate the optical depths for gaseous absorption and Rayleigh scattering     
+      call taumol_sw(ncol,nlayers, &
+                     colh2o , colco2 , colch4 , colo2 , &
+                     colo3 , colmol , &
+                     laytrop , jp , jt , jt1 , &
+                     fac00 , fac01 , fac10 , fac11 , &
+                     selffac , selffrac , indself , forfac , forfrac ,&
+                     indfor , &
+                     zsflxzen , ztaug, ztaur)
+
+      
+      repclc = 1.e-12 
+
+   
+!$acc kernels 
+
+      do iplon = 1, ncol
 
 ! Top of shortwave spectral band loop, jb = 16 -> 29; ibm = 1 -> 14
 
-      do jb = ib1, ib2
-         ibm = jb-15
-         igt = ngc(ibm)
-
-! Reinitialize g-point counter for each band if output for each band is requested.
-         if (iout.gt.0.and.ibm.ge.2) iw = ngs(ibm-1)
-
-!        do jk=1,klev+1
-!           zbbcd(jk)=0.0_rb
-!           zbbcu(jk)=0.0_rb
-!           zbbfd(jk)=0.0_rb
-!           zbbfu(jk)=0.0_rb
-!        enddo
-
-! Top of g-point interval loop within each band (iw is cumulative counter) 
-         do jg = 1,igt
-            iw = iw+1
-
-! Apply adjustment for correct Earth/Sun distance and zenith angle to incoming solar flux
-            zincflx(iw) = adjflux(jb) * zsflxzen(iw) * prmu0
-!             zincflux = zincflux + adjflux(jb) * zsflxzen(iw) * prmu0           ! inactive
-
-! Compute layer reflectances and transmittances for direct and diffuse sources, 
-! first clear then cloudy
-
-! zrefc(jk)  direct albedo for clear
-! zrefo(jk)  direct albedo for cloud
-! zrefdc(jk) diffuse albedo for clear
-! zrefdo(jk) diffuse albedo for cloud
-! ztrac(jk)  direct transmittance for clear
-! ztrao(jk)  direct transmittance for cloudy
-! ztradc(jk) diffuse transmittance for clear
-! ztrado(jk) diffuse transmittance for cloudy
-!  
-! zref(jk)   direct reflectance
-! zrefd(jk)  diffuse reflectance
-! ztra(jk)   direct transmittance
-! ztrad(jk)  diffuse transmittance
-!
-! zdbtc(jk)  clear direct beam transmittance
-! zdbto(jk)  cloudy direct beam transmittance
-! zdbt(jk)   layer mean direct beam transmittance
-! ztdbt(jk)  total direct beam transmittance at levels
-
+        do iw = 1, 112
+          jb = ngb(iw)
+          ibm = jb-15
+          
 ! Clear-sky    
 !   TOA direct beam    
-            ztdbtc(1)=1.0_rb
-            ztdbtc_nodel(1)=1.0_rb
+           
+           
+! Cloudy-sky    
 !   Surface values
-            zdbtc(klev+1) =0.0_rb
-            ztrac(klev+1) =0.0_rb
-            ztradc(klev+1)=0.0_rb
-            zrefc(klev+1) =palbp(ibm)
-            zrefdc(klev+1)=palbd(ibm)
-            zrupc(klev+1) =palbp(ibm)
-            zrupdc(klev+1)=palbd(ibm)
+          ztrao(iplon,iw,klev+1)   =0.0 
+          ztrado(iplon,iw,klev+1)  =0.0 
+          zrefo(iplon,iw,klev+1)   =palbp(iplon,ibm) 
+          zrefdo(iplon,iw,klev+1)  =palbd(iplon,ibm) 
            
 ! Total sky    
 !   TOA direct beam    
-            ztdbt(1)=1.0_rb
-            ztdbt_nodel(1)=1.0_rb
-!   Surface values
-            zdbt(klev+1) =0.0_rb
-            ztra(klev+1) =0.0_rb
-            ztrad(klev+1)=0.0_rb
-            zref(klev+1) =palbp(ibm)
-            zrefd(klev+1)=palbd(ibm)
-            zrup(klev+1) =palbp(ibm)
-            zrupd(klev+1)=palbd(ibm)
+          ztdbt(iplon,iw,1)  =1.0 
     
-! Top of layer loop
+!   Surface values
+          zdbt(iplon,iw,klev+1)   =0.0 
+          ztra(iplon,iw,klev+1)   =0.0 
+          ztrad(iplon,iw,klev+1)  =0.0 
+          zref(iplon,iw,klev+1)   =palbp(iplon,ibm) 
+          zrefd(iplon,iw,klev+1)  =palbd(iplon,ibm) 
+    
+        end do
+      end do
+!$acc end kernels     
+
+
+!$acc kernels loop 
+
+       do iplon = 1, ncol
+!$acc loop private(zf, zwf, ibm, ikl, jb)
+         do iw = 1, 112
+            !$acc loop seq
             do jk=1,klev
 
-! Note: two-stream calculations proceed from top to bottom; 
-!   RRTMG_SW quantities are given bottom to top and are reversed here
+               ikl=klev+1-jk
+               jb = ngb(iw)
+               ibm = jb-15
+
+               ! Clear-sky optical parameters including aerosols
+               ztauo(iplon,iw,jk)   = ztaur(iplon,ikl,iw)  + ztaug(iplon,ikl,iw) + ptaua(iplon,ikl,ibm)      
+               zomco(iplon,iw,jk)   = ztaur(iplon,ikl,iw) + ptaua(iplon,ikl,ibm) * pomga(iplon,ikl,ibm)
+               zgco(iplon,iw,jk) = pasya(iplon,ikl,ibm) * pomga(iplon,ikl,ibm) * ptaua(iplon,ikl,ibm) / zomco(iplon,iw,jk)   
+               zomco(iplon,iw,jk)   = zomco(iplon,iw,jk) / ztauo(iplon,iw,jk)
+               
+               zf = zgco(iplon, iw, jk)
+               zf = zf * zf
+               zwf = zomco(iplon, iw, jk) * zf
+               ztauo(iplon, iw, jk) = (1.0 - zwf) * ztauo(iplon, iw, jk)
+               zomco(iplon, iw, jk) = (zomco(iplon, iw, jk) - zwf) / (1.0 - zwf)
+               zgco(iplon, iw, jk) = (zgco(iplon, iw, jk) - zf) / (1.0 - zf)
+               
+           end do    
+        end do
+      end do
+!$acc end kernels               
+
+    
+! Clear sky reflectivities
+      call reftra_sw (ncol, nlayers, &
+                      pcldfmc, zgco, prmu0, ztauo, zomco, &
+                      zrefo, zrefdo, ztrao, ztrado, 1)
+                        
+
+!$acc kernels loop    
+      do iplon = 1, ncol
+
+! Combine clear and cloudy reflectivies and optical depths     
+
+!$acc loop
+        do iw = 1, 112
+            
+!$acc loop seq
+            do jk=1,klev
+
+! Combine clear and cloudy contributions for total sky
+               !ikl = klev+1-jk 
+
+! Direct beam transmittance        
+
+               ze1 = (ztauo(iplon,iw,jk))  / prmu0(iplon)      
+               zdbtmc = exp(-ze1)
+               zdbt(iplon,iw,jk)   = zdbtmc
+               ztdbt(iplon,iw,jk+1)   = zdbt(iplon,iw,jk)  *ztdbt(iplon,iw,jk)  
+
+           end do          
+        end do
+      end do
+!$acc end kernels
+
+! compute the fluxes from the optical depths and reflectivities
+
+                 
+! Vertical quadrature for clear-sky fluxes
+
+!$acc kernels 
+      do iplon = 1, ncol
+
+! Top of shortwave spectral band loop, jb = 16 -> 29; ibm = 1 -> 14
+
+        do iw = 1, 112
+          jb = ngb(iw)
+          ibm = jb-15
+
+          zgco(iplon,iw,klev+1)   =palbp(iplon,ibm) 
+          zomco(iplon,iw,klev+1)  =palbd(iplon,ibm) 
+    
+        end do
+      end do
+!$acc end kernels  
+
+            call vrtqdr_sw(ncol, klev, &
+                           zrefo  , zrefdo  , ztrao  , ztrado  , &
+                           zdbt , zrdnd  , zgco, zomco, ztdbt  , &
+                           zfd , zfu  , ztra)
+            
+            
+            
+! perform band integration for clear cases      
+!$acc kernels loop
+      do iplon = 1, ncol
+    
+!$acc loop    
+        do ikl=1,klev+1
+            
+      !$acc loop seq
+          do iw = 1, 112
+             jb = ngb(iw)
+      
+             jk=klev+2-ikl
+             ibm = jb-15
+             zincflx = adjflux(jb)  * zsflxzen(iplon,iw)   * prmu0(iplon)           
+
+! Accumulate spectral fluxes over whole spectrum  
+              
+             pbbcu(iplon,ikl)  = pbbcu(iplon,ikl)  + zincflx*zfu(iplon,iw,jk)  
+             pbbcd(iplon,ikl)  = pbbcd(iplon,ikl)  + zincflx*zfd(iplon,iw,jk)  
+             pbbcddir(iplon,ikl)  = pbbcddir(iplon,ikl)  + zincflx*ztdbt(iplon,iw,jk)  
+              
+
+! Accumulate direct fluxes for UV/visible bands
+             if (ibm >= 10 .and. ibm <= 13) then
+                puvcd(iplon,ikl)  = puvcd(iplon,ikl)  + zincflx*zfd(iplon,iw,jk)  
+                puvcddir(iplon,ikl)  = puvcddir(iplon,ikl)  + zincflx*ztdbt(iplon,iw,jk)  
+                 
+! Accumulate direct fluxes for near-IR bands
+             else if (ibm == 14 .or. ibm <= 9) then  
+                pnicd(iplon,ikl)  = pnicd(iplon,ikl)  + zincflx*zfd(iplon,iw,jk)  
+                pnicddir(iplon,ikl)  = pnicddir(iplon,ikl)  + zincflx*ztdbt(iplon,iw,jk)  
+                 
+             endif
+
+          enddo          
+
+! End loop on jb, spectral band
+        enddo
+
+! End of longitude loop    
+      enddo               
+!$acc end kernels
+
+         
+! !!!!!!!!!!!!!!!!!!!!!
+!  END CLEAR  !!!!!!!!!
+! !!!!!!!!!!!!!!!!!!!!!
+
+
+      if (cc==2) then
+
+!$acc kernels 
+        do iplon = 1, ncol
+          do iw = 1, 112
+            do jk=1,klev
 
                ikl=klev+1-jk
+               jb = ngb(iw)
+               ibm = jb-15
+               ! since the cloudy cases are now computed in a separate partition from the clear cases, we must
+               ! recompute the needed clear sky prerequisites.
+               ze1 = ztaur(iplon,ikl,iw) + ptaua(iplon,ikl,ibm) * pomga(iplon, ikl, ibm) 
+               ze2 = pasya(iplon, ikl, ibm) * pomga(iplon, ikl, ibm) * ptaua(iplon, ikl, ibm) / ze1
+               ze1 = ze1/ (ztaur(iplon,ikl,iw)  + ztaug(iplon,ikl,iw) + ptaua(iplon,ikl,ibm)  )
+               
+               ! compute delta scaled coefficients
+               zf = ze2*ze2
+               zwf = ze1*zf
+               ze1 = (ze1 - zwf) / (1.0 - zwf)
+               ze2 = (ze2 - zf) / (1.0 - zf)
 
-! Set logical flag to do REFTRA calculation
-!   Do REFTRA for all clear layers
-               lrtchkclr(jk)=.true.
+               ! direct calculation of delta scaled values
+               zomco(iplon,iw,jk)   = (ztauo(iplon,iw,jk) * ze1  + ptaucmc(iplon,ikl,iw)  * pomgcmc(iplon,ikl,iw))
+               
+               zgco(iplon, iw, jk) =  (ptaucmc(iplon,ikl,iw)  * pomgcmc(iplon,ikl,iw)  * pasycmc(iplon,ikl,iw) ) + &
+                                      (ztauo(iplon, iw, jk) * ze1 * ze2)
+               
+               ztauo(iplon,iw,jk)   = ztauo(iplon,iw,jk) + ptaucmc(iplon,ikl,iw) 
 
-!   Do REFTRA only for cloudy layers in profile, since already done for clear layers
-               lrtchkcld(jk)=.false.
-               lrtchkcld(jk)=(pcldfmc(ikl,iw) > repclc)
+               zgco(iplon,iw,jk)   = zgco(iplon, iw, jk) / zomco(iplon, iw, jk)
+               zomco(iplon,iw,jk)  = zomco(iplon,iw,jk) / ztauo(iplon,iw,jk)
+             
+            end do    
+          end do
+        end do
+!$acc end kernels
 
-! Clear-sky optical parameters - this section inactive     
-!   Original
-!               ztauc(jk) = ztaur(ikl,iw) + ztaug(ikl,iw)
-!               zomcc(jk) = ztaur(ikl,iw) / ztauc(jk)
-!               zgcc(jk) = 0.0001_rb
-!   Total sky optical parameters        
-!               ztauo(jk) = ztaur(ikl,iw) + ztaug(ikl,iw) + ptaucmc(ikl,iw)
-!               zomco(jk) = ptaucmc(ikl,iw) * pomgcmc(ikl,iw) + ztaur(ikl,iw)
-!               zgco (jk) = (ptaucmc(ikl,iw) * pomgcmc(ikl,iw) * pasycmc(ikl,iw) + &
-!                           ztaur(ikl,iw) * 0.0001_rb) / zomco(jk)
-!               zomco(jk) = zomco(jk) / ztauo(jk)
-
-! Clear-sky optical parameters including aerosols
-               ztauc(jk) = ztaur(ikl,iw) + ztaug(ikl,iw) + ptaua(ikl,ibm)
-               zomcc(jk) = ztaur(ikl,iw) * 1.0_rb + ptaua(ikl,ibm) * pomga(ikl,ibm)
-               zgcc(jk) = pasya(ikl,ibm) * pomga(ikl,ibm) * ptaua(ikl,ibm) / zomcc(jk)
-               zomcc(jk) = zomcc(jk) / ztauc(jk)
-
-! Pre-delta-scaling clear and cloudy direct beam transmittance (must use 'orig', unscaled cloud OD)       
-!   \/\/\/ This block of code is only needed for direct beam calculation
-!     
-               zclear = 1.0_rb - pcldfmc(ikl,iw)
-               zcloud = pcldfmc(ikl,iw)
-
-! Clear
-!                zdbtmc = exp(-ztauc(jk) / prmu0)
-
-! Use exponential lookup table for transmittance, or expansion of 
-! exponential for low tau
-               ze1 = ztauc(jk) / prmu0
-               if (ze1 .le. od_lo) then
-                  zdbtmc = 1._rb - ze1 + 0.5_rb * ze1 * ze1
-               else 
-                  tblind = ze1 / (bpade + ze1)
-                  itind = tblint * tblind + 0.5_rb
-                  zdbtmc = exp_tbl(itind)
-               endif
-
-               zdbtc_nodel(jk) = zdbtmc
-               ztdbtc_nodel(jk+1) = zdbtc_nodel(jk) * ztdbtc_nodel(jk)
-
-! Clear + Cloud
-               tauorig = ztauc(jk) + ptaormc(ikl,iw)
-!                zdbtmo = exp(-tauorig / prmu0)
-
-! Use exponential lookup table for transmittance, or expansion of 
-! exponential for low tau
-               ze1 = tauorig / prmu0
-               if (ze1 .le. od_lo) then
-                  zdbtmo = 1._rb - ze1 + 0.5_rb * ze1 * ze1
-               else
-                  tblind = ze1 / (bpade + ze1)
-                  itind = tblint * tblind + 0.5_rb
-                  zdbtmo = exp_tbl(itind)
-               endif
-
-               zdbt_nodel(jk) = zclear*zdbtmc + zcloud*zdbtmo
-               ztdbt_nodel(jk+1) = zdbt_nodel(jk) * ztdbt_nodel(jk)
-!   /\/\/\ Above code only needed for direct beam calculation
-
-
-! Delta scaling - clear   
-               zf = zgcc(jk) * zgcc(jk)
-               zwf = zomcc(jk) * zf
-               ztauc(jk) = (1.0_rb - zwf) * ztauc(jk)
-               zomcc(jk) = (zomcc(jk) - zwf) / (1.0_rb - zwf)
-               zgcc (jk) = (zgcc(jk) - zf) / (1.0_rb - zf)
-
-! Total sky optical parameters (cloud properties already delta-scaled)
-!   Use this code if cloud properties are derived in rrtmg_sw_cldprop       
-               if (icpr .ge. 1) then
-                  ztauo(jk) = ztauc(jk) + ptaucmc(ikl,iw)
-                  zomco(jk) = ztauc(jk) * zomcc(jk) + ptaucmc(ikl,iw) * pomgcmc(ikl,iw) 
-                  zgco (jk) = (ptaucmc(ikl,iw) * pomgcmc(ikl,iw) * pasycmc(ikl,iw) + &
-                              ztauc(jk) * zomcc(jk) * zgcc(jk)) / zomco(jk)
-                  zomco(jk) = zomco(jk) / ztauo(jk)
-
-! Total sky optical parameters (if cloud properties not delta scaled)
-!   Use this code if cloud properties are not derived in rrtmg_sw_cldprop       
-               elseif (icpr .eq. 0) then
-                  ztauo(jk) = ztaur(ikl,iw) + ztaug(ikl,iw) + ptaua(ikl,ibm) + ptaucmc(ikl,iw)
-                  zomco(jk) = ptaua(ikl,ibm) * pomga(ikl,ibm) + ptaucmc(ikl,iw) * pomgcmc(ikl,iw) + &
-                              ztaur(ikl,iw) * 1.0_rb
-                  zgco (jk) = (ptaucmc(ikl,iw) * pomgcmc(ikl,iw) * pasycmc(ikl,iw) + &
-                              ptaua(ikl,ibm)*pomga(ikl,ibm)*pasya(ikl,ibm)) / zomco(jk)
-                  zomco(jk) = zomco(jk) / ztauo(jk)
-
-! Delta scaling - clouds 
-!   Use only if subroutine rrtmg_sw_cldprop is not used to get cloud properties and to apply delta scaling
-                  zf = zgco(jk) * zgco(jk)
-                  zwf = zomco(jk) * zf
-                  ztauo(jk) = (1._rb - zwf) * ztauo(jk)
-                  zomco(jk) = (zomco(jk) - zwf) / (1.0_rb - zwf)
-                  zgco (jk) = (zgco(jk) - zf) / (1.0_rb - zf)
-               endif 
-
-! End of layer loop
-            enddo    
-
-! Clear sky reflectivities
-            call reftra_sw (klev, &
-                            lrtchkclr, zgcc, prmu0, ztauc, zomcc, &
-                            zrefc, zrefdc, ztrac, ztradc)
-
+            
 ! Total sky reflectivities      
-            call reftra_sw (klev, &
-                            lrtchkcld, zgco, prmu0, ztauo, zomco, &
-                            zrefo, zrefdo, ztrao, ztrado)
+        call reftra_sw (ncol, nlayers, &
+                        pcldfmc, zgco, prmu0, ztauo, zomco, &
+                        zref, zrefd, ztra, ztrad, 0)
+            
 
+        klev = nlayers
+
+
+!$acc kernels loop    
+        do iplon = 1, ncol
+
+!$acc loop
+          do iw = 1, 112
+            
+!$acc loop seq
             do jk=1,klev
 
 ! Combine clear and cloudy contributions for total sky
                ikl = klev+1-jk 
-               zclear = 1.0_rb - pcldfmc(ikl,iw)
-               zcloud = pcldfmc(ikl,iw)
+               zclear = 1.0  - pcldfmc(iplon,ikl,iw) 
+               zcloud = pcldfmc(iplon,ikl,iw) 
 
-               zref(jk) = zclear*zrefc(jk) + zcloud*zrefo(jk)
-               zrefd(jk)= zclear*zrefdc(jk) + zcloud*zrefdo(jk)
-               ztra(jk) = zclear*ztrac(jk) + zcloud*ztrao(jk)
-               ztrad(jk)= zclear*ztradc(jk) + zcloud*ztrado(jk)
-
-! Direct beam transmittance        
-
-! Clear
-!                zdbtmc = exp(-ztauc(jk) / prmu0)
-
-! Use exponential lookup table for transmittance, or expansion of 
-! exponential for low tau
-               ze1 = ztauc(jk) / prmu0
-               if (ze1 .le. od_lo) then
-                  zdbtmc = 1._rb - ze1 + 0.5_rb * ze1 * ze1
-               else
-                  tblind = ze1 / (bpade + ze1)
-                  itind = tblint * tblind + 0.5_rb
-                  zdbtmc = exp_tbl(itind)
-               endif
-
-               zdbtc(jk) = zdbtmc
-               ztdbtc(jk+1) = zdbtc(jk)*ztdbtc(jk)
+               zref(iplon,iw,jk)   = zclear*zrefo(iplon,iw,jk)   + zcloud*zref(iplon,iw,jk)  
+               zrefd(iplon,iw,jk)  = zclear*zrefdo(iplon,iw,jk)   + zcloud*zrefd(iplon,iw,jk)  
+               ztra(iplon,iw,jk)   = zclear*ztrao(iplon,iw,jk)   + zcloud*ztra(iplon,iw,jk)  
+               ztrad(iplon,iw,jk)  = zclear*ztrado(iplon,iw,jk)   + zcloud*ztrad(iplon,iw,jk)  
 
 ! Clear + Cloud
-!                zdbtmo = exp(-ztauo(jk) / prmu0)
 
-! Use exponential lookup table for transmittance, or expansion of 
-! exponential for low tau
-               ze1 = ztauo(jk) / prmu0
-               if (ze1 .le. od_lo) then
-                  zdbtmo = 1._rb - ze1 + 0.5_rb * ze1 * ze1
-               else
-                  tblind = ze1 / (bpade + ze1)
-                  itind = tblint * tblind + 0.5_rb
-                  zdbtmo = exp_tbl(itind)
-               endif
+               ze1 = ztauo(iplon,iw,jk )   / prmu0(iplon)   
+               zdbtmo = exp(-ze1)            
+               ze1 = (ztauo(iplon,iw,jk) - ptaucmc(iplon,ikl,iw))  / prmu0(iplon)           
+               zdbtmc = exp(-ze1)
+            
+               zdbt(iplon,iw,jk)   = zclear*zdbtmc + zcloud*zdbtmo
+               ztdbt(iplon,iw,jk+1)   = zdbt(iplon,iw,jk)  *ztdbt(iplon,iw,jk)  
 
-               zdbt(jk) = zclear*zdbtmc + zcloud*zdbtmo
-               ztdbt(jk+1) = zdbt(jk)*ztdbt(jk)
-        
-            enddo           
-                 
-! Vertical quadrature for clear-sky fluxes
+            enddo          
+          end do
+        end do
+!$acc end kernels
 
-            call vrtqdr_sw(klev, iw, &
-                           zrefc, zrefdc, ztrac, ztradc, &
-                           zdbtc, zrdndc, zrupc, zrupdc, ztdbtc, &
-                           zcd, zcu)
-      
+!$acc kernels
+        zrdnd = 0.0
+        zgco = 0.0
+        zomco = 0.0
+        zfd = 0.0
+        zfu = 0.0
+!$acc end kernels
+
+
+!$acc kernels 
+        do iplon = 1, ncol
+
+! Top of shortwave spectral band loop, jb = 16 -> 29; ibm = 1 -> 14
+
+          do iw = 1, 112
+            jb = ngb(iw)
+            ibm = jb-15
+
+            zgco(iplon,iw,klev+1)   =palbp(iplon,ibm) 
+            zomco(iplon,iw,klev+1)  =palbd(iplon,ibm) 
+    
+          end do
+        end do
+!$acc end kernels  
+
+
 ! Vertical quadrature for cloudy fluxes
 
-            call vrtqdr_sw(klev, iw, &
-                           zref, zrefd, ztra, ztrad, &
-                           zdbt, zrdnd, zrup, zrupd, ztdbt, &
-                           zfd, zfu)
+        call vrtqdr_sw(ncol, klev, &
+                       zref  , zrefd  , ztra  , ztrad , &
+                       zdbt , zrdnd  , zgco, zomco , ztdbt  , &
+                       zfd , zfu  ,  ztrao)
 
 ! Upwelling and downwelling fluxes at levels
 !   Two-stream calculations go from top to bottom; 
 !   layer indexing is reversed to go bottom to top for output arrays
 
-            do jk=1,klev+1
-               ikl=klev+2-jk
+        klev = nlayers
+        repclc = 1.e-12 
 
-! Accumulate spectral fluxes over bands - inactive
-!               zbbfu(ikl) = zbbfu(ikl) + zincflx(iw)*zfu(jk,iw)  
-!               zbbfd(ikl) = zbbfd(ikl) + zincflx(iw)*zfd(jk,iw)
-!               zbbcu(ikl) = zbbcu(ikl) + zincflx(iw)*zcu(jk,iw)
-!               zbbcd(ikl) = zbbcd(ikl) + zincflx(iw)*zcd(jk,iw)
-!               zbbfddir(ikl) = zbbfddir(ikl) + zincflx(iw)*ztdbt_nodel(jk)
-!               zbbcddir(ikl) = zbbcddir(ikl) + zincflx(iw)*ztdbtc_nodel(jk)
+!$acc kernels loop
+        do iplon = 1, ncol
+    
+!$acc loop    
+          do ikl=1,klev+1
+            
+!$acc loop seq
+            do iw = 1, 112
+               jb = ngb(iw)
+               jk=klev+2-ikl
+               ibm = jb-15
+               zincflx = adjflux(jb)  * zsflxzen(iplon,iw)   * prmu0(iplon)           
 
 ! Accumulate spectral fluxes over whole spectrum  
-               pbbfu(ikl) = pbbfu(ikl) + zincflx(iw)*zfu(jk,iw)
-               pbbfd(ikl) = pbbfd(ikl) + zincflx(iw)*zfd(jk,iw)
-               pbbcu(ikl) = pbbcu(ikl) + zincflx(iw)*zcu(jk,iw)
-               pbbcd(ikl) = pbbcd(ikl) + zincflx(iw)*zcd(jk,iw)
-               pbbfddir(ikl) = pbbfddir(ikl) + zincflx(iw)*ztdbt_nodel(jk)
-               pbbcddir(ikl) = pbbcddir(ikl) + zincflx(iw)*ztdbtc_nodel(jk)
+               pbbfu(iplon,ikl)  = pbbfu(iplon,ikl)  + zincflx*zfu(iplon,iw,jk)  
+               pbbfd(iplon,ikl)  = pbbfd(iplon,ikl)  + zincflx*zfd(iplon,iw,jk)              
+               pbbfddir(iplon,ikl)  = pbbfddir(iplon,ikl)  + zincflx*ztdbt(iplon,iw,jk)  
 
 ! Accumulate direct fluxes for UV/visible bands
                if (ibm >= 10 .and. ibm <= 13) then
-                  puvcd(ikl) = puvcd(ikl) + zincflx(iw)*zcd(jk,iw)
-                  puvfd(ikl) = puvfd(ikl) + zincflx(iw)*zfd(jk,iw)
-                  puvcddir(ikl) = puvcddir(ikl) + zincflx(iw)*ztdbtc_nodel(jk)
-                  puvfddir(ikl) = puvfddir(ikl) + zincflx(iw)*ztdbt_nodel(jk)
+                 
+                  puvfd(iplon,ikl)  = puvfd(iplon,ikl)  + zincflx*zfd(iplon,iw,jk)  
+                  puvfddir(iplon,ikl)  = puvfddir(iplon,ikl)  + zincflx*ztdbt(iplon,iw,jk)  
+                 
+                 
 ! Accumulate direct fluxes for near-IR bands
                else if (ibm == 14 .or. ibm <= 9) then  
-                  pnicd(ikl) = pnicd(ikl) + zincflx(iw)*zcd(jk,iw)
-                  pnifd(ikl) = pnifd(ikl) + zincflx(iw)*zfd(jk,iw)
-                  pnicddir(ikl) = pnicddir(ikl) + zincflx(iw)*ztdbtc_nodel(jk)
-                  pnifddir(ikl) = pnifddir(ikl) + zincflx(iw)*ztdbt_nodel(jk)
+                
+                  pnifd(iplon,ikl)  = pnifd(iplon,ikl)  + zincflx*zfd(iplon,iw,jk)  
+                  pnifddir(iplon,ikl)  = pnifddir(iplon,ikl)  + zincflx*ztdbt(iplon,iw,jk)  
+                   
+                 
                endif
 
-            enddo
-
-! End loop on jg, g-point interval
-         enddo             
+            enddo          
 
 ! End loop on jb, spectral band
-      enddo                    
+          enddo
+
+! End of longitude loop    
+        enddo               
+!$acc end kernels
+
+
+      else
+!$acc kernels
+         pbbfd = pbbcd
+         pbbfu = pbbcu
+         puvfd = puvcd
+         puvfddir = puvcddir
+         pnifd = pnicd
+         pnifddir = pnicddir
+!$acc end kernels    
+      end if
+
+
+!$acc kernels
+      do iplon = 1, ncol
+    
+         do iw = 1, 112
+            jb = ngb(iw)
+            ibm = jb - 15
+            zincflx = adjflux(jb)  * zsflxzen(iplon,iw)   * prmu0(iplon)    
+            
+! For GSFC, not needed for WRF
+!! Accumulate surface direct fluxes for NIR
+!            if (ibm == 14 .or. ibm <= 8) then
+!               znirr(iplon) = znirr(iplon) + zincflx*ztdbt(iplon, iw, klev+1)     ! Direct flux
+!               znirf(iplon) = znirf(iplon) + zincflx*zfd(iplon, iw, klev+1)       ! Total flux
+!! Accumulate surface direct fluxes for PAR
+!            else if (ibm >= 9 .and. ibm <= 11) then
+!               zparr(iplon) = zparr(iplon) + zincflx*ztdbt(iplon, iw, klev+1)     ! Direct flux
+!               zparf(iplon) = zparf(iplon) + zincflx*zfd(iplon, iw, klev+1)       ! Total flux
+!! Accumulate surface direct fluxes for UV
+!            else if (ibm >= 12 .and. ibm <= 13) then
+!               zuvrr(iplon) = zuvrr(iplon) + zincflx*ztdbt(iplon, iw, klev+1)     ! Direct flux
+!               zuvrf(iplon) = zuvrf(iplon) + zincflx*zfd(iplon, iw, klev+1)       ! Total flux
+!            endif
+
+         end do
+      end do
+!$acc end kernels
+
+!!$acc end data
 
       end subroutine spcvmc_sw
+             
+! --------------------------------------------------------------------
+      subroutine reftra_sw(ncol, nlayers, pcldfmc, pgg, prmuzl, ptau, pw, &
+                           pref, prefd, ptra, ptrad, ac)
+! --------------------------------------------------------------------
+  
+! Purpose: computes the reflectivity and transmissivity of a clear or 
+!   cloudy layer using a choice of various approximations.
+!
+! Interface:  *rrtmg_sw_reftra* is called by *rrtmg_sw_spcvrt*
+!
+! Description:
+! explicit arguments :
+! --------------------
+! inputs
+! ------ 
+!      lrtchk  = .t. for all layers in clear profile
+!      lrtchk  = .t. for cloudy layers in cloud profile 
+!              = .f. for clear layers in cloud profile
+!      pgg     = assymetry factor
+!      prmuz   = cosine solar zenith angle
+!      ptau    = optical thickness
+!      pw      = single scattering albedo
+!
+! outputs
+! -------
+!      pref    : collimated beam reflectivity
+!      prefd   : diffuse beam reflectivity 
+!      ptra    : collimated beam transmissivity
+!      ptrad   : diffuse beam transmissivity
+!
+!
+! Method:
+! -------
+!      standard delta-eddington, p.i.f.m., or d.o.m. layer calculations.
+!      kmodts  = 1 eddington (joseph et al., 1976)
+!              = 2 pifm (zdunkowski et al., 1980)
+!              = 3 discrete ordinates (liou, 1973)
+!
+!
+! Modifications:
+! --------------
+! Original: J-JMorcrette, ECMWF, Feb 2003
+! Revised for F90 reformatting: MJIacono, AER, Jul 2006
+! Revised to add exponential lookup table: MJIacono, AER, Aug 2007
+!
+! ------------------------------------------------------------------
+
+! ------- Declarations ------
+
+! ------- Input -------
+
+      integer , intent(in) :: nlayers
+      integer , intent(in) :: ncol
+
+      real,  intent(in) :: pcldfmc(:,:,:)                      ! Logical flag for reflectivity and
+                                                               ! and transmissivity calculation; 
+                                                               !   Dimensions: (ncol,nlayers,ngptsw)
+
+      real , intent(in) gpu_device :: pgg(:,:,:)               ! asymmetry parameter
+      real , intent(in) gpu_device :: ptau(:,:,:)              ! optical depth
+      real , intent(in) gpu_device :: pw(:,:,:)                ! single scattering albedo 
+                                                               !   Dimensions: (ncol,nlayers,ngptsw)
+
+      real ,  intent(in) :: prmuzl(:)                          ! cosine of solar zenith angle
+                                                               !   Dimensions: (ncol)
+      integer, intent(in) :: ac
+
+! ------- Output -------
+
+      real , intent(out) gpu_device :: pref(:,:,:)             ! direct beam reflectivity
+      real , intent(out) gpu_device :: prefd(:,:,:)            ! diffuse beam reflectivity
+      real , intent(out) gpu_device :: ptra(:,:,:)             ! direct beam transmissivity
+      real , intent(out) gpu_device :: ptrad(:,:,:)            ! diffuse beam transmissivity
+                                                               !   Dimensions: (ncol,nlayers,ngptsw)
+
+! ------- Local -------
+
+      integer  :: jk, jl, kmodts
+      integer  :: itind, iplon, iw
+
+      real  :: tblind
+      real  :: za, za1, za2
+      real  :: zbeta, zdend, zdenr, zdent
+      real  :: ze1, ze2, zem1, zem2, zemm, zep1, zep2
+      real  :: zg, zg3, zgamma1, zgamma2, zgamma3, zgamma4, zgt
+      real  :: zr1, zr2, zr3, zr4, zr5
+      real  :: zrk, zrk2, zrkg, zrm1, zrp, zrp1, zrpp
+      real  :: zsr3, zt1, zt2, zt3, zt4, zt5, zto1
+      real  :: zw, zwcrit, zwo, prmuz
+
+      real , parameter :: eps = 1.e-08 
+
+!     ------------------------------------------------------------------
+
+! Initialize
+
+      zsr3=sqrt(3. )
+      zwcrit=0.9999995 
+      kmodts=2
+      
+!$acc kernels loop
+      do iplon=1,ncol
+!$acc loop
+        do iw=1,112
+!$acc loop private(zgamma1, zgamma2, zgamma3, zgamma4)
+          do jk=1, nlayers
+             prmuz = prmuzl(iplon)
+             if ((.not.(pcldfmc(iplon,nlayers+1-jk,iw))  > 1.e-12) .and. ac==0  ) then
+               pref(iplon,iw,jk)   =0. 
+               ptra(iplon,iw,jk)   =1. 
+               prefd(iplon,iw,jk)  =0. 
+               ptrad(iplon,iw,jk)  =1. 
+             else
+               zto1=ptau(iplon,iw,jk)  
+               zw  =pw(iplon,iw,jk)  
+               zg  =pgg(iplon,iw,jk)    
+
+! General two-stream expressions
+
+               zg3= 3.  * zg
+           
+               zgamma1= (8.  - zw * (5.  + zg3)) * 0.25 
+               zgamma2=  3.  *(zw * (1.  - zg )) * 0.25 
+               zgamma3= (2.  - zg3 * prmuz ) * 0.25 
+       
+               zgamma4= 1.  - zgamma3
+    
+! Recompute original s.s.a. to test for conservative solution
+
+               zwo= zw / (1.  - (1.  - zw) * (zg / (1.  - zg))**2)
+    
+               if (zwo >= zwcrit) then
+! Conservative scattering
+
+                  za  = zgamma1 * prmuz 
+                  za1 = za - zgamma3
+                  zgt = zgamma1 * zto1
+        
+! Homogeneous reflectance and transmittance,
+! collimated beam
+
+                  ze1 = min ( zto1 / prmuz , 500. )
+
+
+                  ze2 = exp(-ze1)
+                  pref(iplon,iw,jk)   = (zgt - za1 * (1.  - ze2)) / (1.  + zgt)
+                  ptra(iplon,iw,jk)   = 1.  - pref(iplon,iw,jk)  
+
+! isotropic incidence
+
+                  prefd(iplon,iw,jk)   = zgt / (1.  + zgt)
+                  ptrad(iplon,iw,jk)   = 1.  - prefd(iplon,iw,jk)          
+
+! This is applied for consistency between total (delta-scaled) and direct (unscaled) 
+! calculations at very low optical depths (tau < 1.e-4) when the exponential lookup
+! table returns a transmittance of 1.0.
+                  if (ze2 .eq. 1.0 ) then 
+                     pref(iplon,iw,jk)   = 0.0 
+                     ptra(iplon,iw,jk)   = 1.0 
+                     prefd(iplon,iw,jk)   = 0.0 
+                     ptrad(iplon,iw,jk)   = 1.0 
+                  endif
+
+               else
+! Non-conservative scattering
+
+                  za1 = zgamma1 * zgamma4 + zgamma2 * zgamma3
+                  za2 = zgamma1 * zgamma3 + zgamma2 * zgamma4
+                  zrk = sqrt ( zgamma1**2 - zgamma2**2)
+                  zrp = zrk * prmuz               
+                  zrp1 = 1.  + zrp
+                  zrm1 = 1.  - zrp
+                  zrk2 = 2.  * zrk
+                  zrpp = 1.  - zrp*zrp
+                  zrkg = zrk + zgamma1
+                  zr1  = zrm1 * (za2 + zrk * zgamma3)
+                  zr2  = zrp1 * (za2 - zrk * zgamma3)
+                  zr3  = zrk2 * (zgamma3 - za2 * prmuz )
+                  zr4  = zrpp * zrkg
+                  zr5  = zrpp * (zrk - zgamma1)
+                  zt1  = zrp1 * (za1 + zrk * zgamma4)
+                  zt2  = zrm1 * (za1 - zrk * zgamma4)
+                  zt3  = zrk2 * (zgamma4 + za1 * prmuz )
+                  zt4  = zr4
+                  zt5  = zr5
+
+! mji - reformulated code to avoid potential floating point exceptions
+!               zbeta = - zr5 / zr4
+                  zbeta = (zgamma1 - zrk) / zrkg
+!!
+        
+! Homogeneous reflectance and transmittance
+
+                  ze1 = min ( zrk * zto1, 5. )
+                  ze2 = min ( zto1 / prmuz , 5. )
+           
+! Use exponential lookup table for transmittance, or expansion of 
+! exponential for low tau
+                  if (ze1 .le. od_lo) then 
+                     zem1 = 1.  - ze1 + 0.5  * ze1 * ze1
+                     zep1 = 1.  / zem1
+                  else
+                     zem1 = exp(-ze1)
+                     zep1 = 1.  / zem1
+                  endif
+                  if (ze2 .le. od_lo) then 
+                     zem2 = 1.  - ze2 + 0.5  * ze2 * ze2
+                     zep2 = 1.  / zem2
+                  else
+                     zem2 = exp(-ze2)
+                     zep2 = 1.  / zem2
+                  endif
+
+                  zdenr = zr4*zep1 + zr5*zem1
+                  zdent = zt4*zep1 + zt5*zem1
+                  if (zdenr .ge. -eps .and. zdenr .le. eps) then
+                     pref(iplon,iw,jk)   = eps
+                     ptra(iplon,iw,jk)   = zem2
+                  else 
+                     pref(iplon,iw,jk)   = zw * (zr1*zep1 - zr2*zem1 - zr3*zem2) / zdenr
+                     ptra(iplon,iw,jk)   = zem2 - zem2 * zw * (zt1*zep1 - zt2*zem1 - zt3*zep2) / zdent
+                  endif
+
+! diffuse beam
+
+                  zemm = zem1*zem1
+                  zdend = 1.  / ( (1.  - zbeta*zemm ) * zrkg)
+                  prefd(iplon,iw,jk)   =  zgamma2 * (1.  - zemm) * zdend
+                  ptrad(iplon,iw,jk)   =  zrk2*zem1*zdend
+
+               endif
+
+            endif         
+
+          end do  
+        end do
+      end do
+!$acc end kernels
+
+      end subroutine reftra_sw
+                           
+! --------------------------------------------------------------------------
+      subroutine vrtqdr_sw(ncol, klev, &
+                           pref, prefd, ptra, ptrad, &
+                           pdbt, prdnd, prup, prupd, ptdbt, &
+                           pfd, pfu, ztdn)
+! --------------------------------------------------------------------------
+ 
+! Purpose: This routine performs the vertical quadrature integration
+!
+! Interface:  *vrtqdr_sw* is called from *spcvrt_sw* and *spcvmc_sw*
+!
+! Modifications.
+! 
+! Original: H. Barker
+! Revision: Integrated with rrtmg_sw, J.-J. Morcrette, ECMWF, Oct 2002
+! Revision: Reformatted for consistency with rrtmg_lw: MJIacono, AER, Jul 2006
+!
+!-----------------------------------------------------------------------
+
+! ------- Declarations -------
+
+! Input
+
+      integer , intent (in) :: klev                           ! number of model layers
+      integer , intent (in) :: ncol
+    
+
+      real , intent(in) gpu_device :: pref(:,:,:)             ! direct beam reflectivity
+      real , intent(in) gpu_device :: prefd(:,:,:)            ! diffuse beam reflectivity
+      real , intent(in) gpu_device :: ptra(:,:,:)             ! direct beam transmissivity
+      real , intent(in) gpu_device :: ptrad(:,:,:)            ! diffuse beam transmissivity
+      real , intent(in) gpu_device :: pdbt(:,:,:)  
+      real , intent(in) gpu_device :: ptdbt(:,:,:)  
+      real , intent(inout) gpu_device :: prdnd(:,:,:)  
+      real , intent(inout) gpu_device :: prup(:,:,:)  
+      real , intent(inout) gpu_device  :: prupd(:,:,:)  
+      real, intent(inout) gpu_device :: ztdn(:,:,:)
+                                                              !   Dimensions: (ncol,nlayers,ngptsw)
+                                                              
+! Output
+      real , intent(out) gpu_device  :: pfd(:,:,:)            ! downwelling flux (W/m2)
+                                                              ! unadjusted for earth/sun distance or zenith angle
+      real , intent(inout) gpu_device  :: pfu(:,:,:)          ! upwelling flux (W/m2)
+                                                              ! unadjusted for earth/sun distance or zenith angle
+                                                              !   Dimensions: (ncol,nlayers,ngptsw)
+
+! Local
+
+      integer  :: ikp, ikx, jk, iplon, iw
+
+      real  :: zreflect, zreflectj
+     
+! Definitions
+!
+! pref(jk)   direct reflectance
+! prefd(jk)  diffuse reflectance
+! ptra(jk)   direct transmittance
+! ptrad(jk)  diffuse transmittance
+!
+! pdbt(jk)   layer mean direct beam transmittance
+! ptdbt(jk)  total direct beam transmittance at levels
+!
+!-----------------------------------------------------------------------------
+                   
+! Link lowest layer with surface
+! this kernel has a lot of dependencies
+
+
+!$acc kernels loop
+      do iplon = 1, ncol
+
+!$acc loop private(zreflect)
+         do iw = 1, 112
+      
+            zreflect = 1.  / (1.  - prefd(iplon,iw,klev+1)   * prefd(iplon,iw,klev)  )
+            prup(iplon,iw,klev)   = pref(iplon,iw,klev)   + (ptrad(iplon,iw,klev)   * &
+                 ((ptra(iplon,iw,klev)   - pdbt(iplon,iw,klev)  ) * prefd(iplon,iw,klev+1)   + &
+                   pdbt(iplon,iw,klev)   * pref(iplon,iw,klev+1)  )) * zreflect
+            prupd(iplon,iw,klev)   = prefd(iplon,iw,klev)   + ptrad(iplon,iw,klev)   * ptrad(iplon,iw,klev)   * &
+                    prefd(iplon,iw,klev+1)   * zreflect
+
+         end do
+      end do
+!$acc end kernels
+      
+! Pass from bottom to top 
+!$acc kernels loop
+      do iplon = 1, ncol
+
+!$acc loop    
+         do iw = 1, 112
+
+!$acc loop seq 
+            do jk = 1,klev-1
+               ikp = klev+1-jk                       
+               ikx = ikp-1
+               zreflectj = 1.  / (1.  -prupd(iplon,iw,ikp)   * prefd(iplon,iw,ikx)  )
+               prup(iplon,iw,ikx)   = pref(iplon,iw,ikx)   + (ptrad(iplon,iw,ikx)   * &
+                   ((ptra(iplon,iw,ikx)   - pdbt(iplon,iw,ikx)  ) * prupd(iplon,iw,ikp)   + &
+                     pdbt(iplon,iw,ikx)   * prup(iplon,iw,ikp)  )) * zreflectj
+               prupd(iplon,iw,ikx)   = prefd(iplon,iw,ikx)   + ptrad(iplon,iw,ikx)   * ptrad(iplon,iw,ikx)   * &
+                      prupd(iplon,iw,ikp)   * zreflectj
+            end do
+         end do
+      end do
+!$acc end kernels
+
+!$acc kernels loop
+      do iplon = 1, ncol
+!$acc loop
+         do iw = 1, 112
+
+! Upper boundary conditions
+            ztdn(iplon, iw, 1) = 1. 
+            prdnd(iplon,iw,1)   = 0. 
+            ztdn(iplon, iw, 2) = ptra(iplon,iw,1)  
+            prdnd(iplon,iw,2)   = prefd(iplon,iw,1)  
+         end do
+      end do
+!$acc end kernels      
+      
+!$acc kernels loop
+      do iplon = 1, ncol
+!$acc loop
+         do iw = 1, 112
+
+! Pass from top to bottom
+!$acc loop seq
+            do jk = 2,klev
+               ikp = jk+1
+               zreflect = 1.  / (1.  - prefd(iplon,iw,jk)   * prdnd(iplon,iw,jk)  )
+               ztdn(iplon, iw, ikp) = ptdbt(iplon,iw,jk)   * ptra(iplon,iw,jk)   + &
+                    (ptrad(iplon,iw,jk)   * ((ztdn(iplon, iw, jk) - ptdbt(iplon,iw,jk)  ) + &
+                     ptdbt(iplon,iw,jk)   * pref(iplon,iw,jk)   * prdnd(iplon,iw,jk)  )) * zreflect
+               prdnd(iplon,iw,ikp)   = prefd(iplon,iw,jk)   + ptrad(iplon,iw,jk)   * ptrad(iplon,iw,jk)   * &
+                      prdnd(iplon,iw,jk)   * zreflect
+            end do
+         end do
+      end do
+!$acc end kernels
+    
+! Up and down-welling fluxes at levels
+
+!$acc kernels loop
+      do iplon = 1, ncol
+!$acc loop
+         do iw = 1, 112
+!$acc loop 
+            do jk = 1,klev+1
+               zreflect = 1.  / (1.  - prdnd(iplon,iw,jk)   * prupd(iplon,iw,jk)  )
+               pfu(iplon,iw,jk)   = (ptdbt(iplon,iw,jk)   * prup(iplon,iw,jk)   + &
+                      (ztdn(iplon, iw, jk) - ptdbt(iplon,iw,jk)  ) * prupd(iplon,iw,jk)  ) * zreflect
+               pfd(iplon,iw,jk)   = ptdbt(iplon,iw,jk)   + (ztdn(iplon, iw, jk) - ptdbt(iplon,iw,jk)  + &
+                      ptdbt(iplon,iw,jk)   * prup(iplon,iw,jk)   * prdnd(iplon,iw,jk)  ) * zreflect
+            end do
+         end do
+      end do
+!$acc end kernels
+      
+      end subroutine vrtqdr_sw
 
       end module rrtmg_sw_spcvmc
 
-!     path:      $Source: /cvsroot/NWP/WRFV3/phys/module_ra_rrtmg_sw.F,v $
-!     author:    $Author: trn $
-!     revision:  $Revision: 1.3 $
-!     created:   $Date: 2009/04/16 19:54:22 $
-!
-       module rrtmg_sw_rad
-
-!  --------------------------------------------------------------------------
-! |                                                                          |
-! |  Copyright 2002-2008, Atmospheric & Environmental Research, Inc. (AER).  |
-! |  This software may be used, copied, or redistributed as long as it is    |
-! |  not sold and this copyright notice is reproduced on each copy made.     |
-! |  This model is provided as is without any express or implied warranties. |
-! |                       (http://www.rtweb.aer.com/)                        |
-! |                                                                          |
-!  --------------------------------------------------------------------------
+      module rrtmg_sw_rad
 !
 ! ****************************************************************************
 ! *                                                                          *
@@ -8680,7 +9413,7 @@
 ! *                       Jennifer S. Delamere                               *
 ! *                        Michael J. Iacono                                 *
 ! *                        Shepard A. Clough                                 *
-! *                                                                          *
+! *                       David M. Berthiaume                                *
 ! *                                                                          *
 ! *                                                                          *
 ! *                                                                          *
@@ -8695,720 +9428,1278 @@
 ! *       Ronald E. Farren, Luke Chen, Robert Bergstrom.                     *
 ! *                                                                          *
 ! ****************************************************************************
-
+    
 ! --------- Modules ---------
 
-      use parkind, only : im => kind_im, rb => kind_rb
       use rrsw_vsn
-      use mcica_subcol_gen_sw, only: mcica_subcol_sw
+      use mcica_subcol_gen_sw, only: mcica_sw
       use rrtmg_sw_cldprmc, only: cldprmc_sw
-! *** Move the required call to rrtmg_sw_ini below and the following 
-! use association to GCM initialization area ***
-!      use rrtmg_sw_init, only: rrtmg_sw_ini
       use rrtmg_sw_setcoef, only: setcoef_sw
       use rrtmg_sw_spcvmc, only: spcvmc_sw
 
       implicit none
 
-! public interfaces/functions/subroutines
-      public :: rrtmg_sw, inatm_sw, earth_sun
+      public :: rrtmg_sw,  earth_sun
 
-!------------------------------------------------------------------
       contains
-!------------------------------------------------------------------
-
-!------------------------------------------------------------------
-! Public subroutines
-!------------------------------------------------------------------
-
+    
       subroutine rrtmg_sw &
-            (ncol    ,nlay    ,icld    , &
+            (rpart   ,ncol    ,nlay    ,icld    ,iaer   , &
              play    ,plev    ,tlay    ,tlev    ,tsfc   , &
-             h2ovmr , o3vmr   ,co2vmr  ,ch4vmr  ,n2ovmr ,o2vmr , &
+             h2ovmr  ,o3vmr   ,co2vmr  ,ch4vmr  ,n2ovmr ,o2vmr , &
              asdir   ,asdif   ,aldir   ,aldif   , &
              coszen  ,adjes   ,dyofyr  ,scon    , &
-             inflgsw ,iceflgsw,liqflgsw,cldfmcl , &
-             taucmcl ,ssacmcl ,asmcmcl ,fsfcmcl , &
-             ciwpmcl ,clwpmcl ,cswpmcl ,reicmcl ,relqmcl ,resnmcl, &
+             inflgsw ,iceflgsw,liqflgsw,cld     , &
+! for inactive icld=4 option
+!             zm      ,alat    , &
+             tauc    ,ssac    ,asmc    ,fsfc    , &
+             ciwp    ,clwp    ,cswp    ,rei     ,rel    ,res   , &
              tauaer  ,ssaaer  ,asmaer  ,ecaer   , &
-             swuflx  ,swdflx  ,swhr    ,swuflxc ,swdflxc ,swhrc, aer_opt,  &
+             swuflx  ,swdflx  ,swhr    ,swuflxc ,swdflxc,swhrc , &
+! For GSFC, not needed for WRF
+!             nirr    ,nirf    ,parr    ,parf    ,uvrr   ,uvrf  ,normFlx, &
 ! --------- Add the following four compenants for ssib shortwave down radiation ---!
 ! -------------------      by Zhenxin 2011-06-20      --------------------------------!
              sibvisdir, sibvisdif, sibnirdir, sibnirdif,         &
 ! ----------------------  End,  Zhenxin 2011-06-20    --------------------------------!
-             swdkdir,swdkdif                                & ! jararias, 2013/08/10
-                                                                )
+             swdkdir,   swdkdif                                  & ! jararias, 2013/08/10
+                                )
 
-
-! ------- Description -------
-
-! This program is the driver for RRTMG_SW, the AER SW radiation model for 
-!  application to GCMs, that has been adapted from RRTM_SW for improved
-!  efficiency and to provide fractional cloudiness and cloud overlap
-!  capability using McICA.
-!
-! Note: The call to RRTMG_SW_INI should be moved to the GCM initialization 
-!  area, since this has to be called only once. 
-!
-! This routine
-!    b) calls INATM_SW to read in the atmospheric profile;
-!       all layering in RRTMG is ordered from surface to toa. 
-!    c) calls CLDPRMC_SW to set cloud optical depth for McICA based
-!       on input cloud properties
-!    d) calls SETCOEF_SW to calculate various quantities needed for 
-!       the radiative transfer algorithm
-!    e) calls SPCVMC to call the two-stream model that in turn 
-!       calls TAUMOL to calculate gaseous optical depths for each 
-!       of the 16 spectral bands and to perform the radiative transfer
-!       using McICA, the Monte-Carlo Independent Column Approximation,
-!       to represent sub-grid scale cloud variability
-!    f) passes the calculated fluxes and cooling rates back to GCM
-!
-! Two modes of operation are possible:
-!     The mode is chosen by using either rrtmg_sw.nomcica.f90 (to not use
-!     McICA) or rrtmg_sw.f90 (to use McICA) to interface with a GCM.
-!
-!    1) Standard, single forward model calculation (imca = 0); this is 
-!       valid only for clear sky or fully overcast clouds
-!    2) Monte Carlo Independent Column Approximation (McICA, Pincus et al., 
-!       JC, 2003) method is applied to the forward model calculation (imca = 1)
-!       This method is valid for clear sky or partial cloud conditions.
-!
-! This call to RRTMG_SW must be preceeded by a call to the module
-!     mcica_subcol_gen_sw.f90 to run the McICA sub-column cloud generator,
-!     which will provide the cloud physical or cloud optical properties
-!     on the RRTMG quadrature point (ngptsw) dimension.
-!
-! Two methods of cloud property input are possible:
-!     Cloud properties can be input in one of two ways (controlled by input 
-!     flags inflag, iceflag and liqflag; see text file rrtmg_sw_instructions
-!     and subroutine rrtmg_sw_cldprop.f90 for further details):
-!
-!    1) Input cloud fraction, cloud optical depth, single scattering albedo 
-!       and asymmetry parameter directly (inflgsw = 0)
-!    2) Input cloud fraction and cloud physical properties: ice fracion,
-!       ice and liquid particle sizes (inflgsw = 1 or 2);  
-!       cloud optical properties are calculated by cldprop or cldprmc based
-!       on input settings of iceflgsw and liqflgsw
-!
-! Two methods of aerosol property input are possible:
-!     Aerosol properties can be input in one of two ways (controlled by input 
-!     flag iaer, see text file rrtmg_sw_instructions for further details):
-!
-!    1) Input aerosol optical depth, single scattering albedo and asymmetry
-!       parameter directly by layer and spectral band (iaer=10)
-!    2) Input aerosol optical depth and 0.55 micron directly by layer and use
-!       one or more of six ECMWF aerosol types (iaer=6)
-!
-!
-! ------- Modifications -------
-!
-! This version of RRTMG_SW has been modified from RRTM_SW to use a reduced
-! set of g-point intervals and a two-stream model for application to GCMs. 
-!
-!-- Original version (derived from RRTM_SW)
-!     2002: AER. Inc.
-!-- Conversion to F90 formatting; addition of 2-stream radiative transfer
-!     Feb 2003: J.-J. Morcrette, ECMWF
-!-- Additional modifications for GCM application
-!     Aug 2003: M. J. Iacono, AER Inc.
-!-- Total number of g-points reduced from 224 to 112.  Original
-!   set of 224 can be restored by exchanging code in module parrrsw.f90 
-!   and in file rrtmg_sw_init.f90.
-!     Apr 2004: M. J. Iacono, AER, Inc.
-!-- Modifications to include output for direct and diffuse 
-!   downward fluxes.  There are output as "true" fluxes without
-!   any delta scaling applied.  Code can be commented to exclude
-!   this calculation in source file rrtmg_sw_spcvrt.f90.
-!     Jan 2005: E. J. Mlawer, M. J. Iacono, AER, Inc.
-!-- Revised to add McICA capability.
-!     Nov 2005: M. J. Iacono, AER, Inc.
-!-- Reformatted for consistency with rrtmg_lw.
-!     Feb 2007: M. J. Iacono, AER, Inc.
-!-- Modifications to formatting to use assumed-shape arrays. 
-!     Aug 2007: M. J. Iacono, AER, Inc.
-
-! --------- Modules ---------
 
       use parrrsw, only : nbndsw, ngptsw, naerec, nstr, nmol, mxmol, &
-                          jpband, jpb1, jpb2
+                          jpband, jpb1, jpb2, rrsw_scon
       use rrsw_aer, only : rsrtaua, rsrpiza, rsrasya
-      use rrsw_con, only : heatfac, oneminus, pi
+      use rrsw_con, only : heatfac, oneminus, pi,  grav, avogad
       use rrsw_wvn, only : wavenum1, wavenum2
+      use rrsw_cld, only : extliq1, ssaliq1, asyliq1, &
+                           extice2, ssaice2, asyice2, &
+                           extice3, ssaice3, asyice3, fdlice3, &
+                           abari, bbari, cbari, dbari, ebari, fbari
+      use rrsw_wvn, only : wavenum2, ngb
+      use rrsw_ref, only : preflog, tref
+
+#ifdef _CUDA
+      use cudafor
+#endif 
+
 
 ! ------- Declarations
 
-! ----- Input -----
+      integer , intent(in) :: rpart           ! The number of columns in each partition
+      integer , intent(in) :: ncol            ! Number of horizontal columns     
+      integer , intent(in) :: nlay            ! Number of model layers
+      integer , intent(inout) :: icld         ! Cloud overlap method
+                                              !    0: Clear only
+                                              !    1: Random
+                                              !    2: Maximum/random
+                                              !    3: Maximum
+      integer , intent(in) :: iaer            ! Aerosol option flag
+      real , intent(in) :: play(:,:)          ! Layer pressures (hPa, mb)
+                                              !    Dimensions: (ncol,nlay)
+      real , intent(in) :: plev(:,:)          ! Interface pressures (hPa, mb)
+                                              !    Dimensions: (ncol,nlay+1)
+      real , intent(in) :: tlay(:,:)          ! Layer temperatures (K)
+                                              !    Dimensions: (ncol,nlay)
+      real , intent(in) :: tlev(:,:)          ! Interface temperatures (K)
+                                              !    Dimensions: (ncol,nlay+1)
+      real , intent(in) :: tsfc(:)            ! Surface temperature (K)
+                                              !    Dimensions: (ncol)
+      real , intent(in) :: h2ovmr(:,:)        ! H2O volume mixing ratio
+                                              !    Dimensions: (ncol,nlay)
+      real , intent(in) :: o3vmr(:,:)         ! O3 volume mixing ratio
+                                              !    Dimensions: (ncol,nlay)
+      real , intent(in) :: co2vmr(:,:)        ! CO2 volume mixing ratio
+                                              !    Dimensions: (ncol,nlay)
+      real , intent(in) :: ch4vmr(:,:)        ! Methane volume mixing ratio
+                                              !    Dimensions: (ncol,nlay)
+      real , intent(in) :: n2ovmr(:,:)        ! Nitrous oxide volume mixing ratio
+                                              !    Dimensions: (ncol,nlay)
+      real , intent(in) :: o2vmr(:,:)         ! Oxygen volume mixing ratio
+                                              !    Dimensions: (ncol,nlay)
+      real , intent(in) :: asdir(:)           ! UV/vis surface albedo direct rad
+                                              !    Dimensions: (ncol)
+      real , intent(in) :: aldir(:)           ! Near-IR surface albedo direct rad
+                                              !    Dimensions: (ncol)
+      real , intent(in) :: asdif(:)           ! UV/vis surface albedo: diffuse rad
+                                              !    Dimensions: (ncol)
+      real , intent(in) :: aldif(:)           ! Near-IR surface albedo: diffuse rad
+                                              !    Dimensions: (ncol)
 
-      integer(kind=im), intent(in) :: ncol            ! Number of horizontal columns     
-      integer(kind=im), intent(in) :: nlay            ! Number of model layers
-      integer(kind=im), intent(inout) :: icld         ! Cloud overlap method
+      integer , intent(in) :: dyofyr          ! Day of the year (used to get Earth/Sun
+                                              !  distance if adjflx not provided)
+      real , intent(in) :: adjes              ! Flux adjustment for Earth/Sun distance
+      real , intent(in) :: coszen(:)          ! Cosine of solar zenith angle
+                                              !    Dimensions: (ncol)
+      real , intent(in) :: scon               ! Solar constant (W/m2)
+
+      integer , intent(in) :: inflgsw         ! Flag for cloud optical properties
+      integer , intent(in) :: iceflgsw        ! Flag for ice particle specification
+      integer , intent(in) :: liqflgsw        ! Flag for liquid droplet specification
+
+      real , intent(in) :: cld(:,:)           ! Cloud fraction
+                                              !    Dimensions: (ncol,nlay)
+      real , intent(in) :: tauc(:,:,:)        ! In-cloud optical depth
+                                              !    Dimensions: (ncol,nlay,nbndlw)
+      real , intent(in) :: ssac(:,:,:)        ! In-cloud single scattering albedo
+                                              !    Dimensions: (ncol,nlay,nbndlw)
+      real , intent(in) :: asmc(:,:,:)        ! In-cloud asymmetry parameter
+                                              !    Dimensions: (ncol,nlay,nbndlw)
+      real , intent(in) :: fsfc(:,:,:)        ! In-cloud forward scattering fraction
+                                              !    Dimensions: (ncol,nlay,nbndlw)
+      real , intent(in) :: ciwp(:,:)          ! In-cloud ice water path (g/m2)
+                                              !    Dimensions: (ncol, nlay)
+      real , intent(in) :: clwp(:,:)          ! In-cloud liquid water path (g/m2)
+                                              !    Dimensions: (ncol, nlay)
+      real , intent(in) :: cswp(:,:)          ! In-cloud snow water path (g/m2)
+                                              !    Dimensions: (ncol, nlay)
+      real , intent(in) :: rei(:,:)           ! Cloud ice effective radius (microns)
+                                              !    Dimensions: (ncol, nlay)
+                                              ! specific definition of rei depends on setting of iceflglw:
+                                              ! iceflglw = 0: ice effective radius, r_ec, (Ebert and Curry, 1992),
+                                              !               r_ec must be >= 10.0 microns
+                                              ! iceflglw = 1: ice effective radius, r_ec, (Ebert and Curry, 1992),
+                                              !               r_ec range is limited to 13.0 to 130.0 microns
+                                              ! iceflglw = 2: ice effective radius, r_k, (Key, Streamer Ref. Manual, 1996)
+                                              !               r_k range is limited to 5.0 to 131.0 microns
+                                              ! iceflglw = 3: generalized effective size, dge, (Fu, 1996),
+                                              !               dge range is limited to 5.0 to 140.0 microns
+                                              !               [dge = 1.0315 * r_ec]
+      real , intent(in) :: rel(:,:)           ! Cloud water drop effective radius (microns)
+                                              !    Dimensions: (ncol,nlay)
+      real , intent(in) :: res(:,:)           ! Cloud snow effective radius (microns)
+                                              !    Dimensions: (ncol,nlay)
+      real , intent(in) :: tauaer(:,:,:)      ! Aerosol optical depth (iaer=10 only)
+                                              !    Dimensions: (ncol,nlay,nbndsw)
+                                              ! (non-delta scaled)      
+      real , intent(in) :: ssaaer(:,:,:)      ! Aerosol single scattering albedo (iaer=10 only)
+                                              !    Dimensions: (ncol,nlay,nbndsw)
+                                              ! (non-delta scaled)      
+      real , intent(in) :: asmaer(:,:,:)      ! Aerosol asymmetry parameter (iaer=10 only)
+                                              !    Dimensions: (ncol,nlay,nbndsw)
+                                              ! (non-delta scaled)      
+      real , intent(in) :: ecaer(:,:,:)       ! Aerosol optical depth at 0.55 micron (iaer=6 only)
+                                              !    Dimensions: (ncol,nlay,naerec)
+                                              ! (non-delta scaled)      
+! For GSFC, not needed for WRF
+!      integer , intent(in) :: normFlx         ! Normalize fluxes flag
+!                                              ! 0 = no normalization
+!                                              ! 1 = normalize fluxes ( / (scon * coszen) )
+! for inactive icld=4 option
+!      real , intent(in) :: zm(:,:)
+!      real , intent(in) :: alat(:)
+                                              
+                                              
+! ----- Output -----
+
+      real , intent(out) :: swuflx(:,:)       ! Total sky shortwave upward flux (W/m2)
+                                              !    Dimensions: (ncol,nlay+1)
+      real , intent(out) :: swdflx(:,:)       ! Total sky shortwave downward flux (W/m2)
+                                              !    Dimensions: (ncol,nlay+1)
+      real , intent(out) :: swhr(:,:)         ! Total sky shortwave radiative heating rate (K/d)
+                                              !    Dimensions: (ncol,nlay)
+      real , intent(out) :: swuflxc(:,:)      ! Clear sky shortwave upward flux (W/m2)
+                                              !    Dimensions: (ncol,nlay+1)
+      real , intent(out) :: swdflxc(:,:)      ! Clear sky shortwave downward flux (W/m2)
+                                              !    Dimensions: (ncol,nlay+1)
+      real , intent(out) :: swhrc(:,:)        ! Clear sky shortwave radiative heating rate (K/d)
+                                              !    Dimensions: (ncol,nlay)
+! For GSFC, not needed for WRF
+! Output added for Land/Surface process
+!      real , intent(out) :: nirr(:)           ! Near-IR direct downward shortwave flux (w/m2)
+!                                              !    Dimensions: (ncol)
+!      real , intent(out) :: nirf(:)           ! Near-IR diffuse downward shortwave flux (w/m2)
+!                                              !    Dimensions: (ncol)
+!      real , intent(out) :: parr(:)           ! Visible direct downward shortwave flux (w/m2)
+!                                              !    Dimensions: (ncol)
+!      real , intent(out) :: parf(:)           ! Visible diffuse downward shortwave flux (w/m2)
+!                                              !    Dimensions: (ncol)
+!      real , intent(out) :: uvrr(:)           ! UV direct downward shortwave flux (w/m2)
+!                                              !    Dimensions: (ncol)
+!      real , intent(out) :: uvrf(:)           ! UV diffuse downward shortwave flux (w/m2)
+      real, intent(out) :: sibvisdir(:,:)      ! visible direct downward flux  (W/m2)
+                                               !    Dimensions: (ncol,nlay+1) Zhenxin (2011/06/20)
+      real, intent(out) :: sibvisdif(:,:)      ! visible diffusion downward flux  (W/m2)
+                                               !    Dimensions: (ncol,nlay+1) Zhenxin (2011/06/20)
+      real, intent(out) :: sibnirdir(:,:)      ! Near IR direct downward flux  (W/m2)
+                                               !    Dimensions: (ncol,nlay+1)  Zhenxin (2011/06/20)
+      real, intent(out) :: sibnirdif(:,:)      ! Near IR diffusion downward flux  (W/m2)
+                                               !    Dimensions: (ncol,nlay+1) Zhenxin (2011/06/20)
+      real, intent(out) :: swdkdir(:,:)        ! Total shortwave downward direct flux (W/m2)
+                                               !    Dimensions: (ncol,nlay+1) jararias, 2013/08/10
+      real, intent(out) :: swdkdif(:,:)        ! Total shortwave downward diffuse flux (W/m2)
+                                               !    Dimensions: (ncol,nlay+1) jararias, 2013/08/10
+
+      integer :: npart, pncol
+
+! mji - time
+      real :: t1, t2
+      
+#ifdef _CUDA
+      type(cudadeviceprop) :: prop
+      real :: gmem
+      integer :: err
+      integer :: munits
+#endif
+
+      if (rpart > 0) then
+         pncol = rpart
+      else
+
+#ifdef _CUDA
+ 
+      err = cudaGetDeviceProperties( prop, 0)
+      gmem = prop%totalGlobalMem / (1024.0 * 1024.0)
+!      print *, "Total GPU global memory is ", gmem , "MB"
+      
+      ! dmb 2013
+      ! Here 
+      ! The optimal partition size is determined by the following conditions
+      ! 1. Powers of 2 are the most efficient.
+      ! 2. The second to largest power of 2 that can fit on 
+      !    the GPU is most efficient.
+      ! 3. Having a small remainder for the final partiion is inefficient.
+      
+      if (gmem > 5000) then
+         pncol = 4096
+      else if (gmem > 3000) then
+         pncol = 2048
+      else if (gmem > 1000) then
+          pncol = 1024
+      else 
+          pncol = 512
+      end if  
+         
+      ! the smallest allowed partition size is 32
+      do err = 1, 6
+          if (pncol > ncol .and. pncol>32) then 
+              pncol = pncol/2
+          end if
+      end do
+      
+      ! if we have a very large number of columns, account for the 
+      ! static ncol memory requirement 
+      if (ncol>29000 .and. pncol>4000) then
+          pncol = pncol/2
+      end if
+
+! mji - skip code above and set pncol manually to test several values
+! mji - used 2048 for Northeast grid (4380 columns)
+! mji - used 4096 for CONUS grid (33750 columns)
+!      pncol = 2
+!      pncol = 512
+!      pncol = 1024
+!      pncol = 2048
+      pncol = 4096
+      
+! mji - Reduce number of columns per partition by number of CPU processors for dmpar
+! mji - Running WRF in dmpar with 8 processors
+!      pncol = pncol / 8
+
+#else
+      pncol = 2
+      
+#endif    
+          
+      end if
+
+      print *, "Number of columns per partition (rrtmg_sw) is ", pncol
+
+      call cpu_time(t1)
+                                                      
+      call rrtmg_sw_sub &
+            (pncol   ,ncol    ,nlay    ,icld    ,iaer   , &
+             play    ,plev    ,tlay    ,tlev    ,tsfc   , &
+             h2ovmr  ,o3vmr   ,co2vmr  ,ch4vmr  ,n2ovmr ,o2vmr , &
+             asdir   ,asdif   ,aldir   ,aldif   , &
+             coszen  ,adjes   ,dyofyr  ,scon    , &
+             inflgsw ,iceflgsw,liqflgsw,cld     , &
+! for inactive icld=4 option
+!             zm      ,alat    , &
+             tauc    ,ssac    ,asmc    ,fsfc    , &
+             ciwp    ,clwp    ,cswp    ,rei     ,rel    ,res   , &
+             tauaer  ,ssaaer  ,asmaer  ,ecaer   , &
+             swuflx  ,swdflx  ,swhr    ,swuflxc ,swdflxc ,swhrc, &
+! For GSFC, not needed for WRF
+!             nirr    ,nirf    ,parr    ,parf    ,uvrr    ,uvrf , normFlx, &
+             sibvisdir, sibvisdif, sibnirdir, sibnirdif,         &
+             swdkdir  , swdkdif                                  & ! jararias, 2013/08/10
+                                )
+      call cpu_time(t2)
+      print *, "------------------------------------------------"
+      print *, "TOTAL RRTMG_SW RUN TIME IS   ", t2-t1
+      print *, "------------------------------------------------"
+
+                                                      
+      end subroutine rrtmg_sw                                                     
+
+
+      subroutine rrtmg_sw_sub &
+            (ncol    ,gncol   ,nlay    ,icld    ,iaer    , &
+             gplay   ,gplev   ,gtlay   ,gtlev   ,gtsfc   , &
+             gh2ovmr ,go3vmr  ,gco2vmr ,gch4vmr ,gn2ovmr ,go2vmr , &
+             gasdir  ,gasdif  ,galdir  ,galdif  , &
+             gcoszen ,adjes   ,dyofyr  ,scon    , &
+             inflgsw ,iceflgsw,liqflgsw,gcld    , &
+! for inactive icld=4 option
+!             gzm     ,galat   , &
+             gtauc   ,gssac   ,gasmc   ,gfsfc   , &
+             gciwp   ,gclwp   ,gcswp   ,grei    ,grel    ,gres   , &
+             gtauaer ,gssaaer ,gasmaer ,gecaer  , &
+             swuflx  ,swdflx  ,swhr    ,swuflxc ,swdflxc ,swhrc, &
+! For GSFC, not needed for WRF
+!             nirr    ,nirf    ,parr    ,parf    ,uvrr    ,uvrf  , normFlx, &
+             sibvisdir, sibvisdif, sibnirdir, sibnirdif,         &
+             swdkdir  , swdkdif                                  & ! jararias, 2013/08/10
+                                )
+
+      use parrrsw, only : nbndsw, ngptsw, naerec, nstr, nmol, mxmol, &
+                          jpband, jpb1, jpb2, rrsw_scon
+      use rrsw_aer, only : rsrtaua, rsrpiza, rsrasya
+      use rrsw_con, only : heatfac, oneminus, pi,  grav, avogad
+      use rrsw_wvn, only : wavenum1, wavenum2
+      use rrsw_cld, only : extliq1, ssaliq1, asyliq1, &
+                           extice2, ssaice2, asyice2, &
+                           extice3, ssaice3, asyice3, fdlice3, &
+                           abari, bbari, cbari, dbari, ebari, fbari
+      use rrsw_wvn, only : wavenum2, ngb, icxa, nspa, nspb
+      use rrsw_ref, only : preflog, tref
+! For GSFC, not needed for WRF
+!      use tab_xcw
+      use rrsw_kg16, kao16 => kao, kbo16 => kbo, selfrefo16 => selfrefo, forrefo16 => forrefo, sfluxrefo16 => sfluxrefo
+      use rrsw_kg16, ka16 => ka, kb16 => kb, selfref16 => selfref, forref16 => forref, sfluxref16 => sfluxref
+
+      use rrsw_kg17, kao17 => kao, kbo17 => kbo, selfrefo17 => selfrefo, forrefo17 => forrefo, sfluxrefo17 => sfluxrefo
+      use rrsw_kg17, ka17 => ka, kb17 => kb, selfref17 => selfref, forref17 => forref, sfluxref17 => sfluxref
+
+      use rrsw_kg18, kao18 => kao, kbo18 => kbo, selfrefo18 => selfrefo, forrefo18 => forrefo, sfluxrefo18 => sfluxrefo
+      use rrsw_kg18, ka18 => ka, kb18 => kb, selfref18 => selfref, forref18 => forref, sfluxref18 => sfluxref
+
+      use rrsw_kg19, kao19 => kao, kbo19 => kbo, selfrefo19 => selfrefo, forrefo19 => forrefo, sfluxrefo19 => sfluxrefo
+      use rrsw_kg19, ka19 => ka, kb19 => kb, selfref19 => selfref, forref19 => forref, sfluxref19 => sfluxref
+
+      use rrsw_kg20, kao20 => kao, kbo20 => kbo, selfrefo20 => selfrefo, forrefo20 => forrefo, &
+          sfluxrefo20 => sfluxrefo, absch4o20 => absch4o
+      use rrsw_kg20, ka20 => ka, kb20 => kb, selfref20 => selfref, forref20 => forref, &
+          sfluxref20 => sfluxref, absch420 => absch4
+
+      use rrsw_kg21, kao21 => kao, kbo21 => kbo, selfrefo21 => selfrefo, forrefo21 => forrefo, sfluxrefo21 => sfluxrefo
+      use rrsw_kg21, ka21 => ka, kb21 => kb, selfref21 => selfref, forref21 => forref, sfluxref21 => sfluxref
+
+      use rrsw_kg22, kao22 => kao, kbo22 => kbo, selfrefo22 => selfrefo, forrefo22 => forrefo, sfluxrefo22 => sfluxrefo
+      use rrsw_kg22, ka22 => ka, kb22 => kb, selfref22 => selfref, forref22 => forref, sfluxref22 => sfluxref
+
+      use rrsw_kg23, kao23 => kao, selfrefo23 => selfrefo, forrefo23 => forrefo, sfluxrefo23 => sfluxrefo, raylo23 => raylo
+      use rrsw_kg23, ka23 => ka, selfref23 => selfref, forref23 => forref, sfluxref23 => sfluxref, rayl23 => rayl
+
+      use rrsw_kg24, kao24 => kao, kbo24 => kbo, selfrefo24 => selfrefo, forrefo24 => forrefo, sfluxrefo24 => sfluxrefo
+      use rrsw_kg24, abso3ao24 => abso3ao, abso3bo24 => abso3bo, raylao24 => raylao, raylbo24 => raylbo
+      use rrsw_kg24, ka24 => ka, kb24 => kb, selfref24 => selfref, forref24 => forref, sfluxref24 => sfluxref
+      use rrsw_kg24, abso3a24 => abso3a, abso3b24 => abso3b, rayla24 => rayla, raylb24 => raylb
+
+      use rrsw_kg25, kao25 => kao, sfluxrefo25=>sfluxrefo
+      use rrsw_kg25, abso3ao25 => abso3ao, abso3bo25 => abso3bo, raylo25 => raylo
+      use rrsw_kg25, ka25 => ka, sfluxref25=>sfluxref
+      use rrsw_kg25, abso3a25 => abso3a, abso3b25 => abso3b, rayl25 => rayl
+     
+      use rrsw_kg26, sfluxrefo26 => sfluxrefo
+      use rrsw_kg26, sfluxref26 => sfluxref
+
+      use rrsw_kg27, kao27 => kao, kbo27 => kbo, sfluxrefo27 => sfluxrefo, rayl27=>rayl
+      use rrsw_kg27, ka27 => ka, kb27 => kb, sfluxref27 => sfluxref, raylo27=>raylo
+
+      use rrsw_kg28, kao28 => kao, kbo28 => kbo, sfluxrefo28 => sfluxrefo
+      use rrsw_kg28, ka28 => ka, kb28 => kb, sfluxref28 => sfluxref
+
+      use rrsw_kg29, kao29 => kao, kbo29 => kbo, selfrefo29 => selfrefo, forrefo29 => forrefo, sfluxrefo29 => sfluxrefo
+      use rrsw_kg29, absh2oo29 => absh2oo, absco2o29 => absco2o
+      use rrsw_kg29, ka29 => ka, kb29 => kb, selfref29 => selfref, forref29 => forref, sfluxref29 => sfluxref
+      use rrsw_kg29, absh2o29 => absh2o, absco229 => absco2
+
+! ------- Declarations
+
+      integer , intent(in) :: ncol
+      integer , intent(in) :: gncol                   ! Number of horizontal columns     
+      integer , intent(in) :: nlay                    ! Number of model layers
+      integer , intent(inout) :: icld                 ! Cloud overlap method
                                                       !    0: Clear only
                                                       !    1: Random
                                                       !    2: Maximum/random
                                                       !    3: Maximum
+      integer , intent(in) :: iaer
+      integer , intent(in) :: dyofyr                  ! Day of the year (used to get Earth/Sun
+                                                      !  distance if adjflx not provided)                                                      
+      real , intent(in) :: adjes                      ! Flux adjustment for Earth/Sun distance
+      real , intent(in) :: scon                       ! Solar constant (W/m2)
 
-      real(kind=rb), intent(in) :: play(:,:)          ! Layer pressures (hPa, mb)
+      integer , intent(in) :: inflgsw                 ! Flag for cloud optical properties
+      integer , intent(in) :: iceflgsw                ! Flag for ice particle specification
+      integer , intent(in) :: liqflgsw                ! Flag for liquid droplet specification
+      
+      real , intent(in) :: gcld(gncol, nlay)          ! Cloud fraction
                                                       !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: plev(:,:)          ! Interface pressures (hPa, mb)
+      real , intent(in) :: gtauc(gncol,nlay,nbndsw)   ! In-cloud optical depth
+                                                      !    Dimensions: (ncol,nlay,nbndsw)
+      real , intent(in) :: gssac(gncol,nlay,nbndsw)   ! In-cloud single scattering albedo
+                                                      !    Dimensions: (ncol,nlay,nbndsw)
+      real , intent(in) :: gasmc(gncol,nlay,nbndsw)   ! In-cloud asymmetry parameter
+                                                      !    Dimensions: (ncol,nlay,nbndsw)
+      real , intent(in) :: gfsfc(gncol,nlay,nbndsw)   ! In-cloud forward scattering fraction
+                                                      !    Dimensions: (ncol,nlay,nbndsw)
+      real , intent(in) :: gciwp(gncol, nlay)         ! In-cloud ice water path (g/m2)
+                                                      !    Dimensions: (ncol,nlay)
+      real , intent(in) :: gclwp(gncol, nlay)         ! In-cloud liquid water path (g/m2)
+                                                      !    Dimensions: (ncol,nlay)
+      real , intent(in) :: gcswp(gncol, nlay)         ! In-cloud snow water path (g/m2)
+                                                      !    Dimensions: (ncol,nlay)
+                                                      
+      real , intent(in) :: grei(gncol, nlay)          ! Cloud ice effective radius (microns)
+                                                      !    Dimensions: (ncol,nlay)
+      real , intent(in) :: grel(gncol, nlay)          ! Cloud water drop effective radius (microns)
+                                                      !    Dimensions: (ncol,nlay)
+      real , intent(in) :: gres(gncol, nlay)          ! Cloud snow drop effective radius (microns)
+                                                      !    Dimensions: (ncol,nlay)
+                                                      
+      
+      real , intent(in) :: gplay(gncol,nlay)          ! Layer pressures (hPa, mb)
+                                                      !    Dimensions: (ncol,nlay)
+      real , intent(in) :: gplev(gncol,nlay+1)        ! Interface pressures (hPa, mb)
                                                       !    Dimensions: (ncol,nlay+1)
-      real(kind=rb), intent(in) :: tlay(:,:)          ! Layer temperatures (K)
+      real , intent(in) :: gtlay(gncol,nlay)          ! Layer temperatures (K)
                                                       !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: tlev(:,:)          ! Interface temperatures (K)
+      real , intent(in) :: gtlev(gncol,nlay+1)        ! Interface temperatures (K)
                                                       !    Dimensions: (ncol,nlay+1)
-      real(kind=rb), intent(in) :: tsfc(:)            ! Surface temperature (K)
+      real , intent(in) :: gtsfc(gncol)               ! Surface temperature (K)
                                                       !    Dimensions: (ncol)
-      real(kind=rb), intent(in) :: h2ovmr(:,:)        ! H2O volume mixing ratio
+      real , intent(in) :: gh2ovmr(gncol,nlay)        ! H2O volume mixing ratio
                                                       !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: o3vmr(:,:)         ! O3 volume mixing ratio
+      real , intent(in) :: go3vmr(gncol,nlay)         ! O3 volume mixing ratio
                                                       !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: co2vmr(:,:)        ! CO2 volume mixing ratio
+      real , intent(in) :: gco2vmr(gncol,nlay)        ! CO2 volume mixing ratio
                                                       !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: ch4vmr(:,:)        ! Methane volume mixing ratio
+      real , intent(in) :: gch4vmr(gncol,nlay)        ! Methane volume mixing ratio
                                                       !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: n2ovmr(:,:)        ! Nitrous oxide volume mixing ratio
+      real , intent(in) :: gn2ovmr(gncol,nlay)        ! Nitrous oxide volume mixing ratio
                                                       !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: o2vmr(:,:)         ! Oxygen volume mixing ratio
+      real , intent(in) :: go2vmr(gncol,nlay)         ! Oxygen volume mixing ratio
                                                       !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: asdir(:)           ! UV/vis surface albedo direct rad
+      real , intent(in) :: gasdir(gncol)              ! UV/vis surface albedo direct rad
                                                       !    Dimensions: (ncol)
-      real(kind=rb), intent(in) :: aldir(:)           ! Near-IR surface albedo direct rad
+      real , intent(in) :: galdir(gncol)              ! Near-IR surface albedo direct rad
                                                       !    Dimensions: (ncol)
-      real(kind=rb), intent(in) :: asdif(:)           ! UV/vis surface albedo: diffuse rad
+      real , intent(in) :: gasdif(gncol)              ! UV/vis surface albedo: diffuse rad
                                                       !    Dimensions: (ncol)
-      real(kind=rb), intent(in) :: aldif(:)           ! Near-IR surface albedo: diffuse rad
+      real , intent(in) :: galdif(gncol)              ! Near-IR surface albedo: diffuse rad
                                                       !    Dimensions: (ncol)
 
-      integer(kind=im), intent(in) :: dyofyr          ! Day of the year (used to get Earth/Sun
-                                                      !  distance if adjflx not provided)
-      real(kind=rb), intent(in) :: adjes              ! Flux adjustment for Earth/Sun distance
-      real(kind=rb), intent(in) :: coszen(:)          ! Cosine of solar zenith angle
+      
+      real , intent(in) :: gcoszen(gncol)             ! Cosine of solar zenith angle
                                                       !    Dimensions: (ncol)
-      real(kind=rb), intent(in) :: scon               ! Solar constant (W/m2)
-
-      integer(kind=im), intent(in) :: inflgsw         ! Flag for cloud optical properties
-      integer(kind=im), intent(in) :: iceflgsw        ! Flag for ice particle specification
-      integer(kind=im), intent(in) :: liqflgsw        ! Flag for liquid droplet specification
-
-      real(kind=rb), intent(in) :: cldfmcl(:,:,:)     ! Cloud fraction
-                                                      !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(in) :: taucmcl(:,:,:)     ! In-cloud optical depth
-                                                      !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(in) :: ssacmcl(:,:,:)     ! In-cloud single scattering albedo
-                                                      !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(in) :: asmcmcl(:,:,:)     ! In-cloud asymmetry parameter
-                                                      !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(in) :: fsfcmcl(:,:,:)     ! In-cloud forward scattering fraction
-                                                      !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(in) :: ciwpmcl(:,:,:)     ! In-cloud ice water path (g/m2)
-                                                      !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(in) :: clwpmcl(:,:,:)     ! In-cloud liquid water path (g/m2)
-                                                      !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(in) :: cswpmcl(:,:,:)     ! In-cloud snow water path (g/m2)
-                                                      !    Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(in) :: reicmcl(:,:)       ! Cloud ice effective radius (microns)
-                                                      !    Dimensions: (ncol,nlay)
-                                                      ! specific definition of reicmcl depends on setting of iceflglw:
-                                                      ! iceflglw = 0: ice effective radius, r_ec, (Ebert and Curry, 1992),
-                                                      !               r_ec must be >= 10.0 microns
-                                                      ! iceflglw = 1: ice effective radius, r_ec, (Ebert and Curry, 1992),
-                                                      !               r_ec range is limited to 13.0 to 130.0 microns
-                                                      ! iceflglw = 2: ice effective radius, r_k, (Key, Streamer Ref. Manual, 1996)
-                                                      !               r_k range is limited to 5.0 to 131.0 microns
-                                                      ! iceflglw = 3: generalized effective size, dge, (Fu, 1996),
-                                                      !               dge range is limited to 5.0 to 140.0 microns
-                                                      !               [dge = 1.0315 * r_ec]
-      real(kind=rb), intent(in) :: relqmcl(:,:)       ! Cloud water drop effective radius (microns)
-                                                      !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: resnmcl(:,:)       ! Cloud snow effective radius (microns)
-                                                      !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: tauaer(:,:,:)      ! Aerosol optical depth (iaer=10 only)
+    
+      real , intent(in) :: gtauaer(gncol,nlay,nbndsw) ! Aerosol optical depth (iaer=10 only)
                                                       !    Dimensions: (ncol,nlay,nbndsw)
                                                       ! (non-delta scaled)      
-      real(kind=rb), intent(in) :: ssaaer(:,:,:)      ! Aerosol single scattering albedo (iaer=10 only)
+      real , intent(in) :: gssaaer(gncol,nlay,nbndsw) ! Aerosol single scattering albedo (iaer=10 only)
                                                       !    Dimensions: (ncol,nlay,nbndsw)
                                                       ! (non-delta scaled)      
-      real(kind=rb), intent(in) :: asmaer(:,:,:)      ! Aerosol asymmetry parameter (iaer=10 only)
+      real , intent(in) :: gasmaer(gncol,nlay,nbndsw) ! Aerosol asymmetry parameter (iaer=10 only)
                                                       !    Dimensions: (ncol,nlay,nbndsw)
                                                       ! (non-delta scaled)      
-      real(kind=rb), intent(in) :: ecaer(:,:,:)       ! Aerosol optical depth at 0.55 micron (iaer=6 only)
+      real , intent(in) :: gecaer(:,:,:)              ! Aerosol optical depth at 0.55 micron (iaer=6 only)
                                                       !    Dimensions: (ncol,nlay,naerec)
                                                       ! (non-delta scaled)      
-
+!      integer , intent(in) :: normFlx                 ! Normalize fluxes flag
+                                                       ! 0 = no normalization
+                                                       ! 1 = normalize fluxes ( / (scon * coszen) )
+! for inactive icld=4 option
+!      real, intent(in) :: gzm(gncol, nlay)
+!      real, intent(in) :: galat(gncol)
+                                              
 ! ----- Output -----
 
-      real(kind=rb), intent(out) :: swuflx(:,:)       ! Total sky shortwave upward flux (W/m2)
+      real , intent(out) :: swuflx(:,:)               ! Total sky shortwave upward flux (W/m2)
                                                       !    Dimensions: (ncol,nlay+1)
-      real(kind=rb), intent(out) :: swdflx(:,:)       ! Total sky shortwave downward flux (W/m2)
+      real , intent(out) :: swdflx(:,:)               ! Total sky shortwave downward flux (W/m2)
                                                       !    Dimensions: (ncol,nlay+1)
-      real(kind=rb), intent(out) :: sibvisdir(:,:)    ! visible direct downward flux  (W/m2)
-                                                      !    Dimensions: (ncol,nlay+1) Zhenxin (2011/06/20)
-      real(kind=rb), intent(out) :: sibvisdif(:,:)    ! visible diffusion downward flux  (W/m2)
-                                                      !    Dimensions: (ncol,nlay+1) Zhenxin (2011/06/20)
-      real(kind=rb), intent(out) :: sibnirdir(:,:)    ! Near IR direct downward flux  (W/m2)
-                                                      !    Dimensions: (ncol,nlay+1)  Zhenxin (2011/06/20)
-      real(kind=rb), intent(out) :: sibnirdif(:,:)    ! Near IR diffusion downward flux  (W/m2)
-                                                      !    Dimensions: (ncol,nlay+1) Zhenxin (2011/06/20)
-      real(kind=rb), intent(out) :: swhr(:,:)         ! Total sky shortwave radiative heating rate (K/d)
+      real , intent(out) :: swhr(:,:)                 ! Total sky shortwave radiative heating rate (K/d)
                                                       !    Dimensions: (ncol,nlay)
-      real(kind=rb), intent(out) :: swuflxc(:,:)      ! Clear sky shortwave upward flux (W/m2)
+      real , intent(out) :: swuflxc(:,:)              ! Clear sky shortwave upward flux (W/m2)
                                                       !    Dimensions: (ncol,nlay+1)
-      real(kind=rb), intent(out) :: swdflxc(:,:)      ! Clear sky shortwave downward flux (W/m2)
+      real , intent(out) :: swdflxc(:,:)              ! Clear sky shortwave downward flux (W/m2)
                                                       !    Dimensions: (ncol,nlay+1)
-      real(kind=rb), intent(out) :: swhrc(:,:)        ! Clear sky shortwave radiative heating rate (K/d)
+      real , intent(out) :: swhrc(:,:)                ! Clear sky shortwave radiative heating rate (K/d)
                                                       !    Dimensions: (ncol,nlay)
 
-      integer, intent(in)        :: aer_opt
-      real(kind=rb), intent(out) :: &
-        swdkdir(:,:), & ! Total shortwave downward direct flux (W/m2),  Dimensions: (ncol,nlay) jararias, 2013/08/10
-        swdkdif(:,:)    ! Total shortwave downward diffuse flux (W/m2), Dimensions: (ncol,nlay) jararias, 2013/08/10
+! For GSFC, not needed for WRF
+! Output added for Land/Surface process
+!      real , intent(out) :: nirr(:)                   ! Near-IR direct downward shortwave flux (w/m2)
+!                                                      !    Dimensions: (ncol)
+!      real , intent(out) :: nirf(:)                   ! Near-IR diffuse downward shortwave flux (w/m2)
+!                                                      !    Dimensions: (ncol)
+!      real , intent(out) :: parr(:)                   ! Visible direct downward shortwave flux (w/m2)
+!                                                      !    Dimensions: (ncol)
+!      real , intent(out) :: parf(:)                   ! Visible diffuse downward shortwave flux (w/m2)
+!                                                      !    Dimensions: (ncol)
+!      real , intent(out) :: uvrr(:)                   ! UV direct downward shortwave flux (w/m2)
+!                                                      !    Dimensions: (ncol)
+!      real , intent(out) :: uvrf(:)                   ! UV diffuse downward shortwave flux (w/m2)
+!                                                      !    Dimensions: (ncol)
 
-
-
-
+      real, intent(out) :: sibvisdir(:,:)              ! visible direct downward flux  (W/m2)
+                                                       !    Dimensions: (ncol,nlay+1) Zhenxin (2011/06/20)
+      real, intent(out) :: sibvisdif(:,:)              ! visible diffusion downward flux  (W/m2)
+                                                       !    Dimensions: (ncol,nlay+1) Zhenxin (2011/06/20)
+      real, intent(out) :: sibnirdir(:,:)              ! Near IR direct downward flux  (W/m2)
+                                                       !    Dimensions: (ncol,nlay+1)  Zhenxin (2011/06/20)
+      real, intent(out) :: sibnirdif(:,:)              ! Near IR diffusion downward flux  (W/m2)
+                                                       !    Dimensions: (ncol,nlay+1) Zhenxin (2011/06/20)
+      real, intent(out) :: swdkdir(:,:)                ! Total shortwave downward direct flux (W/m2)
+                                                       !    Dimensions: (ncol,nlay+1) jararias, 2013/08/10
+      real, intent(out) :: swdkdif(:,:)                ! Total shortwave downward diffuse flux (W/m2)
+                                                       !    Dimensions: (ncol,nlay+1) jararias, 2013/08/10
 
 ! ----- Local -----
 
 ! Control
-      integer(kind=im) :: nlayers             ! total number of layers
-      integer(kind=im) :: istart              ! beginning band of calculation
-      integer(kind=im) :: iend                ! ending band of calculation
-      integer(kind=im) :: icpr                ! cldprop/cldprmc use flag
-      integer(kind=im) :: iout                ! output option flag (inactive)
-      integer(kind=im) :: iaer                ! aerosol option flag
-      integer(kind=im) :: idelm               ! delta-m scaling flag (inactive)
-      integer(kind=im) :: isccos              ! instrumental cosine response flag (inactive)
-      integer(kind=im) :: iplon               ! column loop index
-      integer(kind=im) :: i                   ! layer loop index                       ! jk
-      integer(kind=im) :: ib                  ! band loop index                        ! jsw
-      integer(kind=im) :: ia, ig              ! indices
-      integer(kind=im) :: k                   ! layer loop index
-      integer(kind=im) :: ims                 ! value for changing mcica permute seed
-      integer(kind=im) :: imca                ! flag for mcica [0=off, 1=on]
+     
+      integer  :: istart                      ! beginning band of calculation
+      integer  :: iend                        ! ending band of calculation
+      integer  :: icpr                        ! cldprop/cldprmc use flag
+      integer  :: iout                        ! output option flag
+  
+      integer  :: idelm                       ! delta-m scaling flag
+                                              ! [0 = direct and diffuse fluxes are unscaled]
+                                              ! [1 = direct and diffuse fluxes are scaled]
+                                              ! (total downward fluxes are always delta scaled)
+      integer  :: isccos                      ! instrumental cosine response flag (inactive)
+      integer  :: iplon                       ! column loop index
+      integer  :: i                           ! layer loop index                       ! jk
+      integer  :: ib                          ! band loop index                        ! jsw
+      integer  :: ia, ig                      ! indices
+      integer  :: k                           ! layer loop index
+      integer  :: ims                         ! value for changing mcica permute seed
+      integer  :: imca                        ! flag for mcica [0=off, 1=on]
 
-      real(kind=rb) :: zepsec, zepzen         ! epsilon
-      real(kind=rb) :: zdpgcp                 ! flux to heating conversion ratio
+      real  :: zepsec, zepzen                 ! epsilon
+      real  :: zdpgcp                         ! flux to heating conversion ratio
 
 ! Atmosphere
-      real(kind=rb) :: pavel(nlay+1)          ! layer pressures (mb) 
-      real(kind=rb) :: tavel(nlay+1)          ! layer temperatures (K)
-      real(kind=rb) :: pz(0:nlay+1)           ! level (interface) pressures (hPa, mb)
-      real(kind=rb) :: tz(0:nlay+1)           ! level (interface) temperatures (K)
-      real(kind=rb) :: tbound                 ! surface temperature (K)
-      real(kind=rb) :: pdp(nlay+1)            ! layer pressure thickness (hPa, mb)
-      real(kind=rb) :: coldry(nlay+1)         ! dry air column amount
-      real(kind=rb) :: wkl(mxmol,nlay+1)      ! molecular amounts (mol/cm-2)
 
-!      real(kind=rb) :: earth_sun             ! function for Earth/Sun distance factor
-      real(kind=rb) :: cossza                 ! Cosine of solar zenith angle
-      real(kind=rb) :: adjflux(jpband)        ! adjustment for current Earth/Sun distance
-      real(kind=rb) :: solvar(jpband)         ! solar constant scaling factor from rrtmg_sw
+      real  :: coldry(ncol,nlay+1)            ! dry air column amount
+      real  :: wkl(ncol,mxmol,nlay)           ! molecular amounts (mol/cm-2)
+
+      real  :: cossza(ncol)                   ! Cosine of solar zenith angle
+      real  :: adjflux(jpband)                ! adjustment for current Earth/Sun distance
+      
                                               !  default value of 1368.22 Wm-2 at 1 AU
-      real(kind=rb) :: albdir(nbndsw)         ! surface albedo, direct          ! zalbp
-      real(kind=rb) :: albdif(nbndsw)         ! surface albedo, diffuse         ! zalbd
-
-      real(kind=rb) :: taua(nlay+1,nbndsw)    ! Aerosol optical depth
-      real(kind=rb) :: ssaa(nlay+1,nbndsw)    ! Aerosol single scattering albedo
-      real(kind=rb) :: asma(nlay+1,nbndsw)    ! Aerosol asymmetry parameter
+      real  :: albdir(ncol,nbndsw)            ! surface albedo, direct          ! zalbp
+      real  :: albdif(ncol,nbndsw)            ! surface albedo, diffuse         ! zalbd
+      
+!      real  :: rdl(ncol), adl(ncol)
 
 ! Atmosphere - setcoef
-      integer(kind=im) :: laytrop             ! tropopause layer index
-      integer(kind=im) :: layswtch            ! tropopause layer index
-      integer(kind=im) :: laylow              ! tropopause layer index
-      integer(kind=im) :: jp(nlay+1)          ! 
-      integer(kind=im) :: jt(nlay+1)          !
-      integer(kind=im) :: jt1(nlay+1)         !
+      integer  :: laytrop(ncol)               ! tropopause layer index
+      integer  :: layswtch(ncol)              ! tropopause layer index
+      integer  :: laylow(ncol)                ! tropopause layer index
+      integer  :: jp(ncol,nlay+1)             ! 
+      integer  :: jt(ncol,nlay+1)             !
+      integer  :: jt1(ncol,nlay+1)            !
 
-      real(kind=rb) :: colh2o(nlay+1)         ! column amount (h2o)
-      real(kind=rb) :: colco2(nlay+1)         ! column amount (co2)
-      real(kind=rb) :: colo3(nlay+1)          ! column amount (o3)
-      real(kind=rb) :: coln2o(nlay+1)         ! column amount (n2o)
-      real(kind=rb) :: colch4(nlay+1)         ! column amount (ch4)
-      real(kind=rb) :: colo2(nlay+1)          ! column amount (o2)
-      real(kind=rb) :: colmol(nlay+1)         ! column amount
-      real(kind=rb) :: co2mult(nlay+1)        ! column amount 
+      real  :: colh2o(ncol,nlay+1)            ! column amount (h2o)
+      real  :: colco2(ncol,nlay+1)            ! column amount (co2)
+      real  :: colo3(ncol,nlay+1)             ! column amount (o3)
+      real  :: coln2o(ncol,nlay+1)            ! column amount (n2o)
+      real  :: colch4(ncol,nlay+1)            ! column amount (ch4)
+      real  :: colo2(ncol,nlay+1)             ! column amount (o2)
+      real  :: colmol(ncol,nlay+1)            ! column amount
+      real  :: co2mult(ncol,nlay+1)           ! column amount 
 
-      integer(kind=im) :: indself(nlay+1)
-      integer(kind=im) :: indfor(nlay+1)
-      real(kind=rb) :: selffac(nlay+1)
-      real(kind=rb) :: selffrac(nlay+1)
-      real(kind=rb) :: forfac(nlay+1)
-      real(kind=rb) :: forfrac(nlay+1)
+      integer  :: indself(ncol,nlay+1) 
+      integer  :: indfor(ncol,nlay+1) 
+      real  :: selffac(ncol,nlay+1) 
+      real  :: selffrac(ncol,nlay+1) 
+      real  :: forfac(ncol,nlay+1) 
+      real  :: forfrac(ncol,nlay+1) 
 
-      real(kind=rb) :: &                      !
-                         fac00(nlay+1), fac01(nlay+1), &
-                         fac10(nlay+1), fac11(nlay+1) 
+      real  :: &                              !
+                         fac00(ncol,nlay+1) , fac01(ncol,nlay+1) , &
+                         fac10(ncol,nlay+1) , fac11(ncol,nlay+1)  
+      
+      real :: play(ncol,nlay)                 ! Layer pressures (hPa, mb)
+                                              !    Dimensions: (ncol,nlay)
+      real :: plev(ncol,nlay+1)               ! Interface pressures (hPa, mb)
+                                              !    Dimensions: (ncol,nlay+1)
+      real :: tlay(ncol,nlay)                 ! Layer temperatures (K)
+                                              !    Dimensions: (ncol,nlay)
+      real :: tlev(ncol,nlay+1)               ! Interface temperatures (K)
+                                              !    Dimensions: (ncol,nlay+1)
+      real :: tsfc(ncol)                      ! Surface temperature (K)
+                                              !    Dimensions: (ncol)
+      real :: coszen(ncol)   
 
 ! Atmosphere/clouds - cldprop
-      integer(kind=im) :: ncbands             ! number of cloud spectral bands
-      integer(kind=im) :: inflag              ! flag for cloud property method
-      integer(kind=im) :: iceflag             ! flag for ice cloud properties
-      integer(kind=im) :: liqflag             ! flag for liquid cloud properties
+      integer  :: ncbands                     ! number of cloud spectral bands
 
-!      real(kind=rb) :: cldfrac(nlay+1)        ! layer cloud fraction
-!      real(kind=rb) :: tauc(nlay+1)           ! in-cloud optical depth (non-delta scaled)
-!      real(kind=rb) :: ssac(nlay+1)           ! in-cloud single scattering albedo (non-delta scaled)
-!      real(kind=rb) :: asmc(nlay+1)           ! in-cloud asymmetry parameter (non-delta scaled)
-!      real(kind=rb) :: fsfc(nlay+1)           ! in-cloud forward scattering fraction (non-delta scaled)
-!      real(kind=rb) :: ciwp(nlay+1)           ! in-cloud ice water path
-!      real(kind=rb) :: clwp(nlay+1)           ! in-cloud liquid water path
-!      real(kind=rb) :: rei(nlay+1)            ! cloud ice particle size
-!      real(kind=rb) :: rel(nlay+1)            ! cloud liquid particle size
+      real   :: cld(ncol,nlay)                ! Cloud fraction
+      real   :: tauc(ncol,nlay,nbndsw)        ! In-cloud optical depth
+      real   :: ssac(ncol,nlay,nbndsw)        ! In-cloud single scattering 
+      real   :: asmc(ncol,nlay,nbndsw)        ! In-cloud asymmetry parameter
+      real   :: fsfc(ncol,nlay,nbndsw)        ! In-cloud forward scattering fraction
+      real   :: ciwp(ncol,nlay)               ! In-cloud ice water path (g/m2)
+      real   :: clwp(ncol,nlay)               ! In-cloud liquid water path (g/m2)
+      real   :: cswp(ncol,nlay)               ! In-cloud snow water path (g/m2)
+      real   :: rei(ncol,nlay)                ! Cloud ice effective radius (microns)
+      real   :: rel(ncol,nlay)                ! Cloud water drop effective radius (microns)
+      real   :: res(ncol,nlay)                ! Cloud snow effective radius (microns)
+      
+! for inactive icld=4 option
+!      real   :: alat(ncol)
+!      real   :: zm(ncol, nlay)
 
-!      real(kind=rb) :: taucloud(nlay+1,jpband)  ! in-cloud optical depth
-!      real(kind=rb) :: taucldorig(nlay+1,jpband)! in-cloud optical depth (non-delta scaled)
-!      real(kind=rb) :: ssacloud(nlay+1,jpband)  ! in-cloud single scattering albedo
-!      real(kind=rb) :: asmcloud(nlay+1,jpband)  ! in-cloud asymmetry parameter
-
-! Atmosphere/clouds - cldprmc [mcica]
-      real(kind=rb) :: cldfmc(ngptsw,nlay+1)    ! cloud fraction [mcica]
-      real(kind=rb) :: ciwpmc(ngptsw,nlay+1)    ! in-cloud ice water path [mcica]
-      real(kind=rb) :: clwpmc(ngptsw,nlay+1)    ! in-cloud liquid water path [mcica]
-      real(kind=rb) :: cswpmc(ngptsw,nlay+1)    ! in-cloud snow water path [mcica]
-      real(kind=rb) :: relqmc(nlay+1)           ! liquid particle effective radius (microns)
-      real(kind=rb) :: reicmc(nlay+1)           ! ice particle effective size (microns)
-      real(kind=rb) :: resnmc(nlay+1)           ! snow particle effective size (microns)
-      real(kind=rb) :: taucmc(ngptsw,nlay+1)    ! in-cloud optical depth [mcica]
-      real(kind=rb) :: taormc(ngptsw,nlay+1)    ! unscaled in-cloud optical depth [mcica]
-      real(kind=rb) :: ssacmc(ngptsw,nlay+1)    ! in-cloud single scattering albedo [mcica]
-      real(kind=rb) :: asmcmc(ngptsw,nlay+1)    ! in-cloud asymmetry parameter [mcica]
-      real(kind=rb) :: fsfcmc(ngptsw,nlay+1)    ! in-cloud forward scattering fraction [mcica]
-
+! For GSFC, not needed for WRF                                                      
+!      real, dimension(ncol) :: znirr,znirf,zparr,zparf,zuvrr,zuvrf
+      
+      real  :: taucmc(ncol,nlay+1,ngptsw)     ! in-cloud optical depth [mcica]
+      real  :: taormc(ncol,nlay+1,ngptsw)     ! unscaled in-cloud optical depth [mcica]
+      real  :: ssacmc(ncol,nlay+1,ngptsw)     ! in-cloud single scattering albedo [mcica]
+      real  :: asmcmc(ncol,nlay+1,ngptsw)     ! in-cloud asymmetry parameter [mcica]
+      real  :: fsfcmc(ncol,nlay+1,ngptsw)     ! in-cloud forward scattering fraction [mcica]
+      
+      real :: cldfmcl(ncol,nlay+1,ngptsw)     ! cloud fraction [mcica]
+      real :: ciwpmcl(ncol,nlay+1,ngptsw)     ! in-cloud ice water path [mcica]
+      real :: clwpmcl(ncol,nlay+1,ngptsw)     ! in-cloud liquid water path [mcica]
+      real :: cswpmcl(ncol,nlay+1,ngptsw)     ! in-cloud liquid water path [mcica]
+                                                     
 ! Atmosphere/clouds/aerosol - spcvrt,spcvmc
-      real(kind=rb) :: ztauc(nlay+1,nbndsw)     ! cloud optical depth
-      real(kind=rb) :: ztaucorig(nlay+1,nbndsw) ! unscaled cloud optical depth
-      real(kind=rb) :: zasyc(nlay+1,nbndsw)     ! cloud asymmetry parameter 
-                                                !  (first moment of phase function)
-      real(kind=rb) :: zomgc(nlay+1,nbndsw)     ! cloud single scattering albedo
-      real(kind=rb) :: ztaua(nlay+1,nbndsw)     ! total aerosol optical depth
-      real(kind=rb) :: zasya(nlay+1,nbndsw)     ! total aerosol asymmetry parameter 
-      real(kind=rb) :: zomga(nlay+1,nbndsw)     ! total aerosol single scattering albedo
-
-      real(kind=rb) :: zcldfmc(nlay+1,ngptsw)   ! cloud fraction [mcica]
-      real(kind=rb) :: ztaucmc(nlay+1,ngptsw)   ! cloud optical depth [mcica]
-      real(kind=rb) :: ztaormc(nlay+1,ngptsw)   ! unscaled cloud optical depth [mcica]
-      real(kind=rb) :: zasycmc(nlay+1,ngptsw)   ! cloud asymmetry parameter [mcica] 
-      real(kind=rb) :: zomgcmc(nlay+1,ngptsw)   ! cloud single scattering albedo [mcica]
-
-      real(kind=rb) :: zbbfu(nlay+2)          ! temporary upward shortwave flux (w/m2)
-      real(kind=rb) :: zbbfd(nlay+2)          ! temporary downward shortwave flux (w/m2)
-      real(kind=rb) :: zbbcu(nlay+2)          ! temporary clear sky upward shortwave flux (w/m2)
-      real(kind=rb) :: zbbcd(nlay+2)          ! temporary clear sky downward shortwave flux (w/m2)
-      real(kind=rb) :: zbbfddir(nlay+2)       ! temporary downward direct shortwave flux (w/m2)
-      real(kind=rb) :: zbbcddir(nlay+2)       ! temporary clear sky downward direct shortwave flux (w/m2)
-      real(kind=rb) :: zuvfd(nlay+2)          ! temporary UV downward shortwave flux (w/m2)
-      real(kind=rb) :: zuvcd(nlay+2)          ! temporary clear sky UV downward shortwave flux (w/m2)
-      real(kind=rb) :: zuvfddir(nlay+2)       ! temporary UV downward direct shortwave flux (w/m2)
-      real(kind=rb) :: zuvcddir(nlay+2)       ! temporary clear sky UV downward direct shortwave flux (w/m2)
-      real(kind=rb) :: znifd(nlay+2)          ! temporary near-IR downward shortwave flux (w/m2)
-      real(kind=rb) :: znicd(nlay+2)          ! temporary clear sky near-IR downward shortwave flux (w/m2)
-      real(kind=rb) :: znifddir(nlay+2)       ! temporary near-IR downward direct shortwave flux (w/m2)
-      real(kind=rb) :: znicddir(nlay+2)       ! temporary clear sky near-IR downward direct shortwave flux (w/m2)
+      real  :: ztauc(ncol,nlay+1,nbndsw)      ! cloud optical depth
+      real  :: ztaucorig(ncol,nlay+1,nbndsw)  ! unscaled cloud optical depth
+      real  :: zasyc(ncol,nlay+1,nbndsw)      ! cloud asymmetry parameter 
+                                              !  (first moment of phase function)
+      real  :: zomgc(ncol,nlay+1,nbndsw)      ! cloud single scattering albedo
+   
+      real  :: taua(ncol, nlay+1, nbndsw)
+      real  :: asya(ncol, nlay+1, nbndsw)
+      real  :: omga(ncol, nlay+1, nbndsw)
+   
+      real  :: zbbfu(ncol,nlay+2)             ! temporary upward shortwave flux (w/m2)
+      real  :: zbbfd(ncol,nlay+2)             ! temporary downward shortwave flux (w/m2)
+      real  :: zbbcu(ncol,nlay+2)             ! temporary clear sky upward shortwave flux (w/m2)
+      real  :: zbbcd(ncol,nlay+2)             ! temporary clear sky downward shortwave flux (w/m2)
+      real  :: zbbfddir(ncol,nlay+2)          ! temporary downward direct shortwave flux (w/m2)
+      real  :: zbbcddir(ncol,nlay+2)          ! temporary clear sky downward direct shortwave flux (w/m2)
+      real  :: zuvfd(ncol,nlay+2)             ! temporary UV downward shortwave flux (w/m2)
+      real  :: zuvcd(ncol,nlay+2)             ! temporary clear sky UV downward shortwave flux (w/m2)
+      real  :: zuvfddir(ncol,nlay+2)          ! temporary UV downward direct shortwave flux (w/m2)
+      real  :: zuvcddir(ncol,nlay+2)          ! temporary clear sky UV downward direct shortwave flux (w/m2)
+      real  :: znifd(ncol,nlay+2)             ! temporary near-IR downward shortwave flux (w/m2)
+      real  :: znicd(ncol,nlay+2)             ! temporary clear sky near-IR downward shortwave flux (w/m2)
+      real  :: znifddir(ncol,nlay+2)          ! temporary near-IR downward direct shortwave flux (w/m2)
+      real  :: znicddir(ncol,nlay+2)          ! temporary clear sky near-IR downward direct shortwave flux (w/m2)
 
 ! Optional output fields 
-      real(kind=rb) :: swnflx(nlay+2)         ! Total sky shortwave net flux (W/m2)
-      real(kind=rb) :: swnflxc(nlay+2)        ! Clear sky shortwave net flux (W/m2)
-      real(kind=rb) :: dirdflux(nlay+2)       ! Direct downward shortwave surface flux
-      real(kind=rb) :: difdflux(nlay+2)       ! Diffuse downward shortwave surface flux
-      real(kind=rb) :: uvdflx(nlay+2)         ! Total sky downward shortwave flux, UV/vis  
-      real(kind=rb) :: nidflx(nlay+2)         ! Total sky downward shortwave flux, near-IR 
-      real(kind=rb) :: dirdnuv(nlay+2)        ! Direct downward shortwave flux, UV/vis
-      real(kind=rb) :: difdnuv(nlay+2)        ! Diffuse downward shortwave flux, UV/vis
-      real(kind=rb) :: dirdnir(nlay+2)        ! Direct downward shortwave flux, near-IR
-      real(kind=rb) :: difdnir(nlay+2)        ! Diffuse downward shortwave flux, near-IR
+      real  :: swnflx(ncol,nlay+2)            ! Total sky shortwave net flux (W/m2)
+      real  :: swnflxc(ncol,nlay+2)           ! Clear sky shortwave net flux (W/m2)
+      real  :: dirdflux(ncol,nlay+2)          ! Direct downward shortwave surface flux
+      real  :: difdflux(ncol,nlay+2)          ! Diffuse downward shortwave surface flux
+      real  :: uvdflx(ncol,nlay+2)            ! Total sky downward shortwave flux, UV/vis  
+      real  :: nidflx(ncol,nlay+2)            ! Total sky downward shortwave flux, near-IR 
+      real  :: dirdnuv(ncol,nlay+2)           ! Direct downward shortwave flux, UV/vis
+      real  :: difdnuv(ncol,nlay+2)           ! Diffuse downward shortwave flux, UV/vis
+      real  :: dirdnir(ncol,nlay+2)           ! Direct downward shortwave flux, near-IR
+      real  :: difdnir(ncol,nlay+2)           ! Diffuse downward shortwave flux, near-IR
+      
+      real gpu_device :: zgco(ncol,ngptsw,nlay+1)  , zomco(ncol,ngptsw,nlay+1)  
+      real gpu_device :: zrdnd(ncol,ngptsw,nlay+1) 
+      real gpu_device :: zref(ncol,ngptsw,nlay+1)  , zrefo(ncol,ngptsw,nlay+1)  
+      real gpu_device :: zrefd(ncol,ngptsw,nlay+1) , zrefdo(ncol,ngptsw,nlay+1)  
+      real gpu_device :: ztauo(ncol,ngptsw,nlay)  
+      real gpu_device :: zdbt(ncol,ngptsw,nlay+1)  , ztdbt(ncol,ngptsw,nlay+1)   
+      real gpu_device :: ztra(ncol,ngptsw,nlay+1)  , ztrao(ncol,ngptsw,nlay+1)  
+      real gpu_device :: ztrad(ncol,ngptsw,nlay+1) , ztrado(ncol,ngptsw,nlay+1)  
+      real gpu_device :: zfd(ncol,ngptsw,nlay+1)   , zfu(ncol,ngptsw,nlay+1)  
+      real gpu_device :: zsflxzen(ncol,ngptsw)
+      real gpu_device :: ztaur(ncol,nlay,ngptsw)   , ztaug(ncol,nlay,ngptsw) 
 
-! Output - inactive
-!      real(kind=rb) :: zuvfu(nlay+2)         ! temporary upward UV shortwave flux (w/m2)
-!      real(kind=rb) :: zuvfd(nlay+2)         ! temporary downward UV shortwave flux (w/m2)
-!      real(kind=rb) :: zuvcu(nlay+2)         ! temporary clear sky upward UV shortwave flux (w/m2)
-!      real(kind=rb) :: zuvcd(nlay+2)         ! temporary clear sky downward UV shortwave flux (w/m2)
-!      real(kind=rb) :: zvsfu(nlay+2)         ! temporary upward visible shortwave flux (w/m2)
-!      real(kind=rb) :: zvsfd(nlay+2)         ! temporary downward visible shortwave flux (w/m2)
-!      real(kind=rb) :: zvscu(nlay+2)         ! temporary clear sky upward visible shortwave flux (w/m2)
-!      real(kind=rb) :: zvscd(nlay+2)         ! temporary clear sky downward visible shortwave flux (w/m2)
-!      real(kind=rb) :: znifu(nlay+2)         ! temporary upward near-IR shortwave flux (w/m2)
-!      real(kind=rb) :: znifd(nlay+2)         ! temporary downward near-IR shortwave flux (w/m2)
-!      real(kind=rb) :: znicu(nlay+2)         ! temporary clear sky upward near-IR shortwave flux (w/m2)
-!      real(kind=rb) :: znicd(nlay+2)         ! temporary clear sky downward near-IR shortwave flux (w/m2)
+      integer :: npartc, npart, npartb, cldflag(gncol), profic(gncol), profi(gncol)
 
+      real , parameter :: amd = 28.9660       ! Effective molecular weight of dry air (g/mol)
+      real , parameter :: amw = 18.0160       ! Molecular weight of water vapor (g/mol)
+
+! Set molecular weight ratios (for converting mmr to vmr)
+!  e.g. h2ovmr = h2ommr * amdw)
+      real , parameter :: amdw = 1.607793   ! Molecular weight of dry air / water vapor
+      real , parameter :: amdc = 0.658114   ! Molecular weight of dry air / carbon dioxide
+      real , parameter :: amdo = 0.603428   ! Molecular weight of dry air / ozone
+      real , parameter :: amdm = 1.805423   ! Molecular weight of dry air / methane
+      real , parameter :: amdn = 0.658090   ! Molecular weight of dry air / nitrous oxide
+      real , parameter :: amdo2 = 0.905140  ! Molecular weight of dry air / oxygen
+
+      real , parameter :: sbc = 5.67e-08    ! Stefan-Boltzmann constant (W/m2K4)
+
+      integer  :: isp, l, ix, n, imol  ! Loop indices
+      real  :: amm, summol                      ! 
+      real  :: adjflx                           ! flux adjustment for Earth/Sun distance
+      integer :: prt
+      integer :: piplon
+      
+      integer :: ipart, cols, cole, colr, ncolc, ncolb
+      integer :: irng, cc, ncolst
 
 ! Initializations
-
-      iout = 0 !BSINGH(PNNL) initializing iout to zero(Might be wrong!) as this variable is never initialized but used in spcvmc_sw
-      zepsec = 1.e-06_rb
-      zepzen = 1.e-10_rb
-      oneminus = 1.0_rb - zepsec
-      pi = 2._rb * asin(1._rb)
+      
+      zepsec = 1.e-06 
+      zepzen = 1.e-10 
+      oneminus = 1.0  - zepsec
+      pi = 2.  * asin(1. )
+      irng = 0
 
       istart = jpb1
       iend = jpb2
-      icpr = 0
+      iout = 0
+      icpr = 1
       ims = 2
-
-! In a GCM with or without McICA, set nlon to the longitude dimension
-!
-! Set imca to select calculation type:
-!  imca = 0, use standard forward model calculation (clear and overcast only)
-!  imca = 1, use McICA for Monte Carlo treatment of sub-grid cloud variability
-!            (clear, overcast or partial cloud conditions)
-
-! *** This version uses McICA (imca = 1) ***
-
-! Set icld to select of clear or cloud calculation and cloud 
-! overlap method (read by subroutine readprof from input file INPUT_RRTM):  
-! icld = 0, clear only
-! icld = 1, with clouds using random cloud overlap (McICA only)
-! icld = 2, with clouds using maximum/random cloud overlap (McICA only)
-! icld = 3, with clouds using maximum cloud overlap (McICA only)
-      if (icld.lt.0.or.icld.gt.3) icld = 2
-
-! Set iaer to select aerosol option
-! iaer = 0, no aerosols
-! iaer = 6, use six ECMWF aerosol types
-!           input aerosol optical depth at 0.55 microns for each aerosol type (ecaer)
-! iaer = 10, input total aerosol optical depth, single scattering albedo 
-!            and asymmetry parameter (tauaer, ssaaer, asmaer) directly
-      if ( aer_opt .eq. 0 .or. aer_opt .eq. 2 ) then
-      iaer = 10
-      else if ( aer_opt .eq. 1 ) then
-      iaer = 6
+      
+      adjflx = adjes
+      if (dyofyr .gt. 0) then
+         adjflx = earth_sun(dyofyr)
       endif
+  
+      do ib = jpb1, jpb2
+         adjflux(ib) = adjflx * scon / rrsw_scon
+      end do
 
-! Call model and data initialization, compute lookup tables, perform
-! reduction of g-points from 224 to 112 for input absorption
-! coefficient data and other arrays.
-!
-! In a GCM this call should be placed in the model initialization
-! area, since this has to be called only once.  
-!      call rrtmg_sw_ini(cpdair)
-
-! This is the main longitude/column loop in RRTMG.
-! Modify to loop over all columns (nlon) or over daylight columns
-
-      do iplon = 1, ncol
-
-! Prepare atmosphere profile from GCM for use in RRTMG, and define
-! other input parameters
-
-         call inatm_sw (iplon, nlay, icld, iaer, &
-              play, plev, tlay, tlev, tsfc, h2ovmr, &
-              o3vmr, co2vmr, ch4vmr, n2ovmr, o2vmr, &
-              adjes, dyofyr, scon, inflgsw, iceflgsw, liqflgsw, &
-              cldfmcl, taucmcl, ssacmcl, asmcmcl, fsfcmcl, ciwpmcl, clwpmcl, cswpmcl, &
-              reicmcl, relqmcl, resnmcl, tauaer, ssaaer, asmaer, &
-              nlayers, pavel, pz, pdp, tavel, tz, tbound, coldry, wkl, &
-              adjflux, solvar, inflag, iceflag, liqflag, cldfmc, taucmc, &
-              ssacmc, asmcmc, fsfcmc, ciwpmc, clwpmc, cswpmc, reicmc, relqmc, resnmc, &
-              taua, ssaa, asma)
-
-!  For cloudy atmosphere, use cldprop to set cloud optical properties based on
-!  input cloud physical properties.  Select method based on choices described
-!  in cldprop.  Cloud fraction, water path, liquid droplet and ice particle
-!  effective radius must be passed in cldprop.  Cloud fraction and cloud
-!  optical properties are transferred to rrtmg_sw arrays in cldprop.  
-
-         call cldprmc_sw(nlayers, inflag, iceflag, liqflag, cldfmc, &
-                         ciwpmc, clwpmc, cswpmc, reicmc, relqmc, resnmc, &
-                         taormc, taucmc, ssacmc, asmcmc, fsfcmc)
-         icpr = 1
-
-! Calculate coefficients for the temperature and pressure dependence of the 
-! molecular absorption coefficients by interpolating data from stored
-! reference atmospheres.
-
-         call setcoef_sw(nlayers, pavel, tavel, pz, tz, tbound, coldry, wkl, &
-                         laytrop, layswtch, laylow, jp, jt, jt1, &
-                         co2mult, colch4, colco2, colh2o, colmol, coln2o, &
-                         colo2, colo3, fac00, fac01, fac10, fac11, &
-                         selffac, selffrac, indself, forfac, forfrac, indfor)
+! For GSFC, not used for WRF
+!      if (icld.lt.0.or.icld.gt.4) icld = 1
+      if (icld.lt.0.or.icld.gt.3) icld = 2
+    
+      
+! determine cloud profile
+      cldflag=0
+      do iplon = 1, gncol
+        if (any(gcld(iplon,:) > 0)) cldflag(iplon)=1
+      end do
 
 
-! Cosine of the solar zenith angle 
-!  Prevent using value of zero; ideally, SW model is not called from host model when sun 
-!  is below horizon
+! build profile separation
+      cols = 0
+      cole = 0
 
-         cossza = coszen(iplon)
-         if (cossza .le. zepzen) cossza = zepzen
+      do iplon = 1, gncol
+        if (cldflag(iplon)==1) then
+            cole=cole+1
+            profi(cole) = iplon
+        else
+            cols=cols+1
+            profic(cols) = iplon
+        end if
+      end do
+    
+! icld=4 option inactive for WRF
+!if (icld==4) then
+!    call TABULATE_XCW_BETA
+!end if
+        
+    
+!$acc data copyout(swuflxc, swdflxc, swuflx, swdflx, swnflxc, swnflx, swhrc, swhr) &
+!$acc create(laytrop, layswtch, laylow, jp, jt, jt1, &
+!$acc co2mult, colch4, colco2, colh2o, colmol, coln2o, &
+!$acc colo2, colo3, fac00, fac01, fac10, fac11, &
+!$acc selffac, selffrac, indself, forfac, forfrac, indfor, &
+!$acc zbbfu, zbbfd, zbbcu, zbbcd,zbbfddir, zbbcddir, zuvfd, zuvcd, zuvfddir, &
+!$acc zuvcddir, znifd, znicd, znifddir,znicddir, &
+!$acc cldfmcl, ciwpmcl, clwpmcl, cswpmcl, &
+!$acc taormc, taucmc, ssacmc, asmcmc, fsfcmc) &
+!$acc deviceptr(zref,zrefo,zrefd,zrefdo,&
+!$acc ztauo,ztdbt,&
+!$acc ztra,ztrao,ztrad,ztrado,&
+!$acc zfd,zfu,zdbt,zgco,&
+!$acc zomco,zrdnd,ztaug, ztaur,zsflxzen)&
+!$acc create(ciwp, clwp, cswp, cld, tauc, ssac, asmc, fsfc, rei, rel, res) &
+!! For GSFC, not needed for WRF
+!!  !$acc create(rdl, adl) &
+!$acc create(play, tlay, plev, tlev, tsfc, cldflag, coszen) &
+!$acc create(coldry, wkl) &
+!! For GSFC, not needed for WRF
+!!  !$acc create(znirr,znirf,zparr,zparf,zuvrr,zuvrf) &
+!$acc create(extliq1, ssaliq1, asyliq1, extice2, ssaice2, asyice2) &
+!$acc create(extice3, ssaice3, asyice3, fdlice3, abari, bbari, cbari, dbari, ebari, fbari) &
+!$acc create(taua, asya, omga,gtauaer,gssaaer,gasmaer) &
+! for inactive icld=4 option
+!!  !$acc create(zm, alat) &
+!$acc copyin(wavenum2, ngb) &
+!$acc copyin(tref, preflog, albdif, albdir, cossza)&
+!$acc copyin(icxa, adjflux, nspa, nspb)&
+!$acc copyin(kao16,kbo16,selfrefo16,forrefo16,sfluxrefo16)&
+!$acc copyin(ka16,kb16,selfref16,forref16,sfluxref16)&
+!$acc copyin(kao17,kbo17,selfrefo17,forrefo17,sfluxrefo17)&
+!$acc copyin(ka17,kb17,selfref17,forref17,sfluxref17)&
+!$acc copyin(kao18,kbo18,selfrefo18,forrefo18,sfluxrefo18)&
+!$acc copyin(ka18,kb18,selfref18,forref18,sfluxref18)&
+!$acc copyin(kao19,kbo19,selfrefo19,forrefo19,sfluxrefo19)&
+!$acc copyin(ka19,kb19,selfref19,forref19,sfluxref19)&
+!$acc copyin(kao20,kbo20,selfrefo20,forrefo20,sfluxrefo20,absch4o20)&
+!$acc copyin(ka20,kb20,selfref20,forref20,sfluxref20,absch420)&
+!$acc copyin(kao21,kbo21,selfrefo21,forrefo21,sfluxrefo21)&
+!$acc copyin(ka21,kb21,selfref21,forref21,sfluxref21)&
+!$acc copyin(kao22,kbo22,selfrefo22,forrefo22,sfluxrefo22)&
+!$acc copyin(ka22,kb22,selfref22,forref22,sfluxref22)&
+!$acc copyin(kao23,selfrefo23,forrefo23,sfluxrefo23,raylo23)&
+!$acc copyin(ka23,selfref23,forref23,sfluxref23,rayl23)&
+!$acc copyin(kao24,kbo24,selfrefo24,forrefo24,sfluxrefo24,abso3ao24,abso3bo24,raylao24,raylbo24)&
+!$acc copyin(ka24,kb24,selfref24,forref24,sfluxref24,abso3a24,abso3b24,rayla24,raylb24)&
+!$acc copyin(kao25,sfluxrefo25,abso3ao25,abso3bo25,raylo25)&
+!$acc copyin(ka25,sfluxref25,abso3a25,abso3b25,rayl25)&
+!$acc copyin(sfluxrefo26)&
+!$acc copyin(sfluxref26)&
+! for inactive icld=4 option
+!! !$acc copyin(gzm,galat)&
+!$acc copyin(kao27,kbo27,sfluxrefo27, raylo27)&
+!$acc copyin(ka27,kb27,sfluxref27, rayl27)&
+!$acc copyin(kao28,kbo28,sfluxrefo28)&
+!$acc copyin(ka28,kb28,sfluxref28,gtauc, gssac, gasmc, gfsfc)&
+!$acc copyin(kao29,kbo29,selfrefo29,forrefo29,sfluxrefo29,absh2oo29,absco2o29)&
+!$acc copyin(ka29,kb29,selfref29,forref29,sfluxref29,absh2o29,absco229)&
+!$acc copyin(gh2ovmr, gco2vmr, go3vmr, gn2ovmr, gch4vmr, go2vmr)&
+!$acc copyin(gcld, gciwp, gclwp, gcswp, grei, grel, gres, gplay, gplev, gtlay, gtlev, gtsfc)&
+!$acc copyin(gasdir, galdir, gasdif, galdif,profi,profic,gcoszen)&
+! For GSFC, not needed for WRF
+!!  !$acc copyout(nirr,nirf,parr,parf,uvrr,uvrf)
+!$acc copyout(sibvisdir,sibvisdif,sibnirdir,sibnirdif,swdkdir,swdkdif)
 
-! Transfer albedo, cloud and aerosol properties into arrays for 2-stream radiative transfer 
 
-! Surface albedo
-!  Near-IR bands 16-24 and 29 (1-9 and 14), 820-16000 cm-1, 0.625-12.195 microns
-         do ib=1,9
-            albdir(ib) = aldir(iplon)
-            albdif(ib) = aldif(iplon)
-         enddo
-         albdir(nbndsw) = aldir(iplon)
-         albdif(nbndsw) = aldif(iplon)
+! For GSFC, not needed for WRF
+!! !$acc data copyin(XCW) if(icld==4)
+
+!$acc update device(extliq1, ssaliq1, asyliq1, extice2, ssaice2, asyice2) &
+!$acc device(extice3, ssaice3, asyice3, fdlice3, abari, bbari, cbari, dbari, ebari, fbari) &
+!$acc device(preflog)
+
+
+      ncolc = cols
+      ncolb = cole
+
+      npartc = ceiling( real(ncolc) / real(ncol) )
+      npartb = ceiling( real(ncolb) / real(ncol) )
+
+
+!$acc kernels    
+      cldfmcl = 0.0
+      ciwpmcl = 0.0
+      clwpmcl = 0.0     
+      cswpmcl = 0.0     
+!$acc end kernels
+  
+      idelm = 1
+      
+!$acc kernels
+      taua = 0.0
+      asya = 0.0
+      omga = 1.0
+!$acc end kernels
+
+      if (iaer==10) then
+
+!$acc update device(gtauaer,gssaaer,gasmaer)
+
+      end if
+
+
+
+
+! PARTITION LOOP ----------------------------------------------------------------------------
+      do cc = 1, 2
+
+        if (cc==1) then 
+         
+          npart = npartc
+          ncolst = ncolc
+        else
+        
+          npart = npartb
+          ncolst = ncolb
+         
+        end if
+     
+        do ipart = 0,npart-1
+          cols = ipart * ncol + 1
+          cole = (ipart + 1) * ncol
+          if (cole>ncolst) cole=ncolst
+          colr = cole - cols + 1
+
+!$acc kernels            
+          taormc = 0.0 
+          taucmc = 0.0
+          ssacmc = 1.0
+          asmcmc = 0.0
+          fsfcmc = 0.0
+!$acc end kernels            
+ 
+! Clear cases
+          if (cc==1) then    
+!$acc kernels loop private(piplon)
+             do iplon = 1, colr
+               piplon = profic(iplon + cols - 1)
+     
+               do ib=1,8
+                 albdir(iplon,ib)  = galdir(piplon)
+                 albdif(iplon,ib)  = galdif(piplon)
+               enddo
+               albdir(iplon,nbndsw)  = galdir(piplon)
+               albdif(iplon,nbndsw)  = galdif(piplon)
 !  UV/visible bands 25-28 (10-13), 16000-50000 cm-1, 0.200-0.625 micron
-         do ib=10,13
-            albdir(ib) = asdir(iplon)
-            albdif(ib) = asdif(iplon)
-         enddo
-
-
-! Clouds
-         if (icld.eq.0) then
-
-            zcldfmc(:,:) = 0._rb
-            ztaucmc(:,:) = 0._rb
-            ztaormc(:,:) = 0._rb
-            zasycmc(:,:) = 0._rb
-            zomgcmc(:,:) = 1._rb
-
-         elseif (icld.ge.1) then
-            do i=1,nlayers
-               do ig=1,ngptsw
-                  zcldfmc(i,ig) = cldfmc(ig,i)
-                  ztaucmc(i,ig) = taucmc(ig,i)
-                  ztaormc(i,ig) = taormc(ig,i)
-                  zasycmc(i,ig) = asmcmc(ig,i)
-                  zomgcmc(i,ig) = ssacmc(ig,i)
+     
+               do ib=10,13
+                 albdir(iplon,ib)  = gasdir(piplon)
+                 albdif(iplon,ib)  = gasdif(piplon)
                enddo
-            enddo
 
-         endif   
+!  Transition band 9, 12850-16000 cm-1, 0.625-0.778 micron, Take average
+               albdir(iplon, 9) = (gasdir(piplon)+galdir(piplon))/2.
+               albdif(iplon, 9) = (gasdif(piplon)+galdif(piplon))/2.
+             end do
+!$acc end kernels      
 
-! Aerosol
-! IAER = 0: no aerosols
-         if (iaer.eq.0) then
+!$acc kernels 
+             do iplon = 1, colr
+               piplon = profic(iplon + cols - 1)
+               play(iplon,:) = gplay(piplon, 1:nlay)
+               plev(iplon,:) = gplev(piplon, 1:nlay+1)
+               tlay(iplon,:) = gtlay(piplon, 1:nlay)
+               tlev(iplon,:) = gtlev(piplon, 1:nlay+1)
+               tsfc(iplon)   = gtsfc(piplon)
+             end do
+!$acc end kernels
 
-            ztaua(:,:) = 0._rb
-            zasya(:,:) = 0._rb
-            zomga(:,:) = 1._rb
+             if (iaer==10) then
+!$acc kernels
+               do iplon = 1, colr
+                 piplon = profic(iplon + cols - 1)
+                 taua(iplon, 1:nlay, :) = gtauaer(piplon, 1:nlay, :)
+                 asya(iplon, 1:nlay, :) = gasmaer(piplon, 1:nlay, :)
+                 omga(iplon, 1:nlay, :) = gssaaer(piplon, 1:nlay, :)
+               end do
+!$acc end kernels
+             end if
 
-! IAER = 6: Use ECMWF six aerosol types. See rrsw_aer.f90 for details.
-! Input aerosol optical thickness at 0.55 micron for each aerosol type (ecaer), 
-! or set manually here for each aerosol and layer.
-         elseif (iaer.eq.6) then
+!$acc kernels
+             do iplon = 1, colr
+               piplon = profic(iplon + cols - 1)
+               wkl(iplon,1,:) = gh2ovmr(piplon,1:nlay)
+               wkl(iplon,2,:) = gco2vmr(piplon,1:nlay)
+               wkl(iplon,3,:) = go3vmr(piplon,1:nlay)
+               wkl(iplon,4,:) = gn2ovmr(piplon,1:nlay)
+               wkl(iplon,5,:) = 0.0
+               wkl(iplon,6,:) = gch4vmr(piplon,1:nlay)
+               wkl(iplon,7,:) = go2vmr(piplon,1:nlay)   
+               coszen(iplon)  = gcoszen(piplon)
+             end do
+!$acc end kernels
 
-!            do i = 1, nlayers
-!               do ia = 1, naerec
-!                  ecaer(iplon,i,ia) = 1.0e-15_rb
-!               enddo
-!            enddo
+!************** cloudy cases ***************
+          else   
+          
+!$acc kernels loop private(piplon)
+            do iplon = 1, colr
+              piplon = profi(iplon + cols - 1)
 
-            do i = 1, nlayers
-               do ib = 1, nbndsw
-                  ztaua(i,ib) = 0._rb
-                  zasya(i,ib) = 0._rb
-                  zomga(i,ib) = 0._rb
-                  do ia = 1, naerec
-                     ztaua(i,ib) = ztaua(i,ib) + rsrtaua(ib,ia) * ecaer(iplon,i,ia)
-                     zomga(i,ib) = zomga(i,ib) + rsrtaua(ib,ia) * ecaer(iplon,i,ia) * &
-                                   rsrpiza(ib,ia)
-                     zasya(i,ib) = zasya(i,ib) + rsrtaua(ib,ia) * ecaer(iplon,i,ia) * &
-                                   rsrpiza(ib,ia) * rsrasya(ib,ia)
-                  enddo
-                  if (zomga(i,ib) /= 0._rb) then
-                     zasya(i,ib) = zasya(i,ib) / zomga(i,ib)
-                  endif
-                  if (ztaua(i,ib) /= 0._rb) then
-                     zomga(i,ib) = zomga(i,ib) / ztaua(i,ib)
-                  endif
-               enddo
-            enddo
+              do ib=1,8
+                albdir(iplon,ib)  = galdir(piplon)
+                albdif(iplon,ib)  = galdif(piplon)
+              enddo
+              albdir(iplon,nbndsw)  = galdir(piplon)
+              albdif(iplon,nbndsw)  = galdif(piplon)
 
-! IAER=10: Direct specification of aerosol optical properties from GCM
-         elseif (iaer.eq.10) then
+!  UV/visible bands 25-28 (10-13), 16000-50000 cm-1, 0.200-0.625 micron
+              do ib=10,13
+                 albdir(iplon,ib)  = gasdir(piplon)
+                 albdif(iplon,ib)  = gasdif(piplon)
+              enddo
 
-            do i = 1 ,nlayers
-               do ib = 1 ,nbndsw
-                  ztaua(i,ib) = taua(i,ib)
-                  zasya(i,ib) = asma(i,ib)
-                  zomga(i,ib) = ssaa(i,ib)
-               enddo
-            enddo
+!  Transition band 9, 12850-16000 cm-1, 0.625-0.778 micron, Take average
+              albdir(iplon, 9) = (gasdir(piplon)+galdir(piplon))/2.
+              albdif(iplon, 9) = (gasdif(piplon)+galdif(piplon))/2.
+            end do
+!$acc end kernels               
+          
+!$acc kernels 
+            do iplon = 1, colr
+              piplon = profi(iplon + cols - 1)
+              play(iplon,:) = gplay(piplon, 1:nlay)
+              plev(iplon,:) = gplev(piplon, 1:nlay+1)
+              tlay(iplon,:) = gtlay(piplon, 1:nlay)
+              tlev(iplon,:) = gtlev(piplon, 1:nlay+1)
+              tsfc(iplon) = gtsfc(piplon)
+              cld(iplon,:) = gcld(piplon, 1:nlay)
+              ciwp(iplon,:) = gciwp(piplon, 1:nlay)
+              clwp(iplon,:) = gclwp(piplon, 1:nlay)
+              cswp(iplon,:) = gcswp(piplon, 1:nlay)
+              rei(iplon,:) = grei(piplon, 1:nlay) 
+              rel(iplon,:) = grel(piplon, 1:nlay)
+              res(iplon,:) = gres(piplon, 1:nlay)
+! for inactive icld=4 option
+!              zm(iplon,:) = gzm(piplon, 1:nlay)
+!              alat(iplon) = galat(piplon)
+            end do
 
-         endif
+!$acc end kernels
+            if (iaer==10) then
+
+!$acc kernels    
+              do iplon = 1, colr
+                piplon = profi(iplon + cols - 1)
+                taua(iplon, 1:nlay, :) = gtauaer(piplon, 1:nlay, :)
+                asya(iplon, 1:nlay, :) = gasmaer(piplon, 1:nlay, :)
+                omga(iplon, 1:nlay, :) = gssaaer(piplon, 1:nlay, :)
+              end do
+!$acc end kernels
+            end if
 
 
-! Call the 2-stream radiation transfer model
+! Copy the direct cloud optical properties over to the temp arrays
+! and then onto the GPU
+! We are on the CPU here
 
-         do i=1,nlayers+1
-            zbbcu(i) = 0._rb
-            zbbcd(i) = 0._rb
-            zbbfu(i) = 0._rb
-            zbbfd(i) = 0._rb
-            zbbcddir(i) = 0._rb
-            zbbfddir(i) = 0._rb
-            zuvcd(i) = 0._rb
-            zuvfd(i) = 0._rb
-            zuvcddir(i) = 0._rb
-            zuvfddir(i) = 0._rb
-            znicd(i) = 0._rb
-            znifd(i) = 0._rb
-            znicddir(i) = 0._rb
-            znifddir(i) = 0._rb
-         enddo
+!$acc kernels 
+            do iplon = 1, colr
+              piplon = profi(iplon + cols - 1)
+              tauc(iplon, 1:nlay, :) = gtauc(piplon, 1:nlay, :)
+              ssac(iplon, 1:nlay, :) = gssac(piplon, 1:nlay, :)
+              asmc(iplon, 1:nlay, :) = gasmc(piplon, 1:nlay, :)
+              fsfc(iplon, 1:nlay, :) = gfsfc(piplon, 1:nlay, :)
+            end do
+!$acc end kernels
 
-         call spcvmc_sw &
-             (nlayers, istart, iend, icpr, iout, &
-              pavel, tavel, pz, tz, tbound, albdif, albdir, &
-              zcldfmc, ztaucmc, zasycmc, zomgcmc, ztaormc, &
-              ztaua, zasya, zomga, cossza, coldry, wkl, adjflux, &	 
-              laytrop, layswtch, laylow, jp, jt, jt1, &
-              co2mult, colch4, colco2, colh2o, colmol, coln2o, colo2, colo3, &
-              fac00, fac01, fac10, fac11, &
-              selffac, selffrac, indself, forfac, forfrac, indfor, &
-              zbbfd, zbbfu, zbbcd, zbbcu, zuvfd, zuvcd, znifd, znicd, &
-              zbbfddir, zbbcddir, zuvfddir, zuvcddir, znifddir, znicddir)
+!$acc kernels
+            do iplon = 1, colr
+              piplon = profi(iplon + cols - 1)
+              wkl(iplon,1,:) = gh2ovmr(piplon,1:nlay)
+              wkl(iplon,2,:) = gco2vmr(piplon,1:nlay)
+              wkl(iplon,3,:) = go3vmr(piplon,1:nlay)
+              wkl(iplon,4,:) = gn2ovmr(piplon,1:nlay)
+              wkl(iplon,5,:) = 0.0
+              wkl(iplon,6,:) = gch4vmr(piplon,1:nlay)
+              wkl(iplon,7,:) = go2vmr(piplon,1:nlay)  
+              coszen(iplon)  = gcoszen(piplon)
+            end do
+!$acc end kernels
+          end if
 
+!$acc kernels
+          cossza = max(zepzen,coszen)
+!$acc end kernels  
+
+!$acc kernels
+          do iplon = 1,colr
+            do l = 1,nlay
+              coldry(iplon, l) = (plev(iplon, l)-plev(iplon, l+1)) * 1.e3  * avogad / &
+                 (1.e2  * grav * ((1.  - wkl(iplon, 1,l)) * amd + wkl(iplon, 1,l) * amw) * &
+                 (1.  + wkl(iplon, 1,l)))
+            end do
+          end do
+!$acc end kernels
+
+!$acc kernels
+          do iplon = 1,colr
+            do l = 1,nlay
+              do imol = 1, nmol
+                wkl(iplon,imol,l) = coldry(iplon,l) * wkl(iplon,imol,l)
+              end do
+            end do
+          end do
+!$acc end kernels
+
+          if (cc==2) then
+            call mcica_sw(colr, nlay, 112, icld, irng, play, &
+                          cld, ciwp, clwp, cswp, tauc, ssac, asmc, fsfc, &
+                          cldfmcl, ciwpmcl, clwpmcl, cswpmcl, &
+                          taucmc, ssacmc, asmcmc, fsfcmc, 1 ) 
+! mji - inactive for icld=4 option
+!                          zref, zrefo, zrefd, zbbfu, &
+!                          zm, alat, &
+!                          dyofyr, rdl, adl)
+          end if   
+
+          if (cc==2) then
+            call cldprmc_sw(colr, nlay, inflgsw, iceflgsw, liqflgsw,  &
+                            cldfmcl, ciwpmcl, clwpmcl, cswpmcl, rei, rel, res, &
+                            taormc, taucmc, ssacmc, asmcmc, fsfcmc)
+          end if
+
+          call setcoef_sw(colr, nlay, play , tlay , plev , tlev , tsfc , &
+                          coldry , wkl , &
+                          laytrop, layswtch, laylow, jp , jt , jt1 , &
+                          co2mult , colch4 , colco2 , colh2o , colmol , coln2o , &
+                          colo2 , colo3 , fac00 , fac01 , fac10 , fac11 , &
+                          selffac , selffrac , indself , forfac , forfrac , indfor )
+
+          call spcvmc_sw(cc, ncol, colr, nlay, istart, iend, icpr, idelm, iout, &
+                         play, tlay, plev, tlev, &
+                         tsfc, albdif, albdir, &
+                         cldfmcl, taucmc, asmcmc, ssacmc, taormc, &
+                         taua, asya, omga, cossza, coldry, adjflux, &	 
+                         laytrop, layswtch, laylow, jp, jt, jt1, &
+                         co2mult, colch4, colco2, colh2o, colmol, &
+                         coln2o, colo2, colo3, &
+                         fac00, fac01, fac10, fac11, &
+                         selffac, selffrac, indself, forfac, forfrac, indfor, &
+                         zbbfd, zbbfu, zbbcd, zbbcu, zuvfd, &
+                         zuvcd, znifd, znicd, &
+                         zbbfddir, zbbcddir, zuvfddir, zuvcddir, znifddir, znicddir,&
+                         zgco,zomco,zrdnd,zref,zrefo,zrefd,zrefdo,ztauo,zdbt,ztdbt,&
+                         ztra,ztrao,ztrad,ztrado,zfd,zfu,ztaug, ztaur, zsflxzen)
+! For GSFC, not needed for WRF
+!                         znirr,znirf,zparr,zparf,zuvrr,zuvrf)
+
+   
 ! Transfer up and down, clear and total sky fluxes to output arrays.
 ! Vertical indexing goes from bottom to top; reverse here for GCM if necessary.
 
-         do i = 1, nlayers+1
-            swuflxc(iplon,i) = zbbcu(i)
-            swdflxc(iplon,i) = zbbcd(i)
-            swuflx(iplon,i) = zbbfu(i)
-            swdflx(iplon,i) = zbbfd(i)
-            uvdflx(i) = zuvfd(i)
-            nidflx(i) = znifd(i)
+          if (cc==1) then
+!$acc kernels loop independent
+            do iplon = 1, colr
+              piplon = profic(iplon + cols - 1)
+        
+              do i = 1, nlay+1
+                swuflxc(piplon,i) = zbbcu(iplon,i) 
+                swdflxc(piplon,i) = zbbcd(iplon,i) 
+                swuflx(piplon,i) = zbbfu(iplon,i) 
+                swdflx(piplon,i) = zbbfd(iplon,i) 
 
-!  Direct/diffuse fluxes
-            dirdflux(i) = zbbfddir(i)
-            difdflux(i) = swdflx(iplon,i) - dirdflux(i)
-            swdkdir(iplon,i) = dirdflux(i) ! all-sky direct flux   jararias, 2013/08/10
-            swdkdif(iplon,i) = difdflux(i) ! all-sky diffuse flux  jararias, 2013/08/10
-
-!  UV/visible direct/diffuse fluxes
-            dirdnuv(i) = zuvfddir(i)
-            difdnuv(i) = zuvfd(i) - dirdnuv(i)
-!  ------- Zhenxin add vis/uv downwards dir or dif here --!
-            sibvisdir(iplon,i) = dirdnuv(i)
-            sibvisdif(iplon,i) = difdnuv(i)
-!  ----- End of Zhenxin addition  ------------!
-!  Near-IR direct/diffuse fluxes
-            dirdnir(i) = znifddir(i)
-            difdnir(i) = znifd(i) - dirdnir(i)
-!  ---------Zhenxin add nir downwards dir and dif here --!
-            sibnirdir(iplon,i) = dirdnir(i)
-            sibnirdif(iplon,i) = difdnir(i)
-!  --------    End of Zhenxin addition 2011-05  ---------!
-         enddo
+!  All-sky downwward direct and diffuse fluxes
+                swdkdir(piplon,i) = zbbfddir(iplon,i)
+                swdkdif(piplon,i) = zbbfd(iplon,i) - zbbfddir(iplon,i)
+!  UV/visible downward direct/diffuse fluxes
+                sibvisdir(piplon,i) = zuvfddir(iplon,i)
+                sibvisdif(piplon,i) = zuvfd(iplon,i) - zuvfddir(iplon,i)
+!  Near-IR downward direct/diffuse fluxes
+                sibnirdir(piplon,i) = znifddir(iplon,i)
+                sibnirdif(piplon,i) = znifd(iplon,i) - znifddir(iplon,i)
+              enddo
 
 !  Total and clear sky net fluxes
-         do i = 1, nlayers+1
-            swnflxc(i) = swdflxc(iplon,i) - swuflxc(iplon,i)
-            swnflx(i) = swdflx(iplon,i) - swuflx(iplon,i)
-         enddo
+
+              do i = 1, nlay+1
+                swnflxc(iplon,i)  = swdflxc(piplon,i) - swuflxc(piplon,i)
+                swnflx(iplon,i)  = swdflx(piplon,i) - swuflx(piplon,i)
+              enddo
 
 !  Total and clear sky heating rates
-         do i = 1, nlayers
-            zdpgcp = heatfac / pdp(i)
-            swhrc(iplon,i) = (swnflxc(i+1) - swnflxc(i)) * zdpgcp
-            swhr(iplon,i) = (swnflx(i+1) - swnflx(i)) * zdpgcp
-         enddo
-         swhrc(iplon,nlayers) = 0._rb
-         swhr(iplon,nlayers) = 0._rb
 
+              do i = 1, nlay
+                zdpgcp = heatfac / (plev(iplon, i) - plev(iplon, i+1))
+                swhrc(piplon,i) = (swnflxc(iplon,i+1)  - swnflxc(iplon,i) ) * zdpgcp
+                swhr(piplon,i) = (swnflx(iplon,i+1)  - swnflx(iplon,i) ) * zdpgcp
+              enddo
+              swhrc(piplon,nlay) = 0. 
+              swhr(piplon,nlay) = 0. 
+       
 ! End longitude loop
-      enddo
+            enddo
+!$acc end kernels 
 
-      end subroutine rrtmg_sw
+!! !$acc kernels loop independent
+!            do iplon = 1, colr
+!              piplon = profic(iplon + cols - 1)
+!              nirr(piplon) = znirr(iplon)
+!              nirf(piplon) = znirf(iplon) - znirr(iplon)
+!              parr(piplon) = zparr(iplon)
+!              parf(piplon) = zparf(iplon) - zparr(iplon)
+!              uvrr(piplon) = zuvrr(iplon)
+!              uvrf(piplon) = zuvrf(iplon) - zuvrr(iplon)
+!            end do
+!! !$acc end kernels 
+
+          else
+!$acc kernels loop independent
+            do iplon = 1, colr
+              piplon = profi(iplon + cols - 1)
+
+              do i = 1, nlay+1
+                swuflxc(piplon,i) = zbbcu(iplon,i) 
+                swdflxc(piplon,i) = zbbcd(iplon,i) 
+                swuflx(piplon,i) = zbbfu(iplon,i) 
+                swdflx(piplon,i) = zbbfd(iplon,i) 
+
+!  All-sky downwward direct and diffuse fluxes
+                swdkdir(piplon,i) = zbbfddir(iplon,i)
+                swdkdif(piplon,i) = zbbfd(iplon,i) - zbbfddir(iplon,i)
+!  UV/visible downward direct/diffuse fluxes
+                sibvisdir(piplon,i) = zuvfddir(iplon,i)
+                sibvisdif(piplon,i) = zuvfd(iplon,i) - zuvfddir(iplon,i)
+!  Near-IR downward direct/diffuse fluxes
+                sibnirdir(piplon,i) = znifddir(iplon,i)
+                sibnirdif(piplon,i) = znifd(iplon,i) - znifddir(iplon,i)
+              enddo
+
+!  Total and clear sky net fluxes
+
+              do i = 1, nlay+1
+                swnflxc(iplon,i)  = swdflxc(piplon,i) - swuflxc(piplon,i)
+                swnflx(iplon,i)  = swdflx(piplon,i) - swuflx(piplon,i)
+              enddo
+
+!  Total and clear sky heating rates
+
+              do i = 1, nlay
+                zdpgcp = heatfac / (plev(iplon, i) - plev(iplon, i+1))
+                swhrc(piplon,i) = (swnflxc(iplon,i+1)  - swnflxc(iplon,i) ) * zdpgcp
+                swhr(piplon,i) = (swnflx(iplon,i+1)  - swnflx(iplon,i) ) * zdpgcp
+              enddo
+              swhrc(piplon,nlay) = 0. 
+              swhr(piplon,nlay) = 0. 
+         
+! End longitude loop
+            enddo
+!$acc end kernels 
+
+!! !$acc kernels loop independent
+!            do iplon = 1, colr
+!              piplon = profi(iplon + cols - 1)
+!              nirr(piplon) = znirr(iplon)
+!              nirf(piplon) = znirf(iplon) - znirr(iplon)
+!              parr(piplon) = zparr(iplon)
+!              parf(piplon) = zparf(iplon) - zparr(iplon)
+!              uvrr(piplon) = zuvrr(iplon)
+!              uvrf(piplon) = zuvrf(iplon) - zuvrr(iplon)
+!            end do
+!! !$acc end kernels 
+
+          end if
+
+! End partition loops
+        end do
+        
+      end do
+
+! For GSFC, not needed for WRF
+!! If the user requested 'normalized' fluxes, then here we
+!! divide the fluxes by the solar constant divided by coszen
+!
+!      if (normFlx==1) then
+!! !$acc kernels
+!        do k = 1, nlay+1
+!          swuflxc(:,k)=swuflxc(:,k)/(scon*max(zepzen,gcoszen(:)))
+!          swdflxc(:,k)=swdflxc(:,k)/(scon*max(zepzen,gcoszen(:)))
+!          swuflx(:,k)=swuflx(:,k)/(scon*max(zepzen,gcoszen(:)))
+!          swdflx(:,k)=swdflx(:,k)/(scon*max(zepzen,gcoszen(:)))
+!        end do
+!        nirr(:)=nirr(:)/(scon*max(zepzen,gcoszen(:)))
+!        nirf(:)=nirf(:)/(scon*max(zepzen,gcoszen(:)))
+!        parr(:)=parr(:)/(scon*max(zepzen,gcoszen(:)))
+!        parf(:)=parf(:)/(scon*max(zepzen,gcoszen(:)))
+!        uvrr(:)=uvrr(:)/(scon*max(zepzen,gcoszen(:)))
+!        uvrf(:)=uvrf(:)/(scon*max(zepzen,gcoszen(:)))
+!! !$acc end kernels
+!      end if
+
+! end of data statement for xcw with icld==4
+!! !$acc end data
+
+!$acc end data
+
+      end subroutine rrtmg_sw_sub
 
 !*************************************************************************
-      real(kind=rb) function earth_sun(idn)
+      real  function earth_sun(idn)
 !*************************************************************************
 !
 !  Purpose: Function to calculate the correction factor of Earth's orbit
@@ -9421,397 +10712,41 @@
 
       use rrsw_con, only : pi
 
-      integer(kind=im), intent(in) :: idn
+      integer , intent(in) :: idn
 
-      real(kind=rb) :: gamma
+      real  :: gamma
 
-      gamma = 2._rb*pi*(idn-1)/365._rb
+      gamma = 2. *pi*(idn-1)/365. 
 
 ! Use Iqbal's equation 1.2.1
 
-      earth_sun = 1.000110_rb + .034221_rb * cos(gamma) + .001289_rb * sin(gamma) + &
-                   .000719_rb * cos(2._rb*gamma) + .000077_rb * sin(2._rb*gamma)
+      earth_sun = 1.000110  + .034221  * cos(gamma) + .001289  * sin(gamma) + &
+                   .000719  * cos(2. *gamma) + .000077  * sin(2. *gamma)
 
       end function earth_sun
-
-!***************************************************************************
-      subroutine inatm_sw (iplon, nlay, icld, iaer, &
-            play, plev, tlay, tlev, tsfc, h2ovmr, &
-            o3vmr, co2vmr, ch4vmr, n2ovmr, o2vmr, &
-            adjes, dyofyr, scon, inflgsw, iceflgsw, liqflgsw, &
-            cldfmcl, taucmcl, ssacmcl, asmcmcl, fsfcmcl, ciwpmcl, clwpmcl, cswpmcl, &
-            reicmcl, relqmcl, resnmcl, tauaer, ssaaer, asmaer, &
-            nlayers, pavel, pz, pdp, tavel, tz, tbound, coldry, wkl, &
-            adjflux, solvar, inflag, iceflag, liqflag, cldfmc, taucmc, &
-            ssacmc, asmcmc, fsfcmc, ciwpmc, clwpmc, cswpmc, reicmc, relqmc, resnmc, &
-            taua, ssaa, asma)                                       
-!***************************************************************************
-!
-!  Input atmospheric profile from GCM, and prepare it for use in RRTMG_SW.
-!  Set other RRTMG_SW input parameters.  
-!
-!***************************************************************************
-
-! --------- Modules ----------
-
-      use parrrsw, only : nbndsw, ngptsw, nstr, nmol, mxmol, &
-                          jpband, jpb1, jpb2, rrsw_scon
-      use rrsw_con, only : heatfac, oneminus, pi, grav, avogad
-      use rrsw_wvn, only : ng, nspa, nspb, wavenum1, wavenum2, delwave
-
-! ------- Declarations -------
-
-! ----- Input -----
-      integer(kind=im), intent(in) :: iplon           ! column loop index
-      integer(kind=im), intent(in) :: nlay            ! number of model layers
-      integer(kind=im), intent(in) :: icld            ! clear/cloud and cloud overlap flag
-      integer(kind=im), intent(in) :: iaer            ! aerosol option flag
-
-      real(kind=rb), intent(in) :: play(:,:)          ! Layer pressures (hPa, mb)
-                                                      ! Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: plev(:,:)          ! Interface pressures (hPa, mb)
-                                                      ! Dimensions: (ncol,nlay+1)
-      real(kind=rb), intent(in) :: tlay(:,:)          ! Layer temperatures (K)
-                                                      ! Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: tlev(:,:)          ! Interface temperatures (K)
-                                                      ! Dimensions: (ncol,nlay+1)
-      real(kind=rb), intent(in) :: tsfc(:)            ! Surface temperature (K)
-                                                      ! Dimensions: (ncol)
-      real(kind=rb), intent(in) :: h2ovmr(:,:)        ! H2O volume mixing ratio
-                                                      ! Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: o3vmr(:,:)         ! O3 volume mixing ratio
-                                                      ! Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: co2vmr(:,:)        ! CO2 volume mixing ratio
-                                                      ! Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: ch4vmr(:,:)        ! Methane volume mixing ratio
-                                                      ! Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: n2ovmr(:,:)        ! Nitrous oxide volume mixing ratio
-                                                      ! Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: o2vmr(:,:)         ! Oxygen volume mixing ratio
-                                                      ! Dimensions: (ncol,nlay)
-
-      integer(kind=im), intent(in) :: dyofyr          ! Day of the year (used to get Earth/Sun
-                                                      !  distance if adjflx not provided)
-      real(kind=rb), intent(in) :: adjes              ! Flux adjustment for Earth/Sun distance
-      real(kind=rb), intent(in) :: scon               ! Solar constant (W/m2)
-
-      integer(kind=im), intent(in) :: inflgsw         ! Flag for cloud optical properties
-      integer(kind=im), intent(in) :: iceflgsw        ! Flag for ice particle specification
-      integer(kind=im), intent(in) :: liqflgsw        ! Flag for liquid droplet specification
-
-      real(kind=rb), intent(in) :: cldfmcl(:,:,:)     ! Cloud fraction
-                                                      ! Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(in) :: taucmcl(:,:,:)     ! In-cloud optical depth (optional)
-                                                      ! Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(in) :: ssacmcl(:,:,:)     ! In-cloud single scattering albedo
-                                                      ! Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(in) :: asmcmcl(:,:,:)     ! In-cloud asymmetry parameter
-                                                      ! Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(in) :: fsfcmcl(:,:,:)     ! In-cloud forward scattering fraction
-                                                      ! Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(in) :: ciwpmcl(:,:,:)     ! In-cloud ice water path (g/m2)
-                                                      ! Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(in) :: clwpmcl(:,:,:)     ! In-cloud liquid water path (g/m2)
-                                                      ! Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(in) :: cswpmcl(:,:,:)     ! In-cloud snow water path (g/m2)
-                                                      ! Dimensions: (ngptsw,ncol,nlay)
-      real(kind=rb), intent(in) :: reicmcl(:,:)       ! Cloud ice effective size (microns)
-                                                      ! Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: relqmcl(:,:)       ! Cloud water drop effective radius (microns)
-                                                      ! Dimensions: (ncol,nlay)
-      real(kind=rb), intent(in) :: resnmcl(:,:)       ! Cloud snow effective radius (microns)
-                                                      ! Dimensions: (ncol,nlay)
-
-      real(kind=rb), intent(in) :: tauaer(:,:,:)      ! Aerosol optical depth
-                                                      ! Dimensions: (ncol,nlay,nbndsw)
-      real(kind=rb), intent(in) :: ssaaer(:,:,:)      ! Aerosol single scattering albedo
-                                                      ! Dimensions: (ncol,nlay,nbndsw)
-      real(kind=rb), intent(in) :: asmaer(:,:,:)      ! Aerosol asymmetry parameter
-                                                      ! Dimensions: (ncol,nlay,nbndsw)
-
-! Atmosphere
-      integer(kind=im), intent(out) :: nlayers        ! number of layers
-
-      real(kind=rb), intent(out) :: pavel(:)          ! layer pressures (mb) 
-                                                      ! Dimensions: (nlay)
-      real(kind=rb), intent(out) :: tavel(:)          ! layer temperatures (K)
-                                                      ! Dimensions: (nlay)
-      real(kind=rb), intent(out) :: pz(0:)            ! level (interface) pressures (hPa, mb)
-                                                      ! Dimensions: (0:nlay)
-      real(kind=rb), intent(out) :: tz(0:)            ! level (interface) temperatures (K)
-                                                      ! Dimensions: (0:nlay)
-      real(kind=rb), intent(out) :: tbound            ! surface temperature (K)
-      real(kind=rb), intent(out) :: pdp(:)            ! layer pressure thickness (hPa, mb)
-                                                      ! Dimensions: (nlay)
-      real(kind=rb), intent(out) :: coldry(:)         ! dry air column density (mol/cm2)
-                                                      ! Dimensions: (nlay)
-      real(kind=rb), intent(out) :: wkl(:,:)          ! molecular amounts (mol/cm-2)
-                                                      ! Dimensions: (mxmol,nlay)
-
-      real(kind=rb), intent(out) :: adjflux(:)        ! adjustment for current Earth/Sun distance
-                                                      ! Dimensions: (jpband)
-      real(kind=rb), intent(out) :: solvar(:)         ! solar constant scaling factor from rrtmg_sw
-                                                      ! Dimensions: (jpband)
-                                                      !  default value of 1368.22 Wm-2 at 1 AU
-      real(kind=rb), intent(out) :: taua(:,:)         ! Aerosol optical depth
-                                                      ! Dimensions: (nlay,nbndsw)
-      real(kind=rb), intent(out) :: ssaa(:,:)         ! Aerosol single scattering albedo
-                                                      ! Dimensions: (nlay,nbndsw)
-      real(kind=rb), intent(out) :: asma(:,:)         ! Aerosol asymmetry parameter
-                                                      ! Dimensions: (nlay,nbndsw)
-
-! Atmosphere/clouds - cldprop
-      integer(kind=im), intent(out) :: inflag         ! flag for cloud property method
-      integer(kind=im), intent(out) :: iceflag        ! flag for ice cloud properties
-      integer(kind=im), intent(out) :: liqflag        ! flag for liquid cloud properties
-
-      real(kind=rb), intent(out) :: cldfmc(:,:)       ! layer cloud fraction
-                                                      ! Dimensions: (ngptsw,nlay)
-      real(kind=rb), intent(out) :: taucmc(:,:)       ! in-cloud optical depth (non-delta scaled)
-                                                      ! Dimensions: (ngptsw,nlay)
-      real(kind=rb), intent(out) :: ssacmc(:,:)       ! in-cloud single scattering albedo (non-delta-scaled)
-                                                      ! Dimensions: (ngptsw,nlay)
-      real(kind=rb), intent(out) :: asmcmc(:,:)       ! in-cloud asymmetry parameter (non-delta scaled)
-                                                      ! Dimensions: (ngptsw,nlay)
-      real(kind=rb), intent(out) :: fsfcmc(:,:)       ! in-cloud forward scattering fraction (non-delta scaled)
-                                                      ! Dimensions: (ngptsw,nlay)
-      real(kind=rb), intent(out) :: ciwpmc(:,:)       ! in-cloud ice water path
-                                                      ! Dimensions: (ngptsw,nlay)
-      real(kind=rb), intent(out) :: clwpmc(:,:)       ! in-cloud liquid water path
-                                                      ! Dimensions: (ngptsw,nlay)
-      real(kind=rb), intent(out) :: cswpmc(:,:)       ! in-cloud snow path
-                                                      ! Dimensions: (ngptsw,nlay)
-      real(kind=rb), intent(out) :: relqmc(:)         ! liquid particle effective radius (microns)
-                                                      ! Dimensions: (nlay)
-      real(kind=rb), intent(out) :: reicmc(:)         ! ice particle effective size (microns)
-                                                      ! Dimensions: (nlay)
-      real(kind=rb), intent(out) :: resnmc(:)         ! snow particle effective size (microns)
-                                                      ! Dimensions: (nlay)
-
-! ----- Local -----
-      real(kind=rb), parameter :: amd = 28.9660_rb    ! Effective molecular weight of dry air (g/mol)
-      real(kind=rb), parameter :: amw = 18.0160_rb    ! Molecular weight of water vapor (g/mol)
-!      real(kind=rb), parameter :: amc = 44.0098_rb   ! Molecular weight of carbon dioxide (g/mol)
-!      real(kind=rb), parameter :: amo = 47.9998_rb   ! Molecular weight of ozone (g/mol)
-!      real(kind=rb), parameter :: amo2 = 31.9999_rb  ! Molecular weight of oxygen (g/mol)
-!      real(kind=rb), parameter :: amch4 = 16.0430_rb ! Molecular weight of methane (g/mol)
-!      real(kind=rb), parameter :: amn2o = 44.0128_rb ! Molecular weight of nitrous oxide (g/mol)
-
-! Set molecular weight ratios (for converting mmr to vmr)
-!  e.g. h2ovmr = h2ommr * amdw)
-      real(kind=rb), parameter :: amdw = 1.607793_rb  ! Molecular weight of dry air / water vapor
-      real(kind=rb), parameter :: amdc = 0.658114_rb  ! Molecular weight of dry air / carbon dioxide
-      real(kind=rb), parameter :: amdo = 0.603428_rb  ! Molecular weight of dry air / ozone
-      real(kind=rb), parameter :: amdm = 1.805423_rb  ! Molecular weight of dry air / methane
-      real(kind=rb), parameter :: amdn = 0.658090_rb  ! Molecular weight of dry air / nitrous oxide
-      real(kind=rb), parameter :: amdo2 = 0.905140_rb ! Molecular weight of dry air / oxygen
-
-      real(kind=rb), parameter :: sbc = 5.67e-08_rb   ! Stefan-Boltzmann constant (W/m2K4)
-
-      integer(kind=im) :: isp, l, ix, n, imol, ib, ig   ! Loop indices
-      real(kind=rb) :: amm, summol                      ! 
-      real(kind=rb) :: adjflx                           ! flux adjustment for Earth/Sun distance
-!      real(kind=rb) :: earth_sun                        ! function for Earth/Sun distance adjustment
-
-      nlayers = nlay
-
-!  Initialize all molecular amounts to zero here, then pass input amounts
-!  into RRTM array WKL below.
-
-       wkl(:,:) = 0.0_rb
-       cldfmc(:,:) = 0.0_rb
-       taucmc(:,:) = 0.0_rb
-       ssacmc(:,:) = 1.0_rb
-       asmcmc(:,:) = 0.0_rb
-       fsfcmc(:,:) = 0.0_rb
-       ciwpmc(:,:) = 0.0_rb
-       clwpmc(:,:) = 0.0_rb
-       cswpmc(:,:) = 0.0_rb
-       reicmc(:) = 0.0_rb
-       relqmc(:) = 0.0_rb
-       resnmc(:) = 0.0_rb
-       taua(:,:) = 0.0_rb
-       ssaa(:,:) = 1.0_rb
-       asma(:,:) = 0.0_rb
- 
-! Set flux adjustment for current Earth/Sun distance (two options).
-! 1) Use Earth/Sun distance flux adjustment provided by GCM (input as adjes);
-      adjflx = adjes
-!
-! 2) Calculate Earth/Sun distance from DYOFYR, the cumulative day of the year.
-!    (Set adjflx to 1. to use constant Earth/Sun distance of 1 AU). 
-      if (dyofyr .gt. 0) then
-         adjflx = earth_sun(dyofyr)
-      endif
-
-! Set incoming solar flux adjustment to include adjustment for
-! current Earth/Sun distance (ADJFLX) and scaling of default internal
-! solar constant (rrsw_scon = 1368.22 Wm-2) by band (SOLVAR).  SOLVAR can be set 
-! to a single scaling factor as needed, or to a different value in each 
-! band, which may be necessary for paleoclimate simulations. 
-! 
-      do ib = jpb1,jpb2
-!         solvar(ib) = 1._rb
-         solvar(ib) = scon / rrsw_scon 
-         adjflux(ib) = adjflx * solvar(ib)
-      enddo
-
-!  Set surface temperature.
-      tbound = tsfc(iplon)
-
-!  Install input GCM arrays into RRTMG_SW arrays for pressure, temperature,
-!  and molecular amounts.  
-!  Pressures are input in mb, or are converted to mb here.
-!  Molecular amounts are input in volume mixing ratio, or are converted from 
-!  mass mixing ratio (or specific humidity for h2o) to volume mixing ratio
-!  here. These are then converted to molecular amount (molec/cm2) below.  
-!  The dry air column COLDRY (in molec/cm2) is calculated from the level 
-!  pressures, pz (in mb), based on the hydrostatic equation and includes a 
-!  correction to account for h2o in the layer.  The molecular weight of moist 
-!  air (amm) is calculated for each layer.  
-!  Note: In RRTMG, layer indexing goes from bottom to top, and coding below
-!  assumes GCM input fields are also bottom to top. Input layer indexing
-!  from GCM fields should be reversed here if necessary.
-
-      pz(0) = plev(iplon,1)
-      tz(0) = tlev(iplon,1)
-      do l = 1, nlayers
-         pavel(l) = play(iplon,l)
-         tavel(l) = tlay(iplon,l)
-         pz(l) = plev(iplon,l+1)
-         tz(l) = tlev(iplon,l+1)
-         pdp(l) = pz(l-1) - pz(l)
-! For h2o input in vmr:
-         wkl(1,l) = h2ovmr(iplon,l)
-! For h2o input in mmr:
-!         wkl(1,l) = h2o(iplon,l)*amdw
-! For h2o input in specific humidity;
-!         wkl(1,l) = (h2o(iplon,l)/(1._rb - h2o(iplon,l)))*amdw
-         wkl(2,l) = co2vmr(iplon,l)
-         wkl(3,l) = o3vmr(iplon,l)
-         wkl(4,l) = n2ovmr(iplon,l)
-         wkl(6,l) = ch4vmr(iplon,l)
-         wkl(7,l) = o2vmr(iplon,l)
-         amm = (1._rb - wkl(1,l)) * amd + wkl(1,l) * amw            
-         coldry(l) = (pz(l-1)-pz(l)) * 1.e3_rb * avogad / &
-                     (1.e2_rb * grav * amm * (1._rb + wkl(1,l)))
-      enddo
-
-! The following section can be used to set values for an additional layer (from
-! the GCM top level to 1.e-4 mb) for improved calculation of TOA fluxes. 
-! Temperature and molecular amounts in the extra model layer are set to 
-! their values in the top GCM model layer, though these can be modified
-! here if necessary. 
-! If this feature is utilized, increase nlayers by one above, limit the two
-! loops above to (nlayers-1), and set the top most (nlayers) layer values here. 
-
-!      pavel(nlayers) = 0.5_rb * pz(nlayers-1)
-!      tavel(nlayers) = tavel(nlayers-1)
-!      pz(nlayers) = 1.e-4_rb
-!      tz(nlayers-1) = 0.5_rb * (tavel(nlayers)+tavel(nlayers-1))
-!      tz(nlayers) = tz(nlayers-1)
-!      pdp(nlayers) = pz(nlayers-1) - pz(nlayers)
-!      wkl(1,nlayers) = wkl(1,nlayers-1)
-!      wkl(2,nlayers) = wkl(2,nlayers-1)
-!      wkl(3,nlayers) = wkl(3,nlayers-1)
-!      wkl(4,nlayers) = wkl(4,nlayers-1)
-!      wkl(6,nlayers) = wkl(6,nlayers-1)
-!      wkl(7,nlayers) = wkl(7,nlayers-1)
-!      amm = (1._rb - wkl(1,nlayers-1)) * amd + wkl(1,nlayers-1) * amw
-!      coldry(nlayers) = (pz(nlayers-1)) * 1.e3_rb * avogad / &
-!                        (1.e2_rb * grav * amm * (1._rb + wkl(1,nlayers-1)))
-
-! At this point all molecular amounts in wkl are in volume mixing ratio; 
-! convert to molec/cm2 based on coldry for use in rrtm.  
-
-      do l = 1, nlayers
-         do imol = 1, nmol
-            wkl(imol,l) = coldry(l) * wkl(imol,l)
-         enddo
-      enddo
-
-! Transfer aerosol optical properties to RRTM variables;
-! modify to reverse layer indexing here if necessary.
-
-      if (iaer .ge. 1) then 
-         do l = 1, nlayers
-            do ib = 1, nbndsw
-               taua(l,ib) = tauaer(iplon,l,ib)
-               ssaa(l,ib) = ssaaer(iplon,l,ib)
-               asma(l,ib) = asmaer(iplon,l,ib)
-            enddo
-         enddo
-      endif
-
-! Transfer cloud fraction and cloud optical properties to RRTM variables;
-! modify to reverse layer indexing here if necessary.
-
-      if (icld .ge. 1) then 
-         inflag = inflgsw
-         iceflag = iceflgsw
-         liqflag = liqflgsw
-
-! Move incoming GCM cloud arrays to RRTMG cloud arrays.
-! For GCM input, incoming reicmcl is defined based on selected ice parameterization (inflgsw)
-
-         do l = 1, nlayers
-            do ig = 1, ngptsw
-               cldfmc(ig,l) = cldfmcl(ig,iplon,l)
-               taucmc(ig,l) = taucmcl(ig,iplon,l)
-               ssacmc(ig,l) = ssacmcl(ig,iplon,l)
-               asmcmc(ig,l) = asmcmcl(ig,iplon,l)
-               fsfcmc(ig,l) = fsfcmcl(ig,iplon,l)
-               ciwpmc(ig,l) = ciwpmcl(ig,iplon,l)
-               clwpmc(ig,l) = clwpmcl(ig,iplon,l)
-               if (iceflag.eq.5) then
-                  cswpmc(ig,l)=cswpmcl(ig,iplon,l)
-               endif 
-            enddo
-            reicmc(l) = reicmcl(iplon,l)
-            relqmc(l) = relqmcl(iplon,l)
-            if (iceflag.eq.5) then
-               resnmc(l) = resnmcl(iplon,l)
-            endif 
-         enddo
-
-! If an extra layer is being used in RRTMG, set all cloud properties to zero in the extra layer.
-
-!         cldfmc(:,nlayers) = 0.0_rb
-!         taucmc(:,nlayers) = 0.0_rb
-!         ssacmc(:,nlayers) = 1.0_rb
-!         asmcmc(:,nlayers) = 0.0_rb
-!         fsfcmc(:,nlayers) = 0.0_rb
-!         ciwpmc(:,nlayers) = 0.0_rb
-!         clwpmc(:,nlayers) = 0.0_rb
-!         reicmc(nlayers) = 0.0_rb
-!         relqmc(nlayers) = 0.0_rb
-      
-      endif
-
-      end subroutine inatm_sw
 
       end module rrtmg_sw_rad
 
 !------------------------------------------------------------------
-MODULE module_ra_rrtmg_sw
+      MODULE module_ra_rrtmg_sw
 
-use module_model_constants, only : cp
-USE module_wrf_error
-!USE module_dm
+      use module_model_constants, only : cp
+      USE module_wrf_error
+!     USE module_dm
 
-use parrrsw, only : nbndsw, ngptsw, naerec
-use rrtmg_sw_init, only: rrtmg_sw_ini
-use rrtmg_sw_rad, only: rrtmg_sw
-use mcica_subcol_gen_sw, only: mcica_subcol_sw
+      use parrrsw, only : nbndsw, ngptsw, naerec
+      use rrtmg_sw_init, only: rrtmg_sw_ini
+      use rrtmg_sw_rad, only: rrtmg_sw
+!      use mcica_subcol_gen_sw, only: mcica_subcol_sw
 
-use module_ra_rrtmg_lw, only : inirad, o3data, relcalc, reicalc
+      use module_ra_rrtmg_lw, only : inirad, o3data, relcalc, reicalc
 !                               mcica_random_numbers, randomNumberSequence, &
 !                               new_RandomNumberSequence, getRandomReal
 
-CONTAINS
+      CONTAINS
 
 !------------------------------------------------------------------
-   SUBROUTINE RRTMG_SWRAD(                                        &
+      SUBROUTINE RRTMG_SWRAD(                                     &
                        rthratensw,                                &
                        swupt, swuptc, swdnt, swdntc,              &
                        swupb, swupbc, swdnb, swdnbc,              &
@@ -9855,7 +10790,7 @@ CONTAINS
                        xcoszen,julian                             & ! jararias 2013/08
                                                                   )
 !------------------------------------------------------------------
-   IMPLICIT NONE
+      IMPLICIT NONE
 !------------------------------------------------------------------
    LOGICAL, INTENT(IN )      ::        warm_rain
    LOGICAL, INTENT(IN )      ::   is_CAMMGMP_used ! Added for CAM5 RRTMG<->CAMMGMP
@@ -9897,14 +10832,14 @@ CONTAINS
                                                           ALBEDO
 !
 !!! -------------------  Zhenxin (2011-06/20) ------------------
-   REAL, DIMENSION( ims:ime, jms:jme )                         , &
+   REAL, DIMENSION( ims:ime, jms:jme )                          , &
          OPTIONAL                                               , &
          INTENT(IN)     ::                            ALSWVISDIR, &     ! ssib albedo of sw and lw
                                                       ALSWVISDIF, &
                                                       ALSWNIRDIR, &
                                                       ALSWNIRDIF
 
-   REAL, DIMENSION( ims:ime, jms:jme )                         , &
+   REAL, DIMENSION( ims:ime, jms:jme )                          , &
          OPTIONAL                                               , &
          INTENT(OUT)    ::                              SWVISDIR, &
                                                         SWVISDIF, &
@@ -9917,18 +10852,19 @@ CONTAINS
 
 ! ------------------------ jararias 2013/08/10 -----------------
    real, dimension(ims:ime,jms:jme), intent(out) :: &
-            swddir,  &  ! All-sky broadband surface direct horiz irradiance
-            swddni,  &  ! All-sky broadband surface direct normal irradiance
-            swddif      ! All-sky broadband surface diffuse irradiance
+         swddir,  &  ! All-sky broadband surface direct horiz irradiance
+         swddni,  &  ! All-sky broadband surface direct normal irradiance
+         swddif      ! All-sky broadband surface diffuse irradiance
    real, optional, intent(in) :: &
-            julian      ! julian day (1-366)
+         julian      ! julian day (1-366)
    real, dimension(ims:ime,jms:jme), optional, intent(in) :: &
-            xcoszen     ! cosine of the solar zenith angle
-  real, dimension(ims:ime,kms:kme,jms:jme,nbndsw), optional,      &
+         xcoszen     ! cosine of the solar zenith angle
+   real, dimension(ims:ime,kms:kme,jms:jme,nbndsw), optional,     &
         intent(in)                                :: tauaer3d_sw, &
                                                      ssaaer3d_sw, &
                                                      asyaer3d_sw
 ! ------------------------ jararias end snippet -----------------
+
 
    REAL, INTENT(IN  )   ::                                   R,G
 !
@@ -9964,11 +10900,11 @@ CONTAINS
                                                       F_RAIN_PHY
 
    LOGICAL, OPTIONAL, INTENT(IN)   ::                             &
-                                F_QV,F_QC,F_QR,F_QI,F_QS,F_QG,F_QNDROP
+                          F_QV,F_QC,F_QR,F_QI,F_QS,F_QG,F_QNDROP
 
 ! Optional
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme ), OPTIONAL ,       &
-         INTENT(IN    ) :: tauaer300,tauaer400,tauaer600,tauaer999, & ! czhao 
+       INTENT(IN    ) :: tauaer300,tauaer400,tauaer600,tauaer999, & ! czhao 
                                  gaer300,gaer400,gaer600,gaer999, & ! czhao 
                                  waer300,waer400,waer600,waer999    ! czhao 
 
@@ -9987,17 +10923,17 @@ CONTAINS
          INTENT(IN   ) :: aerod
    INTEGER, OPTIONAL, INTENT(IN ) :: aer_opt
 
-      !wavelength corresponding to wavenum1 and wavenum2 (cm-1)
-      real, save :: wavemin(nbndsw) ! Min wavelength (um) of 14 intervals
-      data wavemin /3.077,2.500,2.150,1.942,1.626,1.299, &
-      1.242,0.778,0.625,0.442,0.345,0.263,0.200,3.846/
-      real, save :: wavemax(nbndsw) ! Max wavelength (um) of interval
-      data wavemax/3.846,3.077,2.500,2.150,1.942,1.626, &
-      1.299,1.242,0.778,0.625,0.442,0.345,0.263,12.195/
-      real wavemid(nbndsw) ! Mid wavelength (um) of interval
-      real, parameter :: thresh=1.e-9
-      real ang,slope
-      character(len=200) :: msg
+!wavelength corresponding to wavenum1 and wavenum2 (cm-1)
+   real, save :: wavemin(nbndsw) ! Min wavelength (um) of 14 intervals
+   data wavemin /3.077,2.500,2.150,1.942,1.626,1.299, &
+   1.242,0.778,0.625,0.442,0.345,0.263,0.200,3.846/
+   real, save :: wavemax(nbndsw) ! Max wavelength (um) of interval
+   data wavemax/3.846,3.077,2.500,2.150,1.942,1.626, &
+   1.299,1.242,0.778,0.625,0.442,0.345,0.263,12.195/
+   real wavemid(nbndsw) ! Mid wavelength (um) of interval
+   real, parameter :: thresh=1.e-9
+   real ang,slope
+   character(len=200) :: msg
 
 ! Top of atmosphere and surface shortwave fluxes (W m-2)
    REAL, DIMENSION( ims:ime, jms:jme ),                           &
@@ -10028,19 +10964,20 @@ CONTAINS
                                                             QS1D, &
                                                             QG1D, &
                                                             O31D, &
-                                                          qndrop1d 
+                                                        qndrop1d 
 
 ! Added local arrays for RRTMG
     integer ::                                              ncol, &
                                                             nlay, &
                                                             icld, &
+                                                            iaer, &
                                                          inflgsw, &
                                                         iceflgsw, &
                                                         liqflgsw
 ! Dimension with extra layer from model top to TOA
-    real, dimension( 1, kts:kte+2 )  ::                     plev, &
+    real, dimension( (jte-jts+1)*(ite-its+1), kts:kte+2 )  ::                  plev, &
                                                             tlev
-    real, dimension( 1, kts:kte+1 )  ::                     play, &
+    real, dimension( (jte-jts+1)*(ite-its+1), kts:kte+1 )  ::                  play, &
                                                             tlay, &
                                                           h2ovmr, &
                                                            o3vmr, &
@@ -10051,41 +10988,42 @@ CONTAINS
     real, dimension( kts:kte+1 )  ::                       o3mmr
 ! Surface albedo (for UV/visible and near-IR spectral regions,
 ! and for direct and diffuse radiation)
-    real, dimension( 1 )  ::                               asdir, &
+    real, dimension( (jte-jts+1)*(ite-its+1) )  ::                            asdir, &
                                                            asdif, &
                                                            aldir, &
                                                            aldif
 ! Dimension with extra layer from model top to TOA, 
 ! though no clouds are allowed in extra layer
-    real, dimension( 1, kts:kte+1 )  ::                   clwpth, &
+    real, dimension( (jte-jts+1)*(ite-its+1), kts:kte+1 )  ::                clwpth, &
                                                           ciwpth, &
                                                           cswpth, &
                                                              rel, &
                                                              rei, &
                                                              res, &
-                                                         cldfrac, &
-                                                         relqmcl, &
-                                                         reicmcl, &
-                                                         resnmcl
-    real, dimension( nbndsw, 1, kts:kte+1 )  ::           taucld, &
+                                                         cldfrac
+!                                                         cldfrac, &
+!                                                         relqmcl, &
+!                                                         reicmcl, &
+!                                                         resnmcl
+    real, dimension( (jte-jts+1)*(ite-its+1), kts:kte+1, nbndsw )  ::        taucld, &
                                                           ssacld, &
                                                           asmcld, &
                                                           fsfcld
-    real, dimension( ngptsw, 1, kts:kte+1 )  ::          cldfmcl, &
-                                                         clwpmcl, &
-                                                         ciwpmcl, &
-                                                         cswpmcl, &
-                                                         taucmcl, &
-                                                         ssacmcl, &
-                                                         asmcmcl, &
-                                                         fsfcmcl
-    real, dimension( 1, kts:kte+1, nbndsw )  ::           tauaer, &
+!    real, dimension( ngptsw, (jte-jts+1)*(ite-its+1), kts:kte+1 )  ::       cldfmcl, &
+!                                                         clwpmcl, &
+!                                                         ciwpmcl, &
+!                                                         cswpmcl, &
+!                                                         taucmcl, &
+!                                                         ssacmcl, &
+!                                                         asmcmcl, &
+!                                                         fsfcmcl
+    real, dimension( (jte-jts+1)*(ite-its+1), kts:kte+1, nbndsw )  ::        tauaer, &
                                                           ssaaer, &
                                                           asmaer   
-    real, dimension( 1, kts:kte+1, naerec )  ::            ecaer
+    real, dimension( (jte-jts+1)*(ite-its+1), kts:kte+1, naerec )  ::         ecaer
 
 ! Output arrays contain extra layer from model top to TOA
-    real, dimension( 1, kts:kte+2 )  ::                   swuflx, &
+    real, dimension( (jte-jts+1)*(ite-its+1), kts:kte+2 )  ::                swuflx, &
                                                           swdflx, &
                                                          swuflxc, &
                                                          swdflxc, &
@@ -10094,20 +11032,20 @@ CONTAINS
                                                        sibnirdir, &
                                                        sibnirdif     ! Zhenxin 2011-06-20
 
-    real, dimension( 1, kts:kte+2 ) ::                   swdkdir, &  ! jararias, 2013/08/10
+    real, dimension( (jte-jts+1)*(ite-its+1), kts:kte+2 ) ::                swdkdir, &  ! jararias, 2013/08/10
                                                          swdkdif     ! jararias, 2013/08/10
 
-    real, dimension( 1, kts:kte+1 )  ::                     swhr, &
+    real, dimension( (jte-jts+1)*(ite-its+1), kts:kte+1 )  ::                  swhr, &
                                                            swhrc
 
-    real, dimension ( 1 ) ::                                tsfc, &
+    real, dimension ( (jte-jts+1)*(ite-its+1) ) ::                             tsfc, &
                                                               ps, &
                                                           coszen
     real ::                                                   ro, &
                                                               dz, &
                                                            adjes, &
                                                             scon, &  
-                                                  snow_mass_factor
+                                                snow_mass_factor
     integer ::                                            dyofyr
 
 ! Set trace gas volume mixing ratios, 2005 values, IPCC (2007)
@@ -10154,16 +11092,16 @@ CONTAINS
     data amdo2 / 0.905190 /
     
 !!
-    real, dimension(1, 1:kte-kts+1 )  :: pdel          ! Layer pressure thickness (mb)
+    real, dimension((jte-jts+1)*(ite-its+1), 1:kte-kts+1 )  :: pdel          ! Layer pressure thickness (mb)
 
-    real, dimension(1, 1:kte-kts+1) ::   cicewp, &     ! in-cloud cloud ice water path
-                                         cliqwp, &     ! in-cloud cloud liquid water path
-                                         csnowp, &     ! in-cloud snow water path
-                                          reliq, &     ! effective drop radius (microns)
-                                          reice        ! ice effective drop size (microns)
-    real, dimension(1, 1:kte-kts+1):: recloud1d, &
-                                        reice1d, &
-                                       resnow1d
+    real, dimension((jte-jts+1)*(ite-its+1), 1:kte-kts+1) ::   cicewp, &     ! in-cloud cloud ice water path
+                                            cliqwp, &     ! in-cloud cloud liquid water path
+                                            csnowp, &     ! in-cloud snow water path
+                                             reliq, &     ! effective drop radius (microns)
+                                             reice        ! ice effective drop size (microns)
+    real, dimension((jte-jts+1)*(ite-its+1), 1:kte-kts+1):: recloud1d, &
+                                           reice1d, &
+                                          resnow1d
     real :: gliqwp, gicewp, gsnowp, gravmks
 
 !
@@ -10174,9 +11112,11 @@ CONTAINS
     real :: coszrs                      ! Cosine of solar zenith angle for present latitude 
     logical :: dorrsw                   ! Flag to allow shortwave calculation
 
-    real, dimension (1) :: landfrac, landm, snowh, icefrac
+    real, dimension ((jte-jts+1)*(ite-its+1)) :: landfrac, landm, snowh, icefrac
 
     integer :: pcols, pver
+    integer :: icol
+    integer :: rpart
 
     REAL :: XT24, TLOCTM, HRANG, XXLAT
 
@@ -10184,6 +11124,11 @@ CONTAINS
     LOGICAL :: predicate
 
     REAL :: da, eot ! jararias, 14/08/2013
+
+    integer :: icnt
+
+! mji - write
+!    REAL, DIMENSION( ims:ime, jms:jme ) ::         SWDB, SWUT
 
 !------------------------------------------------------------------
 #if ( WRF_CHEM == 1 )
@@ -10207,22 +11152,38 @@ CONTAINS
       ENDIF
 #endif
 
+! Initial value of number of columns per partition; 
+! Use 2 for CPU; for GPU set to 0 here to allow selection
+! of appropriate value in rrtmg_sw
+#ifdef _CUDA
+      rpart = 0
+#else
+      rpart = 2
+#endif
+
+
 !-----CALCULATE SHORT WAVE RADIATION
 !                                                              
 ! All fields are ordered vertically from bottom to top
 ! Pressures are in mb
 
-     ! jararias, 14/08/2013
-     if (present(xcoszen)) then
+! jararias, 14/08/2013
+      if (present(xcoszen)) then
          call wrf_debug(100,'coszen from radiation driver')
-     end if
+      end if
 
+! Number of columns to process
+   ncol = (jte-jts+1)*(ite-its+1)
+
+   icnt = 0
 ! latitude loop
-  j_loop: do j = jts,jte
+   j_loop: do j = jts,jte
 
 ! longitude loop
-     i_loop: do i = its,ite
+      i_loop: do i = its,ite
 !
+         icol = i + (j-jts)*(ite-its+1)
+
 ! Do shortwave by default, deactivate below if sun below horizon
          dorrsw = .true.
 
@@ -10232,25 +11193,31 @@ CONTAINS
 ! units of minutes
 ! julian is in days
 ! radt is in minutes
-          ! jararias, 14/08/2013
-          if (present(xcoszen)) then
-             coszr(i,j)=xcoszen(i,j)
-             coszrs=xcoszen(i,j)
-          else
+! jararias, 14/08/2013
+         if (present(xcoszen)) then
+            coszr(i,j)=xcoszen(i,j)
+            coszrs=xcoszen(i,j)
+         else
 !            da=6.2831853071795862*(julian-1)/365.
 !            eot=(0.000075+0.001868*cos(da)-0.032077*sin(da) &
 !               -0.014615*cos(2*da)-0.04089*sin(2*da))*(229.18)
-             xt24 = mod(xtime+radt*0.5,1440.)+eot
-             tloctm = gmt + xt24/60. + xlong(i,j)/15.
-             hrang = 15. * (tloctm-12.) * degrad
-             xxlat = xlat(i,j) * degrad
-             coszrs = sin(xxlat) * sin(declin) &
-                    + cos(xxlat) * cos(declin) * cos(hrang)
-             coszr(i,j) = coszrs
-          end if
+            xt24 = mod(xtime+radt*0.5,1440.)+eot
+            tloctm = gmt + xt24/60. + xlong(i,j)/15.
+            hrang = 15. * (tloctm-12.) * degrad
+            xxlat = xlat(i,j) * degrad
+            coszrs = sin(xxlat) * sin(declin) &
+                   + cos(xxlat) * cos(declin) * cos(hrang)
+            coszr(i,j) = coszrs
+         end if
+
+! mji - count daytime points to not process fully nighttime scenes
+         if (coszrs .gt. 0.0) icnt = icnt + 1
 
 ! Set flag to prevent shortwave calculation when sun below horizon
-         if (coszrs.le.0.0) dorrsw = .false.
+! mji - must set up input everywhere to run model at all grid points on
+!       GPU when any daytime points present 
+!         if (coszrs.le.0.0) dorrsw = .false.
+
 ! Perform shortwave calculation if sun above horizon
          if (dorrsw) then
 
@@ -10399,7 +11366,7 @@ CONTAINS
          ENDDO
 
 ! Set up input for shortwave
-         ncol = 1
+!         ncol = 1
 ! Add extra layer from top of model to top of atmosphere
          nlay = (kte - kts + 1) + 1
 
@@ -10415,16 +11382,23 @@ CONTAINS
          iceflgsw = 3
          liqflgsw = 1
 
+! To use icld=4 option (currently inactive), must fill zm here with model layer heights above surface (m)
+!         do k = kts,nlayers
+!            zm(icol,k) = 0.
+!         end do
+! To use icld=4 option (currently inactive), must fill alat here with model latitudes
+!         alat(icol) = 0.
+
 !Mukul change the flags here with reference to the new effective cloud/ice/snow radius
          IF (ICLOUD .ne. 0) THEN
             IF ( has_reqc .ne. 0) THEN
                inflgsw = 3
                DO K=kts,kte
-                  recloud1D(ncol,K) = MAX(2.5, re_cloud(I,K,J)*1.E6)
+                  recloud1D(icol,K) = MAX(2.5, re_cloud(I,K,J)*1.E6)
                ENDDO
             ELSE
                DO K=kts,kte
-                  recloud1D(ncol,K) = 5.0
+                  recloud1D(icol,K) = 5.0
                ENDDO
             ENDIF
 
@@ -10432,11 +11406,11 @@ CONTAINS
                inflgsw  = 4
                iceflgsw = 4
                DO K=kts,kte
-                  reice1D(ncol,K) = MAX(10., re_ice(I,K,J)*1.E6)
+                  reice1D(icol,K) = MAX(10., re_ice(I,K,J)*1.E6)
                ENDDO
             ELSE
                DO K=kts,kte
-                  reice1D(ncol,K) = 10.0
+                  reice1D(icol,K) = 10.0
                ENDDO
             ENDIF
 
@@ -10444,17 +11418,17 @@ CONTAINS
                inflgsw  = 5
                iceflgsw = 5
                DO K=kts,kte
-                  resnow1D(ncol,K) = MAX(10., re_snow(I,K,J)*1.E6)
+                  resnow1D(icol,K) = MAX(10., re_snow(I,K,J)*1.E6)
                ENDDO
             ELSE
                DO K=kts,kte
-                  resnow1D(ncol,K) = 10.0
+                  resnow1D(icol,K) = 10.0
                ENDDO
             ENDIF
          ENDIF
 
 ! Set cosine of solar zenith angle
-         coszen(ncol) = coszrs
+         coszen(icol) = coszrs
 ! Set solar constant
          scon = solcon
 ! For Earth/Sun distance adjustment in RRTMG
@@ -10468,20 +11442,20 @@ CONTAINS
 ! Layer indexing goes bottom to top here for all fields.
 ! Water vapor and ozone are converted from mmr to vmr. 
 ! Pressures are in units of mb here. 
-         plev(ncol,1) = pw1d(1)
-         tlev(ncol,1) = tw1d(1)
-         tsfc(ncol) = tsk(i,j)
+         plev(icol,1) = pw1d(1)
+         tlev(icol,1) = tw1d(1)
+         tsfc(icol) = tsk(i,j)
          do k = kts, kte
-            play(ncol,k) = p1d(k)
-            plev(ncol,k+1) = pw1d(k+1)
-            pdel(ncol,k) = plev(ncol,k) - plev(ncol,k+1)
-            tlay(ncol,k) = t1d(k)
-            tlev(ncol,k+1) = tw1d(k+1)
-            h2ovmr(ncol,k) = qv1d(k) * amdw
-            co2vmr(ncol,k) = co2
-            o2vmr(ncol,k) = o2
-            ch4vmr(ncol,k) = ch4
-            n2ovmr(ncol,k) = n2o
+            play(icol,k) = p1d(k)
+            plev(icol,k+1) = pw1d(k+1)
+            pdel(icol,k) = plev(icol,k) - plev(icol,k+1)
+            tlay(icol,k) = t1d(k)
+            tlev(icol,k+1) = tw1d(k+1)
+            h2ovmr(icol,k) = qv1d(k) * amdw
+            co2vmr(icol,k) = co2
+            o2vmr(icol,k) = o2
+            ch4vmr(icol,k) = ch4
+            n2ovmr(icol,k) = n2o
          enddo
 
 !  Define profile values for extra layer from model top to top of atmosphere. 
@@ -10490,38 +11464,39 @@ CONTAINS
 !  above ptop.  Top layer interface temperatures are linearly interpolated 
 !  from the layer temperatures.  
 
-         play(ncol,kte+1) = 0.5 * plev(ncol,kte+1)
-         tlay(ncol,kte+1) = tlev(ncol,kte+1) + 0.0
-         plev(ncol,kte+2) = 1.0e-5
-         tlev(ncol,kte+2) = tlev(ncol,kte+1) + 0.0
-         tlev(ncol,kte+2) = tlev(ncol,kte+1) + 0.0
-         h2ovmr(ncol,kte+1) = h2ovmr(ncol,kte) 
-         co2vmr(ncol,kte+1) = co2vmr(ncol,kte) 
-         o2vmr(ncol,kte+1) = o2vmr(ncol,kte) 
-         ch4vmr(ncol,kte+1) = ch4vmr(ncol,kte) 
-         n2ovmr(ncol,kte+1) = n2ovmr(ncol,kte) 
+         play(icol,kte+1) = 0.5 * plev(icol,kte+1)
+         tlay(icol,kte+1) = tlev(icol,kte+1) + 0.0
+         plev(icol,kte+2) = 1.0e-5
+         tlev(icol,kte+2) = tlev(icol,kte+1) + 0.0
+         tlev(icol,kte+2) = tlev(icol,kte+1) + 0.0
+         h2ovmr(icol,kte+1) = h2ovmr(icol,kte) 
+         co2vmr(icol,kte+1) = co2vmr(icol,kte) 
+         o2vmr(icol,kte+1) = o2vmr(icol,kte) 
+         ch4vmr(icol,kte+1) = ch4vmr(icol,kte) 
+         n2ovmr(icol,kte+1) = n2ovmr(icol,kte) 
 
 ! Get ozone profile including amount in extra layer above model top
-         call inirad (o3mmr,plev,kts,kte)
+!         call inirad (o3mmr,plev,kts,kte)
+         call inirad (o3mmr,plev(icol,:),kts,kte)
 
         if(present(o33d)) then
          do k = kts, kte+1
-            o3vmr(ncol,k) = o3mmr(k) * amdo
+            o3vmr(icol,k) = o3mmr(k) * amdo
             IF ( PRESENT( O33D ) ) THEN
             if(o3input .eq. 2)then
                if(k.le.kte)then
-                 o3vmr(ncol,k) = o31d(k)
+                 o3vmr(icol,k) = o31d(k)
                else
 ! apply shifted climatology profile above model top
-                 o3vmr(ncol,k) = o31d(kte) - o3mmr(kte)*amdo + o3mmr(k)*amdo
-                 if(o3vmr(ncol,k) .le. 0.)o3vmr(ncol,k) = o3mmr(k)*amdo
+                 o3vmr(icol,k) = o31d(kte) - o3mmr(kte)*amdo + o3mmr(k)*amdo
+                 if(o3vmr(icol,k) .le. 0.)o3vmr(icol,k) = o3mmr(k)*amdo
                endif
             endif
             ENDIF
          enddo
         else
          do k = kts, kte+1
-            o3vmr(ncol,k) = o3mmr(k) * amdo
+            o3vmr(icol,k) = o3mmr(k) * amdo
          enddo
         endif
 
@@ -10530,26 +11505,26 @@ CONTAINS
 ! -------------- Zhenxin 2011-06-20 ----------- !
 
 ! ------- 1.  Commented by Zhenxin 2011-06-20 for SSiB coupling modified ---- !
-!         asdir(ncol) = albedo(i,j)
-!         asdif(ncol) = albedo(i,j)
-!         aldir(ncol) = albedo(i,j)
-!         aldif(ncol) = albedo(i,j)
+!         asdir(icol) = albedo(i,j)
+!         asdif(icol) = albedo(i,j)
+!         aldir(icol) = albedo(i,j)
+!         aldif(icol) = albedo(i,j)
 ! -------    End of Comments    ------ !
 
-! ------- 2. New Addiation  ------ !
+! ------- 2. New Addition  ------ !
     IF ( sf_surface_physics .eq. 8 .AND. XLAND(i,j) .LT. 1.5) THEN
-         asdir(ncol) = ALSWVISDIR(I,J)
-         asdif(ncol) = ALSWVISDIF(I,J)
-         aldir(ncol) = ALSWNIRDIR(I,J)
-         aldif(ncol) = ALSWNIRDIF(I,J)
+         asdir(icol) = ALSWVISDIR(I,J)
+         asdif(icol) = ALSWVISDIF(I,J)
+         aldir(icol) = ALSWNIRDIR(I,J)
+         aldif(icol) = ALSWNIRDIF(I,J)
     ELSE
-         asdir(ncol) = albedo(i,j)
-         asdif(ncol) = albedo(i,j)
-         aldir(ncol) = albedo(i,j)
-         aldif(ncol) = albedo(i,j)
+         asdir(icol) = albedo(i,j)
+         asdif(icol) = albedo(i,j)
+         aldir(icol) = albedo(i,j)
+         aldif(icol) = albedo(i,j)
     ENDIF
 
-! ---------- End of Addiation ------!
+! ---------- End of Addition ------!
 ! ----------  End of fds_Zhenxin 2011-06-20   --------------!
 
 ! Define cloud optical properties for radiation (inflgsw = 0)
@@ -10561,22 +11536,22 @@ CONTAINS
 
 ! Set cloud fraction and cloud optical properties here; not yet active
             do k = kts, kte
-               cldfrac(ncol,k) = cldfra1d(k)
+               cldfrac(icol,k) = cldfra1d(k)
                do nb = 1, nbndsw
-                  taucld(nb,ncol,k) = 0.0
-                  ssacld(nb,ncol,k) = 1.0
-                  asmcld(nb,ncol,k) = 0.0
-                  fsfcld(nb,ncol,k) = 0.0
+                  taucld(icol,k,nb) = 0.0
+                  ssacld(icol,k,nb) = 1.0
+                  asmcld(icol,k,nb) = 0.0
+                  fsfcld(icol,k,nb) = 0.0
                enddo
             enddo
 
 ! Zero out cloud physical property arrays; not used when passing optical properties
 ! into radiation
             do k = kts, kte
-               clwpth(ncol,k) = 0.0
-               ciwpth(ncol,k) = 0.0
-               rel(ncol,k) = 10.0
-               rei(ncol,k) = 10.
+               clwpth(icol,k) = 0.0
+               ciwpth(icol,k) = 0.0
+               rel(icol,k) = 10.0
+               rei(icol,k) = 10.
             enddo
          endif
 
@@ -10585,27 +11560,27 @@ CONTAINS
 ! Set cloud arrays if passing cloud physical properties into radiation
          if (inflgsw .gt. 0) then 
             do k = kts, kte
-               cldfrac(ncol,k) = cldfra1d(k)
+               cldfrac(icol,k) = cldfra1d(k)
             enddo
 
 ! Compute cloud water/ice paths and particle sizes for input to radiation (CAM method)
             pcols = ncol
             pver = kte - kts + 1
             gravmks = g
-            landfrac(ncol) = 2.-XLAND(I,J)
-            landm(ncol) = landfrac(ncol)
-            snowh(ncol) = 0.001*SNOW(I,J)
-            icefrac(ncol) = XICE(I,J)
+            landfrac(icol) = 2.-XLAND(I,J)
+            landm(icol) = landfrac(icol)
+            snowh(icol) = 0.001*SNOW(I,J)
+            icefrac(icol) = XICE(I,J)
 
 ! From module_ra_cam: Convert liquid and ice mixing ratios to water paths;
 ! pdel is in mb here; convert back to Pa (*100.)
 ! Water paths are in units of g/m2
 ! snow added as ice cloud (JD 091022)
             do k = kts, kte
-               gicewp = (qi1d(k)+qs1d(k)) * pdel(ncol,k)*100.0 / gravmks * 1000.0     ! Grid box ice water path.
-               gliqwp = qc1d(k) * pdel(ncol,k)*100.0 / gravmks * 1000.0     ! Grid box liquid water path.
-               cicewp(ncol,k) = gicewp / max(0.01,cldfrac(ncol,k))               ! In-cloud ice water path.
-               cliqwp(ncol,k) = gliqwp / max(0.01,cldfrac(ncol,k))               ! In-cloud liquid water path.
+               gicewp = (qi1d(k)+qs1d(k)) * pdel(icol,k)*100.0 / gravmks * 1000.0     ! Grid box ice water path.
+               gliqwp = qc1d(k) * pdel(icol,k)*100.0 / gravmks * 1000.0     ! Grid box liquid water path.
+               cicewp(icol,k) = gicewp / max(0.01,cldfrac(icol,k))               ! In-cloud ice water path.
+               cliqwp(icol,k) = gliqwp / max(0.01,cldfrac(icol,k))               ! In-cloud liquid water path.
             end do
 
 ! Mukul
@@ -10614,8 +11589,8 @@ CONTAINS
 !.. leaving out the snow for its own effect.
            if(iceflgsw.ge.4)then 
               do k = kts, kte
-                     gicewp = qi1d(k) * pdel(ncol,k)*100.0 / gravmks * 1000.0     ! Grid box ice water path.
-                     cicewp(ncol,k) = gicewp / max(0.01,cldfrac(ncol,k))               ! In-cloud ice water path.
+                     gicewp = qi1d(k) * pdel(icol,k)*100.0 / gravmks * 1000.0     ! Grid box ice water path.
+                     cicewp(icol,k) = gicewp / max(0.01,cldfrac(icol,k))               ! In-cloud ice water path.
               end do
            end if
 
@@ -10630,12 +11605,12 @@ CONTAINS
            if(iceflgsw.eq.5)then
               do k = kts, kte
                  snow_mass_factor = 1.0                 
-                 if (resnow1d(ncol,k) .gt. 130.)then 
-                     snow_mass_factor = (130.0/resnow1d(ncol,k))*(130.0/resnow1d(ncol,k))
-                     resnow1d(ncol,k)   = 130.0
+                 if (resnow1d(icol,k) .gt. 130.)then 
+                     snow_mass_factor = (130.0/resnow1d(icol,k))*(130.0/resnow1d(icol,k))
+                     resnow1d(icol,k)   = 130.0
                  endif
-                 gsnowp = qs1d(k) * snow_mass_factor * pdel(ncol,k)*100.0 / gravmks * 1000.0     ! Grid box snow water path.
-                 csnowp(ncol,k) = gsnowp / max(0.01,cldfrac(ncol,k))
+                 gsnowp = qs1d(k) * snow_mass_factor * pdel(icol,k)*100.0 / gravmks * 1000.0     ! Grid box snow water path.
+                 csnowp(icol,k) = gsnowp / max(0.01,cldfrac(icol,k))
               end do
            end if
 
@@ -10653,35 +11628,35 @@ CONTAINS
 !     corresponds to optical depth of 1.e-3 for radius 4 microns.
       lwpmin=3.e-5
       do k = kts, kte
-         reliq(ncol,k) = 10.
+         reliq(icol,k) = 10.
          if( PRESENT( F_QNDROP ) ) then
             if( F_QNDROP ) then
-              if ( qc1d(k)*pdel(ncol,k).gt.lwpmin.and. &
+              if ( qc1d(k)*pdel(icol,k).gt.lwpmin.and. &
                    qndrop1d(k).gt.1000. ) then
-               reliq(ncol,k)=(relconst*qc1d(k)/qndrop1d(k))**third ! effective radius in m
+               reliq(icol,k)=(relconst*qc1d(k)/qndrop1d(k))**third ! effective radius in m
 !           apply scaling from Martin et al., JAS 51, 1830.
-               reliq(ncol,k)=1.1*reliq(ncol,k)
-               reliq(ncol,k)=reliq(ncol,k)*1.e6 ! convert from m to microns
-               reliq(ncol,k)=max(reliq(ncol,k),4.)
-               reliq(ncol,k)=min(reliq(ncol,k),20.)
+               reliq(icol,k)=1.1*reliq(icol,k)
+               reliq(icol,k)=reliq(icol,k)*1.e6 ! convert from m to microns
+               reliq(icol,k)=max(reliq(icol,k),4.)
+               reliq(icol,k)=min(reliq(icol,k),20.)
               end if
             end if
          end if
       end do
 !jdfcz     else ! prescribe 
 ! following Kiehl
-!     call relcalc(ncol, pcols, pver, tlay, landfrac, landm, icefrac, reliq, snowh)
+!      call relcalc(icol, pcols, pver, tlay, landfrac, landm, icefrac, reliq, snowh)
 !      write(0,*) 'sw prescribe aerosol',maxval(qndrop3d)
 !jdfcz     endif
     else  ! progn   (progn=1)
-      call relcalc(ncol, pcols, pver, tlay, landfrac, landm, icefrac, reliq, snowh)
+      call relcalc(icol, pcols, pver, tlay, landfrac, landm, icefrac, reliq, snowh)
     endif
   else   !progn   (PRESENT)
-      call relcalc(ncol, pcols, pver, tlay, landfrac, landm, icefrac, reliq, snowh)
+      call relcalc(icol, pcols, pver, tlay, landfrac, landm, icefrac, reliq, snowh)
   endif
 
 ! following Kristjansson and Mitchell
-      call reicalc(ncol, pcols, pver, tlay, reice)
+      call reicalc(icol, pcols, pver, tlay, reice)
 
 
 
@@ -10690,12 +11665,12 @@ CONTAINS
 
       if (inflgsw .ge. 3) then
          do k = kts, kte
-            reliq(ncol,k) = recloud1d(ncol,k)
+            reliq(icol,k) = recloud1d(icol,k)
          end do
       endif
       if (iceflgsw .ge. 4) then
          do k = kts, kte
-            reice(ncol,k) = reice1d(ncol,k)
+            reice(icol,k) = reice1d(icol,k)
          end do
       endif
 
@@ -10704,8 +11679,8 @@ CONTAINS
       if (i==80.and.j==30) then
 #if defined( DM_PARALLEL ) && ! defined( STUBMPI) 
       if( PRESENT( progn ) ) write(0,*) 'aerosol indirect',progn
-      write(0,*)'sw water eff radius',reliq(ncol,10),reliq(ncol,20),reliq(ncol,25)
-      write(0,*)'sw ice eff radius',reice(ncol,10),reice(ncol,20),reice(ncol,25)
+      write(0,*)'sw water eff radius',reliq(icol,10),reliq(icol,20),reliq(icol,25)
+      write(0,*)'sw ice eff radius',reice(icol,10),reice(icol,20),reice(icol,25)
 #endif
       endif
 #endif
@@ -10715,88 +11690,88 @@ CONTAINS
 ! from effective radius to generalized effective size (*1.0315; Fu, 1996)
             if (iceflgsw .eq. 3) then
                do k = kts, kte
-                  reice(ncol,k) = reice(ncol,k) * 1.0315
-                  reice(ncol,k) = min(140.0,reice(ncol,k))
+                  reice(icol,k) = reice(icol,k) * 1.0315
+                  reice(icol,k) = min(140.0,reice(icol,k))
                end do
             endif
-            
+
 !if CAMMGMP is used, use output from CAMMGMP            
 !PMA
             if(is_CAMMGMP_used) then
                do k = kts, kte
                   if ( qi1d(k) .gt. 1.e-20 .or. qs1d(k) .gt. 1.e-20) then
-                     reice(ncol,k) = iradius(i,k,j)
+                     reice(icol,k) = iradius(i,k,j)
                   else
-                     reice(ncol,k) = 25.
+                     reice(icol,k) = 25.
                   end if
-                  reice(ncol,k) = max(5., min(140.0,reice(ncol,k)))
+                  reice(icol,k) = max(5., min(140.0,reice(icol,k)))
                   if ( qc1d(k) .gt. 1.e-20) then
-                     reliq(ncol,k) = lradius(i,k,j)
+                     reliq(icol,k) = lradius(i,k,j)
                   else
-                     reliq(ncol,k) = 10.
+                     reliq(icol,k) = 10.
                   end if
-                  reliq(ncol,k) = max(2.5, min(60.0,reliq(ncol,k)))
+                  reliq(icol,k) = max(2.5, min(60.0,reliq(icol,k)))
                enddo
             endif
 
 ! Set cloud physical property arrays
             do k = kts, kte
-               clwpth(ncol,k) = cliqwp(ncol,k)
-               ciwpth(ncol,k) = cicewp(ncol,k)
-               rel(ncol,k) = reliq(ncol,k)
-               rei(ncol,k) = reice(ncol,k)
+               clwpth(icol,k) = cliqwp(icol,k)
+               ciwpth(icol,k) = cicewp(icol,k)
+               rel(icol,k) = reliq(icol,k)
+               rei(icol,k) = reice(icol,k)
             enddo
 
 !Mukul
             if (inflgsw .eq. 5) then
                do k = kts, kte
-                  cswpth(ncol,k) = csnowp(ncol,k)
-                  res(ncol,k) = resnow1d(ncol,k)
+                  cswpth(icol,k) = csnowp(icol,k)
+                  res(icol,k) = resnow1d(icol,k)
                end do
             else
                do k = kts, kte
-                  cswpth(ncol,k) = 0.0
-                  res(ncol,k) = 10.0
+                  cswpth(icol,k) = 0.0
+                  res(icol,k) = 10.0
                end do
             endif
 
 ! Zero out cloud optical properties here, calculated in radiation 
             do k = kts, kte
                do nb = 1, nbndsw
-                  taucld(nb,ncol,k) = 0.0
-                  ssacld(nb,ncol,k) = 1.0
-                  asmcld(nb,ncol,k) = 0.0
-                  fsfcld(nb,ncol,k) = 0.0
+                  taucld(icol,k,nb) = 0.0
+                  ssacld(icol,k,nb) = 1.0
+                  asmcld(icol,k,nb) = 0.0
+                  fsfcld(icol,k,nb) = 0.0
                enddo
             enddo
          endif
 
 ! No clouds are allowed in the extra layer from model top to TOA
-         clwpth(ncol,kte+1) = 0.
-         ciwpth(ncol,kte+1) = 0.
-         cswpth(ncol,kte+1) = 0.
-         rel(ncol,kte+1) = 10.
-         rei(ncol,kte+1) = 10.
-         res(ncol,kte+1) = 10.
-         cldfrac(ncol,kte+1) = 0.
+         clwpth(icol,kte+1) = 0.
+         ciwpth(icol,kte+1) = 0.
+         cswpth(icol,kte+1) = 0.
+         rel(icol,kte+1) = 10.
+         rei(icol,kte+1) = 10.
+         res(icol,kte+1) = 10.
+         cldfrac(icol,kte+1) = 0.
          do nb = 1, nbndsw
-            taucld(nb,ncol,kte+1) = 0.
-            ssacld(nb,ncol,kte+1) = 1.
-            asmcld(nb,ncol,kte+1) = 0.
-            fsfcld(nb,ncol,kte+1) = 0.
+            taucld(icol,kte+1,nb) = 0.
+            ssacld(icol,kte+1,nb) = 1.
+            asmcld(icol,kte+1,nb) = 0.
+            fsfcld(icol,kte+1,nb) = 0.
          enddo
 
-         iplon = 1
-         irng = 0
-         permuteseed = 1
+! mji - mcica sub-column generator called inside rrtmg_sw for gpu
+!         iplon = 1
+!         irng = 0
+!         permuteseed = 1
 
 ! Sub-column generator for McICA
 
-         call mcica_subcol_sw(iplon, ncol, nlay, icld, permuteseed, irng, play, &
-                       cldfrac, ciwpth, clwpth, cswpth, rei, rel, res, taucld, ssacld, asmcld, fsfcld, &
-                       cldfmcl, ciwpmcl, clwpmcl, cswpmcl, reicmcl, relqmcl, resnmcl, &
-                       taucmcl, ssacmcl, asmcmcl, fsfcmcl)
-
+!         call mcica_subcol_sw(iplon, icol, nlay, icld, permuteseed, irng, play, &
+!                       cldfrac, ciwpth, clwpth, cswpth, rei, rel, res, taucld, ssacld, asmcld, fsfcld, &
+!                       cldfmcl, ciwpmcl, clwpmcl, cswpmcl, reicmcl, relqmcl, resnmcl, &
+!                       taucmcl, ssacmcl, asmcmcl, fsfcmcl)
 
 !--------------------------------------------------------------------------
 ! Aerosol optical depth, single scattering albedo and asymmetry parameter -czhao 03/2010
@@ -10805,9 +11780,9 @@ CONTAINS
 ! No aerosols in top layer above model top (kte+1).
 !cz        do nb = 1, nbndsw
 !cz           do k = kts, kte+1
-!cz              tauaer(ncol,k,nb) = 0.
-!cz              ssaaer(ncol,k,nb) = 1.
-!cz              asmaer(ncol,k,nb) = 0.
+!cz              tauaer(icol,k,nb) = 0.
+!cz              ssaaer(icol,k,nb) = 1.
+!cz              asmaer(icol,k,nb) = 0.
 !cz           enddo
 !cz        enddo
 
@@ -10815,9 +11790,9 @@ CONTAINS
 !
       do nb = 1, nbndsw
       do k = kts,kte+1
-         tauaer(ncol,k,nb) = 0.
-         ssaaer(ncol,k,nb) = 1.
-         asmaer(ncol,k,nb) = 0.
+         tauaer(icol,k,nb) = 0.
+         ssaaer(icol,k,nb) = 1.
+         asmaer(icol,k,nb) = 0.
       end do
       end do
 
@@ -10826,9 +11801,9 @@ CONTAINS
          if ( aer_opt .eq. 2) then
             do nb=1,nbndsw
                do k=kts,kte
-                  tauaer(ncol,k,nb)=tauaer3d_sw(i,k,j,nb)
-                  ssaaer(ncol,k,nb)=ssaaer3d_sw(i,k,j,nb)
-                  asmaer(ncol,k,nb)=asyaer3d_sw(i,k,j,nb)
+                  tauaer(icol,k,nb)=tauaer3d_sw(i,k,j,nb)
+                  ssaaer(icol,k,nb)=ssaaer3d_sw(i,k,j,nb)
+                  asmaer(icol,k,nb)=asyaer3d_sw(i,k,j,nb)
                end do
             end do
          end if
@@ -10844,8 +11819,8 @@ CONTAINS
 ! tauaer - use angstrom exponent
         if(tauaer300(i,k,j).gt.thresh .and. tauaer999(i,k,j).gt.thresh) then
            ang=alog(tauaer300(i,k,j)/tauaer999(i,k,j))/alog(999./300.)
-           tauaer(ncol,k,nb)=tauaer400(i,k,j)*(0.4/wavemid(nb))**ang
-           !tauaer(ncol,k,nb)=tauaer600(i,k,j)*(0.6/wavemid(nb))**ang 
+           tauaer(icol,k,nb)=tauaer400(i,k,j)*(0.4/wavemid(nb))**ang
+           !tauaer(icol,k,nb)=tauaer600(i,k,j)*(0.6/wavemid(nb))**ang 
            if (i==30.and.j==49.and.k==2.and.nb==12) then
             write(0,*) 'TAU from 600 vs 400 in RRTMG',tauaer600(i,k,j),tauaer400(i,k,j)
             print*, 'TAU from 600 vs 400 in RRTMG',tauaer600(i,k,j),tauaer400(i,k,j)
@@ -10854,14 +11829,14 @@ CONTAINS
            endif
 ! ssa - linear interpolation; extrapolation
            slope=(waer600(i,k,j)-waer400(i,k,j))/.2
-           ssaaer(ncol,k,nb) = slope*(wavemid(nb)-.6)+waer600(i,k,j)
-           if(ssaaer(ncol,k,nb).lt.0.4) ssaaer(ncol,k,nb)=0.4
-           if(ssaaer(ncol,k,nb).ge.1.0) ssaaer(ncol,k,nb)=1.0
+           ssaaer(icol,k,nb) = slope*(wavemid(nb)-.6)+waer600(i,k,j)
+           if(ssaaer(icol,k,nb).lt.0.4) ssaaer(icol,k,nb)=0.4
+           if(ssaaer(icol,k,nb).ge.1.0) ssaaer(icol,k,nb)=1.0
 ! g - linear interpolation;extrapolation
            slope=(gaer600(i,k,j)-gaer400(i,k,j))/.2
-           asmaer(ncol,k,nb) = slope*(wavemid(nb)-.6)+gaer600(i,k,j) ! notice reversed varaibles
-           if(asmaer(ncol,k,nb).lt.0.5) asmaer(ncol,k,nb)=0.5
-           if(asmaer(ncol,k,nb).ge.1.0) asmaer(ncol,k,nb)=1.0
+           asmaer(icol,k,nb) = slope*(wavemid(nb)-.6)+gaer600(i,k,j) ! notice reversed varaibles
+           if(asmaer(icol,k,nb).lt.0.5) asmaer(icol,k,nb)=0.5
+           if(asmaer(icol,k,nb).ge.1.0) asmaer(icol,k,nb)=1.0
         endif
       end do ! k
       end do ! nb
@@ -10870,34 +11845,39 @@ CONTAINS
       do nb = 1, nbndsw
          slope = 0.  !use slope as a sum holder
          do k = kts,kte
-            slope = slope + tauaer(ncol,k,nb)
+            slope = slope + tauaer(icol,k,nb)
          end do
          if( slope < 0. ) then
-            write(msg,'("ERROR: Negative total optical depth of ",f8.2," at point i,j,nb=",3i5)') slope,i,j,nb
+            write(msg,'("ERROR: Negative total optical depth of ",f8.2,&
+             " at point i,j,nb=",3i5)') slope,i,j,nb
             call wrf_error_fatal(msg)
          else if( slope > 6. ) then
             call wrf_message("-------------------------")
-            write(msg,'("WARNING: Large total sw optical depth of ",f8.2," at point i,j,nb=",3i5)') slope,i,j,nb
+            write(msg,'("WARNING: Large total sw optical depth of ",f8.2,&
+             " at point i,j,nb=",3i5)') slope,i,j,nb
             call wrf_message(msg)
 
-            call wrf_message("Diagnostics 1: k, tauaer300, tauaer400, tauaer600, tauaer999, tauaer")
+            call wrf_message("Diagnostics 1: k, tauaer300, tauaer400,&
+               tauaer600, tauaer999, tauaer")
             do k=kts,kte
                write(msg,'(i4,5f8.2)') k, tauaer300(i,k,j), tauaer400(i,k,j), &
-                    tauaer600(i,k,j), tauaer999(i,k,j),tauaer(ncol,k,nb)
+                    tauaer600(i,k,j), tauaer999(i,k,j),tauaer(icol,k,nb)
                call wrf_message(msg)
                !czhao set an up-limit here to avoid segmentation fault 
                !from extreme AOD
-               tauaer(ncol,k,nb)=tauaer(ncol,k,nb)*6.0/slope 
+               tauaer(icol,k,nb)=tauaer(icol,k,nb)*6.0/slope 
             end do
 
-            call wrf_message("Diagnostics 2: k, gaer300, gaer400, gaer600, gaer999")
+            call wrf_message("Diagnostics 2: k, gaer300, gaer400, gaer600,&
+               gaer999")
             do k=kts,kte
                write(msg,'(i4,4f8.2)') k, gaer300(i,k,j), gaer400(i,k,j), &
                     gaer600(i,k,j), gaer999(i,k,j)
                call wrf_message(msg)
             end do
 
-            call wrf_message("Diagnostics 3: k, waer300, waer400, waer600, waer999")
+            call wrf_message("Diagnostics 3: k, waer300, waer400, waer600,&
+               waer999")
             do k=kts,kte
                write(msg,'(i4,4f8.2)') k, waer300(i,k,j), waer400(i,k,j), &
                     waer600(i,k,j), waer999(i,k,j)
@@ -10918,95 +11898,130 @@ CONTAINS
 
 ! Zero array for input of aerosol optical thickness for use with
 ! ECMWF aerosol types (not used)
-         do na = 1, naerec
-            do k = kts, kte+1
-               ecaer(ncol,k,na) = 0.
-            enddo
+      iaer = 0
+      do na = 1, naerec
+         do k = kts, kte+1
+            ecaer(icol,k,na) = 0.
          enddo
+      enddo
 
       IF ( PRESENT( aerod ) ) THEN
-      if ( aer_opt .eq. 0 ) then
+      if ( aer_opt .eq. 0 .or. aer_opt .eq. 2 ) then
+         iaer = 10
          do na = 1, naerec
             do k = kts, kte+1
-               ecaer(ncol,k,na) = 0.
+               ecaer(icol,k,na) = 0.
             enddo
          enddo
       else if ( aer_opt .eq. 1 ) then
+         iaer = 6
          do na = 1, naerec
             do k = kts, kte
-               ecaer(ncol,k,na) = aerod(i,k,j,na)
+               ecaer(icol,k,na) = aerod(i,k,j,na)
             enddo
 ! assuming 0 or same value at the top?
-!           ecaer(ncol,kte+1,na) = ecaer(ncol,kte,na)
-            ecaer(ncol,kte+1,na) = 0.
+!           ecaer(icol,kte+1,na) = ecaer(icol,kte,na)
+            ecaer(icol,kte+1,na) = 0.
          enddo
       endif
       ENDIF
+!
+! End of dorrsw check
+      endif
+! End of grid loops
+      enddo i_loop
+   enddo j_loop                                           
 
 ! Call RRTMG shortwave radiation model
+! Perform shortwave calculation if sun above horizon in any part of grid
+! Do not perform shortwave calculations if all of grid is in darkness
+      if (icnt .eq. 0) dorrsw = .false.
+      if (dorrsw) then
 
          call rrtmg_sw &
-            (ncol    ,nlay    ,icld    , &
+            (rpart   ,ncol    ,nlay    ,icld    ,iaer   , &
              play    ,plev    ,tlay    ,tlev    ,tsfc   , &
-             h2ovmr , o3vmr   ,co2vmr  ,ch4vmr  ,n2ovmr ,o2vmr , &
+             h2ovmr  ,o3vmr   ,co2vmr  ,ch4vmr  ,n2ovmr ,o2vmr , &
              asdir   ,asdif   ,aldir   ,aldif   , &
              coszen  ,adjes   ,dyofyr  ,scon    , &
-             inflgsw ,iceflgsw,liqflgsw,cldfmcl , &
-             taucmcl ,ssacmcl ,asmcmcl ,fsfcmcl , &
-             ciwpmcl ,clwpmcl ,cswpmcl, reicmcl ,relqmcl ,resnmcl, &
+             inflgsw ,iceflgsw,liqflgsw,cldfrac , &
+! for inactive icld=4 option
+!             zm      ,alat    , &
+             taucld  ,ssacld  ,asmcld  ,fsfcld  , &
+             ciwpth  ,clwpth  ,cswpth  ,rei     ,rel     ,res, &
              tauaer  ,ssaaer  ,asmaer  ,ecaer   , &
-             swuflx  ,swdflx  ,swhr    ,swuflxc ,swdflxc ,swhrc, aer_opt, &
+             swuflx  ,swdflx  ,swhr    ,swuflxc ,swdflxc ,swhrc, &
 ! -----      Zhenxin added for ssib coupiling 2011-06-20 --------!
              sibvisdir, sibvisdif, sibnirdir, sibnirdif,         &
-! --------------------   End of addiation by Zhenxin 2011-06-20 ------!
+! --------------------   End of addition by Zhenxin 2011-06-20 ------!
              swdkdir, swdkdif                      &  ! jararias, 2012/08/10
-                                                   )
+                                                  )
 
+      endif
 
 ! Output net absorbed shortwave surface flux and shortwave cloud forcing
 ! at the top of atmosphere (W/m2)
-         gsw(i,j) = swdflx(1,1) - swuflx(1,1)
-         swcf(i,j) = (swdflx(1,kte+2) - swuflx(1,kte+2)) - (swdflxc(1,kte+2) - swuflxc(1,kte+2))
 
+! latitude loop
+   j_loop2: do j = jts,jte
+! longitude loop
+      i_loop2: do i = its,ite
+
+! Use calculated output only if in daylight, otherwise output is zero
+      dorrsw = .true.
+      if (coszr(i,j).le.0.0) dorrsw = .false.
+! Complete shortwave calculation if sun above horizon
+      if (dorrsw) then
+
+         icol = i + (j-jts)*(ite-its+1)
+
+         gsw(i,j) = swdflx(icol,1) - swuflx(icol,1)
+         swcf(i,j) = (swdflx(icol,kte+2) - swuflx(icol,kte+2)) - (swdflxc(icol,kte+2) - swuflxc(icol,kte+2))
+
+! mji - write
+!         swut(i,j) = swuflx(icol,kte+2)
+!         swdb(i,j) = swdflx(icol,1)
+!
          if (present(swupt)) then 
 ! Output up and down toa fluxes for total and clear sky
-            swupt(i,j)     = swuflx(1,kte+2)
-            swuptc(i,j)    = swuflxc(1,kte+2)
-            swdnt(i,j)     = swdflx(1,kte+2)
-            swdntc(i,j)    = swdflxc(1,kte+2)
+            swupt(i,j)     = swuflx(icol,kte+2)
+            swuptc(i,j)    = swuflxc(icol,kte+2)
+            swdnt(i,j)     = swdflx(icol,kte+2)
+            swdntc(i,j)    = swdflxc(icol,kte+2)
 ! Output up and down surface fluxes for total and clear sky
-            swupb(i,j)     = swuflx(1,1)
-            swupbc(i,j)    = swuflxc(1,1)
-            swdnb(i,j)     = swdflx(1,1)
+            swupb(i,j)     = swuflx(icol,1)
+            swupbc(i,j)    = swuflxc(icol,1)
+            swdnb(i,j)     = swdflx(icol,1)
 ! Added by Zhenxin for 4 compenants of swdown radiation
-            swvisdir(i,j)  = sibvisdir(1,1)
-            swvisdif(i,j)  = sibvisdif(1,1)
-            swnirdir(i,j)  = sibnirdir(1,1)
-            swnirdif(i,j)  = sibnirdif(1,1)
+            swvisdir(i,j)  = sibvisdir(icol,1)
+            swvisdif(i,j)  = sibvisdif(icol,1)
+            swnirdir(i,j)  = sibnirdir(icol,1)
+            swnirdif(i,j)  = sibnirdif(icol,1)
 !  Ended, Zhenxin (2011/06/20)
-            swdnbc(i,j)    = swdflxc(1,1)
+            swdnbc(i,j)    = swdflxc(icol,1)
          endif
-            swddir(i,j)    = swdkdir(1,1)          ! jararias 2013/08/10
+            swddir(i,j)    = swdkdir(icol,1)       ! jararias 2013/08/10
             swddni(i,j)    = swddir(i,j) / coszrs  ! jararias 2013/08/10
-            swddif(i,j)    = swdkdif(1,1)          ! jararias 2013/08/10
+            swddif(i,j)    = swdkdif(icol,1)          ! jararias 2013/08/10
 
 ! Output up and down layer fluxes for total and clear sky.
 ! Vertical ordering is from bottom to top in units of W m-2. 
          if ( present (swupflx) ) then
          do k=kts,kte+2
-            swupflx(i,k,j)  = swuflx(1,k)
-            swupflxc(i,k,j) = swuflxc(1,k)
-            swdnflx(i,k,j)  = swdflx(1,k)
-            swdnflxc(i,k,j) = swdflxc(1,k)
+            swupflx(i,k,j)  = swuflx(icol,k)
+            swupflxc(i,k,j) = swuflxc(icol,k)
+            swdnflx(i,k,j)  = swdflx(icol,k)
+            swdnflxc(i,k,j) = swdflxc(icol,k)
          enddo
          endif
 
 ! Output heating rate tendency; convert heating rate from K/d to K/s
 ! Heating rate arrays are ordered vertically from bottom to top here. 
          do k=kts,kte 
-            tten1d(k) = swhr(ncol,k)/86400.
+            tten1d(k) = swhr(icol,k)/86400.
             rthratensw(i,k,j) = tten1d(k)/pi3d(i,k,j)
          enddo
+
       else
          if (present(swupt)) then 
 ! Output up and down toa fluxes for total and clear sky
@@ -11029,10 +12044,18 @@ CONTAINS
             swddif(i,j)    = 0.  ! jararias 2013/08/10
 
       endif
-!
-      end do i_loop
-   end do j_loop                                           
 
+      end do i_loop2
+   end do j_loop2                                           
+
+! mji - write
+!      do j=jts,jte
+!      write(62,995) (swut(i,j),i=its,ite)
+!      enddo
+!      do j=jts,jte
+!      write(62,995) (swdb(i,j),i=its,ite)
+!      enddo
+! 995  format(1p6e12.5)
 
 !-------------------------------------------------------------------
 
@@ -11070,7 +12093,7 @@ CONTAINS
       SUBROUTINE rrtmg_swlookuptable
 ! **************************************************************************     
 
-IMPLICIT NONE
+      IMPLICIT NONE
 
 ! Local                                    
       INTEGER :: i
@@ -11117,14 +12140,15 @@ IMPLICIT NONE
       call sw_kgb28(rrtmg_unit)
       call sw_kgb29(rrtmg_unit)
 
-     IF ( wrf_dm_on_monitor() ) CLOSE (rrtmg_unit)
+      IF ( wrf_dm_on_monitor() ) CLOSE (rrtmg_unit)
 
-     RETURN
-9009 CONTINUE
-     WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error opening RRTMG_SW_DATA on unit ',rrtmg_unit
-     CALL wrf_error_fatal(errmess)
+      RETURN
+9009  CONTINUE
+      WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error opening '// &
+                                  'RRTMG_SW_DATA on unit ',rrtmg_unit
+      CALL wrf_error_fatal(errmess)
 
-     END SUBROUTINE rrtmg_swlookuptable
+      END SUBROUTINE rrtmg_swlookuptable
 
 ! **************************************************************************
 !  RRTMG Shortwave Radiative Transfer Model
@@ -11149,6 +12173,8 @@ IMPLICIT NONE
 
       use rrsw_kg16, only : kao, kbo, selfrefo, forrefo, sfluxrefo, &
                             rayl, strrat1, layreffr
+!      use rrsw_kg16, only : kao, kbo, selfrefo, forrefo, sfluxrefo, rayl
+!      use rrtmg_sw_taumol, only : strrat1, layreffr
 
       implicit none
       save
@@ -11219,10 +12245,11 @@ IMPLICIT NONE
       DM_BCAST_MACRO(forrefo)
       DM_BCAST_MACRO(sfluxrefo)
 
-     RETURN
-9010 CONTINUE
-     WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ',rrtmg_unit
-     CALL wrf_error_fatal(errmess)
+      RETURN
+9010  CONTINUE
+      WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading '// &
+                                  'RRTMG_SW_DATA on unit ',rrtmg_unit
+      CALL wrf_error_fatal(errmess)
 
       end subroutine sw_kgb16
 
@@ -11232,6 +12259,8 @@ IMPLICIT NONE
 
       use rrsw_kg17, only : kao, kbo, selfrefo, forrefo, sfluxrefo, &
                             rayl, strrat, layreffr
+!      use rrsw_kg17, only : kao, kbo, selfrefo, forrefo, sfluxrefo, rayl
+!      use rrtmg_sw_taumol, only : strrat, layreffr
 
       implicit none
       save
@@ -11302,10 +12331,11 @@ IMPLICIT NONE
       DM_BCAST_MACRO(forrefo)
       DM_BCAST_MACRO(sfluxrefo)
 
-     RETURN
-9010 CONTINUE
-     WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ',rrtmg_unit
-     CALL wrf_error_fatal(errmess)
+      RETURN
+9010  CONTINUE
+      WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading '// &
+                                  'RRTMG_SW_DATA on unit ',rrtmg_unit
+      CALL wrf_error_fatal(errmess)
 
       end subroutine sw_kgb17
 
@@ -11315,6 +12345,8 @@ IMPLICIT NONE
 
       use rrsw_kg18, only : kao, kbo, selfrefo, forrefo, sfluxrefo, &
                             rayl, strrat, layreffr
+!      use rrsw_kg18, only : kao, kbo, selfrefo, forrefo, sfluxrefo, rayl
+!      use rrtmg_sw_taumol, only : strrat, layreffr
 
       implicit none
       save
@@ -11385,10 +12417,11 @@ IMPLICIT NONE
       DM_BCAST_MACRO(forrefo)
       DM_BCAST_MACRO(sfluxrefo)
 
-     RETURN
-9010 CONTINUE
-     WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ',rrtmg_unit
-     CALL wrf_error_fatal(errmess)
+      RETURN
+9010  CONTINUE
+      WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading '// &
+                                  'RRTMG_SW_DATA on unit ',rrtmg_unit
+      CALL wrf_error_fatal(errmess)
 
       end subroutine sw_kgb18 
 
@@ -11398,6 +12431,8 @@ IMPLICIT NONE
 
       use rrsw_kg19, only : kao, kbo, selfrefo, forrefo, sfluxrefo, &
                             rayl, strrat, layreffr
+!      use rrsw_kg19, only : kao, kbo, selfrefo, forrefo, sfluxrefo, rayl
+!      use rrtmg_sw_taumol, only : strrat, layreffr
 
       implicit none
       save
@@ -11468,10 +12503,11 @@ IMPLICIT NONE
       DM_BCAST_MACRO(forrefo)
       DM_BCAST_MACRO(sfluxrefo)
 
-     RETURN
-9010 CONTINUE
-     WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ',rrtmg_unit
-     CALL wrf_error_fatal(errmess)
+      RETURN
+9010  CONTINUE
+      WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading '// &
+                                  'RRTMG_SW_DATA on unit ',rrtmg_unit
+      CALL wrf_error_fatal(errmess)
 
       end subroutine sw_kgb19
 
@@ -11481,6 +12517,9 @@ IMPLICIT NONE
 
       use rrsw_kg20, only : kao, kbo, selfrefo, forrefo, sfluxrefo, &
                             absch4o, rayl, layreffr
+!      use rrsw_kg20, only : kao, kbo, selfrefo, forrefo, sfluxrefo, &
+!                            absch4o, rayl
+!      use rrtmg_sw_taumol, only : layreffr
 
       implicit none
       save
@@ -11553,10 +12592,11 @@ IMPLICIT NONE
       DM_BCAST_MACRO(forrefo)
       DM_BCAST_MACRO(sfluxrefo)
 
-     RETURN
-9010 CONTINUE
-     WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ',rrtmg_unit
-     CALL wrf_error_fatal(errmess)
+      RETURN
+9010  CONTINUE
+      WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading '// &
+                                  'RRTMG_SW_DATA on unit ',rrtmg_unit
+      CALL wrf_error_fatal(errmess)
 
       end subroutine sw_kgb20
 
@@ -11566,6 +12606,8 @@ IMPLICIT NONE
 
       use rrsw_kg21, only : kao, kbo, selfrefo, forrefo, sfluxrefo, &
                             rayl, strrat, layreffr
+!      use rrsw_kg21, only : kao, kbo, selfrefo, forrefo, sfluxrefo, rayl
+!      use rrtmg_sw_taumol, only : strrat, layreffr
 
       implicit none
       save
@@ -11636,10 +12678,11 @@ IMPLICIT NONE
       DM_BCAST_MACRO(forrefo)
       DM_BCAST_MACRO(sfluxrefo)
 
-     RETURN
-9010 CONTINUE
-     WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ',rrtmg_unit
-     CALL wrf_error_fatal(errmess)
+      RETURN
+9010  CONTINUE
+      WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading '// &
+                                  'RRTMG_SW_DATA on unit ',rrtmg_unit
+      CALL wrf_error_fatal(errmess)
 
       end subroutine sw_kgb21
 
@@ -11649,6 +12692,8 @@ IMPLICIT NONE
 
       use rrsw_kg22, only : kao, kbo, selfrefo, forrefo, sfluxrefo, &
                             rayl, strrat, layreffr
+!      use rrsw_kg22, only : kao, kbo, selfrefo, forrefo, sfluxrefo, rayl
+!      use rrtmg_sw_taumol, only : strrat, layreffr
 
       implicit none
       save
@@ -11694,7 +12739,7 @@ IMPLICIT NONE
 
 !     The array FORREFO contains the coefficient of the water vapor
 !     foreign-continuum (including the energy term).  The first 
-!     index refers to reference temperature (296_rb,260_rb,224,260) and 
+!     index refers to reference temperature (296,260,224,260) and 
 !     pressure (970,475,219,3 mbar) levels.  The second index 
 !     runs over the g-channel (1 to 16).
 
@@ -11719,10 +12764,11 @@ IMPLICIT NONE
       DM_BCAST_MACRO(forrefo)
       DM_BCAST_MACRO(sfluxrefo)
 
-     RETURN
-9010 CONTINUE
-     WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ',rrtmg_unit
-     CALL wrf_error_fatal(errmess)
+      RETURN
+9010  CONTINUE
+      WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading '// &
+                                  'RRTMG_SW_DATA on unit ',rrtmg_unit
+      CALL wrf_error_fatal(errmess)
 
       end subroutine sw_kgb22
 
@@ -11732,6 +12778,8 @@ IMPLICIT NONE
 
       use rrsw_kg23, only : kao, selfrefo, forrefo, sfluxrefo, &
                             raylo, givfac, layreffr
+!      use rrsw_kg23, only : kao, selfrefo, forrefo, sfluxrefo, raylo
+!      use rrtmg_sw_taumol, only : givfac, layreffr
 
       implicit none
       save
@@ -11791,10 +12839,11 @@ IMPLICIT NONE
       DM_BCAST_MACRO(forrefo)
       DM_BCAST_MACRO(sfluxrefo)
 
-     RETURN
-9010 CONTINUE
-     WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ',rrtmg_unit
-     CALL wrf_error_fatal(errmess)
+      RETURN
+9010  CONTINUE
+      WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading '// &
+                                  'RRTMG_SW_DATA on unit ',rrtmg_unit
+      CALL wrf_error_fatal(errmess)
 
       end subroutine sw_kgb23
 
@@ -11804,6 +12853,9 @@ IMPLICIT NONE
 
       use rrsw_kg24, only : kao, kbo, selfrefo, forrefo, sfluxrefo, &
                             raylao, raylbo, abso3ao, abso3bo, strrat, layreffr
+!      use rrsw_kg24, only : kao, kbo, selfrefo, forrefo, sfluxrefo, &
+!                            raylao, raylbo, abso3ao, abso3bo
+!      use rrtmg_sw_taumol, only : strrat, layreffr
 
       implicit none
       save
@@ -11882,10 +12934,11 @@ IMPLICIT NONE
       DM_BCAST_MACRO(forrefo)
       DM_BCAST_MACRO(sfluxrefo)
 
-     RETURN
-9010 CONTINUE
-     WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ',rrtmg_unit
-     CALL wrf_error_fatal(errmess)
+      RETURN
+9010  CONTINUE
+      WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading '// &
+                                  'RRTMG_SW_DATA on unit ',rrtmg_unit
+      CALL wrf_error_fatal(errmess)
 
       end subroutine sw_kgb24
 
@@ -11895,6 +12948,8 @@ IMPLICIT NONE
 
       use rrsw_kg25, only : kao, sfluxrefo, &
                             raylo, abso3ao, abso3bo, layreffr
+!      use rrsw_kg25, only : kao, sfluxrefo, raylo, abso3ao, abso3bo
+!      use rrtmg_sw_taumol, only : layreffr
 
       implicit none
       save
@@ -11941,10 +12996,11 @@ IMPLICIT NONE
       DM_BCAST_MACRO(kao)
       DM_BCAST_MACRO(sfluxrefo)
 
-     RETURN
-9010 CONTINUE
-     WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ',rrtmg_unit
-     CALL wrf_error_fatal(errmess)
+      RETURN
+9010  CONTINUE
+      WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading '// &
+                                  'RRTMG_SW_DATA on unit ',rrtmg_unit
+      CALL wrf_error_fatal(errmess)
 
       end subroutine sw_kgb25
 
@@ -11975,10 +13031,11 @@ IMPLICIT NONE
       DM_BCAST_MACRO(raylo)
       DM_BCAST_MACRO(sfluxrefo)
 
-     RETURN
-9010 CONTINUE
-     WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ',rrtmg_unit
-     CALL wrf_error_fatal(errmess)
+      RETURN
+9010  CONTINUE
+      WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading '// &
+                                  'RRTMG_SW_DATA on unit ',rrtmg_unit
+      CALL wrf_error_fatal(errmess)
 
       end subroutine sw_kgb26
 
@@ -11988,6 +13045,8 @@ IMPLICIT NONE
 
       use rrsw_kg27, only : kao, kbo, sfluxrefo, raylo, &
                             scalekur, layreffr
+!      use rrsw_kg27, only : kao, kbo, sfluxrefo, raylo
+!      use rrtmg_sw_taumol, only : scalekur, layreffr
 
       implicit none
       save
@@ -12049,10 +13108,11 @@ IMPLICIT NONE
       DM_BCAST_MACRO(kbo)
       DM_BCAST_MACRO(sfluxrefo)
 
-     RETURN
-9010 CONTINUE
-     WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ',rrtmg_unit
-     CALL wrf_error_fatal(errmess)
+      RETURN
+9010  CONTINUE
+      WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading '// &
+                                  'RRTMG_SW_DATA on unit ',rrtmg_unit
+      CALL wrf_error_fatal(errmess)
 
       end subroutine sw_kgb27
 
@@ -12062,6 +13122,8 @@ IMPLICIT NONE
 
       use rrsw_kg28, only : kao, kbo, sfluxrefo, &
                             rayl, strrat, layreffr
+!      use rrsw_kg28, only : kao, kbo, sfluxrefo, rayl
+!      use rrtmg_sw_taumol, only : strrat, layreffr
 
       implicit none
       save
@@ -12118,10 +13180,11 @@ IMPLICIT NONE
       DM_BCAST_MACRO(kbo)
       DM_BCAST_MACRO(sfluxrefo)
 
-     RETURN
-9010 CONTINUE
-     WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ',rrtmg_unit
-     CALL wrf_error_fatal(errmess)
+      RETURN
+9010  CONTINUE
+      WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading '// &
+                                  'RRTMG_SW_DATA on unit ',rrtmg_unit
+      CALL wrf_error_fatal(errmess)
 
       end subroutine sw_kgb28
 
@@ -12131,6 +13194,9 @@ IMPLICIT NONE
 
       use rrsw_kg29, only : kao, kbo, selfrefo, forrefo, sfluxrefo, &
                             absh2oo, absco2o, rayl, layreffr
+!      use rrsw_kg29, only : kao, kbo, selfrefo, forrefo, sfluxrefo, &
+!                            absh2oo, absco2o, rayl
+!      use rrtmg_sw_taumol, only : layreffr
 
       implicit none
       save
@@ -12206,14 +13272,14 @@ IMPLICIT NONE
       DM_BCAST_MACRO(forrefo)
       DM_BCAST_MACRO(sfluxrefo)
 
-     RETURN
-9010 CONTINUE
-     WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading RRTMG_SW_DATA on unit ',rrtmg_unit
-     CALL wrf_error_fatal(errmess)
+      RETURN
+9010  CONTINUE
+      WRITE( errmess , '(A,I4)' ) 'module_ra_rrtmg_sw: error reading '// &
+                                  'RRTMG_SW_DATA on unit ',rrtmg_unit
+      CALL wrf_error_fatal(errmess)
 
       end subroutine sw_kgb29
 
 !------------------------------------------------------------------
 
-END MODULE module_ra_rrtmg_sw
-!***********************************************************************
+      END MODULE module_ra_rrtmg_sw
