@@ -1,0 +1,40 @@
+John, 
+
+The two source files are here:
+
+/glade/p/work/iacono/WRF_NCAR_svn_branch/WRFV3_branch_rrtmgpu/phys/module_ra_rrtmg_lw.F
+/glade/p/work/iacono/WRF_NCAR_svn_branch/WRFV3_branch_rrtmgpu/phys/module_ra_rrtmg_sw.F
+
+This is the config file modified for the GPU, which is also needed:
+
+/glade/p/work/iacono/WRF_NCAR_svn_branch/WRFV3_branch_rrtmgpu/configure.wrf
+
+Mike
+
+----
+
+
+Hi John,
+
+Here are a few issues to consider during the WRF implementation of the codes:
+
+RRTMGPU issues:
+
+1) Will RRTMGPU be added as a new radiation option for WRF, or as a replacement for the current option 4?
+
+2) RRTMGPU can be switched between GPU and CPU operation with compiler directive at the top of each (LW & SW) file (comment for CPU, uncomment for GPU)
+#define _CUDA
+
+3) Must select generalized way to set GPU block size for WRF (currently hard wired to 4096 for CONUS grid; can be defined based on available memory). This variable is called ‘cn’ in the LW and ‘pncol’ in the SW. 
+
+4) Need a resolution for running WRF/RRTMGPU in dmpar mode, when WRF runs on multiple CPU nodes and RRTMGPU runs on the GPU (currently causes memory fault). Code runs in dmpar mode using a single node. 
+
+RRTMG_LW (current option 4) issues:
+
+5) RRTMGPU contains a bug fix in LW code that causes small, but noticeable differences in output (relative to RRTMG_LW currently in WRF).  Same bug fix should be added to current (option 4) LW code for proper verification of effect of bug fix on output (on CPU) and separate verification of expected negligible to no impact on results of GPU. 
+
+Issues affecting GPU and CPU codes:
+
+6) Ozone input data should be updated to remove current single profile method originally inherited from the CAM radiation.  The ozone climatology approach currently used in the CAM radiation (and an optional input for RRTMG; namelist option 'o3input=2') should be made the default method for RRTMG and RRTMGPU. 
+
+Mike
