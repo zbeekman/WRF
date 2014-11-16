@@ -11,7 +11,7 @@
 !  --------------------------------------------------------------------------
 
 ! Uncomment to use GPU, or comment to use CPU
-#define _CUDA
+!#define _CUDA
 
 #ifdef _CUDA
 #define gpu_device ,device
@@ -9697,6 +9697,8 @@ end subroutine setcoef_sw
 
 #else
       pncol = 2
+      pncol = 4
+      pncol = 8
       
 #endif    
           

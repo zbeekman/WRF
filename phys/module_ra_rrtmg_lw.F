@@ -1,4 +1,5 @@
 !MODULE module_ra_rrtmg_lw
+#define CHNK 8
 
 !  --------------------------------------------------------------------------
 ! |                                                                          |
@@ -11,7 +12,7 @@
 !  --------------------------------------------------------------------------
 
 ! Uncomment to use GPU, or comment to use CPU
-#define _CUDA
+!#define _CUDA
 
 #ifdef _CUDA
 #define _gpudev  ,device
@@ -3564,6 +3565,9 @@ contains
 
       real  _gpudev, allocatable :: pmidd(:, :)
       real  _gpudev, allocatable :: cldfracd(:,:), clwpd(:,:), ciwpd(:,:), cswpd(:,:), taucd(:,:,:)
+
+!$OMP THREADPRIVATE(pmidd,cldfracd,clwpd,ciwpd,cswpd,taucd)
+
 ! For GSFC, not needed for WRF
 !      real  _gpudev, allocatable :: alphad(:,:), rcorrd(:,:)
 !      integer  _gpudev, allocatable :: cloudFlagd(:,:)
@@ -4178,6 +4182,7 @@ contains
 ! (dmb 2012) I moved most GPU variables so that they are module level variables.
 ! PGI Fortran seems to sometimes have trouble passing arrays into kernels correctly.
 ! Using module level variables bypasses this issue and allows for cleaner code.
+! (jm 2014) but not thread safe.
       integer  _gpudev, allocatable :: inflagd(:), iceflagd(:), liqflagd(:)
 
       real  _gpudev, allocatable :: ciwpmcd(:,:,:)    ! in-cloud ice water path [mcica]
@@ -4205,6 +4210,14 @@ contains
       real  _gpucon, dimension(46,16) :: absice3d
       real  _gpucon, dimension(58,16) :: absliq1d
 
+
+! (jm 2014) My reading of threadprivate documentation says this should work,
+!      see http://publib.boulder.ibm.com/infocenter/comphelp/v101v121
+! but keep an eye on it. Different vendors have extended this in different ways.
+! See also the intel -openmp-threadprivate=legacy/compat documentation.
+!$OMP THREADPRIVATE(inflagd,iceflagd,liqflagd,ciwpmcd,clwpmcd,cswpmcd,relqmcd,reicmcd,resnmcd, &
+!$OMP               absice0d,absice1d,absice2d,absice3d,absliq1d)
+
       contains
 
 ! ------------------------------------------------------------------------------
@@ -4218,6 +4231,10 @@ contains
 
       integer, value, intent(in) :: ncol              ! total number of columns
       integer, value, intent(in) :: nlayers           ! total number of layers
+
+#ifndef _CUDA
+# define ncol CHNK
+#endif
       
       real , intent(in) :: cldfmc(ncol, ngptlw, nlayers+1)        ! cloud fraction [mcica]
 
@@ -4443,6 +4460,10 @@ contains
 
       end subroutine cldprmcg
 
+#ifndef _CUDA
+# undef ncol
+#endif
+
       
 ! (dmb 2012) This subroutine allocates the module level arrays on the GPU
       subroutine allocateGPUcldprmcg(ncol, nlay, ngptlw)
@@ -4525,7 +4546,14 @@ contains
 !      use parkind, only : im => kind , rb => kind 
       use parrrtm, only : mg, nbndlw, ngptlw, mxlay
       use rrlw_con, only: fluxfac, heatfac
+! (jm 2014) not sure why the GPU version defines ntbl 2x instead of using it 
+! from rrlw_tbl, but will leave it alone for now. However, it is an error when
+! compiling for CPU, at least with the Intel compiler.  Says it's defined twice.
+#ifdef _CUDA
       use rrlw_tbl, only: bpade, tblint, tau_tbl, exp_tbl, tfn_tbl
+#else
+      use rrlw_tbl, only: bpade, tblint, tau_tbl, exp_tbl, tfn_tbl, ntbl
+#endif
 
 #ifdef _CUDA
       use cudafor
@@ -4533,12 +4561,16 @@ contains
     
       implicit none 
       
+#ifdef _CUDA
+! (jm 2014) see comment above)
       integer(kind=4), parameter :: ntbl = 10000
+#endif
       integer  _gpucon :: ngsd(nbndlw)      
 
 ! (dmb 2012) I moved most GPU variables so that they are module level variables.
 ! PGI Fortran seems to sometimes have trouble passing arrays into kernels correctly.
 ! Using module level variables bypasses this issue and allows for cleaner code.
+! (jm 2014) but not thread safe.
 
 ! Atmosphere
       real , allocatable _gpudev :: taucmcd(:,:,:)
@@ -4590,6 +4622,12 @@ contains
                                                        ! with respect to surface temperature
       real , allocatable _gpudev :: dplankbnd_dtd(:,:) 
 
+! (jm 2014)
+!$OMP THREADPRIVATE( taucmcd,pzd,pwvcmd,semissd,planklayd,planklevd,plankbndd,gurad,gdrad,gclrurad,gclrdrad,&
+!$OMP                gdtotuflux_dtd,gdtotuclfl_dtd,idrvd,bpaded,heatfacd,fluxfacd,a0d,a1d,a2d, &
+!$OMP                delwaved,totufluxd,totdfluxd,fnetd,htrd,totuclfld,totdclfld,fnetcd,htrcd,dtotuflux_dtd, &
+!$OMP                dtotuclfl_dtd,dplankbnd_dtd )
+
       contains
 
 !-----------------------------------------------------------------------------
@@ -4638,31 +4676,50 @@ contains
      
    ! ----- Local -----
 ! Declarations for radiative transfer
+
+#ifndef _CUDA
+# define IDIM (ncol)
+# define IDIM1 ncol,
+#else
+# define IDIM
+# define IDIM1
+#endif
    
-      real  :: atot(mxlay)
-      real  :: atrans(mxlay)
-      real  :: bbugas(mxlay)
-      real  :: bbutot(mxlay)
+      real  :: atot( IDIM1 mxlay)
+      real  :: atrans( IDIM1 mxlay)
+      real  :: bbugas( IDIM1 mxlay)
+      real  :: bbutot( IDIM1 mxlay)
      
-      real  :: uflux(0:mxlay)
-      real  :: dflux(0:mxlay)
-      real  :: uclfl(0:mxlay)
-      real  :: dclfl(0:mxlay)
+      real  :: uflux( IDIM1 0:mxlay)
+      real  :: dflux( IDIM1 0:mxlay)
+      real  :: uclfl( IDIM1 0:mxlay)
+      real  :: dclfl( IDIM1 0:mxlay)
+
+#ifndef _CUDA
+# define atot(X)     ATOT(iplon,X)
+# define atrans(X) ATRANS(iplon,X)
+# define bbugas(X) BBUGAS(iplon,X)
+# define bbutot(X) BBUTOT(iplon,X)
+# define uflux(X)   UFLUX(iplon,X)
+# define dflux(X)   DFLUX(iplon,X)
+# define uclfl(X)   UCLFL(iplon,X)
+# define dclfl(X)   DCLFL(iplon,X)
+#endif
     
       real  :: odclds
       real  :: efclfracs
       real  :: absclds
 
-      real  :: secdiff                              ! secant of diffusivity angle
-      real  :: transcld, radld, radclrd, plfrac, blay, dplankup, dplankdn
+      real  :: secdiff IDIM                         ! secant of diffusivity angle
+      real  :: transcld, radld IDIM, radclrd IDIM, plfrac, blay, dplankup, dplankdn
       real  :: odepth, odtot, odepth_rec, odtot_rec, gassrc
       real  :: tblind, tfactot, bbd, bbdtot, tfacgas, transc, tausfac
-      real  :: rad0, reflect, radlu, radclru
-      real  :: d_rad0_dt, d_radlu_dt, d_radclru_dt
+      real  :: rad0, reflect, radlu IDIM , radclru IDIM
+      real  :: d_rad0_dt, d_radlu_dt IDIM , d_radclru_dt IDIM
    
       integer  :: ibnd, ib, lay, lev, l, ig         ! loop indices
       integer  :: igc                               ! g-point interval counter
-      integer  :: iclddn                            ! flag for cloud in down path
+      integer  :: iclddn IDIM                       ! flag for cloud in down path
       integer  :: ittot, itgas, itr                 ! lookup table indices
    
 ! ------- Definitions -------
@@ -4752,15 +4809,19 @@ contains
    igc = (blockidx%y-1) * blockdim%y + threadidx%y
 ! (dmb 2012) Make sure that the column and bands are within the proper ranges
    if (iplon <= ncol .and. igc<=140) then
+
+# define ILOOP_S_CPU 
+# define ILOOP_E_CPU 
     
 #else
-   do iplon = 1, ncol
+# define ILOOP_S_CPU do iplon = 1, ncol
+# define ILOOP_E_CPU enddo
       do igc = 1, 140 
-
+# define secdiff   SECDIFF(iplon)
 #endif
-
          ibnd = ngb(igc)
       
+       ILOOP_S_CPU
          if (ibnd.eq.1 .or. ibnd.eq.4 .or. ibnd.ge.10) then
            secdiff = 1.66 
          else
@@ -4768,7 +4829,6 @@ contains
            if (secdiff .gt. 1.80 ) secdiff = 1.80 
            if (secdiff .lt. 1.50 ) secdiff = 1.50 
          endif
-   
          gurad(iplon, igc, 0) = 0.0 
          gdrad(iplon, igc, 0) = 0.0 
 !totuflux(iplon,igc,0) = 0.0 
@@ -4781,8 +4841,10 @@ contains
             gdtotuflux_dtd(iplon,igc,0) = 0.0 
             gdtotuclfl_dtd(iplon,igc,0) = 0.0 
          endif
+       ILOOP_E_CPU
 
          do lay = 1, nlayers
+       ILOOP_S_CPU
             gurad(iplon, igc, lay) = 0.0 
             gdrad(iplon, igc, lay) = 0.0 
             gclrurad(iplon, igc, lay) = 0.0 
@@ -4795,7 +4857,7 @@ contains
                gdtotuflux_dtd(iplon,igc,lay) = 0.0 
                gdtotuclfl_dtd(iplon,igc,lay) = 0.0 
             endif
-
+       ILOOP_E_CPU
          enddo
 
 ! Radiative transfer starts here.
@@ -4805,7 +4867,14 @@ contains
 
 ! Downward radiative transfer loop.  
 
+# ifndef _CUDA
+#  define radld   RADLD(iplon)
+#  define radclrd RADCLRD(iplon)
+#  define iclddn  ICLDDN(iplon)
+# endif
+
          do lev = nlayers, 1, -1
+       ILOOP_S_CPU
                plfrac = fracsd(iplon,lev,igc)
                blay = planklayd(iplon,lev,ibnd)
                dplankup = planklevd(iplon,lev,ibnd) - blay
@@ -4874,7 +4943,7 @@ contains
                   efclfracs * (1.  - atrans(lev))) + &
                   gassrc + cldfmcd(iplon, igc,lev) * &
                   (bbdtot * atot(lev) - gassrc)
-                  gdrad(iplon, igc, lev-1) = gdrad(iplon, igc, lev-1) + radld
+                  gdrad(iplon, igc, lev-1) = gdrad(iplon, igc, lev-1) + radld 
                   bbugas(lev) = plfrac * (blay + tfacgas * dplankup)
                   bbutot(lev) = plfrac * (blay + tfactot * dplankup)
               
@@ -4900,7 +4969,6 @@ contains
 
                   bbd = plfrac*(blay+tausfac*dplankdn)
                   bbugas(lev) = plfrac * (blay + tausfac * dplankup)
-                  radld = radld + (bbd-radld)*atrans(lev)
 #else
                   tblind = odepth/(bpade+odepth)
                   itr = tblint*tblind+0.5 
@@ -4909,16 +4977,16 @@ contains
                   tausfac = tfn_tbl(itr)
                   bbd = plfrac*(blay+tausfac*dplankdn)
                   bbugas(lev) = plfrac * (blay + tausfac * dplankup)
-                  radld = radld + (bbd-radld)*atrans(lev)
 #endif
-                  gdrad(iplon, igc, lev-1) = gdrad(iplon, igc, lev-1) + radld
+                  radld = radld + (bbd-radld )*atrans(lev)
+                  gdrad(iplon, igc, lev-1) = gdrad(iplon, igc, lev-1) + radld 
 
                endif
 
 !  Set clear sky stream to total sky stream as long as layers
 !  remain clear.  Streams diverge when a cloud is reached (iclddn=1),
 !  and clear sky stream must be computed separately from that point.
-               if (iclddn.eq.1) then
+               if (iclddn .eq.1) then
                   radclrd = radclrd + (bbd-radclrd) * atrans(lev) 
 ! (dmb 2012) Rather than summing up the results and then computing the 
 ! total fluxes, I store the g-point specific values in GPU arrays to be 
@@ -4926,10 +4994,11 @@ contains
 ! across enough dimensions so that the GPU remains busy.
                   gclrdrad(iplon, igc, lev-1) = gclrdrad(iplon, igc, lev-1) + radclrd
                else
-                  radclrd = radld
+                  radclrd = radld 
                   gclrdrad(iplon, igc, lev-1) = gdrad(iplon, igc, lev-1)
                endif
-            enddo
+       ILOOP_E_CPU
+         enddo   ! end of downward radiation loop
 
 ! Spectral emissivity & reflectance
 !  Include the contribution of spectrally varying longwave emissivity
@@ -4938,7 +5007,15 @@ contains
 !  diffusivity angle flux integration used here.
 !  Note: The emissivity is applied to plankbnd and dplankbnd_dt when 
 !  they are defined in subroutine setcoef. 
+
+# ifndef _CUDA
+#  define radlu         RADLU(iplon)
+#  define radclru       RADCLRU(iplon)
+#  define d_radlu_dt    D_RADLU_DT(iplon)
+#  define d_radclru_dt  D_RADCLRU_DT(iplon)
+# endif
     
+       ILOOP_S_CPU
          rad0 = fracsd(iplon,1,igc) * plankbndd(iplon,ibnd)
          if (idrvd .eq. 1) then
             d_rad0_dt = fracsd(iplon,1,igc) * dplankbnd_dtd(iplon,ibnd)
@@ -4951,7 +5028,7 @@ contains
 
 
 ! Upward radiative transfer loop.
-         gurad(iplon, igc, 0) = gurad(iplon, igc, 0) + radlu
+         gurad(iplon, igc, 0) = gurad(iplon, igc, 0) + radlu 
          gclrurad(iplon, igc, 0) = gclrurad(iplon, igc, 0) + radclru
          if (idrvd .eq. 1) then
 ! (dmb 2012) For the optional derivatives, we likewise store the intermediate
@@ -4961,8 +5038,10 @@ contains
             d_radclru_dt = d_rad0_dt
             gdtotuclfl_dtd(iplon, igc, 0) = d_radclru_dt
          endif
+       ILOOP_E_CPU
 
          do lev = 1, nlayers
+       ILOOP_S_CPU
 !  Cloudy layer
             if (icldlyr(iplon, lev) .eq. 1) then
                gassrc = bbugas(lev) * atrans(lev)
@@ -5010,6 +5089,7 @@ contains
                      gdtotuclfl_dtd(iplon, igc, lev) = gdtotuflux_dtd(iplon, igc, lev)
                   endif
                endif
+       ILOOP_E_CPU
           enddo
           
           
@@ -5017,17 +5097,21 @@ contains
  ! (dmb 2012) Now that the g-points values were created, we modify them 
  ! so that later summation (integration) will be simpler.  
           do lev = 0, nlayers  
+       ILOOP_S_CPU
            gurad(iplon, igc, lev) = gurad(iplon, igc, lev) * tblind
            gdrad(iplon, igc, lev) = gdrad(iplon, igc, lev) * tblind
            gclrurad(iplon, igc, lev) = gclrurad(iplon, igc, lev) * tblind
            gclrdrad(iplon, igc, lev) = gclrdrad(iplon, igc, lev) * tblind
+       ILOOP_E_CPU
           end do
 
           if (idrvd .eq. 1) then
  ! (dmb 2012) we do the same for the optional derivatives.
           do lev = 0, nlayers
+       ILOOP_S_CPU
            gdtotuflux_dtd(iplon, igc, lev) = gdtotuflux_dtd(iplon, igc, lev) * tblind
            gdtotuclfl_dtd(iplon, igc, lev) = gdtotuclfl_dtd(iplon, igc, lev) * tblind
+       ILOOP_E_CPU
           end do
 
           endif
@@ -5035,8 +5119,7 @@ contains
 #ifdef _CUDA
       endif
 #else
-        end do
-      end do
+      end do   ! igc loop
 #endif
 
       end subroutine rtrnmcg
@@ -5156,38 +5239,64 @@ contains
       subroutine allocateGPUrtrnmcg(ncol, nlay, ngptlw, drvf)
 
       integer , intent(in) :: ncol, nlay, ngptlw, drvf
+integer,external :: omp_get_thread_num
 
+!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate( taucmcd(ncol, ngptlw, nlay+1))
+!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate( pzd(ncol, 0:nlay+1))
+!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate( pwvcmd(ncol))
+!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate( semissd(ncol, nbndlw))
+!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate( planklayd(ncol,nlay+1,nbndlw))
+!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate( planklevd(ncol, 0:nlay+1, nbndlw))
+!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate( plankbndd(ncol,nbndlw))
+!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate ( gurad(ncol,ngptlw,0:nlay+1))        ! upward longwave flux (w/m2)
+!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate ( gdrad(ncol,ngptlw,0:nlay+1))        ! downward longwave flux (w/m2)
+!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate ( gclrurad(ncol,ngptlw,0:nlay+1))     ! clear sky upward longwave flux (w/m2)
+!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate ( gclrdrad(ncol,ngptlw,0:nlay+1))     ! clear sky downward longwave flux (w/m2)
+!jm write(0,*)__LINE__,omp_get_thread_num()
 
 ! (dmb 2012) Only allocate the optional derivative arrays if the flag is set
       if (drvf .eq. 1) then
             
         allocate( gdtotuflux_dtd( ncol, ngptlw, 0:nlay+1))
+!jm write(0,*)__LINE__,omp_get_thread_num()
         allocate( gdtotuclfl_dtd( ncol, ngptlw, 0:nlay+1))
+!jm write(0,*)__LINE__,omp_get_thread_num()
 
       endif
           
       allocate (totufluxd(ncol, 0:nlay+1))     ! upward longwave flux (w/m2)
+!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate (totdfluxd(ncol, 0:nlay+1))     ! downward longwave flux (w/m2)
+!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate (fnetd(ncol, 0:nlay+1))         ! net longwave flux (w/m2)
+!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate (htrd(ncol, 0:nlay+1))          ! longwave heating rate (k/day)
+!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate (totuclfld(ncol, 0:nlay+1))     ! clear sky upward longwave flux (w/m2)
+!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate (totdclfld(ncol, 0:nlay+1))     ! clear sky downward longwave flux (w/m2)
+!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate (fnetcd(ncol, 0:nlay+1))        ! clear sky net longwave flux (w/m2)
+!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate (htrcd(ncol, 0:nlay+1))         ! clear sky longwave heating rate (k/day)
+!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate (dtotuflux_dtd(ncol, 0:nlay+1)) ! change in upward longwave flux (w/m2/k)
+!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate (dtotuclfl_dtd(ncol, 0:nlay+1))
+!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate (dplankbnd_dtd(ncol,nbndlw)) 
+!jm write(0,*)__LINE__,omp_get_thread_num()
 
       end subroutine 
 
@@ -5263,6 +5372,7 @@ contains
 ! (dmb 2012) There are a lot of GPU module level variables in this module
 ! The parameter list for the taumol subroutines have been reduced for 
 ! efficiency and readability.
+! (jm 2014) not thread-safe
       real  _gpudev, allocatable :: pavel(:,:)
       real  _gpudev, allocatable :: wx1(:,:)
       real  _gpudev, allocatable :: wx2(:,:)
@@ -5304,6 +5414,12 @@ contains
      
       integer  _gpudev, allocatable :: nspad(:)
       integer  _gpudev, allocatable :: nspbd(:)
+!$OMP THREADPRIVATE( pavel,wx1,wx2,wx3,wx4,coldry,laytrop,jp,jt,jt1,colh2o,colco2,colo3,coln2o, &
+!$OMP                colco,colch4,colo2,colbrd,indself,indfor,selffac,selffrac,forfac,forfrac,  &
+!$OMP                indminor,minorfrac,scaleminor,scaleminorn2,fac00,fac01,fac10,fac11,        &
+!$OMP                rat_h2oco2,rat_h2oco2_1,rat_h2oo3,rat_h2oo3_1,rat_h2on2o,rat_h2on2o_1,     &
+!$OMP                rat_h2och4,rat_h2och4_1,rat_n2oco2,rat_n2oco2_1,rat_o3co2,rat_o3co2_1,     &
+!$OMP                tauaa,nspad,nspbd )
       real  _gpucon :: oneminusd 
 
       contains
@@ -8629,6 +8745,8 @@ contains
       dimGrid = dim3( (ncol + 63) / 64, ((nlayers+1)/2), 1)
       dimBlock = dim3( 64, 2, 1)
       
+#else
+!#  define ncol CHNK
 #endif   
 
 ! Calculate gaseous optical depth and planck fractions for each spectral band.
@@ -8683,6 +8801,9 @@ contains
 
       end subroutine taumolg
 
+!#ifndef _CUDA
+!#  undef ncol
+!#endif
 
 ! (dmb 2012) Allocate all of the needed memory for the taumol subroutines
       subroutine allocateGPUTaumol(ncol, nlayers, npart)
@@ -8954,6 +9075,8 @@ contains
                                                          !    Dimensions: (ncol)
       real  _gpudev, allocatable :: wbroadd(:,:)         ! broadening gas column density (mol/cm2)
                                                          !    Dimensions: (ncol,nlayers)
+
+!$OMP THREADPRIVATE(taveld,tzd,tboundd,wbroadd)
 
       real  _gpudev :: totplnkd(181,nbndlw)
       real  _gpudev :: totplk16d(181)
@@ -13597,14 +13720,13 @@ contains
       integer, allocatable _gpudev :: icldlyr(:,:)
       real  _gpudev, allocatable :: fracsd(:,:,:)
       real  _gpudev, allocatable :: taug(:,:,:)
+!$OMP THREADPRIVATE(ngbd,ncbandsd,icbd,icldlyr,fracsd,taug)
    
       real :: timings(10)
 
 !------------------------------------------------------------------
       contains
 !------------------------------------------------------------------
-! (dmb 2012) Added the GPUFlag parameter
-! GPUFlag = 0 to run on CPU, 1 to run on the GPU
       subroutine rrtmg_lw( &
              ncol    ,nlay    ,icld    ,idrv    , &
              play    ,plev    ,tlay    ,tlev    ,tsfc    , & 
@@ -13851,6 +13973,7 @@ contains
       integer :: numDevices, err
     
       integer :: numThreads
+integer,external :: omp_get_thread_num
 
       ! Cuda device information
 #ifdef _CUDA
@@ -13861,6 +13984,7 @@ contains
 ! mji - time      
       real t1,t2
 
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
 #ifdef _CUDA
  
       err = cudaGetDeviceProperties( prop, 0)
@@ -13889,6 +14013,7 @@ contains
 #endif
 !      print *, "available working memory is ", int(minmem / (1024*1024)) , " MB"
     
+#ifdef _CUDA
 ! use the available memory to determine the minumum number 
 ! of steps that will be required.
 ! We use 1500 profiles per available GB as a conservative 
@@ -13908,6 +14033,9 @@ contains
 !      cn = 1024
 !      cn = 2048
       cn = 4096
+#else
+      cn = CHNK
+#endif
 !
 ! mji - Reduce number of columns per partition by number of CPU processors for dmpar
 ! mji - Running WRF in dmpar with 8 processors
@@ -13937,7 +14065,6 @@ contains
 !             uflx    ,dflx    ,hr      ,uflxc   ,dflxc,  hrc, &
 !             duflx_dt,duflxc_dt,cloudFlag)    
       end do  
-      
       
 ! mji - time      
       call cpu_time(t2)
@@ -14064,6 +14191,10 @@ contains
 
       integer , intent(in) :: pncol
       integer , intent(in) :: colstart
+
+#ifndef _CUDA
+# define pncol CHNK
+#endif
       
 ! ----- Output -----
 
@@ -14278,21 +14409,12 @@ contains
       real  :: btemp
 !      integer  :: cloudFlagq(pncol, 4)
       integer _gpudev :: pncold, nlayd, icldd
+integer,external :: omp_get_thread_num
 
 !
-! Initializations
-      icb(:) = (/  1,2,3,3,3,4,4,4,5, 5, 5, 5, 5, 5, 5, 5 /)
-	 
-      oneminus = 1.  - 1.e-6 
-      pi = 2.  * asin(1. )
-      fluxfac = pi * 2.e4                   ! orig:   fluxfac = pi * 2.d4  
-      istart = 1
-      iend = 16
-      iout = 0
-      ims = 1
-      pncold = pncol
-      nlayd = nlay
-    
+#ifndef _CUDA
+# undef pncol
+#endif
    
       cldfracq(:,1:nlay) = cldfrac(colstart:(colstart+pncol-1), 1:nlay)
       ciwpq(:,1:nlay) = ciwp(colstart:(colstart+pncol-1), 1:nlay)
@@ -14307,18 +14429,53 @@ contains
 ! For GSFC, not needed for WRF
 !      zmp(:,1:nlay) = zm(colstart:(colstart+pncol-1), 1:nlay)
   
-   
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
+! Initializations
+      icb(:) = (/  1,2,3,3,3,4,4,4,5, 5, 5, 5, 5, 5, 5, 5 /)
+	 
+      oneminus = 1.  - 1.e-6 
+      pi = 2.  * asin(1. )
+      fluxfac = pi * 2.e4                   ! orig:   fluxfac = pi * 2.d4  
+      istart = 1
+      iend = 16
+      iout = 0
+      ims = 1
+      pncold = pncol
+      nlayd = nlay
+    
+      cldfracq(:,1:nlay) = cldfrac(colstart:(colstart+pncol-1), 1:nlay)
+      ciwpq(:,1:nlay) = ciwp(colstart:(colstart+pncol-1), 1:nlay)
+      clwpq(:,1:nlay) = clwp(colstart:(colstart+pncol-1), 1:nlay)
+      cswpq(:,1:nlay) = cswp(colstart:(colstart+pncol-1), 1:nlay)
+      reiq(:,1:nlay) = rei(colstart:(colstart+pncol-1), 1:nlay)
+      relq(:,1:nlay) = rel(colstart:(colstart+pncol-1), 1:nlay)
+      resq(:,1:nlay) = res(colstart:(colstart+pncol-1), 1:nlay)
+      taucq(:,1:nbndlw,1:nlay) = tauc(colstart:(colstart+pncol-1), 1:nbndlw, 1:nlay)
+! ** mji *** tauaq dimensions?
+      tauaq(:,1:nlay,1:nbndlw) = tauaer(colstart:(colstart+pncol-1), 1:nlay, 1:nbndlw)
+! For GSFC, not needed for WRF
+!      zmp(:,1:nlay) = zm(colstart:(colstart+pncol-1), 1:nlay)
+  
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
       allocate( cldfmcd(pncol, ngptlw, nlay+1))
 
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
       allocate( ngbd(140) )
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
 	   
 
+#ifndef _CUDA
+#  define pncol CHNK
+#endif
       allocate( icbd(16))
       allocate( ncbandsd(pncol))
       allocate( icldlyr(pncol, nlay+1))
    
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
       call allocateGPUcldprmcg(pncol, nlay, ngptlw)
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
       call allocateGPUrtrnmcg(pncol, nlay, ngptlw, idrv)
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
   
       ngbd = ngb
       ngsd = ngs
@@ -14362,10 +14519,14 @@ contains
       nlayers = nlay
 
 
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
       call allocateGPUTaumol( pncol, nlayers, npart)
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
 
       allocate( fracsd( pncol, nlayers+1, ngptlw ))
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
       allocate( taug( pncol, nlayers+1, ngptlw ))
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
 ! For GSFC, not needed for WRF
 !      allocate( zmd(pncol, mxlay+1))
       tbound = tsfc(colstart:(colstart+pncol-1))
@@ -14377,15 +14538,22 @@ contains
 
       call copyGPUTaumolMol( colstart, pncol, nlayers, h2ovmr, co2vmr, o3vmr, n2ovmr, ch4vmr, &
                              o2vmr, ccl4vmr, cfc11vmr, cfc12vmr, cfc22vmr, npart)
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
+
+#ifndef _CUDA
+#  undef pncol
+#endif
 
 ! For GSFC, not needed for WRF
 !      zmd = zmp
       
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
       call mcica_subcol_lwg(1, pncol, nlay, icld, counter, 0, play, cldfracq, ciwpq, &
                              clwpq, cswpq, taucq,ngbd, cldfmcd, ciwpmcd, clwpmcd, cswpmcd, & 
 ! For GSFC, not needed for WRF
 !                             taucmcd,  cloudFlagq, cloudMH, cloudHH, zmd, 1)
                              taucmcd)
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
 
 !  Generate the stochastic subcolumns of cloud optical properties for the longwave;
 #ifdef _CUDA
@@ -14400,6 +14568,7 @@ contains
                                ngbd, cldfmcd, clwpmcd, ciwpmcd, cswpmcd, taucmcd)
       end if
 
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
       do iplon = 1, pncol
  
         piplon = iplon + colstart - 1
@@ -14436,6 +14605,7 @@ contains
         endif
       enddo
 
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
 ! For GSFC, not needed for WRF
 !      call mcica_cldc(pncol, icld, nlay, cloudmh, cloudhh, cloudflagq, cldfmcd)
 !      cloudFlag(colstart:(colstart+pncol-1), :) = cloudFlagq
@@ -14456,6 +14626,7 @@ contains
       call copyGPUcldprmcg( inflag, iceflag, liqflag,&
                                  absice0, absice1, absice2, absice3, absliq1 )
   
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
   
 ! copy common arrays over to the GPU
       icbd = icb
@@ -14470,7 +14641,9 @@ contains
       icldlyr = 0.0
 
 ! (dmb 2012) Allocate the arrays for the SetCoef and Taumol kernels
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
       call allocateGPUSetCoef( pncol, nlayers)
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
       
 ! (dmb 2012) Copy the needed data of to the GPU for the SetCoef and Taumol kernels
 
@@ -14548,6 +14721,7 @@ contains
       dimBlock = dim3( 256,2,1)
 #endif    
    
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
       call rtrnmcg _gpuchv (pncol,nlayers, istart, iend, iout, &
                      ngbd, icldlyr, taug, fracsd, cldfmcd)
 
@@ -14555,6 +14729,7 @@ contains
       ierr = cudaThreadSynchronize() 
 #endif
 
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
 
 ! sum up the results
   
@@ -14581,6 +14756,7 @@ contains
 #endif
 
 
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
 ! (dmb 2012) Calculate the heating rates.
       call rtrnheatrates _gpuchv (pncol, nlayers)    
 
@@ -14603,6 +14779,7 @@ contains
  
       end if
 
+!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
 
 !  Transfer up and down fluxes and heating rate to output arrays.
 !  Vertical indexing goes from bottom to top; reverse here for GCM if necessary.
@@ -14623,6 +14800,11 @@ contains
       end subroutine rrtmg_lw_part
 
       end module rrtmg_lw_rad
+
+#ifndef _CUDA
+# undef pncol
+!# undef pncold
+#endif
 
 
 !------------------------------------------------------------------

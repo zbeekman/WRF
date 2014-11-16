@@ -677,6 +677,9 @@ CONTAINS
 ! jararias 2013/11
    real, dimension(:,:,:,:), allocatable :: tauaer_sw, ssaaer_sw, asyaer_sw
 
+integer e1,s1
+integer e2,s2
+integer,external :: rsl_internal_microclock,omp_get_thread_num
 
 #ifdef HWRF
    CHARACTER(len=265) :: wrf_err_message
@@ -797,6 +800,7 @@ CONTAINS
    gfdl_sw = .false.
 
 ! Allocate aerosol arrays used by aer_opt = 2 option
+s1 = rsl_internal_microclock()
    IF ( PRESENT( AOD5502D ) ) THEN
      ! jararias, 2013/11
      IF ( aer_opt .EQ. 2 ) THEN
@@ -855,7 +859,10 @@ CONTAINS
                       julian,xtime+radt*0.5,gmt, &
                       declin,degrad,xlong,xlat,coszen,hrang)
    ENDDO
+e1 = rsl_internal_microclock()
+write(0,*)__FILE__,__LINE__,e1-s1
 
+s1 = rsl_internal_microclock()
    !$OMP PARALLEL DO   &
    !$OMP PRIVATE ( ij ,i,j,k,its,ite,jts,jte)
 
@@ -1093,6 +1100,7 @@ CONTAINS
      ENDIF
      ENDIF
 
+if(omp_get_thread_num().eq.0)s2=rsl_internal_microclock()
      lwrad_select: SELECT CASE(lw_physics)
 
         CASE (RRTMSCHEME)
@@ -1393,6 +1401,10 @@ CONTAINS
              CALL wrf_error_fatal ( wrf_err_message )
            
      END SELECT lwrad_select    
+if(omp_get_thread_num().eq.0)then
+ e2=rsl_internal_microclock()
+ write(0,*)'lw ',e2-s2
+endif
 
      IF (lw_physics .gt. 0 .and. .not.gfdl_lw) THEN
         DO j=jts,jte
@@ -1458,6 +1470,7 @@ CONTAINS
      ENDIF
      ENDIF
 
+if(omp_get_thread_num().eq.0)s2=rsl_internal_microclock()
      swrad_select: SELECT CASE(sw_physics)
 
         CASE (SWRADSCHEME)
@@ -1783,6 +1796,10 @@ CONTAINS
              CALL wrf_error_fatal ( wrf_err_message )
 
      END SELECT swrad_select    
+if(omp_get_thread_num().eq.0)then
+ e2=rsl_internal_microclock()
+ write(0,*)'sw ',e2-s2
+endif
 
      IF (sw_physics .eq. goddardswscheme) THEN
           IF ( PRESENT (tswdn) ) THEN
@@ -1872,6 +1889,8 @@ CONTAINS
 
    ENDDO
    !$OMP END PARALLEL DO
+e1 = rsl_internal_microclock()
+write(0,*)__FILE__,__LINE__,e1-s1
 
    IF ( allocated(tauaer_sw) ) deallocate(tauaer_sw)
    IF ( allocated(ssaaer_sw) ) deallocate(ssaaer_sw)
