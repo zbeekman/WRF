@@ -152,14 +152,18 @@ subroutine ddbxegr( a, x, y , pt)
 end subroutine
 
 subroutine dflush()
+#ifdef _CUDA
     allocate( ddar( ddsizec + 1 ) )
+#endif
     
     ddflush = 1
     ddindex = 1
 end subroutine
 
 subroutine dclean()
+#ifdef _CUDA
     deallocate( ddar )
+#endif
     ddindex = 0
     ddsizec = 0
     ddflush = 0
@@ -314,7 +318,9 @@ subroutine dbflushrg()
 #ifdef _memdiag        
         print *, dlist(i)%size
 #endif
+#ifdef _CUDA
         allocate( dlist(i)%ar( dlist(i)%size + 2 ))
+#endif
         dlist(i)%loc = c_devloc( dlist(i)%ar(1) )
     end do
 
@@ -440,7 +446,9 @@ subroutine dbclean
         dlist(i)%size=0
         clist(i)%size=0
 
+#ifdef _CUDA
         deallocate( dlist(i)%ar )
+#endif
     end do
     nc = 0
     np = 0
@@ -3563,10 +3571,12 @@ contains
 !      real , dimension(n1,n2) :: XCW
 !      real  _gpudev, allocatable :: pmidd(:, :),xcwd(:,:)
 
+#ifdef _CUDA
       real  _gpudev, allocatable :: pmidd(:, :)
       real  _gpudev, allocatable :: cldfracd(:,:), clwpd(:,:), ciwpd(:,:), cswpd(:,:), taucd(:,:,:)
 
 !$OMP THREADPRIVATE(pmidd,cldfracd,clwpd,ciwpd,cswpd,taucd)
+#endif
 
 ! For GSFC, not needed for WRF
 !      real  _gpudev, allocatable :: alphad(:,:), rcorrd(:,:)
@@ -3582,10 +3592,13 @@ contains
 ! Public subroutines
 !------------------------------------------------------------------
 
-      subroutine mcica_subcol_lwg(iplon, ncol, nlay, icld, permuteseed, irng, play, &
-                       cldfrac, ciwp, clwp, cswp, tauc, ngbd, cldfmcl, &
+      subroutine mcica_subcol_lwg(iplon, ncol, nlay, icld, permuteseed, irng,       &
 ! For GSFC, not needed for WRF
 !                       ciwpmcl, clwpmcl, cswpmcl, taucmcl, cloudFlag, cloudMH, cloudHH, zmd, inhm)
+#ifndef _CUDA
+                       pmidd,cldfracd,clwpd,ciwpd,cswpd,taucd, &
+#endif
+                       play, cldfrac, ciwp, clwp, cswp, tauc, ngbd, cldfmcl, &
                        ciwpmcl, clwpmcl, cswpmcl, taucmcl)
 
 ! ----- Input -----
@@ -3634,6 +3647,11 @@ contains
                                                       !    Dimensions: (ngptlw,ncol,nlay)
 !      integer , intent(out) :: cloudFlag(:,:)
       
+#ifndef _CUDA
+! were module data but changed to arguments because not thread-safe
+      real  :: pmidd(:, :)
+      real  :: cldfracd(:,:), clwpd(:,:), ciwpd(:,:), cswpd(:,:), taucd(:,:,:)
+#endif
 
 ! For GSFC, not needed for WRF
 !      real  _gpudev, intent(in) :: zmd(:,:)  ! Height of midpoints (above surface)
@@ -3689,6 +3707,7 @@ contains
 !            call tabulate_xcw_gamma(xcw)
 !         endif
 
+#ifdef _CUDA
       allocate( pmidd(ncol, nlay), cldfracd(ncol, mxlay+1))
       allocate( clwpd(ncol, mxlay+1), ciwpd(ncol, mxlay+1), cswpd(ncol, mxlay+1))
       allocate( taucd(ncol, nbndlw, mxlay))
@@ -3696,6 +3715,7 @@ contains
 !      allocate( xcwd( n1, n2))
 !      allocate( alphad( ncol, nlay), rcorrd(ncol, nlay))
 !      allocate( cloudFlagd( ncol, 4))
+#endif
 
 !      ! compute alpha and rcorr
         
@@ -3710,6 +3730,7 @@ contains
 !      end do
 !!      !$acc end kernels
 
+#ifdef _CUDA
       pmidd = pmid
     
       cldfracd = cldfrac
@@ -3717,6 +3738,7 @@ contains
       ciwpd = ciwp
       cswpd = cswp
       taucd = tauc
+#endif
 ! For GSFC, not needed for WRF
 !      xcwd = xcw
 
@@ -3792,6 +3814,9 @@ contains
 
 !-------------------------------------------------------------------------------------------------
        _gpuker subroutine generate_stochastic_cloudsg(ncol, nlay, icld, ngbd, &
+#ifndef _CUDA
+                                 pmidd,cldfracd,clwpd,ciwpd,cswpd,taucd, &
+#endif
                                  cld_stoch, clwp_stoch, ciwp_stoch, cswp_stoch, &
 ! For GSFC, not needed for WRF
 !                                 tauc_stoch, ih, zm) 
@@ -3860,6 +3885,13 @@ contains
       integer , intent(in) :: icld            ! clear/cloud, cloud overlap flag
   
        integer  _gpudev, intent(in) :: ngbd(:)
+
+#ifndef _CUDA
+! were module data but changed to arguments because not thread-safe
+      real  :: pmidd(:, :)
+      real  :: cldfracd(:,:), clwpd(:,:), ciwpd(:,:), cswpd(:,:), taucd(:,:,:)
+#endif
+
 !      real , intent(in) :: ssac(:,:,:)       ! in-cloud single scattering albedo
                                                       !    Dimensions: (nbndlw,ncol,nlay)
                                                       !   inactive - for future expansion
@@ -4179,6 +4211,7 @@ contains
 #endif
       implicit none
 
+#ifdef _CUDA
 ! (dmb 2012) I moved most GPU variables so that they are module level variables.
 ! PGI Fortran seems to sometimes have trouble passing arrays into kernels correctly.
 ! Using module level variables bypasses this issue and allows for cleaner code.
@@ -4217,12 +4250,17 @@ contains
 ! See also the intel -openmp-threadprivate=legacy/compat documentation.
 !$OMP THREADPRIVATE(inflagd,iceflagd,liqflagd,ciwpmcd,clwpmcd,cswpmcd,relqmcd,reicmcd,resnmcd, &
 !$OMP               absice0d,absice1d,absice2d,absice3d,absliq1d)
+#endif
 
       contains
 
 ! ------------------------------------------------------------------------------
-      _gpuker subroutine cldprmcg(ncol, nlayers, cldfmc, &
-                                  taucmc, ngb, icb, ncbands, icldlyr)
+      _gpuker subroutine cldprmcg(ncol, nlayers,                                           &
+#ifndef _CUDA
+                inflagd,iceflagd,liqflagd,ciwpmcd,clwpmcd,cswpmcd,relqmcd,reicmcd,resnmcd, &
+                absice0d,absice1d,absice2d,absice3d,absliq1d,                              &
+#endif
+                                  cldfmc, taucmc, ngb, icb, ncbands, icldlyr)
 ! ------------------------------------------------------------------------------
 
 ! Purpose:  Compute the cloud optical depth(s) for each cloudy layer.
@@ -4248,6 +4286,36 @@ contains
 ! ------- Output -------
 
       integer , intent(out) :: ncbands(:)     ! number of cloud spectral bands
+
+#ifndef _CUDA
+!changed to arguments for thread safety on CPU
+      integer  :: inflagd(:), iceflagd(:), liqflagd(:)
+
+      real  :: ciwpmcd(:,:,:)    ! in-cloud ice water path [mcica]
+      real  :: clwpmcd(:,:,:)    ! in-cloud liquid water path [mcica]
+      real  :: cswpmcd(:,:,:)    ! in-cloud snow water path [mcica]
+                                                      !    Dimensions: (ncol,ngptlw,nlayers)
+      real  :: relqmcd(:,:)      ! liquid particle effective radius (microns)
+      real  :: reicmcd(:,:)      ! ice particle effective size (microns)
+      real  :: resnmcd(:,:)      ! snow particle effective size (microns)
+                                                      !    Dimensions: (ncol,nlayers)
+                                                      ! specific definition of reicmc depends on setting of iceflag:
+                                                      ! iceflag = 0: ice effective radius, r_ec, (Ebert and Curry, 1992),
+                                                      !              r_ec must be >= 10.0 microns
+                                                      ! iceflag = 1: ice effective radius, r_ec, (Ebert and Curry, 1992),
+                                                      !              r_ec range is limited to 13.0 to 130.0 microns
+                                                      ! iceflag = 2: ice effective radius, r_k, (Key, Streamer Ref. Manual, 1996)
+                                                      !              r_k range is limited to 5.0 to 131.0 microns
+                                                      ! iceflag = 3: generalized effective size, dge, (Fu, 1996),
+                                                      !              dge range is limited to 5.0 to 140.0 microns
+                                                      !              [dge = 1.0315 * r_ec]
+ 
+      real, dimension(2) :: absice0d
+      real, dimension(2,5) :: absice1d
+      real, dimension(43,16) :: absice2d
+      real, dimension(46,16) :: absice3d
+      real, dimension(58,16) :: absliq1d
+#endif
 
 ! ------- Local -------
 
@@ -4469,6 +4537,7 @@ contains
       subroutine allocateGPUcldprmcg(ncol, nlay, ngptlw)
 
          integer , intent(in) :: nlay, ngptlw, ncol
+#ifdef _CUDA
          allocate( inflagd(ncol), iceflagd(ncol), liqflagd(ncol))
          allocate( relqmcd(ncol, nlay+1), reicmcd(ncol, nlay+1))
          allocate( resnmcd(ncol, nlay+1))
@@ -4476,18 +4545,21 @@ contains
          allocate( ciwpmcd(ncol, ngptlw, nlay+1))
          allocate( clwpmcd(ncol, ngptlw, nlay+1))
          allocate( cswpmcd(ncol, ngptlw, nlay+1))
+#endif
 	
       end subroutine
 
       ! (dmb 2012) This subroutine deallocates any GPU arrays.
       subroutine deallocateGPUcldprmcg()
 
+#ifdef _CUDA
          deallocate( inflagd, iceflagd, liqflagd)
          deallocate( relqmcd, reicmcd, resnmcd)
 
          deallocate( ciwpmcd)
          deallocate( clwpmcd)
          deallocate( cswpmcd)
+#endif
       
       end subroutine
 
@@ -4504,6 +4576,7 @@ contains
          real , dimension(:,:) :: absice3
          real , dimension(:,:) :: absliq1
       
+#ifdef _CUDA
          inflagd = inflag
          iceflagd = iceflag
          liqflagd = liqflag
@@ -4513,6 +4586,7 @@ contains
          absice2d = absice2
          absice3d = absice3
          absliq1d = absliq1
+#endif
       
       end subroutine 
 
@@ -4565,6 +4639,7 @@ contains
 ! (jm 2014) see comment above)
       integer(kind=4), parameter :: ntbl = 10000
 #endif
+#ifdef _CUDA
       integer  _gpucon :: ngsd(nbndlw)      
 
 ! (dmb 2012) I moved most GPU variables so that they are module level variables.
@@ -4627,12 +4702,14 @@ contains
 !$OMP                gdtotuflux_dtd,gdtotuclfl_dtd,idrvd,bpaded,heatfacd,fluxfacd,a0d,a1d,a2d, &
 !$OMP                delwaved,totufluxd,totdfluxd,fnetd,htrd,totuclfld,totdclfld,fnetcd,htrcd,dtotuflux_dtd, &
 !$OMP                dtotuclfl_dtd,dplankbnd_dtd )
+#endif
 
       contains
 
 !-----------------------------------------------------------------------------
-      _gpuker subroutine  rtrnmcg(ncol, nlayers, istart, iend, iout, &
-                                  ngb,icldlyr, taug, fracsd, cldfmcd)
+      _gpuker subroutine  rtrnmcg(ncol, nlayers, istart, iend, iout                               &
+#include "rrtmg_lw_cpu_args.h"
+                                 ,ngb,icldlyr, taug, fracsd, cldfmcd)
 !-----------------------------------------------------------------------------
 !
 !  Original version:   E. J. Mlawer, et al. RRTM_V3.0
@@ -4673,6 +4750,8 @@ contains
       real  _gpudev :: taug(:,:,:)
       real  _gpudev :: fracsd(:,:,:)
       real  _gpudev :: cldfmcd(:,:,:)
+
+#include "rrtmg_lw_cpu_defs.h"
      
    ! ----- Local -----
 ! Declarations for radiative transfer
@@ -5128,12 +5207,15 @@ contains
 ! final upward and downward flux value for each column and layer.  This subroutine 
 ! is parallelized across the column and layer dimensions.  As long as we parallelize 
 ! across two of the three dimesnions, we should usually have enough GPU saturation.
-      _gpuker subroutine rtrnadd(ncol, nlay, ngpt, drvf)
+      _gpuker subroutine rtrnadd(ncol, nlay, ngpt, drvf                &
+#include "rrtmg_lw_cpu_args.h"
+                                )
 
       integer, intent(in), value :: ncol
       integer, intent(in), value :: nlay
       integer, intent(in), value :: ngpt
       integer, intent(in), value :: drvf
+#include "rrtmg_lw_cpu_defs.h"
         
       integer :: iplon, ilay, igp
 !      real :: d(140)
@@ -5183,10 +5265,13 @@ contains
 
 ! (dmb 2012) This kernel computes the heating rates separately.  It is parallelized across the 
 ! columnn and layer dimensions.
-      _gpuker subroutine rtrnheatrates(ncol, nlay)
+      _gpuker subroutine rtrnheatrates(ncol, nlay &
+#include "rrtmg_lw_cpu_args.h"
+                                      )
 
       integer, intent(in), value :: ncol
       integer, intent(in), value :: nlay
+#include "rrtmg_lw_cpu_defs.h"
       
       real :: t2
       integer :: iplon, ilay
@@ -5224,12 +5309,14 @@ contains
       real , intent(in) :: taut(:,:,:)  
       real , intent(in) :: pwvcm(:)
 
+#ifdef CUDA
       pzd = pz
       pwvcmd = pwvcm
       idrvd = idrv
       bpaded = bpade
       heatfacd = heatfac
       fluxfacd = fluxfac
+#endif
          
       end subroutine
 
@@ -5241,62 +5328,39 @@ contains
       integer , intent(in) :: ncol, nlay, ngptlw, drvf
 integer,external :: omp_get_thread_num
 
-!jm write(0,*)__LINE__,omp_get_thread_num()
+#ifdef _CUDA
       allocate( taucmcd(ncol, ngptlw, nlay+1))
-!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate( pzd(ncol, 0:nlay+1))
-!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate( pwvcmd(ncol))
-!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate( semissd(ncol, nbndlw))
-!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate( planklayd(ncol,nlay+1,nbndlw))
-!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate( planklevd(ncol, 0:nlay+1, nbndlw))
-!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate( plankbndd(ncol,nbndlw))
-!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate ( gurad(ncol,ngptlw,0:nlay+1))        ! upward longwave flux (w/m2)
-!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate ( gdrad(ncol,ngptlw,0:nlay+1))        ! downward longwave flux (w/m2)
-!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate ( gclrurad(ncol,ngptlw,0:nlay+1))     ! clear sky upward longwave flux (w/m2)
-!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate ( gclrdrad(ncol,ngptlw,0:nlay+1))     ! clear sky downward longwave flux (w/m2)
-!jm write(0,*)__LINE__,omp_get_thread_num()
 
 ! (dmb 2012) Only allocate the optional derivative arrays if the flag is set
       if (drvf .eq. 1) then
             
         allocate( gdtotuflux_dtd( ncol, ngptlw, 0:nlay+1))
-!jm write(0,*)__LINE__,omp_get_thread_num()
         allocate( gdtotuclfl_dtd( ncol, ngptlw, 0:nlay+1))
-!jm write(0,*)__LINE__,omp_get_thread_num()
 
       endif
           
       allocate (totufluxd(ncol, 0:nlay+1))     ! upward longwave flux (w/m2)
-!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate (totdfluxd(ncol, 0:nlay+1))     ! downward longwave flux (w/m2)
-!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate (fnetd(ncol, 0:nlay+1))         ! net longwave flux (w/m2)
-!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate (htrd(ncol, 0:nlay+1))          ! longwave heating rate (k/day)
-!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate (totuclfld(ncol, 0:nlay+1))     ! clear sky upward longwave flux (w/m2)
-!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate (totdclfld(ncol, 0:nlay+1))     ! clear sky downward longwave flux (w/m2)
-!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate (fnetcd(ncol, 0:nlay+1))        ! clear sky net longwave flux (w/m2)
-!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate (htrcd(ncol, 0:nlay+1))         ! clear sky longwave heating rate (k/day)
-!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate (dtotuflux_dtd(ncol, 0:nlay+1)) ! change in upward longwave flux (w/m2/k)
-!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate (dtotuclfl_dtd(ncol, 0:nlay+1))
-!jm write(0,*)__LINE__,omp_get_thread_num()
       allocate (dplankbnd_dtd(ncol,nbndlw)) 
-!jm write(0,*)__LINE__,omp_get_thread_num()
+#endif
 
       end subroutine 
 
@@ -5305,6 +5369,7 @@ integer,external :: omp_get_thread_num
 
       integer , intent(in) :: drvf
           
+#ifdef _CUDA
       deallocate( taucmcd)
       deallocate( pzd)
       deallocate( pwvcmd)
@@ -5331,6 +5396,7 @@ integer,external :: omp_get_thread_num
       if ( drvf .eq. 1) then
         deallocate( gdtotuflux_dtd, gdtotuclfl_dtd )
       end if
+#endif
 
       end subroutine 
 
@@ -5369,6 +5435,7 @@ integer,external :: omp_get_thread_num
 
       implicit none
 
+#ifdef _CUDA
 ! (dmb 2012) There are a lot of GPU module level variables in this module
 ! The parameter list for the taumol subroutines have been reduced for 
 ! efficiency and readability.
@@ -5414,18 +5481,21 @@ integer,external :: omp_get_thread_num
      
       integer  _gpudev, allocatable :: nspad(:)
       integer  _gpudev, allocatable :: nspbd(:)
+      real  _gpucon :: oneminusd 
 !$OMP THREADPRIVATE( pavel,wx1,wx2,wx3,wx4,coldry,laytrop,jp,jt,jt1,colh2o,colco2,colo3,coln2o, &
 !$OMP                colco,colch4,colo2,colbrd,indself,indfor,selffac,selffrac,forfac,forfrac,  &
 !$OMP                indminor,minorfrac,scaleminor,scaleminorn2,fac00,fac01,fac10,fac11,        &
 !$OMP                rat_h2oco2,rat_h2oco2_1,rat_h2oo3,rat_h2oo3_1,rat_h2on2o,rat_h2on2o_1,     &
 !$OMP                rat_h2och4,rat_h2och4_1,rat_n2oco2,rat_n2oco2_1,rat_o3co2,rat_o3co2_1,     &
-!$OMP                tauaa,nspad,nspbd )
-      real  _gpucon :: oneminusd 
+!$OMP                tauaa,nspad,nspbd,oneminusd )
+#endif
 
       contains
 
 !----------------------------------------------------------------------------
-      _gpuker subroutine taugb1g( ncol, nlayers, taug, fracsd )
+      _gpuker subroutine taugb1g( ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                                )
 
 !----------------------------------------------------------------------------
 
@@ -5447,13 +5517,14 @@ integer,external :: omp_get_thread_num
 
 ! ------- Declarations -------
 
-! Local 
       integer  :: lay, ind0, ind1, inds, indf, indm, ig
       real  :: pp, corradj, scalen2, tauself, taufor, taun2
       integer , value, intent(in) :: ncol, nlayers
       real  _gpudev :: taug(:,:,:)
       real  _gpudev :: fracsd(:,:,:)
+#include "taug_cpu_defs.h"
 
+! Local 
       integer  :: iplon
 
 #ifdef _CUDA
@@ -5542,7 +5613,9 @@ integer,external :: omp_get_thread_num
       end subroutine taugb1g
 
 !----------------------------------------------------------------------------
-      _gpuker subroutine taugb2g( ncol, nlayers , taug, fracsd)
+      _gpuker subroutine taugb2g( ncol, nlayers , taug, fracsd &
+#include "taug_cpu_args.h"
+                                )
 !----------------------------------------------------------------------------
 !
 !     band 2:  350-500 cm-1 (low key - h2o; high key - h2o)
@@ -5560,6 +5633,7 @@ integer,external :: omp_get_thread_num
 ! ------- Declarations -------
       real  _gpudev :: taug(:,:,:)
       real  _gpudev :: fracsd(:,:,:)
+#include "taug_cpu_defs.h"
      
 ! Local 
       integer  :: lay, ind0, ind1, inds, indf, ig
@@ -5629,7 +5703,9 @@ integer,external :: omp_get_thread_num
       end subroutine taugb2g
 
 !----------------------------------------------------------------------------
-      _gpuker subroutine taugb3g( ncol, nlayers, taug, fracsd )
+      _gpuker subroutine taugb3g( ncol, nlayers, taug, fracsd &
+#include "taug_cpu_args.h"
+                                )
 !----------------------------------------------------------------------------
 !
 !     band 3:  500-630 cm-1 (low key - h2o,co2; low minor - n2o)
@@ -5644,6 +5720,7 @@ integer,external :: omp_get_thread_num
       use rrlw_kg03
 
 ! ------- Declarations -------
+#include "taug_cpu_defs.h"
 
 ! Local 
       real  _gpudev :: taug(:,:,:)
@@ -5963,7 +6040,9 @@ integer,external :: omp_get_thread_num
       end subroutine taugb3g
 
 !----------------------------------------------------------------------------
-      _gpuker subroutine taugb4g( ncol, nlayers, taug, fracsd )
+      _gpuker subroutine taugb4g( ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                                )
 !----------------------------------------------------------------------------
 !
 !     band 4:  630-700 cm-1 (low key - h2o,co2; high key - o3,co2)
@@ -5977,6 +6056,7 @@ integer,external :: omp_get_thread_num
       use rrlw_kg04
 
 ! ------- Declarations -------
+#include "taug_cpu_defs.h"
 
 ! Local 
       real  _gpudev :: taug(:,:,:)
@@ -6242,7 +6322,9 @@ integer,external :: omp_get_thread_num
       end subroutine taugb4g
 
 !----------------------------------------------------------------------------
-      _gpuker subroutine taugb5g( ncol, nlayers , taug, fracsd)
+      _gpuker subroutine taugb5g( ncol, nlayers , taug, fracsd &
+#include "taug_cpu_args.h"
+                                )
 !----------------------------------------------------------------------------
 !
 !     band 5:  700-820 cm-1 (low key - h2o,co2; low minor - o3, ccl4)
@@ -6257,6 +6339,7 @@ integer,external :: omp_get_thread_num
       use rrlw_kg05
 
 ! ------- Declarations -------
+#include "taug_cpu_defs.h"
 
 ! Local 
       real  _gpudev :: taug(:,:,:)
@@ -6536,7 +6619,9 @@ integer,external :: omp_get_thread_num
       end subroutine taugb5g
 
 !----------------------------------------------------------------------------
-      _gpuker subroutine taugb6g( ncol, nlayers, taug, fracsd )
+      _gpuker subroutine taugb6g( ncol, nlayers, taug, fracsd &
+#include "taug_cpu_args.h"
+                                )
 !----------------------------------------------------------------------------
 !
 !     band 6:  820-980 cm-1 (low key - h2o; low minor - co2)
@@ -6551,6 +6636,7 @@ integer,external :: omp_get_thread_num
       use rrlw_kg06
 
 ! ------- Declarations -------
+#include "taug_cpu_defs.h"
 
 ! Local 
       integer  :: lay, ind0, ind1, inds, indf, indm, ig
@@ -6636,7 +6722,9 @@ integer,external :: omp_get_thread_num
       end subroutine taugb6g
 
 !----------------------------------------------------------------------------
-      _gpuker subroutine taugb7g( ncol, nlayers , taug, fracsd)
+      _gpuker subroutine taugb7g( ncol, nlayers , taug, fracsd &
+#include "taug_cpu_args.h"
+                                )
 !----------------------------------------------------------------------------
 !
 !     band 7:  980-1080 cm-1 (low key - h2o,o3; low minor - co2)
@@ -6651,6 +6739,7 @@ integer,external :: omp_get_thread_num
       use rrlw_kg07
 
 ! ------- Declarations -------
+#include "taug_cpu_defs.h"
 
 ! Local 
       real  _gpudev :: taug(:,:,:)
@@ -6925,7 +7014,9 @@ integer,external :: omp_get_thread_num
       end subroutine taugb7g
 
 !----------------------------------------------------------------------------
-      _gpuker subroutine taugb8g( ncol, nlayers, taug, fracsd )
+      _gpuker subroutine taugb8g( ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                                )
 !----------------------------------------------------------------------------
 !
 !     band 8:  1080-1180 cm-1 (low key - h2o; low minor - co2,o3,n2o)
@@ -6940,6 +7031,7 @@ integer,external :: omp_get_thread_num
       use rrlw_kg08
 
 ! ------- Declarations -------
+#include "taug_cpu_defs.h"
 
 ! Local  
       real  _gpudev :: taug(:,:,:)
@@ -7062,7 +7154,9 @@ integer,external :: omp_get_thread_num
       end subroutine taugb8g
 
 !----------------------------------------------------------------------------
-      _gpuker subroutine taugb9g( ncol, nlayers, taug, fracsd )
+      _gpuker subroutine taugb9g( ncol, nlayers, taug, fracsd &
+#include "taug_cpu_args.h"
+                                )
 !----------------------------------------------------------------------------
 !
 !     band 9:  1180-1390 cm-1 (low key - h2o,ch4; low minor - n2o)
@@ -7079,6 +7173,7 @@ integer,external :: omp_get_thread_num
 ! ------- Declarations -------
       real  _gpudev :: taug(:,:,:)
       real  _gpudev :: fracsd(:,:,:)
+#include "taug_cpu_defs.h"
      
 ! Local 
       integer  :: lay, ind0, ind1, inds, indf, indm, ig
@@ -7339,7 +7434,9 @@ integer,external :: omp_get_thread_num
       end subroutine taugb9g
 
 !----------------------------------------------------------------------------
-      _gpuker subroutine taugb10g( ncol, nlayers, taug, fracsd )
+      _gpuker subroutine taugb10g( ncol, nlayers, taug, fracsd &
+#include "taug_cpu_args.h"
+                                 )
 !----------------------------------------------------------------------------
 !
 !     band 10:  1390-1480 cm-1 (low key - h2o; high key - h2o)
@@ -7354,6 +7451,7 @@ integer,external :: omp_get_thread_num
 ! ------- Declarations -------
       real  _gpudev :: taug(:,:,:)
       real  _gpudev :: fracsd(:,:,:)
+#include "taug_cpu_defs.h"
      
 ! Local 
       integer  :: lay, ind0, ind1, inds, indf, ig
@@ -7421,7 +7519,9 @@ integer,external :: omp_get_thread_num
       end subroutine taugb10g
 
 !----------------------------------------------------------------------------
-      _gpuker subroutine taugb11g( ncol, nlayers, taug, fracsd )
+      _gpuker subroutine taugb11g( ncol, nlayers, taug, fracsd &
+#include "taug_cpu_args.h"
+                                 )
 !----------------------------------------------------------------------------
 !
 !     band 11:  1480-1800 cm-1 (low - h2o; low minor - o2)
@@ -7437,6 +7537,7 @@ integer,external :: omp_get_thread_num
 ! ------- Declarations -------
       real  _gpudev :: taug(:,:,:)
       real  _gpudev :: fracsd(:,:,:)
+#include "taug_cpu_defs.h"
      
 ! Local 
       integer  :: lay, ind0, ind1, inds, indf, indm, ig
@@ -7516,7 +7617,9 @@ integer,external :: omp_get_thread_num
       end subroutine taugb11g
 
 !----------------------------------------------------------------------------
-      _gpuker subroutine taugb12g( ncol, nlayers, taug, fracsd )
+      _gpuker subroutine taugb12g( ncol, nlayers, taug, fracsd &
+#include "taug_cpu_args.h"
+                                 )
 !----------------------------------------------------------------------------
 !
 !     band 12:  1800-2080 cm-1 (low - h2o,co2; high - nothing)
@@ -7532,6 +7635,7 @@ integer,external :: omp_get_thread_num
 ! ------- Declarations -------
       real  _gpudev :: taug(:,:,:)
       real  _gpudev :: fracsd(:,:,:)
+#include "taug_cpu_defs.h"
      
 ! Local 
       integer  :: lay, ind0, ind1, inds, indf, ig
@@ -7735,7 +7839,9 @@ integer,external :: omp_get_thread_num
       end subroutine taugb12g
 
 !----------------------------------------------------------------------------
-      _gpuker subroutine taugb13g( ncol, nlayers, taug, fracsd )
+      _gpuker subroutine taugb13g( ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                                 )
 !----------------------------------------------------------------------------
 !
 !     band 13:  2080-2250 cm-1 (low key - h2o,n2o; high minor - o3 minor)
@@ -7750,6 +7856,7 @@ integer,external :: omp_get_thread_num
 ! ------- Declarations -------
       real  _gpudev :: taug(:,:,:)
       real  _gpudev :: fracsd(:,:,:)
+#include "taug_cpu_defs.h"
      
 ! Local 
       integer  :: lay, ind0, ind1, inds, indf, indm, ig
@@ -8009,7 +8116,9 @@ integer,external :: omp_get_thread_num
       end subroutine taugb13g
 
 !----------------------------------------------------------------------------
-      _gpuker subroutine taugb14g( ncol, nlayers , taug, fracsd)
+      _gpuker subroutine taugb14g( ncol, nlayers , taug, fracsd &
+#include "taug_cpu_args.h"
+                                 )
 !----------------------------------------------------------------------------
 !
 !     band 14:  2250-2380 cm-1 (low - co2; high - co2)
@@ -8024,6 +8133,7 @@ integer,external :: omp_get_thread_num
 ! ------- Declarations -------
       real  _gpudev :: taug(:,:,:)
       real  _gpudev :: fracsd(:,:,:)
+#include "taug_cpu_defs.h"
      
 ! Local 
       integer  :: lay, ind0, ind1, inds, indf, ig
@@ -8085,7 +8195,9 @@ integer,external :: omp_get_thread_num
       end subroutine taugb14g
 
 !----------------------------------------------------------------------------
-      _gpuker subroutine taugb15g( ncol, nlayers , taug, fracsd)
+      _gpuker subroutine taugb15g( ncol, nlayers , taug, fracsd &
+#include "taug_cpu_args.h"
+                                 )
 !----------------------------------------------------------------------------
 !
 !     band 15:  2380-2600 cm-1 (low - n2o,co2; low minor - n2)
@@ -8102,6 +8214,7 @@ integer,external :: omp_get_thread_num
 ! ------- Declarations -------
       real  _gpudev :: taug(:,:,:)
       real  _gpudev :: fracsd(:,:,:)
+#include "taug_cpu_defs.h"
      
 ! Local 
       integer  :: lay, ind0, ind1, inds, indf, indm, ig
@@ -8326,7 +8439,9 @@ integer,external :: omp_get_thread_num
       end subroutine taugb15g
 
 !----------------------------------------------------------------------------
-      _gpuker subroutine taugb16g( ncol, nlayers , taug, fracsd)
+      _gpuker subroutine taugb16g( ncol, nlayers , taug, fracsd &
+#include "taug_cpu_args.h"
+                                 )
 !----------------------------------------------------------------------------
 !
 !     band 16:  2600-3250 cm-1 (low key- h2o,ch4; high key - ch4)
@@ -8342,6 +8457,7 @@ integer,external :: omp_get_thread_num
 ! ------- Declarations -------
       real  _gpudev :: taug(:,:,:)
       real  _gpudev :: fracsd(:,:,:)
+#include "taug_cpu_defs.h"
      
 ! Local 
       integer  :: lay, ind0, ind1, inds, indf, ig
@@ -8548,11 +8664,14 @@ integer,external :: omp_get_thread_num
 
       end subroutine taugb16g
 
-      _gpuker subroutine addAerosols( ncol, nlayers, ngptlw, nbndlw, ngbd, taug)
+      _gpuker subroutine addAerosols( ncol, nlayers, ngptlw, nbndlw, ngbd, taug &
+#include "taug_cpu_args.h"
+                                    )
 
       integer , intent(in), value :: ncol, nlayers, ngptlw, nbndlw
       integer , intent(in) :: ngbd(:)
         
+#include "taug_cpu_defs.h"
         
       integer  :: iplon, lay, ig
       real  _gpudev :: taug(:,:,:)
@@ -8581,7 +8700,9 @@ integer,external :: omp_get_thread_num
       end subroutine
 
 !----------------------------------------------------------------------------
-      subroutine taumolg(iplon, ncol, nlayers, ngbd, taug, fracsd)
+      subroutine taumolg(iplon, ncol, nlayers, ngbd, taug, fracsd &
+#include "taug_cpu_args.h"
+                        )
 !----------------------------------------------------------------------------
 
 ! *******************************************************************************
@@ -8719,6 +8840,7 @@ integer,external :: omp_get_thread_num
       use parrrtm, only : ng1
 
 ! ------- Declarations -------
+#include "taug_cpu_defs.h"
 
 ! ----- Input -----
       integer , intent(in) :: iplon           ! the column number (move to calculated in kernel)
@@ -8757,37 +8879,69 @@ integer,external :: omp_get_thread_num
 ! (dmb 2012) Call all 16 kernels in sequence
 
 
-      call taugb1g _gpuchv (ncol, nlayers, taug, fracsd)
+      call taugb1g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
 
-      call taugb2g _gpuchv (ncol, nlayers, taug, fracsd)
+      call taugb2g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
       
-      call taugb3g _gpuchv (ncol, nlayers, taug, fracsd)
+      call taugb3g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
 
-      call taugb4g _gpuchv (ncol, nlayers, taug, fracsd)
+      call taugb4g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
       
-      call taugb5g _gpuchv (ncol, nlayers, taug, fracsd)
+      call taugb5g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
 
-      call taugb6g _gpuchv (ncol, nlayers, taug, fracsd)
+      call taugb6g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
 
-      call taugb7g _gpuchv (ncol, nlayers, taug, fracsd)
+      call taugb7g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
 
-      call taugb8g _gpuchv (ncol, nlayers, taug, fracsd)
+      call taugb8g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
 
-      call taugb9g _gpuchv (ncol, nlayers, taug, fracsd)
+      call taugb9g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
 
-      call taugb10g _gpuchv (ncol, nlayers, taug, fracsd)
+      call taugb10g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
 
-      call taugb11g _gpuchv (ncol, nlayers, taug, fracsd)
+      call taugb11g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
  
-      call taugb12g _gpuchv (ncol, nlayers, taug, fracsd)
+      call taugb12g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
 
-      call taugb13g _gpuchv (ncol, nlayers, taug, fracsd)
+      call taugb13g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
 
-      call taugb14g _gpuchv (ncol, nlayers, taug, fracsd)
+      call taugb14g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
 
-      call taugb15g _gpuchv (ncol, nlayers, taug, fracsd)
+      call taugb15g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
 
-      call taugb16g _gpuchv (ncol, nlayers, taug, fracsd)
+      call taugb16g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
      
 
 #ifdef _CUDA
@@ -8797,7 +8951,9 @@ integer,external :: omp_get_thread_num
 
 ! (dmb 2012) This code used to be in the main rrtmg_lw_rad source file
 ! We add the aerosol optical depths to the gas optical depths
-      call addAerosols _gpuchv (ncol, nlayers, ngptlw, nbndlw, ngbd, taug)
+      call addAerosols _gpuchv (ncol, nlayers, ngptlw, nbndlw, ngbd, taug &
+#include "taug_cpu_args.h"
+                               )
 
       end subroutine taumolg
 
@@ -8812,7 +8968,7 @@ integer,external :: omp_get_thread_num
       integer , intent(in) :: nlayers
       integer , intent(in) :: npart
       integer :: i
-
+#ifdef _CUDA
       sreg( wx1 , ncol, nlayers )
       sreg( wx2 , ncol, nlayers )
       sreg( wx3 , ncol, nlayers )
@@ -8910,6 +9066,8 @@ integer,external :: omp_get_thread_num
       allocate( tauaa( ncol, nlayers, nbndlw ))
       allocate( nspad( nbndlw ))
       allocate( nspbd( nbndlw ))
+
+#endif
         
       end subroutine
 
@@ -8919,7 +9077,6 @@ integer,external :: omp_get_thread_num
 #ifdef _CUDA
       call dbclean
       call dclean
-#endif
       deallocate( pavel)
       
       deallocate( tauaa )
@@ -8928,6 +9085,7 @@ integer,external :: omp_get_thread_num
       deallocate( nspad)
       deallocate( nspbd)
       deallocate( coldry)
+#endif
 
       end subroutine
        
@@ -8938,6 +9096,7 @@ integer,external :: omp_get_thread_num
       real , intent(in) :: colh2oc(:,:), colco2c(:,:), colo3c(:,:), coln2oc(:,:), &
                                      colch4c(:,:), colo2c(:,:), px1(:,:), px2(:,:), px3(:,:), px4(:,:)
 
+#ifdef _CUDA
       if (npart > 1) then
         colh2o(1:pncol, :) = colh2oc( colstart:(colstart+pncol-1), 1:nlayers)
         colco2(1:pncol, :) = colco2c( colstart:(colstart+pncol-1), 1:nlayers)
@@ -8964,6 +9123,7 @@ integer,external :: omp_get_thread_num
 
       endif
       colco = 0
+#endif
       end subroutine
 
 ! (dmb 2012) Copy the needed data from the CPU to the GPU.  I had to separate this
@@ -8999,6 +9159,7 @@ integer,external :: omp_get_thread_num
                                                       !    Dimensions: (ncol,nlayers,ngptlw)
       integer, intent(in)      :: pncol, colstart, nlay, npart
      
+#ifdef _CUDA
       call reg1
       call reg2
       call reg3
@@ -9048,7 +9209,7 @@ integer,external :: omp_get_thread_num
       else
          tauaa = tauap
       endif
- 
+#endif
       end subroutine 
 
       end module gpu_rrtmg_lw_taumol
@@ -9067,6 +9228,7 @@ integer,external :: omp_get_thread_num
    
       implicit none
 
+#ifdef _CUDA
       real  _gpudev, allocatable :: taveld(:,:)          ! layer temperatures (K)
                                                          !    Dimensions: (ncol,nlayers)
       real  _gpudev, allocatable :: tzd(:,:)             ! level (interface) temperatures (K)
@@ -9076,13 +9238,13 @@ integer,external :: omp_get_thread_num
       real  _gpudev, allocatable :: wbroadd(:,:)         ! broadening gas column density (mol/cm2)
                                                          !    Dimensions: (ncol,nlayers)
 
-!$OMP THREADPRIVATE(taveld,tzd,tboundd,wbroadd)
-
       real  _gpudev :: totplnkd(181,nbndlw)
       real  _gpudev :: totplk16d(181)
 
       real  _gpudev :: totplnkderivd(181,nbndlw)
       real  _gpudev :: totplk16derivd(181)
+!$OMP THREADPRIVATE(taveld,tzd,tboundd,wbroadd,totplnkd,totplk16d,totplnkderivd,totplk16derivd)
+#endif
 
       contains
 
@@ -9091,35 +9253,47 @@ integer,external :: omp_get_thread_num
 
          integer, intent(in) :: ncol
          integer, intent(in) :: nlayers
+#ifdef _CUDA
          allocate( taveld( ncol, nlayers) )
          allocate( tzd( ncol, 0:nlayers) )
          allocate( tboundd( ncol ))
          allocate( wbroadd( ncol, nlayers) )
+#endif
    
       end subroutine
 
 ! (dmb 2012) This subroutine deallocates the GPU arrays
       subroutine deallocateGPUSetCoef( )
 
+#ifdef _CUDA
          deallocate( taveld )
          deallocate( tzd )
          deallocate( tboundd)
          deallocate( wbroadd)
+#endif
       
       end subroutine
 
 ! (dmb 2012) Copy the needed reference data from the CPU to the GPU
       subroutine copyGPUSetCoef()
 
+#ifdef _CUDA
          totplnkd = totplnk
          totplk16d = totplk16
          totplnkderivd = totplnkderiv
          totplk16derivd = totplk16deriv
+#endif
 
       end subroutine
 
 !----------------------------------------------------------------------------
-      _gpuker subroutine setcoefg(ncol, nlayers, istart, idrv)
+      _gpuker subroutine setcoefg(ncol, nlayers, istart                       &
+# include "rrtmg_lw_cpu_args.h"
+# include "taug_cpu_args.h"
+#ifndef _CUDA
+   ,taveld,tzd,tboundd,wbroadd,totplnkd,totplk16d,totplnkderivd,totplk16derivd &
+#endif
+                                 )
 !----------------------------------------------------------------------------
 !
 !  Purpose:  For a given atmosphere, calculate the indices and
@@ -9128,12 +9302,30 @@ integer,external :: omp_get_thread_num
 !  for each band at the level and layer temperatures.
 
 ! ------- Declarations -------
+#ifndef _CUDA
+# include "rrtmg_lw_cpu_defs.h"
+# include "taug_cpu_defs.h"
+      real  :: taveld(:,:)          ! layer temperatures (K)
+                                                         !    Dimensions: (ncol,nlayers)
+      real  :: tzd(:,:)             ! level (interface) temperatures (K)
+                                                         !    Dimensions: (ncol,0:nlayers)
+      real  :: tboundd(:)           ! surface temperature (K)
+                                                         !    Dimensions: (ncol)
+      real  :: wbroadd(:,:)         ! broadening gas column density (mol/cm2)
+                                                         !    Dimensions: (ncol,nlayers)
+
+      real  :: totplnkd(181,nbndlw)
+      real  :: totplk16d(181)
+
+      real  :: totplnkderivd(181,nbndlw)
+      real  :: totplk16derivd(181)
+#endif
 
 ! ----- Input -----
       integer , value, intent(in) :: ncol
       integer , value, intent(in) :: nlayers         ! total number of layers
       integer , value, intent(in) :: istart          ! beginning band of calculation
-      integer , value, intent(in) :: idrv            ! Planck derivative option flag
+!jm      integer , value, intent(in) :: idrv            ! Planck derivative option flag
 
 ! ----- Local -----
       integer  :: indbound, indlev0
@@ -9199,7 +9391,7 @@ integer,external :: omp_get_thread_num
                    (totplnkd(indbound,iband) + tbndfrac * dbdtlev)
                dbdtlev = totplnkd(indlev0+1,iband)-totplnkd(indlev0,iband)
                planklevd(iplon, 0,iband) = totplnkd(indlev0,iband) + t0frac * dbdtlev
-               if (idrv .eq. 1) then 
+               if (idrvd .eq. 1) then 
                   dbdtlev = totplnkderivd(indbound+1,iband) - totplnkderivd(indbound,iband)
                   dplankbnd_dtd(iplon, iband) = semissd(iplon, iband) * &
                         (totplnkderivd(indbound,iband) + tbndfrac * dbdtlev)
@@ -9222,7 +9414,7 @@ integer,external :: omp_get_thread_num
                 dbdtlev = totplk16d( indbound+1) - totplk16d( indbound)
                 plankbndd(iplon, iband) = semissd(iplon, iband) * &
                      (totplk16d( indbound) + tbndfrac * dbdtlev)
-                if (idrv .eq. 1) then
+                if (idrvd .eq. 1) then
                    dbdtlev = totplk16derivd( indbound+1) - totplk16derivd( indbound)
                    dplankbnd_dtd(iplon, iband) = semissd(iplon, iband) * &
                         (totplk16derivd(indbound) + tbndfrac * dbdtlev)
@@ -9240,7 +9432,7 @@ integer,external :: omp_get_thread_num
                 dbdtlev = totplnkd(indbound+1,iband) - totplnkd(indbound,iband)
                 plankbndd(iplon, iband) = semissd(iplon, iband) * &
                      (totplnkd(indbound,iband) + tbndfrac * dbdtlev)
-                if (idrv .eq. 1) then 
+                if (idrvd .eq. 1) then 
                    dbdtlev = totplnkderivd( indbound+1,iband) - totplnkderivd( indbound,iband)
                    dplankbnd_dtd(iplon, iband) = semissd(iplon, iband) * &
                         (totplnkderivd( indbound,iband) + tbndfrac * dbdtlev)
@@ -13714,6 +13906,7 @@ integer,external :: omp_get_thread_num
 
       implicit none
 
+#ifdef _CUDA
       integer  _gpudev, allocatable :: ngbd(:)
       integer, allocatable _gpudev :: ncbandsd(:)
       integer, allocatable _gpudev :: icbd(:)
@@ -13721,6 +13914,7 @@ integer,external :: omp_get_thread_num
       real  _gpudev, allocatable :: fracsd(:,:,:)
       real  _gpudev, allocatable :: taug(:,:,:)
 !$OMP THREADPRIVATE(ngbd,ncbandsd,icbd,icldlyr,fracsd,taug)
+#endif
    
       real :: timings(10)
 
@@ -14226,6 +14420,69 @@ integer,external :: omp_get_thread_num
 
 ! ----- Local -----
 
+#ifndef _CUDA
+! here is where the previously allocatable things are made local variables
+      real ::  pmid(ncol, nlay)
+
+      real :: relqmc(ncol, nlay+1), reicmc(ncol, nlay+1)
+      real :: resnmc(ncol, nlay+1)
+      
+      real :: ciwpmcd(ncol, ngptlw, nlay+1)
+      real :: clwpmcd(ncol, ngptlw, nlay+1)
+      real :: cswpmcd(ncol, ngptlw, nlay+1)
+
+      real :: taucmcd(ncol, ngptlw, nlay+1)
+      real :: pzd(ncol, 0:nlay+1)
+      real :: pwvcmd(ncol)
+      real :: semissd(ncol, nbndlw)
+      real :: planklayd(ncol,nlay+1,nbndlw)
+      real :: planklevd(ncol, 0:nlay+1, nbndlw)
+      real :: plankbndd(ncol,nbndlw)
+      real :: gurad(ncol,ngptlw,0:nlay+1)        ! upward longwave flux (w/m2)
+      real :: gdrad(ncol,ngptlw,0:nlay+1)        ! downward longwave flux (w/m2)
+      real :: gclrurad(ncol,ngptlw,0:nlay+1)     ! clear sky upward longwave flux (w/m2)
+      real :: gclrdrad(ncol,ngptlw,0:nlay+1)     ! clear sky downward longwave flux (w/m2)
+
+      real :: gdtotuflux_dtd( ncol, ngptlw, 0:nlay+1)
+      real :: gdtotuclfl_dtd( ncol, ngptlw, 0:nlay+1)
+
+      real :: totufluxd(ncol, 0:nlay+1)     ! upward longwave flux (w/m2)
+      real :: totdfluxd(ncol, 0:nlay+1)     ! downward longwave flux (w/m2)
+      real :: fnetd(ncol, 0:nlay+1)         ! net longwave flux (w/m2)
+      real :: htrd(ncol, 0:nlay+1)          ! longwave heating rate (k/day)
+      real :: totuclfld(ncol, 0:nlay+1)     ! clear sky upward longwave flux (w/m2)
+      real :: totdclfld(ncol, 0:nlay+1)     ! clear sky downward longwave flux (w/m2)
+      real :: fnetcd(ncol, 0:nlay+1)        ! clear sky net longwave flux (w/m2)
+      real :: htrcd(ncol, 0:nlay+1)         ! clear sky longwave heating rate (k/day)
+      real :: dtotuflux_dtd(ncol, 0:nlay+1) ! change in upward longwave flux (w/m2/k)
+      real :: dtotuclfl_dtd(ncol, 0:nlay+1)
+      real :: dplankbnd_dtd(ncol,nbndlw)
+
+      real :: taveld( ncol, nlay)
+      real :: tzd( ncol, 0:nlay)
+      real :: tboundd( ncol )
+      real :: wbroadd( ncol, nlay)
+
+      real :: wx1( ncol, nlay )
+      real :: wx2( ncol, nlay )
+      real :: wx3( ncol, nlay )
+      real :: wx4( ncol, nlay )
+
+      real :: tauaa( ncol, nlay, nbndlw )
+      integer :: nspad( nbndlw )
+      integer :: nspbd( nbndlw )
+
+      integer :: icbd(16)
+      integer :: ncbandsd(pncol)
+      integer :: icldlyr(pncol, nlay+1)
+      real :: fracsd( pncol, nlay+1, ngptlw )
+      real :: taug( pncol, nlay+1, ngptlw )
+
+
+
+#endif
+
+
 ! Control
       integer(kind=4) :: nlayers                      ! total number of layers
       integer(kind=4) :: istart                       ! beginning band of calculation
@@ -14456,31 +14713,32 @@ integer,external :: omp_get_thread_num
 ! For GSFC, not needed for WRF
 !      zmp(:,1:nlay) = zm(colstart:(colstart+pncol-1), 1:nlay)
   
-!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
+#ifdef _CUDA
       allocate( cldfmcd(pncol, ngptlw, nlay+1))
 
-!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
       allocate( ngbd(140) )
-!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
+#endif
 	   
 
 #ifndef _CUDA
 #  define pncol CHNK
 #endif
+#ifdef _CUDA
       allocate( icbd(16))
       allocate( ncbandsd(pncol))
       allocate( icldlyr(pncol, nlay+1))
    
-!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
       call allocateGPUcldprmcg(pncol, nlay, ngptlw)
-!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
       call allocateGPUrtrnmcg(pncol, nlay, ngptlw, idrv)
-!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
   
       ngbd = ngb
       ngsd = ngs
       icldd = icld
-    
+#else
+# define ngbd ngb
+# define ngsd ngs
+# define icldd icld
+#endif
 
 ! Set imca to select calculation type:
 !  imca = 0, use standard forward model calculation
@@ -14519,16 +14777,14 @@ integer,external :: omp_get_thread_num
       nlayers = nlay
 
 
-!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
       call allocateGPUTaumol( pncol, nlayers, npart)
-!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
 
+#ifdef _CUDA
       allocate( fracsd( pncol, nlayers+1, ngptlw ))
-!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
       allocate( taug( pncol, nlayers+1, ngptlw ))
-!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
 ! For GSFC, not needed for WRF
 !      allocate( zmd(pncol, mxlay+1))
+#endif
       tbound = tsfc(colstart:(colstart+pncol-1))
       pz(:,0:nlay) = plev(colstart:(colstart+pncol-1),0:nlay)
       tz(:,0:nlay) = tlev(colstart:(colstart+pncol-1),0:nlay)
@@ -14548,8 +14804,12 @@ integer,external :: omp_get_thread_num
 !      zmd = zmp
       
 !jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
-      call mcica_subcol_lwg(1, pncol, nlay, icld, counter, 0, play, cldfracq, ciwpq, &
-                             clwpq, cswpq, taucq,ngbd, cldfmcd, ciwpmcd, clwpmcd, cswpmcd, & 
+      call mcica_subcol_lwg(1, pncol, nlay, icld, counter, 0,                             &
+#ifndef _CUDA
+                            pmid,cldfrac,clwp,ciwp,cswp,tauc,                             &
+#endif
+                            play, cldfracq, ciwpq,                                        &
+                            clwpq, cswpq, taucq,ngbd, cldfmcd, ciwpmcd, clwpmcd, cswpmcd, & 
 ! For GSFC, not needed for WRF
 !                             taucmcd,  cloudFlagq, cloudMH, cloudHH, zmd, 1)
                              taucmcd)
@@ -14562,10 +14822,13 @@ integer,external :: omp_get_thread_num
 #endif
 
       if (icld > 0) then
-         call generate_stochastic_cloudsg _gpuchv (pncold, nlayd, icldd, &
+         call generate_stochastic_cloudsg _gpuchv (pncold, nlayd, icldd, ngbd, &
+#ifndef _CUDA
+                               pmid,cldfrac,clwp,ciwp,cswp,tauc,               &
+#endif
 ! For GSFC, not needed for WRF
 !                               ngbd, cldfmcd, clwpmcd, ciwpmcd, taucmcd, 1, zmd)
-                               ngbd, cldfmcd, clwpmcd, ciwpmcd, cswpmcd, taucmcd)
+                               cldfmcd, clwpmcd, ciwpmcd, cswpmcd, taucmcd)
       end if
 
 !jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
@@ -14605,7 +14868,7 @@ integer,external :: omp_get_thread_num
         endif
       enddo
 
-!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
+#ifdef _CUDA
 ! For GSFC, not needed for WRF
 !      call mcica_cldc(pncol, icld, nlay, cloudmh, cloudhh, cloudflagq, cldfmcd)
 !      cloudFlag(colstart:(colstart+pncol-1), :) = cloudFlagq
@@ -14626,8 +14889,6 @@ integer,external :: omp_get_thread_num
       call copyGPUcldprmcg( inflag, iceflag, liqflag,&
                                  absice0, absice1, absice2, absice3, absliq1 )
   
-!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
-  
 ! copy common arrays over to the GPU
       icbd = icb
       a0d=a0
@@ -14637,13 +14898,18 @@ integer,external :: omp_get_thread_num
       relqmcd = relq
       reicmcd = reiq
       resnmcd = resq
+#else
+#  define a0d a0
+#  define a1d a1
+#  define a2d a2
+#  define delwaved delwave
+#endif
 
       icldlyr = 0.0
 
+#ifdef _CUDA
 ! (dmb 2012) Allocate the arrays for the SetCoef and Taumol kernels
-!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
       call allocateGPUSetCoef( pncol, nlayers)
-!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
       
 ! (dmb 2012) Copy the needed data of to the GPU for the SetCoef and Taumol kernels
 
@@ -14660,6 +14926,15 @@ integer,external :: omp_get_thread_num
 
       call copyToGPUref()
       call copyGPUrtrnmcg(pz, pwvcm, idrv, taut)
+#else
+# define pzd pz
+# define pwvcmd pwvcm
+# define idrvd idrv
+# define bpaded bpade
+# define heatfacd heatfac
+# define fluxfacd fluxfac
+# define oneminusd oneminus
+#endif
  
 
 ! (dmb 2012) Here we configure the grids and blocks to run the cldpmcd kernel
@@ -14673,7 +14948,12 @@ integer,external :: omp_get_thread_num
 !     clwpmcd = 0
 !     clwpmcd = clwpmc
 ! (dmb 2012) Call the cldprmcg kernel
-      call cldprmcg _gpuchv (pncol, nlayers, cldfmcd, taucmcd,  ngbd, icbd, ncbandsd, icldlyr)
+      call cldprmcg _gpuchv (pncol, nlayers,                                      &
+#ifndef _CUDA
+                inflag,iceflag,liqflag,ciwpmcd,clwpmcd,cswpmcd,relqmc,reicmc,resnmc, &
+                absice0,absice1,absice2,absice3,absliq1,                          &
+#endif
+                             cldfmcd, taucmcd,  ngbd, icbd, ncbandsd, icldlyr)
 
 ! synchronize the GPU with the CPU before taking timing results or passing data back to the CPU
 #ifdef _CUDA	
@@ -14692,7 +14972,13 @@ integer,external :: omp_get_thread_num
       dimGrid = dim3( (pncol+255)/256,1, 1)
       dimBlock = dim3( 256,1,1)
 #endif
-      call setcoefg _gpuchv (pncol, nlayers, istart,idrv)
+      call setcoefg _gpuchv (pncol, nlayers, istart                    &
+# include "rrtmg_lw_cpu_args.h"
+# include "taug_cpu_args.h"
+#ifndef _CUDA
+   ,tavel,tz,tbound,wbroadd,totplnk,totplk16,totplnkderiv,totplk16deriv &
+#endif
+                            )
 
 ! (dmb 2012) end if GPU flag 
 
@@ -14702,7 +14988,9 @@ integer,external :: omp_get_thread_num
 
 
 ! (dmb 2012) Call the taumolg subroutine.  This subroutine calls all of the individal taumol kernels.     
-      call taumolg(1, pncol,nlayers, ngbd, taug, fracsd)
+      call taumolg(1, pncol,nlayers, ngbd, taug, fracsd &
+# include "taug_cpu_args.h"
+                  )
    
 
 ! Call the radiative transfer routine.
@@ -14722,8 +15010,9 @@ integer,external :: omp_get_thread_num
 #endif    
    
 !jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
-      call rtrnmcg _gpuchv (pncol,nlayers, istart, iend, iout, &
-                     ngbd, icldlyr, taug, fracsd, cldfmcd)
+      call rtrnmcg _gpuchv (pncol,nlayers, istart, iend, iout  &
+#include "rrtmg_lw_cpu_args.h"
+                    ,ngbd, icldlyr, taug, fracsd, cldfmcd)
 
 #ifdef _CUDA
       ierr = cudaThreadSynchronize() 
@@ -14748,7 +15037,9 @@ integer,external :: omp_get_thread_num
 ! (dmb 2012) Here we integrate across the g-point fluxes to arrive at total fluxes
 ! This functionality was factored out of the original rtrnmc routine so that I could
 ! parallelize across multiple dimensions.
-      call rtrnadd _gpuchv (pncol, nlayers, ngptlw, idrv)
+      call rtrnadd _gpuchv (pncol, nlayers, ngptlw, idrv &
+#include "rrtmg_lw_cpu_args.h"
+                           )
 
 #ifdef _CUDA
       ierr = cudaThreadSynchronize() 
@@ -14758,7 +15049,9 @@ integer,external :: omp_get_thread_num
 
 !jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
 ! (dmb 2012) Calculate the heating rates.
-      call rtrnheatrates _gpuchv (pncol, nlayers)    
+      call rtrnheatrates _gpuchv (pncol, nlayers &
+#include "rrtmg_lw_cpu_args.h"
+                                 )    
 
 #ifdef CUDA
       ierr = cudaThreadSynchronize() 
@@ -14783,7 +15076,7 @@ integer,external :: omp_get_thread_num
 
 !  Transfer up and down fluxes and heating rate to output arrays.
 !  Vertical indexing goes from bottom to top; reverse here for GCM if necessary.
-
+#ifdef _CUDA
       deallocate( cldfmcd)
       deallocate( icbd)
       deallocate( ncbandsd)
@@ -14796,6 +15089,22 @@ integer,external :: omp_get_thread_num
       call deallocateGPUcldprmcg()
       call deallocateGPUrtrnmcg(idrv)
       call deallocateGPUSetCoef( )
+#else
+# undef ngbd
+# undef ngsd
+# undef icldd
+# undef pzd pz
+# undef pwvcmd
+# undef idrvd
+# undef bpaded
+# undef heatfacd
+# undef fluxfacd
+# undef a0d
+# undef a1d
+# undef a2d
+# undef delwaved
+# undef oneminusd
+#endif
  
       end subroutine rrtmg_lw_part
 
