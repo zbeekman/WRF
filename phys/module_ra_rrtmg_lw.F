@@ -2917,6 +2917,12 @@ end module
       real _gpucon :: preflogd(59)
       real _gpucon :: trefd(59)
 
+#ifndef _CUDA
+# define chi_mlsd chi_mls
+# define preflogd preflog
+# define trefd tref
+#endif
+
       contains
 
       ! (dmb 2012) Copy the reference arrays over to the GPU
@@ -5492,6 +5498,53 @@ integer,external :: omp_get_thread_num
 
       contains
 
+#ifndef _CUDA
+!defines for taugb functions
+
+# define absad absa
+# define absbd absb
+# define absbod absbo
+# define ccl4d ccl4
+# define ccl4od ccl4o
+# define cfc11adjd cfc11adj
+# define cfc11adjod cfc11adjo
+# define cfc12d cfc12
+# define cfc12od cfc12o
+# define cfc22adjd cfc22adj
+# define cfc22adjod cfc22adjo
+# define forrefd forref
+# define forrefod forrefo
+# define fracrefad fracrefa
+# define fracrefaod fracrefao
+# define fracrefbd fracrefb
+# define fracrefbod fracrefbo
+# define kad ka
+# define ka_mcod ka_mco
+# define ka_mco2d ka_mco2
+# define ka_mn2d ka_mn2
+# define ka_mn2od ka_mn2o
+# define ka_mo2d ka_mo2
+# define ka_mo3d ka_mo3
+# define kaod kao
+# define kao_mcod kao_mco
+# define kao_mco2d kao_mco2
+# define kao_mn2d kao_mn2
+# define kao_mn2od kao_mn2o
+# define kao_mo3d kao_mo3
+# define kbd kb
+# define kb_mco2d kb_mco2
+# define kb_mn2d kb_mn2
+# define kb_mn2od kb_mn2o
+# define kb_mo2d kb_mo2
+# define kb_mo3d kb_mo3
+# define kbod kbo
+# define kbo_mco2d kbo_mco2
+# define kbo_mn2od kbo_mn2o
+# define kbo_mo3d kbo_mo3
+# define selfrefd selfref
+# define selfrefod selfrefo
+
+#endif
 !----------------------------------------------------------------------------
       _gpuker subroutine taugb1g( ncol, nlayers, taug, fracsd  &
 #include "taug_cpu_args.h"
@@ -8956,6 +9009,24 @@ integer,external :: omp_get_thread_num
                                )
 
       end subroutine taumolg
+
+#ifndef _CUDA
+! undefines for taug functions
+# undef kad
+# undef kbd
+# undef absad
+# undef absbd
+
+# undef fracrefad
+# undef fracrefbd
+# undef ka_mn2d
+# undef kb_mn2d
+# undef selfrefd
+# undef forrefd
+# undef ka_mn2od
+# undef kb_mn2od
+#endif
+
 
 !#ifndef _CUDA
 !#  undef ncol
@@ -14415,8 +14486,13 @@ integer,external :: omp_get_thread_num
                                                       ! with respect to surface temperature
                                                       !    Dimensions: (ncol,nlay)
 !      integer , intent(out), optional :: cloudFlag(:,:)
+#ifdef _CUDA
       real  _gpudeva :: cldfmcd(:,:,:)                ! layer cloud fraction [mcica]
                                                       !    Dimensions: (ngptlw,nlayers)
+#else
+      real  ::  cldfmcd(pncol, ngptlw, nlay+1)        ! layer cloud fraction [mcica]
+
+#endif
 
 ! ----- Local -----
 
@@ -14469,8 +14545,8 @@ integer,external :: omp_get_thread_num
       real :: wx4( ncol, nlay )
 
       real :: tauaa( ncol, nlay, nbndlw )
-      integer :: nspad( nbndlw )
-      integer :: nspbd( nbndlw )
+!jm      integer :: nspad( nbndlw )
+!jm      integer :: nspbd( nbndlw )
 
       integer :: icbd(16)
       integer :: ncbandsd(pncol)
@@ -14715,7 +14791,6 @@ integer,external :: omp_get_thread_num
   
 #ifdef _CUDA
       allocate( cldfmcd(pncol, ngptlw, nlay+1))
-
       allocate( ngbd(140) )
 #endif
 	   
@@ -14735,6 +14810,10 @@ integer,external :: omp_get_thread_num
       ngsd = ngs
       icldd = icld
 #else
+# define nspad nspa
+# define nspbd nspb
+# define icbd icb
+# define fracsd fracs
 # define ngbd ngb
 # define ngsd ngs
 # define icldd icld
@@ -14791,10 +14870,23 @@ integer,external :: omp_get_thread_num
       pavel(:,1:nlay) = play(colstart:(colstart+pncol-1),1:nlay)
       tavel(:,1:nlay) = tlay(colstart:(colstart+pncol-1),1:nlay)
       
-
+#ifdef _CUDA
       call copyGPUTaumolMol( colstart, pncol, nlayers, h2ovmr, co2vmr, o3vmr, n2ovmr, ch4vmr, &
                              o2vmr, ccl4vmr, cfc11vmr, cfc12vmr, cfc22vmr, npart)
-!jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
+#else
+      colh2o(1:pncol, :) = h2ovmr( colstart:(colstart+pncol-1), 1:nlayers)
+      colco2(1:pncol, :) = co2vmr( colstart:(colstart+pncol-1), 1:nlayers)
+      colo3(1:pncol, :) = o3vmr( colstart:(colstart+pncol-1), 1:nlayers)
+      coln2o(1:pncol, :) = n2ovmr( colstart:(colstart+pncol-1), 1:nlayers)
+
+      colch4(1:pncol, :) = ch4vmr( colstart:(colstart+pncol-1), 1:nlayers)
+      colo2(1:pncol, :) = o2vmr( colstart:(colstart+pncol-1), 1:nlayers)
+      wx1(1:pncol, :) = ccl4vmr(colstart:(colstart+pncol-1), 1:nlayers)
+      wx2(1:pncol, :) = cfc11vmr(colstart:(colstart+pncol-1), 1:nlayers)
+      wx3(1:pncol, :) = cfc12vmr(colstart:(colstart+pncol-1), 1:nlayers)
+      wx4(1:pncol, :) = cfc22vmr(colstart:(colstart+pncol-1), 1:nlayers)
+      colco(1:pncol, :) = 0
+#endif
 
 #ifndef _CUDA
 #  undef pncol
@@ -15104,6 +15196,10 @@ integer,external :: omp_get_thread_num
 # undef a2d
 # undef delwaved
 # undef oneminusd
+# undef nspad
+# undef nspbd
+# undef icbd
+# undef fracsd
 #endif
  
       end subroutine rrtmg_lw_part
