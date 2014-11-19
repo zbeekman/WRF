@@ -9012,19 +9012,48 @@ integer,external :: omp_get_thread_num
 
 #ifndef _CUDA
 ! undefines for taug functions
-# undef kad
-# undef kbd
 # undef absad
 # undef absbd
-
-# undef fracrefad
-# undef fracrefbd
-# undef ka_mn2d
-# undef kb_mn2d
-# undef selfrefd
+# undef absbod
+# undef ccl4d
+# undef ccl4od
+# undef cfc11adjd
+# undef cfc11adjod
+# undef cfc12d
+# undef cfc12od
+# undef cfc22adjd
+# undef cfc22adjod
 # undef forrefd
+# undef forrefod
+# undef fracrefad
+# undef fracrefaod
+# undef fracrefbd
+# undef fracrefbod
+# undef kad
+# undef ka_mcod
+# undef ka_mco2d
+# undef ka_mn2d
 # undef ka_mn2od
+# undef ka_mo2d
+# undef ka_mo3d
+# undef kaod
+# undef kao_mcod
+# undef kao_mco2d
+# undef kao_mn2d
+# undef kao_mn2od
+# undef kao_mo3d
+# undef kbd
+# undef kb_mco2d
+# undef kb_mn2d
 # undef kb_mn2od
+# undef kb_mo2d
+# undef kb_mo3d
+# undef kbod
+# undef kbo_mco2d
+# undef kbo_mn2od
+# undef kbo_mo3d
+# undef selfrefd
+# undef selfrefod
 #endif
 
 
