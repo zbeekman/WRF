@@ -4713,7 +4713,7 @@ contains
       contains
 
 !-----------------------------------------------------------------------------
-      _gpuker subroutine  rtrnmcg(ncol, nlayers, istart, iend, iout                               &
+      _gpuker subroutine rtrnmcg(ncol, nlayers, istart, iend, iout                               &
 #include "rrtmg_lw_cpu_args.h"
                                  ,ngb,icldlyr, taug, fracsd, cldfmcd)
 !-----------------------------------------------------------------------------
@@ -4965,6 +4965,17 @@ contains
                dplankup = planklevd(iplon,lev,ibnd) - blay
                dplankdn = planklevd(iplon,lev-1,ibnd) - blay
                odepth = secdiff * taug(iplon,lev,igc)
+
+!zap
+if (iplon.eq.5)then
+write(0,*)lev,'in rtrnmcg plfrac ',plfrac
+write(0,*)lev,'in rtrnmcg blay   ',blay
+write(0,*)lev,'in rtrnmcg dplankup   ',dplankup
+write(0,*)lev,'in rtrnmcg dplankdn   ',dplankdn
+write(0,*)lev,'in rtrnmcg odepth   ',odepth
+endif
+!zap
+
                if (odepth .lt. 0.0 ) odepth = 0.0 
 !  Cloudy layer
                if (icldlyr(iplon, lev).eq.1) then
@@ -5236,6 +5247,7 @@ contains
 ! (dmb 2012) make sure that the column and layer are within range
       if (ilay <= nlay .and. iplon <= ncol) then
 #else
+! zap should move this inside the igp loop
       do iplon = 1, ncol
         do ilay = 0, nlay
 #endif
@@ -14526,6 +14538,7 @@ integer,external :: omp_get_thread_num
 ! ----- Local -----
 
 #ifndef _CUDA
+      integer  ncol_,nlayers_,nbndlw_,ngptlw_  ! for passing through argument list
 ! here is where the previously allocatable things are made local variables
       real ::  pmid(ncol, nlay)
 
@@ -14582,9 +14595,6 @@ integer,external :: omp_get_thread_num
       integer :: icldlyr(pncol, nlay+1)
       real :: fracsd( pncol, nlay+1, ngptlw )
       real :: taug( pncol, nlay+1, ngptlw )
-
-
-
 #endif
 
 
@@ -14776,6 +14786,7 @@ integer,external :: omp_get_thread_num
 !
 #ifndef _CUDA
 # undef pncol
+      ncol_ = ncol ; nlayers_ = nlay ; nbndlw_ = nbndlw ; ngptlw_ = ngptlw ! for passing through argument list
 #endif
    
       cldfracq(:,1:nlay) = cldfrac(colstart:(colstart+pncol-1), 1:nlay)
@@ -15129,6 +15140,13 @@ integer,external :: omp_get_thread_num
       dimGrid = dim3( (pncol+255)/256, 70, 1)
       dimBlock = dim3( 256,2,1)
 #endif    
+
+!zap
+do ierr = 1, ngptlw
+write(0,*)'gurad before rtrnmcg',gurad(5,ierr,1)
+enddo
+ierr = 0
+!zap
    
 !jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
       call rtrnmcg _gpuchv (pncol,nlayers, istart, iend, iout  &
@@ -15155,6 +15173,14 @@ integer,external :: omp_get_thread_num
       dimBlock = dim3( 256, 1, 1)
 #endif
 
+!!zap
+!do ierr = 1, ngptlw
+!write(0,*)'gurad before rtrnadd',gurad(5,ierr,1)
+!enddo
+!ierr = 0
+!!zap
+
+
 ! (dmb 2012) Here we integrate across the g-point fluxes to arrive at total fluxes
 ! This functionality was factored out of the original rtrnmc routine so that I could
 ! parallelize across multiple dimensions.
@@ -15177,6 +15203,13 @@ integer,external :: omp_get_thread_num
 #ifdef CUDA
       ierr = cudaThreadSynchronize() 
 #endif    
+
+!zap
+if (colstart.eq.1)then
+write(0,*)__LINE__,'totufluxd ',totufluxd(5,1)
+stop
+endif
+!zap
 
 ! copy the partition data back to the CPU
       uflx(colstart:(colstart+pncol-1), 1:(nlayers+1)) = totufluxd
@@ -15214,7 +15247,7 @@ integer,external :: omp_get_thread_num
 # undef ngbd
 # undef ngsd
 # undef icldd
-# undef pzd pz
+# undef pzd
 # undef pwvcmd
 # undef idrvd
 # undef bpaded
