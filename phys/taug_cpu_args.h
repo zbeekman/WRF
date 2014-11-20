@@ -1,4 +1,5 @@
-#ifndef _CUDA
+#ifndef __CUDA
+                    ,ncol__,nlayers__,nbndlw__,ngptlw__                                             &
                     ,pavel,wx1,wx2,wx3,wx4,coldry,laytrop,jp,jt,jt1,colh2o,colco2,colo3,coln2o  &
                     ,colco,colch4,colo2,colbrd,indself,indfor,selffac,selffrac,forfac,forfrac   &
                     ,indminor,minorfrac,scaleminor,scaleminorn2,fac00,fac01,fac10,fac11         &

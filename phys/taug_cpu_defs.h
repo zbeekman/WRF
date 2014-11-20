@@ -1,45 +1,46 @@
-#ifndef _CUDA
+#ifndef __CUDA
+      integer :: ncol__,nlayers__,nbndlw__,ngptlw__
 ! changed to arguments for thread safety (could reduce this list a bit)
-      real  :: pavel(:,:)
-      real  :: wx1(:,:)
-      real  :: wx2(:,:)
-      real  :: wx3(:,:)
-      real  :: wx4(:,:)
-      real  :: coldry(:,:)
-      integer  :: laytrop(:)
-      integer  :: jp(:,:)
-      integer  :: jt(:,:)
-      integer  :: jt1(:,:)
-      real  :: colh2o(:,:)
-      real  :: colco2(:,:)
-      real  :: colo3(:,:)
-      real  :: coln2o(:,:)
-      real  :: colco(:,:)
-      real  :: colch4(:,:)
-      real  :: colo2(:,:)
-      real  :: colbrd(:,:)
-      integer  :: indself(:,:)
-      integer  :: indfor(:,:)
-      real  :: selffac(:,:)
-      real  :: selffrac(:,:)
-      real  :: forfac(:,:)
-      real  :: forfrac(:,:)
-      integer  :: indminor(:,:)
-      real  :: minorfrac(:,:)
-      real  :: scaleminor(:,:)
-      real  :: scaleminorn2(:,:)
-      real  :: fac00(:,:), fac01(:,:), fac10(:,:), fac11(:,:)
-      real  :: rat_h2oco2(:,:),rat_h2oco2_1(:,:), &
-               rat_h2oo3(:,:),rat_h2oo3_1(:,:), &
-               rat_h2on2o(:,:),rat_h2on2o_1(:,:), &
-               rat_h2och4(:,:),rat_h2och4_1(:,:), &
-               rat_n2oco2(:,:),rat_n2oco2_1(:,:), &
-               rat_o3co2(:,:),rat_o3co2_1(:,:)
-                                                      !    Dimensions: (ncol,nlayers)
-      real  :: tauaa(:,:,:)
-                                                      !    Dimensions: (ncol,nlayers,ngptlw)
+      real  :: pavel(ncol__, nlayers__)
+      real  :: wx1(ncol__,nlayers__)
+      real  :: wx2(ncol__,nlayers__)
+      real  :: wx3(ncol__,nlayers__)
+      real  :: wx4(ncol__,nlayers__)
+      real  :: coldry(ncol__, nlayers__)
+      integer  :: laytrop(ncol__)
+      integer  :: jp(ncol__,nlayers__)
+      integer  :: jt(ncol__,nlayers__)
+      integer  :: jt1(ncol__,nlayers__)
+      real  :: colh2o(ncol__,nlayers__)
+      real  :: colco2(ncol__,nlayers__)
+      real  :: colo3(ncol__,nlayers__)
+      real  :: coln2o(ncol__,nlayers__)
+      real  :: colco(ncol__,nlayers__)
+      real  :: colch4(ncol__,nlayers__)
+      real  :: colo2(ncol__,nlayers__)
+      real  :: colbrd(ncol__,nlayers__)
+      integer  :: indself(ncol__,nlayers__)
+      integer  :: indfor(ncol__,nlayers__)
+      real  :: selffac(ncol__,nlayers__)
+      real  :: selffrac(ncol__,nlayers__)
+      real  :: forfac(ncol__,nlayers__)
+      real  :: forfrac(ncol__,nlayers__)
+      integer  :: indminor(ncol__,nlayers__)
+      real  :: minorfrac(ncol__,nlayers__)
+      real  :: scaleminor(ncol__,nlayers__)
+      real  :: scaleminorn2(ncol__,nlayers__)
+      real  :: fac00(ncol__,nlayers__), fac01(ncol__,nlayers__), fac10(ncol__,nlayers__), fac11(ncol__,nlayers__)
+      real  :: rat_h2oco2(ncol__,nlayers__),rat_h2oco2_1(ncol__,nlayers__), &
+               rat_h2oo3(ncol__,nlayers__),rat_h2oo3_1(ncol__,nlayers__), &
+               rat_h2on2o(ncol__,nlayers__),rat_h2on2o_1(ncol__,nlayers__), &
+               rat_h2och4(ncol__,nlayers__),rat_h2och4_1(ncol__,nlayers__), &
+               rat_n2oco2(ncol__,nlayers__),rat_n2oco2_1(ncol__,nlayers__), &
+               rat_o3co2(ncol__,nlayers__),rat_o3co2_1(ncol__,nlayers__)
+                                                      !    Dimensions: (ncol__,nlayers__)
+      real  :: tauaa(ncol__, nlayers__, nbndlw__)
+                                                      !    Dimensions: (ncol__,nlayers__,ngptlw__)
      
-      integer  :: nspad(:)
-      integer  :: nspbd(:)
+      integer  :: nspad(nbndlw__)
+      integer  :: nspbd(nbndlw__)
       real  :: oneminusd 
 #endif

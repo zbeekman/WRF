@@ -9417,14 +9417,14 @@ integer,external :: omp_get_thread_num
 #ifndef _CUDA
 # include "rrtmg_lw_cpu_defs.h"
 # include "taug_cpu_defs.h"
-      real  :: taveld(:,:)          ! layer temperatures (K)
-                                                         !    Dimensions: (ncol,nlayers)
-      real  :: tzd(:,:)             ! level (interface) temperatures (K)
-                                                         !    Dimensions: (ncol,0:nlayers)
-      real  :: tboundd(:)           ! surface temperature (K)
-                                                         !    Dimensions: (ncol)
-      real  :: wbroadd(:,:)         ! broadening gas column density (mol/cm2)
-                                                         !    Dimensions: (ncol,nlayers)
+      real  :: taveld(ncol,nlayers)         ! layer temperatures (K)
+                                            !    Dimensions: (ncol,nlayers)
+      real  :: tzd(ncol,0:nlayers)          ! level (interface) temperatures (K)
+                                            !    Dimensions: (ncol,0:nlayers)
+      real  :: tboundd(ncol)                ! surface temperature (K)
+                                            !    Dimensions: (ncol)
+      real  :: wbroadd(ncol,nlayers)        ! broadening gas column density (mol/cm2)
+                                            !    Dimensions: (ncol,nlayers)
 
       real  :: totplnkd(181,nbndlw)
       real  :: totplk16d(181)
@@ -9449,6 +9449,82 @@ integer,external :: omp_get_thread_num
       integer  :: iplon
       real  :: wv, lcoldry
 
+write(0,*)'s tzd ',shape(tzd)
+write(0,*)'s ngsd ',shape(ngsd)
+write(0,*)'s taucmcd ',shape(taucmcd)
+write(0,*)'s pzd ',shape(pzd)
+write(0,*)'s pwvcmd ',shape(pwvcmd)
+write(0,*)'s semissd ',shape(semissd)
+write(0,*)'s planklayd ',shape(planklayd)
+write(0,*)'s planklevd ',shape(planklevd)
+write(0,*)'s plankbndd ',shape(plankbndd)
+write(0,*)'s gurad ',shape(gurad)
+write(0,*)'s gdrad ',shape(gdrad)
+write(0,*)'s gclrurad ',shape(gclrurad)
+write(0,*)'s gclrdrad ',shape(gclrdrad)
+write(0,*)'s gdtotuflux_dtd ',shape(gdtotuflux_dtd)
+write(0,*)'s gdtotuclfl_dtd ',shape(gdtotuclfl_dtd)
+write(0,*)'s a0d ',shape(a0d)
+write(0,*)'s delwaved ',shape(delwaved)
+write(0,*)'s totufluxd ',shape(totufluxd)
+write(0,*)'s totdfluxd ',shape(totdfluxd)
+write(0,*)'s fnetd ',shape(fnetd)
+write(0,*)'s htrd ',shape(htrd)
+write(0,*)'s totuclfld ',shape(totuclfld)
+write(0,*)'s totdclfld ',shape(totdclfld)
+write(0,*)'s fnetcd ',shape(fnetcd)
+write(0,*)'s htrcd ',shape(htrcd)
+write(0,*)'s dtotuflux_dtd ',shape(dtotuflux_dtd)
+write(0,*)'s dtotuclfl_dtd ',shape(dtotuclfl_dtd)
+write(0,*)'s dplankbnd_dtd ',shape(dplankbnd_dtd)
+write(0,*)'s pavel ',shape(pavel)
+write(0,*)'s wx1 ',shape(wx1)
+write(0,*)'s wx2 ',shape(wx2)
+write(0,*)'s wx3 ',shape(wx3)
+write(0,*)'s wx4 ',shape(wx4)
+write(0,*)'s coldry ',shape(coldry)
+write(0,*)'s laytrop ',shape(laytrop)
+write(0,*)'s jp ',shape(jp)
+write(0,*)'s jt ',shape(jt)
+write(0,*)'s jt1 ',shape(jt1)
+write(0,*)'s colh2o ',shape(colh2o)
+write(0,*)'s colco2 ',shape(colco2)
+write(0,*)'s colo3 ',shape(colo3)
+write(0,*)'s coln2o ',shape(coln2o)
+write(0,*)'s colco ',shape(colco)
+write(0,*)'s colch4 ',shape(colch4)
+write(0,*)'s colo2 ',shape(colo2)
+write(0,*)'s colbrd ',shape(colbrd)
+write(0,*)'s indself ',shape(indself)
+write(0,*)'s indfor ',shape(indfor)
+write(0,*)'s selffac ',shape(selffac)
+write(0,*)'s selffrac ',shape(selffrac)
+write(0,*)'s forfac ',shape(forfac)
+write(0,*)'s forfrac ',shape(forfrac)
+write(0,*)'s indminor ',shape(indminor)
+write(0,*)'s minorfrac ',shape(minorfrac)
+write(0,*)'s scaleminor ',shape(scaleminor)
+write(0,*)'s scaleminorn2 ',shape(scaleminorn2)
+write(0,*)'s fac00 ',shape(fac00)
+write(0,*)'s fac01 ',shape(fac01)
+write(0,*)'s fac10 ',shape(fac10)
+write(0,*)'s fac11 ',shape(fac11)
+write(0,*)'s rat_h2oco2 ',shape(rat_h2oco2)
+write(0,*)'s rat_h2oco2_1 ',shape(rat_h2oco2_1)
+write(0,*)'s rat_h2oo3 ',shape(rat_h2oo3)
+write(0,*)'s rat_h2oo3_1 ',shape(rat_h2oo3_1)
+write(0,*)'s rat_h2on2o ',shape(rat_h2on2o)
+write(0,*)'s rat_h2on2o_1 ',shape(rat_h2on2o_1)
+write(0,*)'s rat_h2och4 ',shape(rat_h2och4)
+write(0,*)'s rat_h2och4_1 ',shape(rat_h2och4_1)
+write(0,*)'s rat_n2oco2 ',shape(rat_n2oco2)
+write(0,*)'s rat_n2oco2_1 ',shape(rat_n2oco2_1)
+write(0,*)'s rat_o3co2 ',shape(rat_o3co2)
+write(0,*)'s rat_o3co2_1 ',shape(rat_o3co2_1)
+write(0,*)'s tauaa ',shape(tauaa)
+write(0,*)'s nspad ',shape(nspad)
+write(0,*)'s nspbd ',shape(nspbd)
+
 #ifdef _CUDA
       iplon = (blockidx%x-1) * blockdim%x + threadidx%x
       if (iplon <= ncol) then
@@ -9472,6 +9548,13 @@ integer,external :: omp_get_thread_num
            indlev0 = 180
         endif
         t0frac = tzd(iplon, 0) - 159.  - float(indlev0)
+if(iplon.eq.5) then
+write(0,*)'t0frac = ',t0frac
+write(0,*)'tzd ',tzd(iplon,0)
+write(0,*)'tboundd ',tboundd(iplon)
+write(0,*)'indlev0 ',indlev0
+write(0,*)'indbound ',indbound
+endif
         laytrop(iplon) = 0
 
 ! Begin layer loop 
@@ -9503,6 +9586,11 @@ integer,external :: omp_get_thread_num
                    (totplnkd(indbound,iband) + tbndfrac * dbdtlev)
                dbdtlev = totplnkd(indlev0+1,iband)-totplnkd(indlev0,iband)
                planklevd(iplon, 0,iband) = totplnkd(indlev0,iband) + t0frac * dbdtlev
+if (iplon.eq.5)then
+write(0,*)0,iband,'p totplnkd',totplnkd(indlev0,iband)
+write(0,*)0,iband,'p t0frac',t0frac
+write(0,*)0,iband,'p dbdtlev',dbdtlev
+endif
                if (idrvd .eq. 1) then 
                   dbdtlev = totplnkderivd(indbound+1,iband) - totplnkderivd(indbound,iband)
                   dplankbnd_dtd(iplon, iband) = semissd(iplon, iband) * &
@@ -9513,6 +9601,13 @@ integer,external :: omp_get_thread_num
             dbdtlay = totplnkd(indlay+1,iband) - totplnkd(indlay,iband)
             planklayd(iplon, lay,iband) = totplnkd(indlay,iband) + tlayfrac * dbdtlay
             planklevd(iplon, lay,iband) = totplnkd(indlev,iband) + tlevfrac * dbdtlev
+if (iplon.eq.5)then
+write(0,*)lay,iband,'p totplnkd lay',totplnkd(indlay,iband)
+write(0,*)lay,iband,'p totplnkd lev',totplnkd(indlev,iband)
+write(0,*)lay,iband,'p tlevfrac',tlayfrac
+write(0,*)lay,iband,'p tlevfrac',tlevfrac
+write(0,*)lay,iband,'p dbdtlev',dbdtlev
+endif
           enddo
 
 !  For band 16, if radiative transfer will be performed on just
@@ -14538,7 +14633,8 @@ integer,external :: omp_get_thread_num
 ! ----- Local -----
 
 #ifndef _CUDA
-      integer  ncol_,nlayers_,nbndlw_,ngptlw_  ! for passing through argument list
+      integer  ncol_,nlayers_,nbndlw_,ngptlw_      ! for passing through argument list
+      integer  ncol__,nlayers__,nbndlw__,ngptlw__  ! for passing through argument list
 ! here is where the previously allocatable things are made local variables
       real ::  pmid(ncol, nlay)
 
@@ -14786,7 +14882,8 @@ integer,external :: omp_get_thread_num
 !
 #ifndef _CUDA
 # undef pncol
-      ncol_ = ncol ; nlayers_ = nlay ; nbndlw_ = nbndlw ; ngptlw_ = ngptlw ! for passing through argument list
+      ncol_  = pncol ; nlayers_  = nlay ; nbndlw_  = nbndlw ; ngptlw_  = ngptlw ! for passing through argument list
+      ncol__ = pncol ; nlayers__ = nlay ; nbndlw__ = nbndlw ; ngptlw__ = ngptlw ! for passing through argument list
 #endif
    
       cldfracq(:,1:nlay) = cldfrac(colstart:(colstart+pncol-1), 1:nlay)
@@ -15059,6 +15156,14 @@ integer,external :: omp_get_thread_num
       call copyToGPUref()
       call copyGPUrtrnmcg(pz, pwvcm, idrv, taut)
 #else
+
+      semissd = emis(colstart:(colstart+pncol-1),1:nlay)
+
+# define tzd tz
+# define taveld tavel
+# define tboundd tbound
+# define wbroadd wbrodl
+
 # define pzd pz
 # define pwvcmd pwvcm
 # define idrvd idrv
@@ -15104,6 +15209,7 @@ integer,external :: omp_get_thread_num
       dimGrid = dim3( (pncol+255)/256,1, 1)
       dimBlock = dim3( 256,1,1)
 #endif
+write(0,*)'b4 setcoefg tz ',tz(5,0),shape(tz)
       call setcoefg _gpuchv (pncol, nlayers, istart                    &
 # include "rrtmg_lw_cpu_args.h"
 # include "taug_cpu_args.h"
@@ -15244,6 +15350,11 @@ endif
       call deallocateGPUrtrnmcg(idrv)
       call deallocateGPUSetCoef( )
 #else
+# undef tzd
+# undef taveld
+# undef tboundd
+# undef wbroadd
+
 # undef ngbd
 # undef ngsd
 # undef icldd

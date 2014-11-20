@@ -12,10 +12,10 @@
                                                         !    Dimensions: (ncol)
       real , dimension(ncol_,nbndlw_) :: semissd        ! lw surface emissivity
                                                         !    Dimensions: (ncol,nbndlw)
-      real , dimension(ncol_,nlayers_,nbndlw_) :: planklayd    ! 
-                                                        !    Dimensions: (ncol,nlayers,nbndlw)
-      real , dimension(ncol_,0:nlayers_,nbndlw_) :: planklevd    ! 
-                                                        !    Dimensions: (ncol,0:nlayers,nbndlw)
+      real , dimension(ncol_,nlayers_+1,nbndlw_) :: planklayd    ! 
+                                                        !    Dimensions: (ncol,nlayers+1,nbndlw)
+      real , dimension(ncol_,0:nlayers_+1,nbndlw_) :: planklevd    ! 
+                                                        !    Dimensions: (ncol,0:nlayers+1,nbndlw)
       real, dimension(ncol_,nbndlw_) :: plankbndd       ! 
                                                         !    Dimensions: (ncol,nbndlw)
    
