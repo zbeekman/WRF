@@ -4972,6 +4972,8 @@ write(0,*)lev,'in rtrnmcg plfrac ',plfrac
 write(0,*)lev,'in rtrnmcg blay   ',blay
 write(0,*)lev,'in rtrnmcg dplankup   ',dplankup
 write(0,*)lev,'in rtrnmcg dplankdn   ',dplankdn
+write(0,*)lev,'in rtrnmcg secdiff   ',secdiff
+write(0,*)igc,lev,'in rtrnmcg taug   ',taug(iplon,lev,igc)
 write(0,*)lev,'in rtrnmcg odepth   ',odepth
 endif
 !zap
@@ -6671,6 +6673,28 @@ integer,external :: omp_get_thread_num
                 + wx1(iplon, lay) * coldry(iplon,lay) * 1.e-20  * ccl4d(ig)
             fracsd(iplon,lay,ngs4+ig) = fracrefbd(ig,jpl) + fpl * &
                 (fracrefbd(ig,jpl+1)-fracrefbd(ig,jpl))
+if (iplon.eq.5)then
+write(0,*)ig,'taug(iplon,lay,53)',taug(iplon,lay,ngs4+ig)
+write(0,*)ig,'fac000 ',fac000
+write(0,*)ig,'fac100 ',fac100
+write(0,*)ig,'fac010 ',fac010
+write(0,*)ig,'fac110 ',fac110
+write(0,*)ig,'ind0 ',ind0
+write(0,*)ig,'ind1 ',ind1
+write(0,*)ig,'speccomb ',speccomb
+write(0,*)ig,'absbd(ind0,ig) ',absbd(ind0,ig)
+write(0,*)ig,'absbd(ind0,ig+1) ',absbd(ind0+1,ig)
+write(0,*)ig,'absbd(ind0,ig+5) ',absbd(ind0+5,ig)
+write(0,*)ig,'absbd(ind0,ig+6) ',absbd(ind0+6,ig)
+write(0,*)ig,'absbd(ind1,ig) ',absbd(ind1,ig)
+write(0,*)ig,'absbd(ind1,ig+1) ',absbd(ind1+1,ig)
+write(0,*)ig,'absbd(ind1,ig+5) ',absbd(ind1+5,ig)
+write(0,*)ig,'absbd(ind1,ig+6) ',absbd(ind1+6,ig)
+write(0,*)ig,'wx1(iplon,lay) ',wx1(iplon,lay)
+write(0,*)ig,'coldry(iplon,lay) ',coldry(iplon,lay)
+write(0,*)ig,'ccl4d(ig) ',ccl4d(ig)
+endif
+
          enddo
       endif
 
@@ -8935,6 +8959,9 @@ integer,external :: omp_get_thread_num
 #else
 !#  define ncol CHNK
 #endif   
+
+write(0,*)'in taumolg wx1(5,1)',wx1(5,1),shape(wx1)
+write(0,*)'in taumolg wx1(5,2)',wx1(5,2)
 
 ! Calculate gaseous optical depth and planck fractions for each spectral band.
 
@@ -14636,53 +14663,53 @@ integer,external :: omp_get_thread_num
       integer  ncol_,nlayers_,nbndlw_,ngptlw_      ! for passing through argument list
       integer  ncol__,nlayers__,nbndlw__,ngptlw__  ! for passing through argument list
 ! here is where the previously allocatable things are made local variables
-      real ::  pmid(ncol, nlay)
+      real ::  pmid(pncol, nlay)
 
-      real :: relqmc(ncol, nlay+1), reicmc(ncol, nlay+1)
-      real :: resnmc(ncol, nlay+1)
+      real :: relqmc(pncol, nlay+1), reicmc(pncol, nlay+1)
+      real :: resnmc(pncol, nlay+1)
       
-      real :: ciwpmcd(ncol, ngptlw, nlay+1)
-      real :: clwpmcd(ncol, ngptlw, nlay+1)
-      real :: cswpmcd(ncol, ngptlw, nlay+1)
+      real :: ciwpmcd(pncol, ngptlw, nlay+1)
+      real :: clwpmcd(pncol, ngptlw, nlay+1)
+      real :: cswpmcd(pncol, ngptlw, nlay+1)
 
-      real :: taucmcd(ncol, ngptlw, nlay+1)
-      real :: pzd(ncol, 0:nlay+1)
-      real :: pwvcmd(ncol)
-      real :: semissd(ncol, nbndlw)
-      real :: planklayd(ncol,nlay+1,nbndlw)
-      real :: planklevd(ncol, 0:nlay+1, nbndlw)
-      real :: plankbndd(ncol,nbndlw)
-      real :: gurad(ncol,ngptlw,0:nlay+1)        ! upward longwave flux (w/m2)
-      real :: gdrad(ncol,ngptlw,0:nlay+1)        ! downward longwave flux (w/m2)
-      real :: gclrurad(ncol,ngptlw,0:nlay+1)     ! clear sky upward longwave flux (w/m2)
-      real :: gclrdrad(ncol,ngptlw,0:nlay+1)     ! clear sky downward longwave flux (w/m2)
+      real :: taucmcd(pncol, ngptlw, nlay+1)
+      real :: pzd(pncol, 0:nlay+1)
+      real :: pwvcmd(pncol)
+      real :: semissd(pncol, nbndlw)
+      real :: planklayd(pncol,nlay+1,nbndlw)
+      real :: planklevd(pncol, 0:nlay+1, nbndlw)
+      real :: plankbndd(pncol,nbndlw)
+      real :: gurad(pncol,ngptlw,0:nlay+1)        ! upward longwave flux (w/m2)
+      real :: gdrad(pncol,ngptlw,0:nlay+1)        ! downward longwave flux (w/m2)
+      real :: gclrurad(pncol,ngptlw,0:nlay+1)     ! clear sky upward longwave flux (w/m2)
+      real :: gclrdrad(pncol,ngptlw,0:nlay+1)     ! clear sky downward longwave flux (w/m2)
 
-      real :: gdtotuflux_dtd( ncol, ngptlw, 0:nlay+1)
-      real :: gdtotuclfl_dtd( ncol, ngptlw, 0:nlay+1)
+      real :: gdtotuflux_dtd( pncol, ngptlw, 0:nlay+1)
+      real :: gdtotuclfl_dtd( pncol, ngptlw, 0:nlay+1)
 
-      real :: totufluxd(ncol, 0:nlay+1)     ! upward longwave flux (w/m2)
-      real :: totdfluxd(ncol, 0:nlay+1)     ! downward longwave flux (w/m2)
-      real :: fnetd(ncol, 0:nlay+1)         ! net longwave flux (w/m2)
-      real :: htrd(ncol, 0:nlay+1)          ! longwave heating rate (k/day)
-      real :: totuclfld(ncol, 0:nlay+1)     ! clear sky upward longwave flux (w/m2)
-      real :: totdclfld(ncol, 0:nlay+1)     ! clear sky downward longwave flux (w/m2)
-      real :: fnetcd(ncol, 0:nlay+1)        ! clear sky net longwave flux (w/m2)
-      real :: htrcd(ncol, 0:nlay+1)         ! clear sky longwave heating rate (k/day)
-      real :: dtotuflux_dtd(ncol, 0:nlay+1) ! change in upward longwave flux (w/m2/k)
-      real :: dtotuclfl_dtd(ncol, 0:nlay+1)
-      real :: dplankbnd_dtd(ncol,nbndlw)
+      real :: totufluxd(pncol, 0:nlay+1)     ! upward longwave flux (w/m2)
+      real :: totdfluxd(pncol, 0:nlay+1)     ! downward longwave flux (w/m2)
+      real :: fnetd(pncol, 0:nlay+1)         ! net longwave flux (w/m2)
+      real :: htrd(pncol, 0:nlay+1)          ! longwave heating rate (k/day)
+      real :: totuclfld(pncol, 0:nlay+1)     ! clear sky upward longwave flux (w/m2)
+      real :: totdclfld(pncol, 0:nlay+1)     ! clear sky downward longwave flux (w/m2)
+      real :: fnetcd(pncol, 0:nlay+1)        ! clear sky net longwave flux (w/m2)
+      real :: htrcd(pncol, 0:nlay+1)         ! clear sky longwave heating rate (k/day)
+      real :: dtotuflux_dtd(pncol, 0:nlay+1) ! change in upward longwave flux (w/m2/k)
+      real :: dtotuclfl_dtd(pncol, 0:nlay+1)
+      real :: dplankbnd_dtd(pncol,nbndlw)
 
-      real :: taveld( ncol, nlay)
-      real :: tzd( ncol, 0:nlay)
-      real :: tboundd( ncol )
-      real :: wbroadd( ncol, nlay)
+      real :: taveld( pncol, nlay)
+      real :: tzd( pncol, 0:nlay)
+      real :: tboundd( pncol )
+      real :: wbroadd( pncol, nlay)
 
-      real :: wx1( ncol, nlay )
-      real :: wx2( ncol, nlay )
-      real :: wx3( ncol, nlay )
-      real :: wx4( ncol, nlay )
+      real :: wx1( pncol, nlay )
+      real :: wx2( pncol, nlay )
+      real :: wx3( pncol, nlay )
+      real :: wx4( pncol, nlay )
 
-      real :: tauaa( ncol, nlay, nbndlw )
+      real :: tauaa( pncol, nlay, nbndlw )
 !jm      integer :: nspad( nbndlw )
 !jm      integer :: nspbd( nbndlw )
 
@@ -15226,6 +15253,8 @@ write(0,*)'b4 setcoefg tz ',tz(5,0),shape(tz)
 
 
 ! (dmb 2012) Call the taumolg subroutine.  This subroutine calls all of the individal taumol kernels.     
+write(0,*)'b4 taumolg wx1(5,1)',wx1(5,1),shape(wx1)
+write(0,*)'b4 taumolg wx1(5,2)',wx1(5,2)
       call taumolg(1, pncol,nlayers, ngbd, taug, fracsd &
 # include "taug_cpu_args.h"
                   )
