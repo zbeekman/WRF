@@ -4966,17 +4966,6 @@ integer colstart
                dplankdn = planklevd(iplon,lev-1,ibnd) - blay
                odepth = secdiff * taug(iplon,lev,igc)
 
-if(colstart.eq.33361.and.iplon.eq.1)then
-write(0,*)igc,lev, 'plfrac   ',plfrac
-write(0,*)ibnd,lev,'blay     ',blay
-write(0,*)ibnd,lev,'dplankup ',dplankup
-write(0,*)ibnd,lev,'dplankdn ',dplankdn
-write(0,*)igc,lev, 'odepth   ',odepth
-write(0,*)igc,lev, 'secdiff  ',secdiff
-write(0,*)igc,lev, 'taug     ',taug(iplon,lev,igc)
-endif
-
-
                if (odepth .lt. 0.0 ) odepth = 0.0 
 !  Cloudy layer
                if (icldlyr(iplon, lev).eq.1) then
@@ -5258,7 +5247,6 @@ integer :: colstart
               
             totufluxd(iplon, ilay)=totufluxd(iplon, ilay)+gurad(iplon, igp, ilay)
             totdfluxd(iplon, ilay)=totdfluxd(iplon, ilay)+gdrad(iplon, igp, ilay)
-if(colstart.eq.33361.and.iplon.eq.1)write(0,*)igp,ilay,'rtrnadd ',gdrad(1, igp, ilay)
             totuclfld(iplon, ilay)=totuclfld(iplon, ilay)+gclrurad(iplon, igp, ilay)
             totdclfld(iplon, ilay)=totdclfld(iplon, ilay)+gclrdrad(iplon, igp, ilay)
 
@@ -5643,31 +5631,6 @@ integer,external :: omp_get_thread_num
                  fac01(iplon,lay) * absad(ind1,ig) + &
                  fac11(iplon,lay) * absad(ind1+1,ig)) & 
                  + tauself + taufor + taun2)
-if (ig.eq.1.and.iplon.eq.1.and.ncol.eq.6) then
-write(0,*)lay,'in taugb1g taug(iplon,lay,ig)',taug(iplon,lay,ig)
-write(0,*)lay,'in taugb1g corradj ',corradj
-write(0,*)lay,'in taugb1g colh2o(iplon,lay) ',colh2o(iplon,lay)
-write(0,*)lay,'in taugb1g fac00(iplon,lay) ',fac00(iplon,lay)
-write(0,*)lay,'in taugb1g absad(ind0,ig) ',absad(ind0,ig)
-write(0,*)lay,'in taugb1g fac10(iplon,lay) ',fac10(iplon,lay)
-write(0,*)lay,'in taugb1g absad(ind0+1,ig) ',absad(ind0+1,ig)
-write(0,*)lay,'in taugb1g fac01(iplon,lay) ',fac01(iplon,lay)
-write(0,*)lay,'in taugb1g absad(ind1,ig) ',absad(ind1,ig)
-write(0,*)lay,'in taugb1g fac11(iplon,lay) ',fac11(iplon,lay)
-write(0,*)lay,'in taugb1g absad(ind1+1,ig) ',absad(ind1+1,ig)
-write(0,*)lay,'in taugb1g selffac(iplon,lay) ',selffac(iplon,lay)
-write(0,*)lay,'in taugb1g selfrefd(inds,ig) ',selfrefd(inds,ig)
-write(0,*)lay,'in taugb1g selffrac(iplon,lay) ',selffrac(iplon,lay)
-write(0,*)lay,'in taugb1g selfrefd(inds+1,ig) ',selfrefd(inds+1,ig)
-write(0,*)lay,'in taugb1g forfac(iplon,lay) ',forfac(iplon,lay)
-write(0,*)lay,'in taugb1g forrefd(indf,ig) ',forrefd(indf,ig)
-write(0,*)lay,'in taugb1g forfrac(iplon,lay) ',forfrac(iplon,lay)
-write(0,*)lay,'in taugb1g forrefd(indf+1,ig) ',forrefd(indf+1,ig)
-write(0,*)lay,'in taugb1g scalen2 ',scalen2
-write(0,*)lay,'in taugb1g ka_mn2d(indm,ig) ',ka_mn2d(indm,ig)
-write(0,*)lay,'in taugb1g minorfrac(iplon,lay) ',minorfrac(iplon,lay)
-write(0,*)lay,'in taugb1g ka_mn2d(indm+1,ig) ',ka_mn2d(indm+1,ig)
-endif
              fracsd(iplon,lay,ig) = fracrefad(ig)
             
          enddo
@@ -5692,21 +5655,6 @@ endif
                  fac01(iplon,lay) * absbd(ind1,ig) + &
                  fac11(iplon,lay) * absbd(ind1+1,ig)) &  
                  + taufor + taun2)
-if (ig.eq.1.and.iplon.eq.1.and.ncol.eq.6) then
-write(0,*)lay,'in B taugb1g taug(iplon,lay,ig)',taug(iplon,lay,ig)
-write(0,*)lay,'in B taugb1g corradj ',corradj
-write(0,*)lay,'in B taugb1g colh2o(iplon,lay) ',colh2o(iplon,lay)
-write(0,*)lay,'in B taugb1g fac00(iplon,lay) ',fac00(iplon,lay)
-write(0,*)lay,'in B taugb1g absad(ind0,ig) ',absad(ind0,ig)
-write(0,*)lay,'in B taugb1g fac10(iplon,lay) ',fac10(iplon,lay)
-write(0,*)lay,'in B taugb1g absad(ind0+1,ig) ',absad(ind0+1,ig)
-write(0,*)lay,'in B taugb1g fac01(iplon,lay) ',fac01(iplon,lay)
-write(0,*)lay,'in B taugb1g absad(ind1,ig) ',absad(ind1,ig)
-write(0,*)lay,'in B taugb1g fac11(iplon,lay) ',fac11(iplon,lay)
-write(0,*)lay,'in B taugb1g absad(ind1+1,ig) ',absad(ind1+1,ig)
-write(0,*)lay,'in B taugb1g taufor ',taufor
-write(0,*)lay,'in B taugb1g taun2 ',taun2
-endif
             fracsd(iplon,lay,ig) = fracrefbd(ig)
          enddo
       endif
@@ -8796,10 +8744,6 @@ endif
 #endif
 
         taug(iplon, lay, ig) = taug(iplon, lay, ig) + tauaa(iplon, lay, ngbd(ig))
-if(ncol.eq.6.and.iplon.eq.1)write(0,*)ig,lay,'aa taug',taug(iplon, lay, ig)
-if(ncol.eq.6.and.iplon.eq.1)write(0,*)ig,lay,'aa ngbd',ngbd(ig)
-if(ncol.eq.6.and.iplon.eq.1)write(0,*)ig,lay,'aa tauaa',tauaa(iplon, lay, ngbd(ig))
-
 
 #ifdef _CUDA
       endif
@@ -8990,87 +8934,70 @@ if(ncol.eq.6.and.iplon.eq.1)write(0,*)ig,lay,'aa tauaa',tauaa(iplon, lay, ngbd(i
 
 ! (dmb 2012) Call all 16 kernels in sequence
 
-if(ncol.eq.6)write(0,*)'b4 taugb1g ',taug(1,42,1)
       call taugb1g _gpuchv (ncol, nlayers, taug, fracsd  &
 #include "taug_cpu_args.h"
                            )
 
-if(ncol.eq.6)write(0,*)'b4 taugb2g ',taug(1,42,1)
       call taugb2g _gpuchv (ncol, nlayers, taug, fracsd  &
 #include "taug_cpu_args.h"
                            )
       
-if(ncol.eq.6)write(0,*)'b4 taugb3g ',taug(1,42,1)
       call taugb3g _gpuchv (ncol, nlayers, taug, fracsd  &
 #include "taug_cpu_args.h"
                            )
 
-if(ncol.eq.6)write(0,*)'b4 taugb4g ',taug(1,42,1)
       call taugb4g _gpuchv (ncol, nlayers, taug, fracsd  &
 #include "taug_cpu_args.h"
                            )
       
-if(ncol.eq.6)write(0,*)'b4 taugb5g ',taug(1,42,1)
       call taugb5g _gpuchv (ncol, nlayers, taug, fracsd  &
 #include "taug_cpu_args.h"
                            )
 
-if(ncol.eq.6)write(0,*)'b4 taugb6g ',taug(1,42,1)
       call taugb6g _gpuchv (ncol, nlayers, taug, fracsd  &
 #include "taug_cpu_args.h"
                            )
 
-if(ncol.eq.6)write(0,*)'b4 taugb7g ',taug(1,42,1)
       call taugb7g _gpuchv (ncol, nlayers, taug, fracsd  &
 #include "taug_cpu_args.h"
                            )
 
-if(ncol.eq.6)write(0,*)'b4 taugb8g ',taug(1,42,1)
       call taugb8g _gpuchv (ncol, nlayers, taug, fracsd  &
 #include "taug_cpu_args.h"
                            )
 
-if(ncol.eq.6)write(0,*)'b4 taugb9g ',taug(1,42,1)
       call taugb9g _gpuchv (ncol, nlayers, taug, fracsd  &
 #include "taug_cpu_args.h"
                            )
 
-if(ncol.eq.6)write(0,*)'b4 taugb10g ',taug(1,42,1)
       call taugb10g _gpuchv (ncol, nlayers, taug, fracsd  &
 #include "taug_cpu_args.h"
                            )
 
-if(ncol.eq.6)write(0,*)'b4 taugb11g ',taug(1,42,1)
       call taugb11g _gpuchv (ncol, nlayers, taug, fracsd  &
 #include "taug_cpu_args.h"
                            )
  
-if(ncol.eq.6)write(0,*)'b4 taugb12g ',taug(1,42,1)
       call taugb12g _gpuchv (ncol, nlayers, taug, fracsd  &
 #include "taug_cpu_args.h"
                            )
 
-if(ncol.eq.6)write(0,*)'b4 taugb13g ',taug(1,42,1)
       call taugb13g _gpuchv (ncol, nlayers, taug, fracsd  &
 #include "taug_cpu_args.h"
                            )
 
-if(ncol.eq.6)write(0,*)'b4 taugb14g ',taug(1,42,1)
       call taugb14g _gpuchv (ncol, nlayers, taug, fracsd  &
 #include "taug_cpu_args.h"
                            )
 
-if(ncol.eq.6)write(0,*)'b4 taugb15g ',taug(1,42,1)
       call taugb15g _gpuchv (ncol, nlayers, taug, fracsd  &
 #include "taug_cpu_args.h"
                            )
 
-if(ncol.eq.6)write(0,*)'b4 taugb16g ',taug(1,42,1)
       call taugb16g _gpuchv (ncol, nlayers, taug, fracsd  &
 #include "taug_cpu_args.h"
                            )
      
-if(ncol.eq.6)write(0,*)'b4 addAerosols ',taug(1,42,1)
 
 #ifdef _CUDA
       dimGrid = dim3( (ncol+ 255) / 256, nlayers, ngptlw )
@@ -9082,7 +9009,6 @@ if(ncol.eq.6)write(0,*)'b4 addAerosols ',taug(1,42,1)
       call addAerosols _gpuchv (ncol, nlayers, ngptlw, nbndlw, ngbd, taug &
 #include "taug_cpu_args.h"
                                )
-if(ncol.eq.6)write(0,*)'aft addAerosols ',taug(1,42,1)
 
       end subroutine taumolg
 
@@ -15263,7 +15189,6 @@ integer,external :: omp_get_thread_num
 ! copy the partition data back to the CPU
       uflx(colstart:(colstart+pncol-1), 1:(nlayers+1)) = totufluxd
       dflx(colstart:(colstart+pncol-1), 1:(nlayers+1)) = totdfluxd
-if (colstart.eq.33361)write(0,*)'setting dflx ',dflx(colstart, 1)
       uflxc(colstart:(colstart+pncol-1), 1:(nlayers+1)) = totuclfld
       dflxc(colstart:(colstart+pncol-1), 1:(nlayers+1)) = totdclfld
       hr(colstart:(colstart+pncol-1), 1:(nlayers+1)) = htrd
