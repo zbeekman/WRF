@@ -4277,7 +4277,7 @@ contains
       integer, value, intent(in) :: nlayers           ! total number of layers
 
 #ifndef _CUDA
-!zap# define ncol CHNK
+# define ncol CHNK
 #endif
       
       real , intent(in) :: cldfmc(ncol, ngptlw, nlayers+1)        ! cloud fraction [mcica]
@@ -4966,6 +4966,16 @@ integer colstart
                dplankdn = planklevd(iplon,lev-1,ibnd) - blay
                odepth = secdiff * taug(iplon,lev,igc)
 
+if(colstart.eq.33361.and.iplon.eq.1)then
+write(0,*)igc,lev, 'plfrac   ',plfrac
+write(0,*)ibnd,lev,'blay     ',blay
+write(0,*)ibnd,lev,'dplankup ',dplankup
+write(0,*)ibnd,lev,'dplankdn ',dplankdn
+write(0,*)igc,lev, 'odepth   ',odepth
+write(0,*)igc,lev, 'secdiff  ',secdiff
+write(0,*)igc,lev, 'taug     ',taug(iplon,lev,igc)
+endif
+
                if (odepth .lt. 0.0 ) odepth = 0.0 
 !  Cloudy layer
                if (icldlyr(iplon, lev).eq.1) then
@@ -5631,6 +5641,32 @@ integer,external :: omp_get_thread_num
                  fac01(iplon,lay) * absad(ind1,ig) + &
                  fac11(iplon,lay) * absad(ind1+1,ig)) & 
                  + tauself + taufor + taun2)
+if (ig.eq.1.and.iplon.eq.1.and.ncol.eq.6) then
+write(0,*)lay,'in taugb1g taug(iplon,lay,ig)',taug(iplon,lay,ig)
+write(0,*)lay,'in taugb1g corradj ',corradj
+write(0,*)lay,'in taugb1g colh2o(iplon,lay) ',colh2o(iplon,lay)
+write(0,*)lay,'in taugb1g fac00(iplon,lay) ',fac00(iplon,lay)
+write(0,*)lay,'in taugb1g absad(ind0,ig) ',absad(ind0,ig)
+write(0,*)lay,'in taugb1g fac10(iplon,lay) ',fac10(iplon,lay)
+write(0,*)lay,'in taugb1g absad(ind0+1,ig) ',absad(ind0+1,ig)
+write(0,*)lay,'in taugb1g fac01(iplon,lay) ',fac01(iplon,lay)
+write(0,*)lay,'in taugb1g absad(ind1,ig) ',absad(ind1,ig)
+write(0,*)lay,'in taugb1g fac11(iplon,lay) ',fac11(iplon,lay)
+write(0,*)lay,'in taugb1g absad(ind1+1,ig) ',absad(ind1+1,ig)
+write(0,*)lay,'in taugb1g selffac(iplon,lay) ',selffac(iplon,lay)
+write(0,*)lay,'in taugb1g selfrefd(inds,ig) ',selfrefd(inds,ig)
+write(0,*)lay,'in taugb1g selffrac(iplon,lay) ',selffrac(iplon,lay)
+write(0,*)lay,'in taugb1g selfrefd(inds+1,ig) ',selfrefd(inds+1,ig)
+write(0,*)lay,'in taugb1g forfac(iplon,lay) ',forfac(iplon,lay)
+write(0,*)lay,'in taugb1g forrefd(indf,ig) ',forrefd(indf,ig)
+write(0,*)lay,'in taugb1g forfrac(iplon,lay) ',forfrac(iplon,lay)
+write(0,*)lay,'in taugb1g forrefd(indf+1,ig) ',forrefd(indf+1,ig)
+write(0,*)lay,'in taugb1g scalen2 ',scalen2
+write(0,*)lay,'in taugb1g ka_mn2d(indm,ig) ',ka_mn2d(indm,ig)
+write(0,*)lay,'in taugb1g minorfrac(iplon,lay) ',minorfrac(iplon,lay)
+write(0,*)lay,'in taugb1g ka_mn2d(indm+1,ig) ',ka_mn2d(indm+1,ig)
+endif
+
              fracsd(iplon,lay,ig) = fracrefad(ig)
             
          enddo
@@ -5655,6 +5691,22 @@ integer,external :: omp_get_thread_num
                  fac01(iplon,lay) * absbd(ind1,ig) + &
                  fac11(iplon,lay) * absbd(ind1+1,ig)) &  
                  + taufor + taun2)
+if (ig.eq.1.and.iplon.eq.1.and.ncol.eq.6) then
+write(0,*)lay,'in B taugb1g taug(iplon,lay,ig)',taug(iplon,lay,ig)
+write(0,*)lay,'in B taugb1g corradj ',corradj
+write(0,*)lay,'in B taugb1g colh2o(iplon,lay) ',colh2o(iplon,lay)
+write(0,*)lay,'in B taugb1g fac00(iplon,lay) ',fac00(iplon,lay)
+write(0,*)lay,'in B taugb1g absad(ind0,ig) ',absad(ind0,ig)
+write(0,*)lay,'in B taugb1g fac10(iplon,lay) ',fac10(iplon,lay)
+write(0,*)lay,'in B taugb1g absad(ind0+1,ig) ',absad(ind0+1,ig)
+write(0,*)lay,'in B taugb1g fac01(iplon,lay) ',fac01(iplon,lay)
+write(0,*)lay,'in B taugb1g absad(ind1,ig) ',absad(ind1,ig)
+write(0,*)lay,'in B taugb1g fac11(iplon,lay) ',fac11(iplon,lay)
+write(0,*)lay,'in B taugb1g absad(ind1+1,ig) ',absad(ind1+1,ig)
+write(0,*)lay,'in B taugb1g taufor ',taufor
+write(0,*)lay,'in B taugb1g taun2 ',taun2
+endif
+
             fracsd(iplon,lay,ig) = fracrefbd(ig)
          enddo
       endif
@@ -8924,14 +8976,108 @@ integer,external :: omp_get_thread_num
       dimBlock = dim3( 64, 2, 1)
       
 #else
-!#  define ncol CHNK
+!jm#  define ncol CHNK
 #endif   
 
 ! Calculate gaseous optical depth and planck fractions for each spectral band.
 
 ! (dmb 2012) Here we configure the grid and thread blocks.  These subroutines are
 ! only parallelized across the column dimension so the blocks are one dimensional.
+if(ncol.eq.6)write(0,*)'b4 taugb1g ',taug(1,42,1)
+      call taugb1g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
 
+if(ncol.eq.6)write(0,*)'b4 taugb2g ',taug(1,42,1)
+      call taugb2g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
+      
+if(ncol.eq.6)write(0,*)'b4 taugb3g ',taug(1,42,1)
+      call taugb3g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
+
+if(ncol.eq.6)write(0,*)'b4 taugb4g ',taug(1,42,1)
+      call taugb4g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
+      
+if(ncol.eq.6)write(0,*)'b4 taugb5g ',taug(1,42,1)
+      call taugb5g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
+
+if(ncol.eq.6)write(0,*)'b4 taugb6g ',taug(1,42,1)
+      call taugb6g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
+
+if(ncol.eq.6)write(0,*)'b4 taugb7g ',taug(1,42,1)
+      call taugb7g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
+
+if(ncol.eq.6)write(0,*)'b4 taugb8g ',taug(1,42,1)
+      call taugb8g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
+
+if(ncol.eq.6)write(0,*)'b4 taugb9g ',taug(1,42,1)
+      call taugb9g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
+
+if(ncol.eq.6)write(0,*)'b4 taugb10g ',taug(1,42,1)
+      call taugb10g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
+
+if(ncol.eq.6)write(0,*)'b4 taugb11g ',taug(1,42,1)
+      call taugb11g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
+ 
+if(ncol.eq.6)write(0,*)'b4 taugb12g ',taug(1,42,1)
+      call taugb12g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
+
+if(ncol.eq.6)write(0,*)'b4 taugb13g ',taug(1,42,1)
+      call taugb13g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
+
+if(ncol.eq.6)write(0,*)'b4 taugb14g ',taug(1,42,1)
+      call taugb14g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
+
+if(ncol.eq.6)write(0,*)'b4 taugb15g ',taug(1,42,1)
+      call taugb15g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
+
+if(ncol.eq.6)write(0,*)'b4 taugb16g ',taug(1,42,1)
+      call taugb16g _gpuchv (ncol, nlayers, taug, fracsd  &
+#include "taug_cpu_args.h"
+                           )
+     
+if(ncol.eq.6)write(0,*)'b4 addAerosols ',taug(1,42,1)
+
+#ifdef _CUDA
+      dimGrid = dim3( (ncol+ 255) / 256, nlayers, ngptlw )
+      dimBlock = dim3( 256, 1, 1)
+#endif
+
+! (dmb 2012) This code used to be in the main rrtmg_lw_rad source file
+! We add the aerosol optical depths to the gas optical depths
+      call addAerosols _gpuchv (ncol, nlayers, ngptlw, nbndlw, ngbd, taug &
+#include "taug_cpu_args.h"
+                               )
+if(ncol.eq.6)write(0,*)'aft addAerosols ',taug(1,42,1)
+
+#if 0
 ! (dmb 2012) Call all 16 kernels in sequence
 
       call taugb1g _gpuchv (ncol, nlayers, taug, fracsd  &
@@ -9009,6 +9155,7 @@ integer,external :: omp_get_thread_num
       call addAerosols _gpuchv (ncol, nlayers, ngptlw, nbndlw, ngbd, taug &
 #include "taug_cpu_args.h"
                                )
+#endif
 
       end subroutine taumolg
 
@@ -9060,7 +9207,7 @@ integer,external :: omp_get_thread_num
 
 
 !#ifndef _CUDA
-!#  undef ncol
+#  undef ncol
 !#endif
 
 ! (dmb 2012) Allocate all of the needed memory for the taumol subroutines
@@ -9407,13 +9554,13 @@ integer,external :: omp_get_thread_num
 #ifndef _CUDA
 # include "rrtmg_lw_cpu_defs.h"
 # include "taug_cpu_defs.h"
-      real  :: taveld(ncol,nlayers)         ! layer temperatures (K)
+      real  :: taveld(CHNK,nlayers+1)       ! layer temperatures (K)
                                             !    Dimensions: (ncol,nlayers)
-      real  :: tzd(ncol,0:nlayers)          ! level (interface) temperatures (K)
+      real  :: tzd(CHNK,0:nlayers+1)        ! level (interface) temperatures (K)
                                             !    Dimensions: (ncol,0:nlayers)
-      real  :: tboundd(ncol)                ! surface temperature (K)
+      real  :: tboundd(CHNK)                ! surface temperature (K)
                                             !    Dimensions: (ncol)
-      real  :: wbroadd(ncol,nlayers)        ! broadening gas column density (mol/cm2)
+      real  :: wbroadd(CHNK,nlayers+1)      ! broadening gas column density (mol/cm2)
                                             !    Dimensions: (ncol,nlayers)
 
       real  :: totplnkd(181,nbndlw)
@@ -9438,6 +9585,24 @@ integer,external :: omp_get_thread_num
       real  :: plog, fp, ft, ft1, water, scalefac, factor, compfp
       integer  :: iplon
       real  :: wv, lcoldry
+
+if(ncol.eq.6)then
+write(0,*)'sc shape tzd ',shape(tzd)
+write(0,*)'sc shape taveld ',shape(taveld)
+write(0,*)'sc shape tboundd ',shape(tboundd)
+write(0,*)'sc shape wbroadd ',shape(wbroadd)
+
+write(0,*)'sc taveld ',taveld(1,1)
+write(0,*)'sc tzd 0',tzd(0,1)
+write(0,*)'sc tzd 1',tzd(1,1)
+write(0,*)'sc tboundd ',tboundd(1)
+write(0,*)'sc wbroadd ',wbroadd(1,1)
+
+write(0,*)'sc taveld ',taveld(1,42)
+write(0,*)'sc tzd 42',tzd(1,42)
+write(0,*)'sc wbroadd ',wbroadd(1,42)
+
+endif
 
 #ifdef _CUDA
       iplon = (blockidx%x-1) * blockdim%x + threadidx%x
@@ -9707,9 +9872,19 @@ integer,external :: omp_get_thread_num
 !  Rescale selffac and forfac for use in taumol
           selffac(iplon, lay) = colh2o(iplon, lay)*selffac(iplon, lay)
           forfac(iplon, lay) = colh2o(iplon, lay)*forfac(iplon, lay)
-	
 ! End layer loop
         enddo
+
+if(ncol.eq.6)then
+write(0,*)'sc fac00 ',fac00(1,42)
+write(0,*)'sc fac10 ',fac10(1,42)
+write(0,*)'sc fac01 ',fac01(1,42)
+write(0,*)'sc fac11 ',fac11(1,42)
+write(0,*)'sc selffac ',selffac(1,42)
+write(0,*)'sc forfac ',forfac(1,42)
+endif
+
+	
      
 #ifdef _CUDA
       endif
@@ -14489,7 +14664,7 @@ integer,external :: omp_get_thread_num
       integer , intent(in) :: colstart
 
 #ifndef _CUDA
-!jm# define pncol CHNK
+# define pncol CHNK
 #endif
       
 ! ----- Output -----
@@ -14813,7 +14988,7 @@ integer,external :: omp_get_thread_num
 	   
 
 #ifndef _CUDA
-!jm#  define pncol CHNK
+#  define pncol CHNK
 #endif
 #ifdef _CUDA
       allocate( icbd(16))
@@ -15058,6 +15233,7 @@ integer,external :: omp_get_thread_num
 # define oneminusd oneminus
 #endif
  
+if(colstart.eq.33361)write(0,*)'before cldprmcg',taug(1,42,1)
 
 ! (dmb 2012) Here we configure the grids and blocks to run the cldpmcd kernel
 ! on the GPU.  I decided to keep the block dimensions to 16x16 to coincide with
@@ -15088,6 +15264,14 @@ integer,external :: omp_get_thread_num
 ! coefficients and indices needed to compute the optical depths
 ! by interpolating data from stored reference atmospheres. 
 
+if(colstart.eq.33361)then
+write(0,*)'before setcoefg',taug(1,42,1)
+write(0,*)'b4 setcoefg shape tzd ',shape(tzd)
+write(0,*)'b4 setcoefg shape taveld ',shape(taveld)
+write(0,*)'b4 setcoefg shape tboundd ',shape(tboundd)
+write(0,*)'b4 setcoefg shape wbroadd ',shape(wbroadd)
+endif
+
       
 ! (dmb 2012) Initialize the grid and block dimensions and call the setcoefg kernel
 #ifdef _CUDA
@@ -15107,6 +15291,10 @@ integer,external :: omp_get_thread_num
 
 !  Calculate the gaseous optical depths and Planck fractions for 
 !  each longwave spectral band.
+
+if(colstart.eq.33361)write(0,*)' ncol ',ncol,' pncol ',pncol,' ncol__ ',ncol__
+if(colstart.eq.33361)write(0,*)'after setcoefg',taug(1,42,1)
+
 
 
 ! (dmb 2012) Call the taumolg subroutine.  This subroutine calls all of the individal taumol kernels.     
@@ -15189,6 +15377,7 @@ integer,external :: omp_get_thread_num
 ! copy the partition data back to the CPU
       uflx(colstart:(colstart+pncol-1), 1:(nlayers+1)) = totufluxd
       dflx(colstart:(colstart+pncol-1), 1:(nlayers+1)) = totdfluxd
+if (colstart.eq.33361)write(0,*)'setting dflx ',dflx(colstart, 1)
       uflxc(colstart:(colstart+pncol-1), 1:(nlayers+1)) = totuclfld
       dflxc(colstart:(colstart+pncol-1), 1:(nlayers+1)) = totdclfld
       hr(colstart:(colstart+pncol-1), 1:(nlayers+1)) = htrd
@@ -15250,7 +15439,7 @@ integer,external :: omp_get_thread_num
 
 #ifndef _CUDA
 # undef pncol
-!# undef pncold
+# undef pncold
 #endif
 
 
