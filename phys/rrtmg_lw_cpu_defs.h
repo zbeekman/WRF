@@ -1,6 +1,9 @@
 #ifndef _CUDA
       integer :: ncol_,nlayers_,nbndlw_,ngptlw_
 ! changed to arguments for thread safety
+# ifndef CHNK
+#   define ncol_ CHNK
+# endif
       integer  :: ngsd(nbndlw)      
 
 ! Atmosphere
@@ -53,4 +56,5 @@
       real :: dtotuclfl_dtd(ncol_, 0:nlayers_+1) ! change in clear sky upward longwave flux (w/m2/k)
                                                        ! with respect to surface temperature
       real :: dplankbnd_dtd(ncol_,nbndlw_) 
+# undef CHNK
 #endif

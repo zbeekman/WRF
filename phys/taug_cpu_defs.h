@@ -1,6 +1,9 @@
 #ifndef __CUDA
       integer :: ncol__,nlayers__,nbndlw__,ngptlw__
 ! changed to arguments for thread safety (could reduce this list a bit)
+# ifndef ncol__
+#   define ncol__ CHNK
+# endif
       real  :: pavel(ncol__, nlayers__)
       real  :: wx1(ncol__,nlayers__)
       real  :: wx2(ncol__,nlayers__)
@@ -43,4 +46,5 @@
       integer  :: nspad(nbndlw__)
       integer  :: nspbd(nbndlw__)
       real  :: oneminusd 
+# undef ncol__
 #endif
