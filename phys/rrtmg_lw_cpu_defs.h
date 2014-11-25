@@ -1,7 +1,7 @@
 #ifndef _CUDA
       integer :: ncol_,nlayers_,nbndlw_,ngptlw_
 ! changed to arguments for thread safety
-# ifndef CHNK
+# ifndef ncol_
 #   define ncol_ CHNK
 # endif
       integer  :: ngsd(nbndlw)      
@@ -40,11 +40,9 @@
       real  :: heatfacd
       real  :: fluxfacd
       real  :: a0d(nbndlw_), a1d(nbndlw_), a2d(nbndlw_)
-!jm      integer  :: delwaved(nbndlw)
       real  :: delwaved(nbndlw_)
       real :: totufluxd(ncol_, 0:nlayers_+1)     ! upward longwave flux (w/m2)
       real :: totdfluxd(ncol_, 0:nlayers_+1)     ! downward longwave flux (w/m2)
-!STOPPPED
       real :: fnetd(ncol_, 0:nlayers_+1)         ! net longwave flux (w/m2)
       real :: htrd(ncol_, 0:nlayers_+1)          ! longwave heating rate (k/day)
       real :: totuclfld(ncol_, 0:nlayers_+1)     ! clear sky upward longwave flux (w/m2)
@@ -56,5 +54,5 @@
       real :: dtotuclfl_dtd(ncol_, 0:nlayers_+1) ! change in clear sky upward longwave flux (w/m2/k)
                                                        ! with respect to surface temperature
       real :: dplankbnd_dtd(ncol_,nbndlw_) 
-# undef CHNK
+# undef ncol_
 #endif
