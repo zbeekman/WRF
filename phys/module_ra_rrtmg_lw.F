@@ -4965,17 +4965,6 @@ integer colstart
                dplankup = planklevd(iplon,lev,ibnd) - blay
                dplankdn = planklevd(iplon,lev-1,ibnd) - blay
                odepth = secdiff * taug(iplon,lev,igc)
-
-if(colstart.eq.33361.and.iplon.eq.1)then
-write(0,*)igc,lev, 'plfrac   ',plfrac
-write(0,*)ibnd,lev,'blay     ',blay
-write(0,*)ibnd,lev,'dplankup ',dplankup
-write(0,*)ibnd,lev,'dplankdn ',dplankdn
-write(0,*)igc,lev, 'odepth   ',odepth
-write(0,*)igc,lev, 'secdiff  ',secdiff
-write(0,*)igc,lev, 'taug     ',taug(iplon,lev,igc)
-endif
-
                if (odepth .lt. 0.0 ) odepth = 0.0 
 !  Cloudy layer
                if (icldlyr(iplon, lev).eq.1) then
@@ -5641,6 +5630,7 @@ integer,external :: omp_get_thread_num
                  fac01(iplon,lay) * absad(ind1,ig) + &
                  fac11(iplon,lay) * absad(ind1+1,ig)) & 
                  + tauself + taufor + taun2)
+#if 0
 if (ig.eq.1.and.iplon.eq.1.and.ncol.eq.6) then
 write(0,*)lay,'in taugb1g taug(iplon,lay,ig)',taug(iplon,lay,ig)
 write(0,*)lay,'in taugb1g corradj ',corradj
@@ -5666,7 +5656,7 @@ write(0,*)lay,'in taugb1g ka_mn2d(indm,ig) ',ka_mn2d(indm,ig)
 write(0,*)lay,'in taugb1g minorfrac(iplon,lay) ',minorfrac(iplon,lay)
 write(0,*)lay,'in taugb1g ka_mn2d(indm+1,ig) ',ka_mn2d(indm+1,ig)
 endif
-
+#endif
              fracsd(iplon,lay,ig) = fracrefad(ig)
             
          enddo
@@ -5691,6 +5681,7 @@ endif
                  fac01(iplon,lay) * absbd(ind1,ig) + &
                  fac11(iplon,lay) * absbd(ind1+1,ig)) &  
                  + taufor + taun2)
+#if 0
 if (ig.eq.1.and.iplon.eq.1.and.ncol.eq.6) then
 write(0,*)lay,'in B taugb1g taug(iplon,lay,ig)',taug(iplon,lay,ig)
 write(0,*)lay,'in B taugb1g corradj ',corradj
@@ -5706,7 +5697,7 @@ write(0,*)lay,'in B taugb1g absad(ind1+1,ig) ',absad(ind1+1,ig)
 write(0,*)lay,'in B taugb1g taufor ',taufor
 write(0,*)lay,'in B taugb1g taun2 ',taun2
 endif
-
+#endif
             fracsd(iplon,lay,ig) = fracrefbd(ig)
          enddo
       endif
@@ -8983,103 +8974,6 @@ endif
 
 ! (dmb 2012) Here we configure the grid and thread blocks.  These subroutines are
 ! only parallelized across the column dimension so the blocks are one dimensional.
-if(ncol.eq.6)write(0,*)'b4 taugb1g ',taug(1,42,1)
-      call taugb1g _gpuchv (ncol, nlayers, taug, fracsd  &
-#include "taug_cpu_args.h"
-                           )
-
-if(ncol.eq.6)write(0,*)'b4 taugb2g ',taug(1,42,1)
-      call taugb2g _gpuchv (ncol, nlayers, taug, fracsd  &
-#include "taug_cpu_args.h"
-                           )
-      
-if(ncol.eq.6)write(0,*)'b4 taugb3g ',taug(1,42,1)
-      call taugb3g _gpuchv (ncol, nlayers, taug, fracsd  &
-#include "taug_cpu_args.h"
-                           )
-
-if(ncol.eq.6)write(0,*)'b4 taugb4g ',taug(1,42,1)
-      call taugb4g _gpuchv (ncol, nlayers, taug, fracsd  &
-#include "taug_cpu_args.h"
-                           )
-      
-if(ncol.eq.6)write(0,*)'b4 taugb5g ',taug(1,42,1)
-      call taugb5g _gpuchv (ncol, nlayers, taug, fracsd  &
-#include "taug_cpu_args.h"
-                           )
-
-if(ncol.eq.6)write(0,*)'b4 taugb6g ',taug(1,42,1)
-      call taugb6g _gpuchv (ncol, nlayers, taug, fracsd  &
-#include "taug_cpu_args.h"
-                           )
-
-if(ncol.eq.6)write(0,*)'b4 taugb7g ',taug(1,42,1)
-      call taugb7g _gpuchv (ncol, nlayers, taug, fracsd  &
-#include "taug_cpu_args.h"
-                           )
-
-if(ncol.eq.6)write(0,*)'b4 taugb8g ',taug(1,42,1)
-      call taugb8g _gpuchv (ncol, nlayers, taug, fracsd  &
-#include "taug_cpu_args.h"
-                           )
-
-if(ncol.eq.6)write(0,*)'b4 taugb9g ',taug(1,42,1)
-      call taugb9g _gpuchv (ncol, nlayers, taug, fracsd  &
-#include "taug_cpu_args.h"
-                           )
-
-if(ncol.eq.6)write(0,*)'b4 taugb10g ',taug(1,42,1)
-      call taugb10g _gpuchv (ncol, nlayers, taug, fracsd  &
-#include "taug_cpu_args.h"
-                           )
-
-if(ncol.eq.6)write(0,*)'b4 taugb11g ',taug(1,42,1)
-      call taugb11g _gpuchv (ncol, nlayers, taug, fracsd  &
-#include "taug_cpu_args.h"
-                           )
- 
-if(ncol.eq.6)write(0,*)'b4 taugb12g ',taug(1,42,1)
-      call taugb12g _gpuchv (ncol, nlayers, taug, fracsd  &
-#include "taug_cpu_args.h"
-                           )
-
-if(ncol.eq.6)write(0,*)'b4 taugb13g ',taug(1,42,1)
-      call taugb13g _gpuchv (ncol, nlayers, taug, fracsd  &
-#include "taug_cpu_args.h"
-                           )
-
-if(ncol.eq.6)write(0,*)'b4 taugb14g ',taug(1,42,1)
-      call taugb14g _gpuchv (ncol, nlayers, taug, fracsd  &
-#include "taug_cpu_args.h"
-                           )
-
-if(ncol.eq.6)write(0,*)'b4 taugb15g ',taug(1,42,1)
-      call taugb15g _gpuchv (ncol, nlayers, taug, fracsd  &
-#include "taug_cpu_args.h"
-                           )
-
-if(ncol.eq.6)write(0,*)'b4 taugb16g ',taug(1,42,1)
-      call taugb16g _gpuchv (ncol, nlayers, taug, fracsd  &
-#include "taug_cpu_args.h"
-                           )
-     
-if(ncol.eq.6)write(0,*)'b4 addAerosols ',taug(1,42,1)
-
-#ifdef _CUDA
-      dimGrid = dim3( (ncol+ 255) / 256, nlayers, ngptlw )
-      dimBlock = dim3( 256, 1, 1)
-#endif
-
-! (dmb 2012) This code used to be in the main rrtmg_lw_rad source file
-! We add the aerosol optical depths to the gas optical depths
-      call addAerosols _gpuchv (ncol, nlayers, ngptlw, nbndlw, ngbd, taug &
-#include "taug_cpu_args.h"
-                               )
-if(ncol.eq.6)write(0,*)'aft addAerosols ',taug(1,42,1)
-
-#if 0
-! (dmb 2012) Call all 16 kernels in sequence
-
       call taugb1g _gpuchv (ncol, nlayers, taug, fracsd  &
 #include "taug_cpu_args.h"
                            )
@@ -9143,7 +9037,6 @@ if(ncol.eq.6)write(0,*)'aft addAerosols ',taug(1,42,1)
       call taugb16g _gpuchv (ncol, nlayers, taug, fracsd  &
 #include "taug_cpu_args.h"
                            )
-     
 
 #ifdef _CUDA
       dimGrid = dim3( (ncol+ 255) / 256, nlayers, ngptlw )
@@ -9155,7 +9048,6 @@ if(ncol.eq.6)write(0,*)'aft addAerosols ',taug(1,42,1)
       call addAerosols _gpuchv (ncol, nlayers, ngptlw, nbndlw, ngbd, taug &
 #include "taug_cpu_args.h"
                                )
-#endif
 
       end subroutine taumolg
 
@@ -9586,24 +9478,6 @@ if(ncol.eq.6)write(0,*)'aft addAerosols ',taug(1,42,1)
       integer  :: iplon
       real  :: wv, lcoldry
 
-if(ncol.eq.6)then
-write(0,*)'sc shape tzd ',shape(tzd)
-write(0,*)'sc shape taveld ',shape(taveld)
-write(0,*)'sc shape tboundd ',shape(tboundd)
-write(0,*)'sc shape wbroadd ',shape(wbroadd)
-
-write(0,*)'sc taveld ',taveld(1,1)
-write(0,*)'sc tzd 0',tzd(0,1)
-write(0,*)'sc tzd 1',tzd(1,1)
-write(0,*)'sc tboundd ',tboundd(1)
-write(0,*)'sc wbroadd ',wbroadd(1,1)
-
-write(0,*)'sc taveld ',taveld(1,42)
-write(0,*)'sc tzd 42',tzd(1,42)
-write(0,*)'sc wbroadd ',wbroadd(1,42)
-
-endif
-
 #ifdef _CUDA
       iplon = (blockidx%x-1) * blockdim%x + threadidx%x
       if (iplon <= ncol) then
@@ -9875,17 +9749,6 @@ endif
 ! End layer loop
         enddo
 
-if(ncol.eq.6)then
-write(0,*)'sc fac00 ',fac00(1,42)
-write(0,*)'sc fac10 ',fac10(1,42)
-write(0,*)'sc fac01 ',fac01(1,42)
-write(0,*)'sc fac11 ',fac11(1,42)
-write(0,*)'sc selffac ',selffac(1,42)
-write(0,*)'sc forfac ',forfac(1,42)
-endif
-
-	
-     
 #ifdef _CUDA
       endif
 #else
@@ -15264,15 +15127,6 @@ if(colstart.eq.33361)write(0,*)'before cldprmcg',taug(1,42,1)
 ! coefficients and indices needed to compute the optical depths
 ! by interpolating data from stored reference atmospheres. 
 
-if(colstart.eq.33361)then
-write(0,*)'before setcoefg',taug(1,42,1)
-write(0,*)'b4 setcoefg shape tzd ',shape(tzd)
-write(0,*)'b4 setcoefg shape taveld ',shape(taveld)
-write(0,*)'b4 setcoefg shape tboundd ',shape(tboundd)
-write(0,*)'b4 setcoefg shape wbroadd ',shape(wbroadd)
-endif
-
-      
 ! (dmb 2012) Initialize the grid and block dimensions and call the setcoefg kernel
 #ifdef _CUDA
       dimGrid = dim3( (pncol+255)/256,1, 1)
@@ -15377,7 +15231,6 @@ if(colstart.eq.33361)write(0,*)'after setcoefg',taug(1,42,1)
 ! copy the partition data back to the CPU
       uflx(colstart:(colstart+pncol-1), 1:(nlayers+1)) = totufluxd
       dflx(colstart:(colstart+pncol-1), 1:(nlayers+1)) = totdfluxd
-if (colstart.eq.33361)write(0,*)'setting dflx ',dflx(colstart, 1)
       uflxc(colstart:(colstart+pncol-1), 1:(nlayers+1)) = totuclfld
       dflxc(colstart:(colstart+pncol-1), 1:(nlayers+1)) = totdclfld
       hr(colstart:(colstart+pncol-1), 1:(nlayers+1)) = htrd
@@ -15895,7 +15748,6 @@ if (colstart.eq.33361)write(0,*)'setting dflx ',dflx(colstart, 1)
 
    ncol = (jte-jts+1)*(ite-its+1)
 
-write(0,*)'its,ite,jts,jte ',its,ite,jts,jte
 ! latitude loop
    j_loop: do j = jts,jte
 
