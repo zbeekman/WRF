@@ -3205,26 +3205,6 @@ integer iplon
          iclddn = 0
 
 ! Downward radiative transfer loop.  
-if(iplon.eq.4) write(0,*)'iplon,iband,igc ',iplon,iband,igc
-if (iplon.eq.4.and.igc.eq.83)then
-write(0,*)'iplon     ',iplon
-write(0,*)'fracs     ',fracs(:,igc)
-write(0,*)'planklay  ',planklay(:,iband)
-write(0,*)'planklevd ',planklev(:,iband)
-write(0,*)'taug      ',taut(:,igc)
-write(0,*)'secdiff   ',secdiff(iband)
-write(0,*)'icldlyr   ',icldlyr(:)
-write(0,*)'ngb       ',ngb(igc)
-write(0,*)'a0        ',a0(iband)
-write(0,*)'a1        ',a1(iband)
-write(0,*)'a2        ',a2(iband)
-write(0,*)'pwvcmd    ',pwvcm
-write(0,*)'igc       ',igc
-write(0,*)'iband     ',iband
-write(0,*)'istart    ',istart
-write(0,*)'iend      ',iend
-endif
-
 
          do lev = nlayers, 1, -1
                plfrac = fracs(lev,igc)
@@ -3255,10 +3235,6 @@ endif
                      bbugas(lev) =  plfrac * (blay+dplankup*odepth_rec)
                      bbutot(lev) =  plfrac * (blay+dplankup*odtot_rec)
 
-if(igc.eq.83.and.lev.eq.11.and.iplon.eq.4)then
-write(0,*)'ittot a ',12341234
-endif
-
                   elseif (odepth .le. 0.06_rb) then
                      atrans(lev) = odepth - 0.5_rb*odepth*odepth
                      odepth_rec = rec_6*odepth
@@ -3267,12 +3243,6 @@ endif
                      odtot = odepth + odcld(lev,igc)
                      tblind = odtot/(bpade+odtot)
                      ittot = tblint*tblind + 0.5_rb
-
-if(igc.eq.83.and.lev.eq.11.and.iplon.eq.4)then
-write(0,*)'ittot b ',ittot
-stop
-endif
-
                      tfactot = tfn_tbl(ittot)
                      bbdtot = plfrac * (blay + tfactot*dplankdn)
                      bbd = plfrac*(blay+dplankdn*odepth_rec)
@@ -3299,13 +3269,6 @@ endif
                      odtot = odepth + odcld(lev,igc)
                      tblind = odtot/(bpade+odtot)
                      ittot = tblint*tblind + 0.5_rb
-
-if(igc.eq.83.and.lev.eq.11.and.iplon.eq.4)then
-write(0,*)'ittot c ',ittot
-stop
-endif
-
-
                      tfactot = tfn_tbl(ittot)
                      bbdtot = plfrac * (blay + tfactot*dplankdn)
                      bbd = plfrac*(blay+tfacgas*dplankdn)
@@ -3321,11 +3284,6 @@ endif
                   endif
 !  Clear layer
                else
-
-if(igc.eq.83.and.lev.eq.11.and.iplon.eq.4)then
-write(0,*)'ittot d ',12341234
-endif
-
                   if (odepth .le. 0.06_rb) then
                      atrans(lev) = odepth-0.5_rb*odepth*odepth
                      odepth = rec_6*odepth
@@ -3353,8 +3311,6 @@ endif
                      radclrd = radld
                      clrdrad(lev-1) = drad(lev-1)
                   endif
-if(igc.eq.83.and.lev.eq.11.and.iplon.eq.4)stop
-
             enddo
 
 ! Spectral emissivity & reflectance

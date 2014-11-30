@@ -724,8 +724,8 @@ integer myproc
    has_reqc = 0
    has_reqi = 0
    has_reqs = 0
-   if (config_flags%ra_lw_physics .eq. RRTMG_LWSCHEME .and. &
-       config_flags%ra_sw_physics .eq. RRTMG_SWSCHEME .and. &
+   if ((config_flags%ra_lw_physics .eq. RRTMG_LWSCHEME .or. config_flags%ra_lw_physics .eq. RRTMG_LWSCHEME_FAST) .and. &
+       (config_flags%ra_sw_physics .eq. RRTMG_SWSCHEME .or. config_flags%ra_sw_physics .eq. RRTMG_SWSCHEME_FAST) .and. &
         (config_flags%mp_physics  .eq. THOMPSON .or.        &
          config_flags%mp_physics  .eq. THOMPSONAERO) ) then
       has_reqc = 1

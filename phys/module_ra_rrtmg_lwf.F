@@ -4894,7 +4894,6 @@ integer colstart
       integer :: iplon
       real :: bbb
 
-write(0,*)'x pwvcmd    ',pwvcmd(1),shape(pwvcmd)
 ! (dmb 2012) Here we compute the index for the column and band dimensions
 #ifdef _CUDA
    iplon = (blockidx%x-1) * blockdim%x + threadidx%x
@@ -4911,7 +4910,6 @@ write(0,*)'x pwvcmd    ',pwvcmd(1),shape(pwvcmd)
       do igc = 1, 140 
 # define secdiff   SECDIFF(iplon)
 #endif
-write(0,*)'y pwvcmd    ',pwvcmd(1),shape(pwvcmd)
          ibnd = ngb(igc)
 
        ILOOP_S_CPU
@@ -4965,21 +4963,6 @@ write(0,*)'y pwvcmd    ',pwvcmd(1),shape(pwvcmd)
 #  define radclrd RADCLRD(iplon)
 #  define iclddn  ICLDDN(iplon)
 # endif
-
-iplon = 1
-write(0,*)'fracs     ',fracsd(1,:,igc)
-write(0,*)'planklay  ',planklayd(1,:,ibnd)
-write(0,*)'planklevd ',planklevd(1,:,ibnd)
-write(0,*)'taug      ',taug(1,:,igc)
-write(0,*)'secdiff   ',secdiff
-write(0,*)'icldlyr   ',icldlyr(1,:)
-write(0,*)'ngb       ',ngb(igc)
-write(0,*)'a0        ',a0d(ibnd)
-write(0,*)'a1        ',a1d(ibnd)
-write(0,*)'a2        ',a2d(ibnd)
-write(0,*)'pwvcmd    ',pwvcmd(1),shape(pwvcmd)
-write(0,*)'igc       ',igc
-write(0,*)'ibnd      ',ibnd
 
          do lev = nlayers, 1, -1
        ILOOP_S_CPU
@@ -5041,7 +5024,6 @@ write(0,*)'ibnd      ',ibnd
                   odtot = odepth + odclds
                   tblind = odtot/(bpade+odtot)
                   ittot = tblint*tblind + 0.5 
-if(igc.eq.83.and.lev.eq.11.and.iplon.eq.4) write(0,*)'lev,iplon,ittot ',lev,iplon,ittot
                   tfactot = tfn_tbl(ittot)
                   bbdtot = plfrac * (blay + tfactot*dplankdn)
                   bbd = plfrac*(blay+tfacgas*dplankdn)
@@ -5654,33 +5636,6 @@ integer,external :: omp_get_thread_num
                  fac01(iplon,lay) * absad(ind1,ig) + &
                  fac11(iplon,lay) * absad(ind1+1,ig)) & 
                  + tauself + taufor + taun2)
-#if 0
-if (ig.eq.1.and.iplon.eq.1.and.ncol.eq.6) then
-write(0,*)lay,'in taugb1g taug(iplon,lay,ig)',taug(iplon,lay,ig)
-write(0,*)lay,'in taugb1g corradj ',corradj
-write(0,*)lay,'in taugb1g colh2o(iplon,lay) ',colh2o(iplon,lay)
-write(0,*)lay,'in taugb1g fac00(iplon,lay) ',fac00(iplon,lay)
-write(0,*)lay,'in taugb1g absad(ind0,ig) ',absad(ind0,ig)
-write(0,*)lay,'in taugb1g fac10(iplon,lay) ',fac10(iplon,lay)
-write(0,*)lay,'in taugb1g absad(ind0+1,ig) ',absad(ind0+1,ig)
-write(0,*)lay,'in taugb1g fac01(iplon,lay) ',fac01(iplon,lay)
-write(0,*)lay,'in taugb1g absad(ind1,ig) ',absad(ind1,ig)
-write(0,*)lay,'in taugb1g fac11(iplon,lay) ',fac11(iplon,lay)
-write(0,*)lay,'in taugb1g absad(ind1+1,ig) ',absad(ind1+1,ig)
-write(0,*)lay,'in taugb1g selffac(iplon,lay) ',selffac(iplon,lay)
-write(0,*)lay,'in taugb1g selfrefd(inds,ig) ',selfrefd(inds,ig)
-write(0,*)lay,'in taugb1g selffrac(iplon,lay) ',selffrac(iplon,lay)
-write(0,*)lay,'in taugb1g selfrefd(inds+1,ig) ',selfrefd(inds+1,ig)
-write(0,*)lay,'in taugb1g forfac(iplon,lay) ',forfac(iplon,lay)
-write(0,*)lay,'in taugb1g forrefd(indf,ig) ',forrefd(indf,ig)
-write(0,*)lay,'in taugb1g forfrac(iplon,lay) ',forfrac(iplon,lay)
-write(0,*)lay,'in taugb1g forrefd(indf+1,ig) ',forrefd(indf+1,ig)
-write(0,*)lay,'in taugb1g scalen2 ',scalen2
-write(0,*)lay,'in taugb1g ka_mn2d(indm,ig) ',ka_mn2d(indm,ig)
-write(0,*)lay,'in taugb1g minorfrac(iplon,lay) ',minorfrac(iplon,lay)
-write(0,*)lay,'in taugb1g ka_mn2d(indm+1,ig) ',ka_mn2d(indm+1,ig)
-endif
-#endif
              fracsd(iplon,lay,ig) = fracrefad(ig)
             
          enddo
@@ -5705,23 +5660,6 @@ endif
                  fac01(iplon,lay) * absbd(ind1,ig) + &
                  fac11(iplon,lay) * absbd(ind1+1,ig)) &  
                  + taufor + taun2)
-#if 0
-if (ig.eq.1.and.iplon.eq.1.and.ncol.eq.6) then
-write(0,*)lay,'in B taugb1g taug(iplon,lay,ig)',taug(iplon,lay,ig)
-write(0,*)lay,'in B taugb1g corradj ',corradj
-write(0,*)lay,'in B taugb1g colh2o(iplon,lay) ',colh2o(iplon,lay)
-write(0,*)lay,'in B taugb1g fac00(iplon,lay) ',fac00(iplon,lay)
-write(0,*)lay,'in B taugb1g absad(ind0,ig) ',absad(ind0,ig)
-write(0,*)lay,'in B taugb1g fac10(iplon,lay) ',fac10(iplon,lay)
-write(0,*)lay,'in B taugb1g absad(ind0+1,ig) ',absad(ind0+1,ig)
-write(0,*)lay,'in B taugb1g fac01(iplon,lay) ',fac01(iplon,lay)
-write(0,*)lay,'in B taugb1g absad(ind1,ig) ',absad(ind1,ig)
-write(0,*)lay,'in B taugb1g fac11(iplon,lay) ',fac11(iplon,lay)
-write(0,*)lay,'in B taugb1g absad(ind1+1,ig) ',absad(ind1+1,ig)
-write(0,*)lay,'in B taugb1g taufor ',taufor
-write(0,*)lay,'in B taugb1g taun2 ',taun2
-endif
-#endif
             fracsd(iplon,lay,ig) = fracrefbd(ig)
          enddo
       endif
@@ -8991,7 +8929,9 @@ endif
       dimBlock = dim3( 64, 2, 1)
       
 #else
-#  define ncol CHNK
+!jm this can be made constant if the arrays are padded out, otherwise
+!jm will generate a seg fault computing garbage data on unused ends of vectors
+!jm zap #  define ncol CHNK
 #endif   
 
 ! Calculate gaseous optical depth and planck fractions for each spectral band.
@@ -14407,9 +14347,6 @@ cn = CHNK
 
       do  i = 1, ns 
 
-write(0,*)'cn ',cn
-write(0,*)'ns ',i,ns,(i-1)*cn + 1,min(cn, ncol - (i-1)*cn)
-    
       call rrtmg_lw_part &
             (ns, ncol, (i-1)*cn + 1, min(cn, ncol - (i-1)*cn), &
              nlay    ,icld    ,idrv,&
@@ -15032,11 +14969,6 @@ integer,external :: omp_get_thread_num
 
         wvsh = (amw * wvttl) / (amd * amttl)
         pwvcm(iplon) = wvsh * (1.e3  * pz(iplon, 0)) / (1.e2  * grav)
-if ( iplon.eq.1 ) then 
-write(0,*)'pz ',pz(iplon,0)
-write(0,*)'wvsh ',wvsh
-write(0,*)'setting pwvcm ', pwvcm(iplon)
-endif
     
 ! Transfer aerosol optical properties to RRTM variable;
 ! modify to reverse layer indexing here if necessary.
@@ -15128,8 +15060,6 @@ endif
 # define oneminusd oneminus
 #endif
  
-if(colstart.eq.33361)write(0,*)'before cldprmcg',taug(1,42,1)
-
 ! (dmb 2012) Here we configure the grids and blocks to run the cldpmcd kernel
 ! on the GPU.  I decided to keep the block dimensions to 16x16 to coincide with
 ! coalesced memory access when I am able to parition the profiles to multiples
@@ -15178,11 +15108,6 @@ if(colstart.eq.33361)write(0,*)'before cldprmcg',taug(1,42,1)
 !  Calculate the gaseous optical depths and Planck fractions for 
 !  each longwave spectral band.
 
-if(colstart.eq.33361)write(0,*)' ncol ',ncol,' pncol ',pncol,' ncol__ ',ncol__
-if(colstart.eq.33361)write(0,*)'after setcoefg',taug(1,42,1)
-
-
-
 ! (dmb 2012) Call the taumolg subroutine.  This subroutine calls all of the individal taumol kernels.     
       call taumolg(1, pncol,nlayers, ngbd, taug, fracsd &
 # include "taug_cpu_args.h"
@@ -15205,9 +15130,6 @@ if(colstart.eq.33361)write(0,*)'after setcoefg',taug(1,42,1)
       dimBlock = dim3( 256,2,1)
 #endif    
 
-write(0,*)'before call to rtrnmcg pwvcm ',pwvcm(1),shape(pwvcm)
-write(0,*)'before call to rtrnmcg pwvcmd',pwvcmd(1),shape(pwvcmd)
-write(0,*)'before call to rtrnmcg istart,iend',istart,iend
       call rtrnmcg _gpuchv (colstart,pncol,nlayers, istart, iend, iout  &
 #include "rrtmg_lw_cpu_args.h"
                     ,ngbd, icldlyr, taug, fracsd, cldfmcd)
