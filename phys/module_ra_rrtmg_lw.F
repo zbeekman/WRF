@@ -3602,7 +3602,7 @@ contains
 ! For GSFC, not needed for WRF
 !                       ciwpmcl, clwpmcl, cswpmcl, taucmcl, cloudFlag, cloudMH, cloudHH, zmd, inhm)
 #ifndef _CUDA
-                       pmidd,cldfracd,clwpd,ciwpd,cswpd,taucd, &
+                       pmidd,clwpd,ciwpd,cswpd,taucd, &
 #endif
                        play, cldfrac, ciwp, clwp, cswp, tauc, ngbd, cldfmcl, &
                        ciwpmcl, clwpmcl, cswpmcl, taucmcl)
@@ -3656,7 +3656,7 @@ contains
 #ifndef _CUDA
 ! were module data but changed to arguments because not thread-safe
       real  :: pmidd(:, :)
-      real  :: cldfracd(:,:), clwpd(:,:), ciwpd(:,:), cswpd(:,:), taucd(:,:,:)
+      real  :: clwpd(:,:), ciwpd(:,:), cswpd(:,:), taucd(:,:,:)
 #endif
 
 ! For GSFC, not needed for WRF
@@ -3684,6 +3684,7 @@ contains
       real :: t1, t2
   
 ! Return if clear sky; or stop if icld out of range
+write(0,*)'icld ',icld
       if (icld.eq.0) then 
         cldfmcl = 0.0
         ciwpmcl = 0.0
@@ -3959,6 +3960,10 @@ contains
       integer  :: ilev, isubcol, i, n         ! indices
       
       integer :: iplon, gp
+
+write(0,*)'in call to generate_stochastic_cloudsg shape(cldfracd)',shape(cldfracd)
+write(0,*)'in call to generate_stochastic_cloudsg shape(cld_stoch)',shape(cld_stoch)
+
 #ifdef _CUDA
       iplon = (blockidx%x-1) * blockdim%x + threadidx%x
       gp = (blockidx%y-1) * blockdim%y + threadidx%y
@@ -3967,6 +3972,12 @@ contains
      !   print *, "ppp ", iplon, gp
       if (iplon <= ncol .and. gp <= nsubcol) then
 #else
+write(0,*)'maxval(cldfracd) ',maxval(cldfracd) ,shape(cldfracd)
+do iplon = 1, ncol
+do ilev = 1,nlay
+if(cldfracd(iplon,ilev).ne.0)write(0,*)'here ',iplon,ilev,cldfracd(iplon,ilev)
+enddo
+enddo
       do iplon = 1, ncol
       do gp = 1, nsubcol
 #endif
@@ -4083,6 +4094,7 @@ contains
       do ilev = 1,nlay
         cfs = cldfracd(iplon, ilev)
          !  do gp = 1, nsubcol
+if(cfs.ne.0)write(0,'("iplon,ilev,gp,cfs,cdf",3i5,2e25.12)')iplon,ilev,gp,cfs,cdf(ilev)
                if (CDF(ilev) >=1.  - cfs) then
                   cld_stoch(iplon,gp,ilev) = 1. 
                   clwp_stoch(iplon,gp,ilev) = clwpd(iplon,ilev)
@@ -5018,6 +5030,7 @@ integer colstart
                   odtot = odepth + odclds
                   tblind = odtot/(bpade+odtot)
                   ittot = tblint*tblind + 0.5 
+write(0,"('iplon,lev,ittot,igc,ibnd',5i5)")iplon,lev,ittot,igc,ibnd
                   tfactot = tfn_tbl(ittot)
                   bbdtot = plfrac * (blay + tfactot*dplankdn)
                   bbd = plfrac*(blay+tfacgas*dplankdn)
@@ -14383,6 +14396,7 @@ integer,external :: omp_get_thread_num
 
       do  i = 1, ns 
     
+write(0,*)'b4 call to rrtmg_lw_part ',shape(cldfrac)
       call rrtmg_lw_part &
             (ns, ncol, (i-1)*cn + 1, min(cn, ncol - (i-1)*cn), &
              nlay    ,icld    ,idrv,&
@@ -14813,6 +14827,8 @@ integer,external :: omp_get_thread_num
 integer,external :: omp_get_thread_num
 
 !
+write(0,*)'in call to rrtmg_lw_part shape(cldfrac)',shape(cldfrac)
+write(0,*)'in call to rrtmg_lw_part shape(cldfracq)',shape(cldfracq)
 #ifndef _CUDA
 # undef pncol
       ncol_  = pncol ; nlayers_  = nlay ; nbndlw_  = nbndlw ; ngptlw_  = ngptlw ! for passing through argument list
@@ -14955,10 +14971,11 @@ integer,external :: omp_get_thread_num
 ! For GSFC, not needed for WRF
 !      zmd = zmp
       
+write(0,*)'b4 call to mcica_subcol_lwg shape(cldfracq)',shape(cldfracq)
 !jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
       call mcica_subcol_lwg(1, pncol, nlay, icld, counter, 0,                             &
 #ifndef _CUDA
-                            pmid,cldfrac,clwp,ciwp,cswp,tauc,                             &
+                            pmid,clwp,ciwp,cswp,tauc,                                     &
 #endif
                             play, cldfracq, ciwpq,                                        &
                             clwpq, cswpq, taucq,ngbd, cldfmcd, ciwpmcd, clwpmcd, cswpmcd, & 
@@ -14974,9 +14991,11 @@ integer,external :: omp_get_thread_num
 #endif
 
       if (icld > 0) then
+write(0,*)'b4 call to generate_stochastic_cloudsg shape(cldfracq)',shape(cldfracq)
+write(0,*)'b4 call to generate_stochastic_cloudsg shape(cldfmcd)',shape(cldfmcd)
          call generate_stochastic_cloudsg _gpuchv (pncold, nlayd, icldd, ngbd, &
 #ifndef _CUDA
-                               pmid,cldfrac,clwp,ciwp,cswp,tauc,               &
+                               pmid,cldfracq,clwp,ciwp,cswp,tauc,               &
 #endif
 ! For GSFC, not needed for WRF
 !                               ngbd, cldfmcd, clwpmcd, ciwpmcd, taucmcd, 1, zmd)
@@ -15797,6 +15816,7 @@ if(colstart.eq.33361)write(0,*)'after setcoefg',taug(1,42,1)
          IF (ICLOUD .ne. 0) THEN
             IF ( PRESENT( CLDFRA3D ) ) THEN
               DO K=kts,kte
+if(CLDFRA3D(I,K,J).ne.0)write(0,*)'CLDFRA3D ',i,k,j,CLDFRA3D(I,K,J)
                  CLDFRA1D(k)=CLDFRA3D(I,K,J)
               ENDDO
             ENDIF
@@ -16461,6 +16481,8 @@ if(colstart.eq.33361)write(0,*)'after setcoefg',taug(1,42,1)
 !
       end do i_loop
    end do j_loop                                           
+
+write(0,*)'max(cldfrac) ',maxval(cldfrac)
 
 ! Call RRTMG longwave radiation model for full grid for gpu
          call rrtmg_lw &
