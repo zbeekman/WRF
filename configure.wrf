@@ -104,7 +104,7 @@ LIBWRFLIB = libwrflib.a
 
 #### Architecture specific settings ####
 
-# Settings for Linux x86_64 i486 i586 i686, ifort compiler with icc  (dmpar)
+# Settings for Linux x86_64 i486 i586 i686, ifort compiler with icc  (dm+sm)
 #
 #        By default, some files are compiled without optimizations to speed up compilation. Removing
 #        respective makefile rules in the end of this file will result in longer compilation time, and, possibly
@@ -140,35 +140,33 @@ LIBWRFLIB = libwrflib.a
 #FCBASEOPTS_NO_G =       -w -ip -fp-model precise -w -ftz -align all -fno-alias $(FORMAT_FREE) $(BYTESWAPIO) #-xHost -fp-model fast=2 -no-heap-arrays -no-prec-div -no-prec-sqrt -ftz -align all -fno-alias -fno-common $(FORMAT_FREE) $(BYTESWAPIO)
 
 DMPARALLEL      =        1
-OMPCPP          =       # -D_OPENMP
-OMP             =       # -openmp -fpp -auto
-OMPCC           =       # -openmp -fpp -auto
+OMPCPP          =        -D_OPENMP
+OMP             =        -openmp -fpp -auto
+OMPCC           =        -openmp -fpp -auto
 SFC             =       ifort
 SCC             =       icc
 CCOMP           =       icc
-#DM_FC           =       mpif90 -f90=$(SFC)
-#DM_CC           =       mpicc -cc=$(SCC) -DMPI2_SUPPORT
-DM_FC           =       mpiifort 
-DM_CC           =       mpiicc -DMPI2_SUPPORT
+DM_FC           =       mpif90 -f90=$(SFC)
+DM_CC           =       mpicc -cc=$(SCC) -DMPI2_SUPPORT -DMPI2_THREAD_SUPPORT
 FC              =        $(DM_FC)
 CC              =       $(DM_CC) -DFSEEKO64_OK 
 LD              =       $(FC)
 RWORDSIZE       =       $(NATIVE_RWORDSIZE)
 PROMOTION       =       -i4
-ARCH_LOCAL      =       -DNONSTANDARD_SYSTEM_FUNC #-DWRF_USE_CLM
-CFLAGS_LOCAL    =       -w -O3 -ip #-xHost #-fp-model fast=2 -no-prec-div -no-prec-sqrt -ftz -no-multibyte-chars
-LDFLAGS_LOCAL   =       -ip #-xHost #-fp-model fast=2 -no-prec-div -no-prec-sqrt -ftz -align all -fno-alias -fno-common
+ARCH_LOCAL      =       -DNONSTANDARD_SYSTEM_FUNC 
+CFLAGS_LOCAL    =       -w -O3 -ip #-xHost -fp-model fast=2 -no-prec-div -no-prec-sqrt -ftz -no-multibyte-chars
+LDFLAGS_LOCAL   =       -ip #-xHost -fp-model fast=2 -no-prec-div -no-prec-sqrt -ftz -align all -fno-alias -fno-common
 CPLUSPLUSLIB    =       
 ESMF_LDFLAG     =       $(CPLUSPLUSLIB)
-FCOPTIM         =       #-O3 -xHost
+FCOPTIM         =       -O3
 FCREDUCEDOPT	=       $(FCOPTIM)
 FCNOOPT		=       -O0 -fno-inline -fno-ip
-FCDEBUG         =       -g $(FCNOOPT) -traceback # -fpe0 -check all -ftrapuv -unroll0 -u
+FCDEBUG         =       # -g $(FCNOOPT) -traceback # -fpe0 -check all -ftrapuv -unroll0 -u
 FORMAT_FIXED    =       -FI
 FORMAT_FREE     =       -FR
 FCSUFFIX        =
 BYTESWAPIO      =       -convert big_endian
-FCBASEOPTS_NO_G =       -auto -ip -fp-model precise -w -ftz -align all -fno-alias $(FORMAT_FREE) $(BYTESWAPIO) #-xHost -fp-model fast=2 -no-heap-arrays -no-prec-div -no-prec-sqrt -fno-common
+FCBASEOPTS_NO_G =       -ip -fp-model precise -w -ftz -align all -fno-alias $(FORMAT_FREE) $(BYTESWAPIO) #-xHost -fp-model fast=2 -no-heap-arrays -no-prec-div -no-prec-sqrt -fno-common
 FCBASEOPTS      =       $(FCBASEOPTS_NO_G) $(FCDEBUG)
 MODULE_SRCH_FLAG =     
 TRADFLAG        =      -traditional
@@ -191,7 +189,7 @@ ARCHFLAGS       =    $(COREDEFS) -DIWORDSIZE=$(IWORDSIZE) -DDWORDSIZE=$(DWORDSIZ
                       -DDM_PARALLEL \
                        \
                       -DNETCDF \
-                      -DPNETCDF \
+                       \
                        \
                        \
                        \
@@ -239,19 +237,19 @@ CC_TOOLS_CFLAGS = -DNMM_CORE=$(WRF_NMM_CORE)
                       $(WRF_SRC_ROOT_DIR)/frame/pack_utils.o 
 
  LIB_EXTERNAL    = \
-                      $(WRF_SRC_ROOT_DIR)/external/io_netcdf/libwrfio_nf.a -L/home/michalak/netcdf-4.1.3-intel/lib -lnetcdff -lnetcdf  -L$(WRF_SRC_ROOT_DIR)/external/io_pnetcdf -lwrfio_pnf -L/usr/local/lib -lpnetcdf  
+                      $(WRF_SRC_ROOT_DIR)/external/io_netcdf/libwrfio_nf.a -L/usrx/local/NetCDF/3.6.3/lib -lnetcdf    
 
 LIB             =    $(LIB_BUNDLED) $(LIB_EXTERNAL) $(LIB_LOCAL) $(LIB_WRF_HYDRO)
 LDFLAGS         =    $(OMP) $(FCFLAGS) $(LDFLAGS_LOCAL) 
 ENVCOMPDEFS     =    
 WRF_CHEM	=	0 
 CPPFLAGS        =    $(ARCHFLAGS) $(ENVCOMPDEFS) -I$(LIBINCLUDE) $(TRADFLAG) 
-NETCDFPATH      =    /home/michalak/netcdf-4.1.3-intel
-PNETCDFPATH     =    /usr/local
+NETCDFPATH      =    /usrx/local/NetCDF/3.6.3
+PNETCDFPATH     =    
 
 bundled:  io_only 
 external: io_only $(WRF_SRC_ROOT_DIR)/external/RSL_LITE/librsl_lite.a gen_comms_rsllite module_dm_rsllite $(ESMF_TARGET)
-io_only:  esmf_time wrfio_nf wrfio_pnf  \
+io_only:  esmf_time wrfio_nf   \
 	  wrf_ioapi_includes wrfio_grib_share wrfio_grib1 wrfio_int fftpack
 
 
@@ -397,7 +395,6 @@ setfeenv.o : setfeenv.c
 # mediation_interp_domain.o : mediation_interp_domain.F
 
 # compile these without high optimization to speed compile
-module_first_rk_step_part1.o : module_first_rk_step_part1.F
 mediation_integrate.o : mediation_integrate.F
 track_driver.o : track_driver.F
 convert_nmm.o : convert_nmm.F
@@ -463,7 +460,6 @@ nl_get_1_routines.o : nl_get_1_routines.F
 nl_set_0_routines.o : nl_set_0_routines.F
 nl_set_1_routines.o : nl_set_1_routines.F
 
-module_first_rk_step_part1.o \
 mediation_integrate.o \
 track_driver.o \
 convert_nmm.o \
