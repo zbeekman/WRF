@@ -6193,7 +6193,8 @@ integer iplon
             fac100 = fs * fac00(lay)
             fac110 = fs * fac10(lay)
          endif
-         if (specparm .lt. 0.125_rb) then
+!jm fix from AER         if (specparm .lt. 0.125_rb) then
+         if (specparm1 .lt. 0.125_rb) then
             p = fs1 - 1
             p4 = p**4
             fk0 = p4
@@ -11312,10 +11313,6 @@ integer iplon
 
       wvsh = (amw * wvttl) / (amd * amttl)
       pwvcm = wvsh * (1.e3_rb * pz(0)) / (1.e2_rb * grav)
-write(0,*)'pz ',pz(0)
-write(0,*)'wvsh ',wvsh
-write(0,*)'setting pwvcm ', pwvcm
-
 
 ! Set spectral surface emissivity for each longwave band.  
 
