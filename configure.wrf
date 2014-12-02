@@ -395,6 +395,7 @@ setfeenv.o : setfeenv.c
 # mediation_interp_domain.o : mediation_interp_domain.F
 
 # compile these without high optimization to speed compile
+module_bl_temf.o : module_bl_temf.F
 mediation_integrate.o : mediation_integrate.F
 track_driver.o : track_driver.F
 convert_nmm.o : convert_nmm.F
@@ -460,6 +461,7 @@ nl_get_1_routines.o : nl_get_1_routines.F
 nl_set_0_routines.o : nl_set_0_routines.F
 nl_set_1_routines.o : nl_set_1_routines.F
 
+module_bl_temf.o \
 mediation_integrate.o \
 track_driver.o \
 convert_nmm.o \

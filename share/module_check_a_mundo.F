@@ -887,6 +887,17 @@
          CALL wrf_message ( wrf_err_message )
 
       END IF
+      IF (( model_config_rec % ra_lw_physics(1) .EQ. RRTMG_LWSCHEME_FAST ) .OR. &
+          ( model_config_rec % ra_sw_physics(1) .EQ. RRTMG_SWSCHEME_FAST )) THEN
+         model_config_rec % levsiz = 59
+         model_config_rec % alevsiz = 12
+         model_config_rec % no_src_types = 6
+
+         wrf_err_message = '--- NOTE: RRTMG (FAST) radiation is in use, setting:  ' // &
+                           'levsiz=59, alevsiz=12, no_src_types=6'
+         CALL wrf_message ( wrf_err_message )
+
+      END IF
 
 !-----------------------------------------------------------------------
 ! Set namelist parameter num_soil_levels depending on the value of 

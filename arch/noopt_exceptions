@@ -1,6 +1,7 @@
 # compile these without high optimization to speed compile
 
 convert_nmm.o : convert_nmm.F
+module_bl_temf.o : module_bl_temf.F
 init_modules_em.o : init_modules_em.F
 input_wrf.o : input_wrf.F
 module_io.o : module_io.F
@@ -115,6 +116,7 @@ nl_get_1_routines.o : nl_get_1_routines.F
 nl_set_0_routines.o : nl_set_0_routines.F
 nl_set_1_routines.o : nl_set_1_routines.F
 
+module_bl_temf.o \
 convert_nmm.o \
 init_modules_em.o \
 mediation_feedback_domain.o \
