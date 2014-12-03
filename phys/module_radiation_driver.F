@@ -2182,7 +2182,7 @@ write(0,*)__FILE__,__LINE__,e1-s1
 
      accumulate_lw_select: SELECT CASE(lw_physics)
 
-     CASE (CAMLWSCHEME,RRTMG_LWSCHEME)
+     CASE (CAMLWSCHEME,RRTMG_LWSCHEME,RRTMG_LWSCHEME_FAST)
    IF(PRESENT(LWUPTC))THEN
    !$OMP PARALLEL DO   &
    !$OMP PRIVATE ( ij ,i,j,k,its,ite,jts,jte)
@@ -2213,7 +2213,7 @@ write(0,*)__FILE__,__LINE__,e1-s1
 
      accumulate_sw_select: SELECT CASE(sw_physics)
 
-     CASE (CAMSWSCHEME,RRTMG_SWSCHEME)
+     CASE (CAMSWSCHEME,RRTMG_SWSCHEME,RRTMG_SWSCHEME_FAST)
    IF(PRESENT(SWUPTC))THEN
    !$OMP PARALLEL DO   &
    !$OMP PRIVATE ( ij ,i,j,k,its,ite,jts,jte)

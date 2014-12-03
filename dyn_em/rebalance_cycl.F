@@ -38,6 +38,8 @@
                           ,HALO_EM_INIT_4_sub   &
                           ,HALO_EM_INIT_5_sub   &
                           ,HALO_EM_VINTERP_UV_1_sub
+#else
+      USE module_driver_constants
 #endif
 
       IMPLICIT NONE

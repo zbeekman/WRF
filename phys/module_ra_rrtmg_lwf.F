@@ -1,5 +1,6 @@
 !MODULE module_ra_rrtmg_lwf
-#define CHNK 8
+!#define CHNK 8
+#define CHNK 1849
 
 !  --------------------------------------------------------------------------
 ! |                                                                          |
@@ -3708,7 +3709,8 @@ contains
 ! JM Not sure we woudn't want to handle the CUDA path the same way as the #else part, but ask AER first
       pmid(:ncol,:nlay) = play(:ncol,:nlay)*1.e2
 #else
-      pmid(1:ncol,:nlay) = play(colstart:colstart+ncol-1,:nlay)*1.e2
+      pmidd(1:ncol,:nlay) = play(colstart:colstart+ncol-1,:nlay)*1.e2
+write(0,*)' in mcica pmid ',pmidd(1,1:4)
 #endif
 
 ! For GSFC, not needed for WRF
@@ -3965,6 +3967,7 @@ contains
       integer  :: ilev, isubcol, i, n         ! indices
       
       integer :: iplon, gp
+write(0,*)'irng ',icld
 #ifdef _CUDA
       iplon = (blockidx%x-1) * blockdim%x + threadidx%x
       gp = (blockidx%y-1) * blockdim%y + threadidx%y
@@ -3978,17 +3981,31 @@ contains
 #endif
 
 
+
+
 ! ----- Create seed  --------
    
 ! Advance randum number generator by changeseed values
    
 ! For kissvec, create a seed that depends on the state of the columns. Maybe not the best way, but it works.  
 ! Must use pmid from bottom four layers. 
+if(iplon.eq.1.and.gp.eq.1)write(0,*)'pmid ',pmidd(iplon,1:4)
+if(iplon.eq.1.and.gp.eq.1)write(0,*)'shape pmid ',shape(pmidd)
       
+#if 0
            seed1 = (pmidd(iplon,1) - int(pmidd(iplon,1)))  * 1000000000 + (gp) * 11 
            seed3 = (pmidd(iplon,3) - int(pmidd(iplon,3)))  * 1000000000 + (gp) * 13 
            seed2 = seed1 + gp
            seed4 = seed3 - gp 
+#else
+     if (gp.eq.1)then
+       seed1 = (pmidd(iplon,1) - int(pmidd(iplon,1)))  * 1000000000
+       seed2 = (pmidd(iplon,2) - int(pmidd(iplon,2)))  * 1000000000
+       seed3 = (pmidd(iplon,3) - int(pmidd(iplon,3)))  * 1000000000
+       seed4 = (pmidd(iplon,4) - int(pmidd(iplon,4)))  * 1000000000
+     endif
+
+#endif
   
 
 ! ------ Apply overlap assumption --------
@@ -4011,6 +4028,7 @@ contains
 
            do ilev = 1,nlay
              call kissvec(seed1, seed2, seed3, seed4, rand_num)
+if(iplon.eq.1.and.gp.eq.1)write(0,"('+ ',4i20,e25.12)")seed1, seed2, seed3, seed4, rand_num
              CDF(ilev) = rand_num
            end do
           
@@ -4089,6 +4107,8 @@ contains
       do ilev = 1,nlay
         cfs = cldfracd(iplon, ilev)
          !  do gp = 1, nsubcol
+if(iplon.eq.1.and.gp.eq.1)write(0,*)'zap iscloudy ',CDF(ilev) >=1.  - cfs
+if(iplon.eq.1.and.gp.eq.1)write(0,*)'zap CDF ',CDF(ilev)
                if (CDF(ilev) >=1.  - cfs) then
                   cld_stoch(iplon,gp,ilev) = 1. 
                   clwp_stoch(iplon,gp,ilev) = clwpd(iplon,ilev)
@@ -4350,6 +4370,7 @@ contains
       real , parameter :: eps = 1.e-6         ! epsilon
       real , parameter :: cldmin = 1.e-20     ! minimum value for cloud quantities
 
+      character*256 errmess
 ! ------- Definitions -------
 
 !     Explanation of the method for each value of INFLAG.  Values of
@@ -4432,11 +4453,28 @@ contains
           endif
           cwp = ciwpmcd(iplon,ig,lay) + clwpmcd(iplon,ig,lay) + cswpmcd(iplon,ig,lay)
 ! (dmb 2012) the stop commands were removed because they aren't supported on the GPU
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc inflagd',inflagd(1)
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc iceflagd',iceflagd(1)
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc liqflagd',liqflagd(1)
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc cldfmc',11,cldfmc(iplon,1,11)
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc taucmc',11,taucmc(iplon,1,11)
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc ciwpmc',11,ciwpmcd(iplon,1,11)
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc clwpmc',11,clwpmcd(iplon,1,11)
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc cswpmc',11,cswpmcd(iplon,1,11)
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc cldmin',11,cldmin
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc c1',11,cldfmc(iplon,ig,lay) .ge. cldmin
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc c2',11,taucmc(iplon,ig,lay) .ge. cldmin
           if (cldfmc(iplon,ig,lay) .ge. cldmin .and. &
              (cwp .ge. cldmin .or. taucmc(iplon,ig,lay) .ge. cldmin)) then
 
+!jm top cldprmc inflagd           5
+!jm top cldprmc iceflagd           5
+!jm top cldprmc liqflagd           1
 
-            if(inflagd(iplon) .eq. 2) then
+
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'zap ',__LINE__
+!jm zap            if(inflagd(iplon) .eq. 2) then
+            if(inflagd(iplon) .ge. 2) then
                radice = reicmcd(iplon, lay)
 
 ! Calculation of absorption coefficients due to ice clouds.
@@ -4491,8 +4529,17 @@ contains
                endif
                   
 !..Incorporate additional effects due to snow.
+!STOPPED HERE
                if (cswpmcd(iplon,ig,lay).gt.0.0 .and. iceflagd(iplon) .eq. 5) then
                   radsno = resnmcd(iplon,lay)
+
+                  if (radsno .lt. 5.0 .or. radsno .gt. 140.0) then
+                         write(errmess,'(A,i5,i5,i5,f8.2,f8.2)' )         &
+               'ERROR: SNOW GENERALIZED EFFECTIVE SIZE OUT OF BOUNDS'   &
+               ,iplon,ig, lay, cswpmcd(iplon,ig,lay), radsno
+                         call wrf_error_fatal(errmess)
+                  end if
+
                   ncbands(iplon) = 16
                   factor = (radsno - 2.)/3.
                   index = int(factor)
@@ -4526,9 +4573,20 @@ contains
                taucmc(iplon,ig,lay) = ciwpmcd(iplon,ig,lay) * abscoice + &
                                       clwpmcd(iplon,ig,lay) * abscoliq + &
                                       cswpmcd(iplon,ig,lay) * abscosno
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc taucmc',11,taucmc(iplon,1,11)
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc ciwpmc',11,ciwpmcd(iplon,1,11)
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc clwpmc',11,clwpmcd(iplon,1,11)
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc cswpmc',11,cswpmcd(iplon,1,11)
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscoice',11,abscoice
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscoliq',11,abscoliq
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscosno',11,abscosno
 
+
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'zap ',__LINE__
             endif
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'zap ',__LINE__
           endif
+if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'zap ',__LINE__
 
 #ifdef _CUDA
     endif
@@ -5134,11 +5192,16 @@ integer colstart
          do lev = 1, nlayers
        ILOOP_S_CPU
 !  Cloudy layer
+if(iplon.eq.1.and.igc.eq.1)write(0,*)'zap cbl: abscld ',lev,1.  - exp(-odclds)
+if(iplon.eq.1.and.igc.eq.1)write(0,*)'zap cbl: secdiff',lev,secdiff
+if(iplon.eq.1.and.igc.eq.1)write(0,*)'zap cbl: taucmc ',lev,taucmcd(iplon,igc,lev)
+if(iplon.eq.1.and.igc.eq.1)write(0,*)'zap cbl: bbutot ',lev,bbutot(lev)
             if (icldlyr(iplon, lev) .eq. 1) then
                gassrc = bbugas(lev) * atrans(lev)
                odclds = secdiff * taucmcd(iplon,igc,lev)
                absclds = 1.  - exp(-odclds)
                efclfracs = absclds * cldfmcd(iplon, igc,lev)
+!if(iplon.eq.1.and.igc.eq.1)write(0,*)'zap cbl: abscld ',lev,absclds
                radlu = radlu - radlu * (atrans(lev) + &
                    efclfracs * (1.  - atrans(lev))) + &
                    gassrc + cldfmcd(iplon, igc,lev) * &
@@ -5160,6 +5223,17 @@ integer colstart
                   gdtotuflux_dtd( iplon, igc, lev) = gdtotuflux_dtd( iplon, igc, lev) + d_radlu_dt
                endif
             endif
+
+if(iplon.eq.1.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap urad ',igc,lev,gurad(1,igc,lev)
+if(iplon.eq.1.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap radlu ',igc,lev,radlu
+if(iplon.eq.1.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap icldlyr ',icldlyr(iplon, lev)
+
+if(iplon.eq.1.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap bbugas ', Bbugas(iplon, lev)
+if(iplon.eq.1.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap bbutot ', Bbutot(iplon, lev)
+if(iplon.eq.1.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap atrans ', Atrans(iplon, lev)
+if(iplon.eq.1.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap cldfmc ', Cldfmcd(iplon, igc,lev)
+if(iplon.eq.1.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap elfrac ', Efclfracs
+
 !  Set clear sky stream to total sky stream as long as all layers
 !  are clear (iclddn=0).  Streams must be calculated separately at 
 !  all layers when a cloud is present (ICLDDN=1), because surface 
@@ -9505,6 +9579,11 @@ integer,external :: omp_get_thread_num
             dbdtlev = totplnkd(indlev+1,iband) - totplnkd(indlev,iband)
             dbdtlay = totplnkd(indlay+1,iband) - totplnkd(indlay,iband)
             planklayd(iplon, lay,iband) = totplnkd(indlay,iband) + tlayfrac * dbdtlay
+!if(iplon.eq.1.and.iband.eq.1)write(0,*)'zap setcoef 010 totplnkd ',totplnkd(indlay,iband)
+!if(iplon.eq.1.and.iband.eq.1)write(0,*)'zap setcoef 010 tlayfrac ',tlayfrac
+!if(iplon.eq.1.and.iband.eq.1)write(0,*)'zap setcoef 010 dbdtlay ',dbdtlay
+!if(iplon.eq.1.and.iband.eq.1)write(0,*)'zap setcoef 010 planklayd ',planklayd(iplon,lay,iband)
+
             planklevd(iplon, lay,iband) = totplnkd(indlev,iband) + tlevfrac * dbdtlev
           enddo
 
@@ -14339,13 +14418,20 @@ cn = CHNK
 ! mji - Running WRF in dmpar with 8 processors
 !      cn = cn / 8
 
+      print *, "Number of columns is                          ", ncol
       print *, "Number of columns per partition (rrtmg_lw) is ", cn
       ns = ceiling( real(ncol) / real(cn) )
+      print *, "Number of partitions is                       ", ns
 
 ! mji - time      
       call cpu_time(t1)
 
       do  i = 1, ns 
+
+write(0,*)'zap before rrtmg_lw_part rei',rei(1,1)
+write(0,*)'zap before rrtmg_lw_part rel',rel(1,1)
+write(0,*)'zap before rrtmg_lw_part res',res(1,1)
+write(0,*)'zap before rrtmg_lw_part shape res',shape(res)
 
       call rrtmg_lw_part &
             (ns, ncol, (i-1)*cn + 1, min(cn, ncol - (i-1)*cn), &
@@ -14785,6 +14871,8 @@ integer,external :: omp_get_thread_num
 ! Initializations
       icb(:) = (/  1,2,3,3,3,4,4,4,5, 5, 5, 5, 5, 5, 5, 5 /)
 	 
+write(0,*)'zap before rrtmg_lw_part res',res(1,1)
+write(0,*)'zap in rrtmg_lw_part shape res',shape(res)
       oneminus = 1.  - 1.e-6 
       pi = 2.  * asin(1. )
       fluxfac = pi * 2.e4                   ! orig:   fluxfac = pi * 2.d4  
@@ -14937,6 +15025,8 @@ integer,external :: omp_get_thread_num
       dimBlock = dim3( 256,2,1)
 #endif
 
+write(0,*)'calling genstoch pmid ',pmid(1,1:4)
+write(0,*)'calling genstoch shape pmid ',shape(pmid)
       if (icld > 0) then
          call generate_stochastic_cloudsg _gpuchv (colstart,pncold, nlayd, icldd, ngbd, &
 #ifndef _CUDA
@@ -14946,6 +15036,9 @@ integer,external :: omp_get_thread_num
 !                               ngbd, cldfmcd, clwpmcd, ciwpmcd, taucmcd, 1, zmd)
                                cldfmcd, clwpmcd, ciwpmcd, cswpmcd, taucmcd)
       end if
+write(0,*)'zap after gen stock', cldfmcd(1,1,:)
+write(0,*)'zap after gen stock taucmc ',11,taucmcd(1,1,11)
+
 
 !jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
       do iplon = 1, pncol
@@ -15019,6 +15112,9 @@ integer,external :: omp_get_thread_num
 #  define a1d a1
 #  define a2d a2
 #  define delwaved delwave
+#  define relqmcd relq
+#  define reicmcd reiq
+#  define resnmcd resq
 #endif
 
       icldlyr = 0.0
@@ -15071,9 +15167,12 @@ integer,external :: omp_get_thread_num
 !     clwpmcd = 0
 !     clwpmcd = clwpmc
 ! (dmb 2012) Call the cldprmcg kernel
+write(0,*)'zap b4 cldprmc ',planklay(1,1,1)
+write(0,*)'zap b4 cldprmc taucmc ',11,taucmcd(1,1,11)
+write(0,*)'zap b4 cldprmc resnmc ',11,resnmc(1,11)
       call cldprmcg _gpuchv (pncol, nlayers,                                      &
 #ifndef _CUDA
-                inflag,iceflag,liqflag,ciwpmcd,clwpmcd,cswpmcd,relqmc,reicmc,resnmc, &
+                inflag,iceflag,liqflag,ciwpmcd,clwpmcd,cswpmcd,relqmcd,reicmcd,resnmcd, &
                 absice0,absice1,absice2,absice3,absliq1,                          &
 #endif
                              cldfmcd, taucmcd,  ngbd, icbd, ncbandsd, icldlyr)
@@ -15088,6 +15187,10 @@ integer,external :: omp_get_thread_num
 ! that is specific to this atmosphere, especially some of the 
 ! coefficients and indices needed to compute the optical depths
 ! by interpolating data from stored reference atmospheres. 
+
+write(0,*)'zap b4 setcoef planklayd',planklayd(1,1,1)
+write(0,*)'zap b4 setcoef taucmc ',11,taucmcd(1,1,11)
+write(0,*)'zap b4 setcoef resnmc ',11,resnmcd(1,11)
 
 ! (dmb 2012) Initialize the grid and block dimensions and call the setcoefg kernel
 #ifdef _CUDA
@@ -15104,6 +15207,8 @@ integer,external :: omp_get_thread_num
 
 ! (dmb 2012) end if GPU flag 
 
+write(0,*)'zap b4 taumo planklayd',planklayd(1,1,1)
+write(0,*)'zap b4 taumo taucmc ',11,taucmcd(1,1,11)
 
 !  Calculate the gaseous optical depths and Planck fractions for 
 !  each longwave spectral band.
@@ -15113,6 +15218,9 @@ integer,external :: omp_get_thread_num
 # include "taug_cpu_args.h"
                   )
    
+write(0,*)'zap aft taumo planklayd',planklayd(1,1,11)
+write(0,*)'zap aft taumo taucmc ',11,taucmcd(1,1,11)
+
 
 ! Call the radiative transfer routine.
 ! Either routine can be called to do clear sky calculation.  If clouds
@@ -15137,6 +15245,7 @@ integer,external :: omp_get_thread_num
 #ifdef _CUDA
       ierr = cudaThreadSynchronize() 
 #endif
+write(0,*)'zap aft rtrnmcg planklayd',planklayd(1,1,11)
 
 !jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
 
@@ -15161,6 +15270,16 @@ integer,external :: omp_get_thread_num
 !ierr = 0
 !!zap
 
+write(0,*)'zap bf rtrn pz ',pz(1,0),pz(1,1)
+write(0,*)'zap bf rtrn pwvcm ',pwvcm(1)
+write(0,*)'zap bf rtrn semiss ',semissd(1,1)
+write(0,*)'zap bf rtrn planklay ',planklayd(1,1,1)
+write(0,*)'zap bf rtrn planklev ',planklevd(1,0:1,1)
+write(0,*)'zap bf rtrn fracs ',fracsd(1,1,1)
+write(0,*)'zap bf rtrn taut ',taug(1,1,1)
+write(0,*)'zap bf rtrn cldfmc ',cldfmcd(1,1,:)
+write(0,*)'zap bf rtrn taucmc ',taucmcd(1,1,1)
+write(0,*)'zap b4 rtrnadd totuflxd ',totufluxd(1,1)
 
 ! (dmb 2012) Here we integrate across the g-point fluxes to arrive at total fluxes
 ! This functionality was factored out of the original rtrnmc routine so that I could
@@ -15174,12 +15293,16 @@ integer,external :: omp_get_thread_num
       dimGrid = dim3( (pncol+255)/256,nlayers,1)
 #endif
 
+if(colstart.eq.1)write(0,*)'zap aft rtrnadd totuflxd ',totufluxd(1,1)
 
 !jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
 ! (dmb 2012) Calculate the heating rates.
       call rtrnheatrates _gpuchv (pncol, nlayers &
 #include "rrtmg_lw_cpu_args.h"
                                  )    
+if(colstart.eq.1)write(0,*)'zap aft rtrnheat totuflxd ',totufluxd(1,1)
+!jmzap write(0,*)'zap --- stop --- '
+!jmzap stop
 
 #ifdef CUDA
       ierr = cudaThreadSynchronize() 
@@ -16419,6 +16542,35 @@ integer,external :: omp_get_thread_num
       end do i_loop
    end do j_loop                                           
 
+write(0,*)'zap before rrtmg_lw play',play(1,:)
+write(0,*)'zap before rrtmg_lw plev',plev(1,:)
+write(0,*)'zap before rrtmg_lw tlay',tlay(1,:)
+write(0,*)'zap before rrtmg_lw tlev',tlev(1,:)
+write(0,*)'zap before rrtmg_lw tsfc',tsfc(1)
+write(0,*)'zap before rrtmg_lw h2ovmr',h2ovmr(1,1)
+write(0,*)'zap before rrtmg_lw o3vmr',o3vmr(1,1)
+write(0,*)'zap before rrtmg_lw co2vmr',co2vmr(1,1)
+write(0,*)'zap before rrtmg_lw ch4vmr',ch4vmr(1,1)
+write(0,*)'zap before rrtmg_lw n2ovmr',n2ovmr(1,1)
+write(0,*)'zap before rrtmg_lw o2vmr',o2vmr(1,1)
+write(0,*)'zap before rrtmg_lw cfc11vmr',cfc11vmr(1,1)
+write(0,*)'zap before rrtmg_lw cfc12vmr',cfc12vmr(1,1)
+write(0,*)'zap before rrtmg_lw cfc22vmr',cfc22vmr(1,1)
+write(0,*)'zap before rrtmg_lw ccl4vmr',ccl4vmr(1,1)
+write(0,*)'zap before rrtmg_lw emis',emis(1,1)
+write(0,*)'zap before rrtmg_lw cldfrac',cldfrac(1,1)
+write(0,*)'zap before rrtmg_lw ciwpth',ciwpth(1,1)
+write(0,*)'zap before rrtmg_lw clwpth',clwpth(1,1)
+write(0,*)'zap before rrtmg_lw cswpth',cswpth(1,1)
+write(0,*)'zap before rrtmg_lw rei',rei(1,1)
+write(0,*)'zap before rrtmg_lw rel',rel(1,1)
+write(0,*)'zap before rrtmg_lw res',res(1,1)
+write(0,*)'zap before rrtmg_lw taucld', taucld(1,:,1)
+write(0,*)'zap before rrtmg_lw tauaer', tauaer(1,1,:)
+write(0,*)'zap before rrtmg_lw inflglw,iceflglw,liqflglw',inflglw,iceflglw,liqflglw
+!write(0,*)'zap before rrtmg_lw duflx_dt ',duflx_dt
+!write(0,*)'zap before rrtmg_lw duflxc_dt ',duflxc_dt
+
 ! Call RRTMG longwave radiation model for full grid for gpu
          call rrtmg_lw &
             (ncol    ,nlay    ,icld    ,idrv    , &
@@ -16432,6 +16584,8 @@ integer,external :: omp_get_thread_num
              tauaer  , &
              uflx    ,dflx    ,hr      ,uflxc   ,dflxc,  hrc, &
              duflx_dt,duflxc_dt)
+
+write(0,*)'zap uflx after rrtmg_lw ',uflx(1,1)
 
 ! Output downard surface flux, and outgoing longwave flux and cloud forcing 
 ! at the top of atmosphere (W/m2)

@@ -2201,6 +2201,7 @@ contains
 !  Generate the stochastic subcolumns of cloud optical properties for the longwave;
       call generate_stochastic_clouds (ncol, nlay, nsubclw, icld, irng, pmid, cldfrac, clwp, ciwp, cswp, tauc, &
                                cldfmcl, clwpmcl, ciwpmcl, cswpmcl, taucmcl, permuteseed)
+write(0,*)'zap after gen stock', cldfmcl(1,1,:)
 
       end subroutine mcica_subcol_lw
 
@@ -2359,6 +2360,7 @@ contains
 ! Check that irng is in bounds; if not, set to default
       if (irng .ne. 0) irng = 1
 
+
 ! Pass input cloud overlap setting to local variable
       overlap = icld
 
@@ -2371,6 +2373,7 @@ contains
             endif
          enddo
       enddo
+write(0,*)'irng ',irng,overlap
 
 ! ----- Create seed  --------
    
@@ -2382,14 +2385,17 @@ contains
             if (pmid(i,1).lt.pmid(i,2)) then 
                stop 'MCICA_SUBCOL: KISSVEC SEED GENERATOR REQUIRES PMID FROM BOTTOM FOUR LAYERS.'
             endif 
+write(0,*)'pmid ',pmid(i,1:4)
             seed1(i) = (pmid(i,1) - int(pmid(i,1)))  * 1000000000_im
             seed2(i) = (pmid(i,2) - int(pmid(i,2)))  * 1000000000_im
             seed3(i) = (pmid(i,3) - int(pmid(i,3)))  * 1000000000_im
             seed4(i) = (pmid(i,4) - int(pmid(i,4)))  * 1000000000_im
           enddo
+#if 0
          do i=1,changeSeed
             call kissvec(seed1, seed2, seed3, seed4, rand_num)
          enddo
+#endif
       elseif (irng.eq.1) then
          randomNumbers = new_RandomNumberSequence(seed = changeSeed)
       endif 
@@ -2434,6 +2440,7 @@ contains
             do isubcol = 1,nsubcol
                do ilev = 1,nlay
                   call kissvec(seed1, seed2, seed3, seed4, rand_num) 
+if (isubcol.eq.1)write(0,"('+ ',4i20,e25.12)")seed1, seed2, seed3, seed4, rand_num
                   CDF(isubcol,:,ilev) = rand_num
                enddo
             enddo
@@ -2522,6 +2529,8 @@ contains
 ! -- generate subcolumns for homogeneous clouds -----
       do ilev = 1,nlay
          iscloudy(:,:,ilev) = (CDF(:,:,ilev) >= 1._rb - spread(cldf(:,ilev), dim=1, nCopies=nsubcol) )
+write(0,*)'zap iscloudy ',iscloudy(1,1,ilev)
+write(0,*)'zap CDF ',CDF(1,1,ilev)
       enddo
 
 ! where the subcolumn is cloudy, the subcolumn cloud fraction is 1;
@@ -2789,6 +2798,15 @@ contains
 
         do ig = 1, ngptlw
           cwp = ciwpmc(ig,lay) + clwpmc(ig,lay) + cswpmc(ig,lay)
+if(ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc inflag ',11,inflag
+if(ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc cldfmc',11,cldfmc(1,11)
+if(ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc taucmc',11,taucmc(1,11)
+if(ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc ciwpmc',11,ciwpmc(1,11)
+if(ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc clwpmc',11,clwpmc(1,11)
+if(ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc cswpmc',11,cswpmc(1,11)
+if(ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc cldmin',11,cldmin
+if(ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc c1',11,cldfmc(ig,lay) .ge. cldmin
+if(ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc c2',11,taucmc(ig,lay) .ge. cldmin
           if (cldfmc(ig,lay) .ge. cldmin .and. &
              (cwp .ge. cldmin .or. taucmc(ig,lay) .ge. cldmin)) then
 
@@ -2862,6 +2880,7 @@ contains
                endif
 
 !..Incorporate additional effects due to snow.
+!STOPPED HERE
                if (cswpmc(ig,lay).gt.0.0_rb .and. iceflag .eq. 5) then
                   radsno = resnmc(lay)
                   if (radsno .lt. 5.0_rb .or. radsno .gt. 140.0_rb) then
@@ -2906,6 +2925,13 @@ contains
                taucmc(ig,lay) = ciwpmc(ig,lay) * abscoice(ig) + &
                                 clwpmc(ig,lay) * abscoliq(ig) + &
                                 cswpmc(ig,lay) * abscosno(ig)
+if(ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc taucmc',11,taucmc(1,11)
+if(ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc ciwpmc',11,ciwpmc(1,11)
+if(ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc clwpmc',11,clwpmc(1,11)
+if(ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc cswpmc',11,cswpmc(1,11)
+if(ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscoice',11,abscoice(11)
+if(ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscoliq',11,abscoliq(11)
+if(ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscosno',11,abscosno(11)
 
             endif
          endif
@@ -3160,6 +3186,7 @@ integer iplon
       totuclfl(0) = 0.0_rb
       totdclfl(0) = 0.0_rb
 
+write(0,*)'zap woowoo'
       do lay = 1, nlayers
          urad(lay) = 0.0_rb
          drad(lay) = 0.0_rb
@@ -3179,12 +3206,17 @@ integer iplon
                transcld = exp(-odcld(lay,ig))
                abscld(lay,ig) = 1._rb - transcld
                efclfrac(lay,ig) = abscld(lay,ig) * cldfmc(ig,lay)
+
                icldlyr(lay) = 1
             else
                odcld(lay,ig) = 0.0_rb
                abscld(lay,ig) = 0.0_rb
                efclfrac(lay,ig) = 0.0_rb
             endif
+if(ig.eq.1)write(0,*)'zap cbl: abscld ',lay,abscld(lay,ig)
+if(ig.eq.1)write(0,*)'zap cbl: secdiff',lay,secdiff(ib)
+if(ig.eq.1)write(0,*)'zap cbl: taucmc ',lay,taucmc(ig,lay)
+if(ig.eq.1)write(0,*)'zap cbl: bbutot ',lay,bbutot(lay)
          enddo
 
       enddo
@@ -3344,6 +3376,14 @@ integer iplon
                radlu = radlu + (bbugas(lev)-radlu)*atrans(lev)
                urad(lev) = urad(lev) + radlu
             endif
+if(igc.eq.1.and.lev.eq.11)write(0,*)'zap urad ',igc,lev,urad(lev)
+if(igc.eq.1.and.lev.eq.11)write(0,*)'zap radlu ',igc,lev,radlu
+if(igc.eq.1.and.lev.eq.11)write(0,*)'zap icldlyr ',icldlyr(lev)
+if(igc.eq.1.and.lev.eq.11)write(0,*)'zap bbugas ',bbugas(lev)
+if(igc.eq.1.and.lev.eq.11)write(0,*)'zap bbutot ',bbutot(lev)
+if(igc.eq.1.and.lev.eq.11)write(0,*)'zap atrans ',atrans(lev)
+if(igc.eq.1.and.lev.eq.11)write(0,*)'zap cldfmc ',cldfmc(igc,lev)
+if(igc.eq.1.and.lev.eq.11)write(0,*)'zap elfrac ',efclfrac(lev,igc)
 !  Set clear sky stream to total sky stream as long as all layers
 !  are clear (iclddn=0).  Streams must be calculated separately at 
 !  all layers when a cloud is present (ICLDDN=1), because surface 
@@ -10937,6 +10977,8 @@ integer iplon
 !  Prepare atmospheric profile from GCM for use in RRTMG, and define
 !  other input parameters.  
 
+write(0,*)'zap bf inatm taucmc ',11,taucmc(1,11)
+
          call inatm (iplon, nlay, icld, iaer, &
               play, plev, tlay, tlev, tsfc, h2ovmr, &
               o3vmr, co2vmr, ch4vmr, n2ovmr, o2vmr, cfc11vmr, cfc12vmr, &
@@ -10952,6 +10994,10 @@ integer iplon
 !  effective radius must be passed into cldprop.  Cloud fraction and cloud
 !  optical depth are transferred to rrtmg_lw arrays in cldprop.  
 
+write(0,*)'zap b4 cldprmc ',planklay(1,1)
+write(0,*)'zap bf cldprmc taucmc ',11,taucmc(1,11)
+write(0,*)'zap bf cldprmc resnmc ',11,resnmc(11)
+
          call cldprmc(nlayers, inflag, iceflag, liqflag, cldfmc, ciwpmc, &
                       clwpmc, cswpmc, reicmc, relqmc, resnmc, ncbands, taucmc)
 
@@ -10959,6 +11005,10 @@ integer iplon
 ! that is specific to this atmosphere, especially some of the 
 ! coefficients and indices needed to compute the optical depths
 ! by interpolating data from stored reference atmospheres. 
+
+write(0,*)'zap b4 setcoef planklayd',planklay(1,1)
+write(0,*)'zap bf setcoef taucmc ',11,taucmc(1,11)
+write(0,*)'zap bf setcoef resnmc ',11,resnmc(11)
 
          call setcoef(nlayers, istart, pavel, tavel, tz, tbound, semiss, &
                       coldry, wkl, wbrodl, &
@@ -10974,6 +11024,10 @@ integer iplon
 !  Calculate the gaseous optical depths and Planck fractions for 
 !  each longwave spectral band.
 
+write(0,*)'zap b4 taumo planklayd',planklay(1,1)
+write(0,*)'zap bf taumo taucmc ',11,taucmc(1,11)
+
+
          call taumol(nlayers, pavel, wx, coldry, &
                      laytrop, jp, jt, jt1, planklay, planklev, plankbnd, &
                      colh2o, colco2, colo3, coln2o, colco, colch4, colo2, &
@@ -10985,6 +11039,8 @@ integer iplon
                      minorfrac, scaleminor, scaleminorn2, indminor, &
                      fracs, taug)
 
+write(0,*)'zap aft taumo planklayd',planklay(1,1)
+write(0,*)'zap aft taumo taucmc ',11,taucmc(1,11)
 
 ! Combine gaseous and aerosol optical depths, if aerosol active
          if (iaer .eq. 0) then
@@ -11006,12 +11062,27 @@ integer iplon
 ! are present, then select routine based on cloud overlap assumption
 ! to be used.  Clear sky calculation is done simultaneously.
 ! For McICA, RTRNMC is called for clear and cloudy calculations.
+write(0,*)'zap bf rtrn pz ',pz(0),pz(1)
+write(0,*)'zap bf rtrn pwvcm ',pwvcm
+write(0,*)'zap bf rtrn semiss ',semiss(1)
+write(0,*)'zap bf rtrn planklay ',planklay(1,1)
+write(0,*)'zap bf rtrn planklev ',planklev(0:1,1)
+write(0,*)'zap bf rtrn fracs ',fracs(1,1)
+write(0,*)'zap bf rtrn taut ',taut(1,1)
+write(0,*)'zap bf rtrn cldfmc ',cldfmc(1,:)
+write(0,*)'zap bf rtrn taucmc ',taucmc(1,1)
+write(0,*)'zap b4 rrtnmcg planklayd',planklay(1,11)
 
          call rtrnmc(iplon,nlayers, istart, iend, iout, pz, semiss, ncbands, &
                      cldfmc, taucmc, planklay, planklev, plankbnd, &
                      pwvcm, fracs, taut, &
                      totuflux, totdflux, fnet, htr, &
                      totuclfl, totdclfl, fnetc, htrc )
+
+write(0,*)'zap aft rrtnmcg planklayd',planklay(1,11)
+
+!jm zap write(0,*)'zap aft rtrn totuflxd ',totuflux(1)
+!jm zap stop
 
 !  Transfer up and down fluxes and heating rate to output arrays.
 !  Vertical indexing goes from bottom to top; reverse here for GCM if necessary.
@@ -11385,23 +11456,23 @@ use rrtmg_lw_rad, only: rrtmg_lw
 use mcica_subcol_gen_lw, only: mcica_subcol_lw
 
     real retab(95)
-    data retab / 						&
-         5.92779, 6.26422, 6.61973, 6.99539, 7.39234,	&
-         7.81177, 8.25496, 8.72323, 9.21800, 9.74075, 10.2930,	&
-         10.8765, 11.4929, 12.1440, 12.8317, 13.5581, 14.2319, 	&
-         15.0351, 15.8799, 16.7674, 17.6986, 18.6744, 19.6955,	&
-         20.7623, 21.8757, 23.0364, 24.2452, 25.5034, 26.8125,	&
-         27.7895, 28.6450, 29.4167, 30.1088, 30.7306, 31.2943, 	&
-         31.8151, 32.3077, 32.7870, 33.2657, 33.7540, 34.2601, 	&
-         34.7892, 35.3442, 35.9255, 36.5316, 37.1602, 37.8078,	&
-         38.4720, 39.1508, 39.8442, 40.5552, 41.2912, 42.0635,	&
-         42.8876, 43.7863, 44.7853, 45.9170, 47.2165, 48.7221,	&
-         50.4710, 52.4980, 54.8315, 57.4898, 60.4785, 63.7898,	&
-         65.5604, 71.2885, 75.4113, 79.7368, 84.2351, 88.8833,	&
-         93.6658, 98.5739, 103.603, 108.752, 114.025, 119.424, 	&
-         124.954, 130.630, 136.457, 142.446, 148.608, 154.956,	&
-         161.503, 168.262, 175.248, 182.473, 189.952, 197.699,	&
-         205.728, 214.055, 222.694, 231.661, 240.971, 250.639/	
+    data retab /                                                &
+         5.92779, 6.26422, 6.61973, 6.99539, 7.39234,   &
+         7.81177, 8.25496, 8.72323, 9.21800, 9.74075, 10.2930,  &
+         10.8765, 11.4929, 12.1440, 12.8317, 13.5581, 14.2319,  &
+         15.0351, 15.8799, 16.7674, 17.6986, 18.6744, 19.6955,  &
+         20.7623, 21.8757, 23.0364, 24.2452, 25.5034, 26.8125,  &
+         27.7895, 28.6450, 29.4167, 30.1088, 30.7306, 31.2943,  &
+         31.8151, 32.3077, 32.7870, 33.2657, 33.7540, 34.2601,  &
+         34.7892, 35.3442, 35.9255, 36.5316, 37.1602, 37.8078,  &
+         38.4720, 39.1508, 39.8442, 40.5552, 41.2912, 42.0635,  &
+         42.8876, 43.7863, 44.7853, 45.9170, 47.2165, 48.7221,  &
+         50.4710, 52.4980, 54.8315, 57.4898, 60.4785, 63.7898,  &
+         65.5604, 71.2885, 75.4113, 79.7368, 84.2351, 88.8833,  &
+         93.6658, 98.5739, 103.603, 108.752, 114.025, 119.424,  &
+         124.954, 130.630, 136.457, 142.446, 148.608, 154.956,  &
+         161.503, 168.262, 175.248, 182.473, 189.952, 197.699,  &
+         205.728, 214.055, 222.694, 231.661, 240.971, 250.639/  
     !
     save retab
     ! For buffer layer adjustment.  Steven Cavallo, Dec 2010.
@@ -11759,15 +11830,15 @@ CONTAINS
                   0.56,0.48,0.41,0.35,0.30,0.26,                  &
                   0.22,0.19,0.16,0.14,0.12,0.10/
     DATA TPROF   /286.96,281.07,275.16,268.11,260.56,253.02,      &
-         	  245.62,238.41,231.57,225.91,221.72,217.79,      &
-		  215.06,212.74,210.25,210.16,210.69,212.14,      &
-		  213.74,215.37,216.82,217.94,219.03,220.18,      &
-		  221.37,222.64,224.16,225.88,227.63,229.51,      &
-		  231.50,233.73,236.18,238.78,241.60,244.44,      &
-		  247.35,250.33,253.32,256.30,259.22,262.12,      &
-		  264.80,266.50,267.59,268.44,268.69,267.76,      &
-		  266.13,263.96,261.54,258.93,256.15,253.23,      &
-		  249.89,246.67,243.48,240.25,236.66,233.86/	
+                  245.62,238.41,231.57,225.91,221.72,217.79,      &
+                  215.06,212.74,210.25,210.16,210.69,212.14,      &
+                  213.74,215.37,216.82,217.94,219.03,220.18,      &
+                  221.37,222.64,224.16,225.88,227.63,229.51,      &
+                  231.50,233.73,236.18,238.78,241.60,244.44,      &
+                  247.35,250.33,253.32,256.30,259.22,262.12,      &
+                  264.80,266.50,267.59,268.44,268.69,267.76,      &
+                  266.13,263.96,261.54,258.93,256.15,253.23,      &
+                  249.89,246.67,243.48,240.25,236.66,233.86/    
 !------------------------------------------------------------------
 #if ( WRF_CHEM == 1 )
       IF ( aer_ra_feedback == 1) then
@@ -12135,8 +12206,8 @@ CONTAINS
        do L=kte+1,nlayers+1,1
           tlev(ncol,L) = varint(L) + (tlev(ncol,kte) - varint(kte))
           !if ( L .le. nlay ) then
-	  tlay(ncol,L-1) = 0.5*(tlev(ncol,L) + tlev(ncol,L-1))  
-	  !endif
+          tlay(ncol,L-1) = 0.5*(tlev(ncol,L) + tlev(ncol,L-1))  
+          !endif
        enddo 
 
        ! Now the chemical species (except for ozone)
@@ -12150,9 +12221,9 @@ CONTAINS
           cfc12vmr(ncol,L) = cfc12vmr(ncol,kte) 
           cfc22vmr(ncol,L) = cfc22vmr(ncol,kte) 
           ccl4vmr(ncol,L) = ccl4vmr(ncol,kte) 
-       enddo	 
+       enddo     
 ! End top of model buffer 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!	
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
 ! Get ozone profile including amount in extra layer above model top.
 ! Steven Cavallo: Must pass nlay-1 into subroutine to get nlayers 
 ! dimension for o3mmr
@@ -12420,18 +12491,18 @@ CONTAINS
          endif
 
          ! Buffer adjustment. Steven Cavallo December 2010
-	 do k=kte+1,nlayers
-	    clwpth(ncol,k) = 0.
-	    ciwpth(ncol,k) = 0.
-	    cswpth(ncol,k) = 0.
-	    rel(ncol,k) = 10.
+         do k=kte+1,nlayers
+            clwpth(ncol,k) = 0.
+            ciwpth(ncol,k) = 0.
+            cswpth(ncol,k) = 0.
+            rel(ncol,k) = 10.
             rei(ncol,k) = 10.
             res(ncol,k) = 10.
             cldfrac(ncol,k) = 0.
-	    do nb = 1,nbndlw
+            do nb = 1,nbndlw
                taucld(nb,ncol,k) = 0.
             enddo
-	 enddo	 
+         enddo   
 
          iplon = 1
          irng = 0
@@ -12512,6 +12583,35 @@ CONTAINS
       endif  ! aer_ra_feedback
 #endif
 
+if (i.eq.1.and.j.eq.1)then
+write(0,*)'zap before rrtmg_lw play',play(1,:)
+write(0,*)'zap before rrtmg_lw plev',plev(1,:)
+write(0,*)'zap before rrtmg_lw tlay',tlay(1,:)
+write(0,*)'zap before rrtmg_lw tlev',tlev(1,:)
+write(0,*)'zap before rrtmg_lw tsfc',tsfc(1)
+write(0,*)'zap before rrtmg_lw h2ovmr',h2ovmr(1,1)
+write(0,*)'zap before rrtmg_lw o3vmr',o3vmr(1,1)
+write(0,*)'zap before rrtmg_lw co2vmr',co2vmr(1,1)
+write(0,*)'zap before rrtmg_lw ch4vmr',ch4vmr(1,1)
+write(0,*)'zap before rrtmg_lw n2ovmr',n2ovmr(1,1)
+write(0,*)'zap before rrtmg_lw o2vmr',o2vmr(1,1)
+write(0,*)'zap before rrtmg_lw cfc11vmr',cfc11vmr(1,1)
+write(0,*)'zap before rrtmg_lw cfc12vmr',cfc12vmr(1,1)
+write(0,*)'zap before rrtmg_lw cfc22vmr',cfc22vmr(1,1)
+write(0,*)'zap before rrtmg_lw ccl4vmr',ccl4vmr(1,1)
+write(0,*)'zap before rrtmg_lw emis',emis(1,1)
+write(0,*)'zap before rrtmg_lw cldfrac',cldfrac(1,1)
+write(0,*)'zap before rrtmg_lw ciwpth',ciwpth(1,1)
+write(0,*)'zap before rrtmg_lw clwpth',clwpth(1,1)
+write(0,*)'zap before rrtmg_lw cswpth',cswpth(1,1)
+write(0,*)'zap before rrtmg_lw rei',reicmcl(1,1)
+write(0,*)'zap before rrtmg_lw rel',relqmcl(1,1)
+write(0,*)'zap before rrtmg_lw res',resnmcl(1,1)
+write(0,*)'zap before rrtmg_lw taucld', taucld(:,1,1)
+write(0,*)'zap before rrtmg_lw tauaer', tauaer(1,1,:)
+write(0,*)'zap before rrtmg_lw inflglw,iceflglw,liqflglw',inflglw,iceflglw,liqflglw
+endif
+
 ! Call RRTMG longwave radiation model
          call rrtmg_lw &
             (ncol    ,nlay    ,icld    , &
@@ -12522,6 +12622,9 @@ CONTAINS
              taucmcl ,ciwpmcl ,clwpmcl ,cswpmcl, reicmcl ,relqmcl ,resnmcl , &
              tauaer  , &
              uflx    ,dflx    ,hr      ,uflxc   ,dflxc,  hrc)
+
+if (i.eq.1.and.j.eq.1) write(0,*)'zap uflx after rrtmg_lw ',uflx(1,1)
+
 
 ! Output downard surface flux, and outgoing longwave flux and cloud forcing 
 ! at the top of atmosphere (W/m2)
@@ -12733,7 +12836,7 @@ CONTAINS
 ! Steven Cavallo.  Added for buffer layer adjustment.   December 2010.
    NLAYERS = kme + nint(p_top*0.01/deltap)- 1 ! Model levels plus new levels.
                                               ! nlayers will subsequently 
-					      ! replace kte+1
+                                              ! replace kte+1
 
 ! Read in absorption coefficients and other data
    IF ( allowed_to_read ) THEN
@@ -14354,7 +14457,7 @@ IMPLICIT NONE
           index = int(t(i,k)-179.)
           index = min(max(index,1),94)
           corr = t(i,k) - int(t(i,k))
-          re(i,k) = retab(index)*(1.-corr)		&
+          re(i,k) = retab(index)*(1.-corr)              &
                +retab(index+1)*corr
           !           re(i,k) = amax1(amin1(re(i,k),30.),10.)
        end do

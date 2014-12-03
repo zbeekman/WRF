@@ -2,8 +2,14 @@
 !
 MODULE module_dm
 
+  INTEGER :: ntasks_x,ntasks_y,mytask,ntasks,local_communicator,local_communicator_periodic
+
   CONTAINS
    SUBROUTINE init_module_dm
+   ntasks_x = 1
+   ntasks_y = 1
+   mytask = 1
+   ntasks = 1
    END SUBROUTINE init_module_dm
 
    REAL FUNCTION wrf_dm_max_real ( inval )
