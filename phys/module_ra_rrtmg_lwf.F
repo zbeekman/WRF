@@ -3710,7 +3710,7 @@ contains
       pmid(:ncol,:nlay) = play(:ncol,:nlay)*1.e2
 #else
       pmidd(1:ncol,:nlay) = play(colstart:colstart+ncol-1,:nlay)*1.e2
-write(0,*)' in mcica pmid ',pmidd(1,1:4)
+write(0,*)' in mcica pmid ',pmidd(IDEBUG,1:4)
 #endif
 
 ! For GSFC, not needed for WRF
@@ -3989,8 +3989,8 @@ write(0,*)'irng ',icld
    
 ! For kissvec, create a seed that depends on the state of the columns. Maybe not the best way, but it works.  
 ! Must use pmid from bottom four layers. 
-if(iplon.eq.1.and.gp.eq.1)write(0,*)'pmid ',pmidd(iplon,1:4)
-if(iplon.eq.1.and.gp.eq.1)write(0,*)'shape pmid ',shape(pmidd)
+if(iplon.eq.IDEBUG.and.gp.eq.1)write(0,*)'pmid ',pmidd(iplon,1:4)
+if(iplon.eq.IDEBUG.and.gp.eq.1)write(0,*)'shape pmid ',shape(pmidd)
       
 #if 0
            seed1 = (pmidd(iplon,1) - int(pmidd(iplon,1)))  * 1000000000 + (gp) * 11 
@@ -4028,7 +4028,7 @@ if(iplon.eq.1.and.gp.eq.1)write(0,*)'shape pmid ',shape(pmidd)
 
            do ilev = 1,nlay
              call kissvec(seed1, seed2, seed3, seed4, rand_num)
-if(iplon.eq.1.and.gp.eq.1)write(0,"('+ ',4i20,e25.12)")seed1, seed2, seed3, seed4, rand_num
+if(iplon.eq.IDEBUG.and.gp.eq.1)write(0,"('+ ',4i20,e25.12)")seed1, seed2, seed3, seed4, rand_num
              CDF(ilev) = rand_num
            end do
           
@@ -4107,8 +4107,8 @@ if(iplon.eq.1.and.gp.eq.1)write(0,"('+ ',4i20,e25.12)")seed1, seed2, seed3, seed
       do ilev = 1,nlay
         cfs = cldfracd(iplon, ilev)
          !  do gp = 1, nsubcol
-if(iplon.eq.1.and.gp.eq.1)write(0,*)'zap iscloudy ',CDF(ilev) >=1.  - cfs
-if(iplon.eq.1.and.gp.eq.1)write(0,*)'zap CDF ',CDF(ilev)
+if(iplon.eq.IDEBUG.and.gp.eq.1)write(0,*)'zap iscloudy ',CDF(ilev) >=1.  - cfs
+if(iplon.eq.IDEBUG.and.gp.eq.1)write(0,*)'zap CDF ',CDF(ilev)
                if (CDF(ilev) >=1.  - cfs) then
                   cld_stoch(iplon,gp,ilev) = 1. 
                   clwp_stoch(iplon,gp,ilev) = clwpd(iplon,ilev)
@@ -4453,17 +4453,17 @@ if(iplon.eq.1.and.gp.eq.1)write(0,*)'zap CDF ',CDF(ilev)
           endif
           cwp = ciwpmcd(iplon,ig,lay) + clwpmcd(iplon,ig,lay) + cswpmcd(iplon,ig,lay)
 ! (dmb 2012) the stop commands were removed because they aren't supported on the GPU
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc inflagd',inflagd(1)
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc iceflagd',iceflagd(1)
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc liqflagd',liqflagd(1)
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc cldfmc',11,cldfmc(iplon,1,11)
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc taucmc',11,taucmc(iplon,1,11)
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc ciwpmc',11,ciwpmcd(iplon,1,11)
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc clwpmc',11,clwpmcd(iplon,1,11)
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc cswpmc',11,cswpmcd(iplon,1,11)
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc cldmin',11,cldmin
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc c1',11,cldfmc(iplon,ig,lay) .ge. cldmin
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc c2',11,taucmc(iplon,ig,lay) .ge. cldmin
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc inflagd',inflagd(iplon)
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc iceflagd',iceflagd(iplon)
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc liqflagd',liqflagd(iplon)
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc cldfmc',11,cldfmc(iplon,1,11)
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc taucmc',11,taucmc(iplon,1,11)
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc ciwpmc',11,ciwpmcd(iplon,1,11)
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc clwpmc',11,clwpmcd(iplon,1,11)
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc cswpmc',11,cswpmcd(iplon,1,11)
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc cldmin',11,cldmin
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc c1',11,cldfmc(iplon,ig,lay) .ge. cldmin
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc c2',11,taucmc(iplon,ig,lay) .ge. cldmin
           if (cldfmc(iplon,ig,lay) .ge. cldmin .and. &
              (cwp .ge. cldmin .or. taucmc(iplon,ig,lay) .ge. cldmin)) then
 
@@ -4472,7 +4472,7 @@ if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc c2',11,taucmc(ipl
 !jm top cldprmc liqflagd           1
 
 
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'zap ',__LINE__
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'zap ',__LINE__
 !jm zap            if(inflagd(iplon) .eq. 2) then
             if(inflagd(iplon) .ge. 2) then
                radice = reicmcd(iplon, lay)
@@ -4573,20 +4573,20 @@ if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'zap ',__LINE__
                taucmc(iplon,ig,lay) = ciwpmcd(iplon,ig,lay) * abscoice + &
                                       clwpmcd(iplon,ig,lay) * abscoliq + &
                                       cswpmcd(iplon,ig,lay) * abscosno
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc taucmc',11,taucmc(iplon,1,11)
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc ciwpmc',11,ciwpmcd(iplon,1,11)
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc clwpmc',11,clwpmcd(iplon,1,11)
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc cswpmc',11,cswpmcd(iplon,1,11)
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscoice',11,abscoice
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscoliq',11,abscoliq
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscosno',11,abscosno
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc taucmc',11,taucmc(iplon,1,11)
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc ciwpmc',11,ciwpmcd(iplon,1,11)
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc clwpmc',11,clwpmcd(iplon,1,11)
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc cswpmc',11,cswpmcd(iplon,1,11)
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscoice',11,abscoice
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscoliq',11,abscoliq
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscosno',11,abscosno
 
 
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'zap ',__LINE__
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'zap ',__LINE__
             endif
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'zap ',__LINE__
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'zap ',__LINE__
           endif
-if(iplon.eq.1.and.ig.eq.1.and.lay.eq.11)write(0,*)'zap ',__LINE__
+if(iplon.eq.IDEBUG.and.ig.eq.1.and.lay.eq.11)write(0,*)'zap ',__LINE__
 
 #ifdef _CUDA
     endif
@@ -5192,16 +5192,18 @@ integer colstart
          do lev = 1, nlayers
        ILOOP_S_CPU
 !  Cloudy layer
-if(iplon.eq.1.and.igc.eq.1)write(0,*)'zap cbl: abscld ',lev,1.  - exp(-odclds)
-if(iplon.eq.1.and.igc.eq.1)write(0,*)'zap cbl: secdiff',lev,secdiff
-if(iplon.eq.1.and.igc.eq.1)write(0,*)'zap cbl: taucmc ',lev,taucmcd(iplon,igc,lev)
-if(iplon.eq.1.and.igc.eq.1)write(0,*)'zap cbl: bbutot ',lev,bbutot(lev)
+#if 0
+if(iplon.eq.IDEBUG.and.igc.eq.1)write(0,*)'zap cbl: abscld ',lev,1.  - exp(-odclds)
+if(iplon.eq.IDEBUG.and.igc.eq.1)write(0,*)'zap cbl: secdiff',lev,secdiff
+if(iplon.eq.IDEBUG.and.igc.eq.1)write(0,*)'zap cbl: taucmc ',lev,taucmcd(iplon,igc,lev)
+if(iplon.eq.IDEBUG.and.igc.eq.1)write(0,*)'zap cbl: bbutot ',lev,bbutot(lev)
+#endif
             if (icldlyr(iplon, lev) .eq. 1) then
                gassrc = bbugas(lev) * atrans(lev)
                odclds = secdiff * taucmcd(iplon,igc,lev)
                absclds = 1.  - exp(-odclds)
                efclfracs = absclds * cldfmcd(iplon, igc,lev)
-!if(iplon.eq.1.and.igc.eq.1)write(0,*)'zap cbl: abscld ',lev,absclds
+!if(iplon.eq.IDEBUG.and.igc.eq.1)write(0,*)'zap cbl: abscld ',lev,absclds
                radlu = radlu - radlu * (atrans(lev) + &
                    efclfracs * (1.  - atrans(lev))) + &
                    gassrc + cldfmcd(iplon, igc,lev) * &
@@ -5224,15 +5226,15 @@ if(iplon.eq.1.and.igc.eq.1)write(0,*)'zap cbl: bbutot ',lev,bbutot(lev)
                endif
             endif
 
-if(iplon.eq.1.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap urad ',igc,lev,gurad(1,igc,lev)
-if(iplon.eq.1.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap radlu ',igc,lev,radlu
-if(iplon.eq.1.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap icldlyr ',icldlyr(iplon, lev)
+if(iplon.eq.IDEBUG.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap urad ',igc,lev,gurad(iplon,igc,lev)
+if(iplon.eq.IDEBUG.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap radlu ',igc,lev,radlu
+if(iplon.eq.IDEBUG.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap icldlyr ',icldlyr(iplon, lev)
 
-if(iplon.eq.1.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap bbugas ', Bbugas(iplon, lev)
-if(iplon.eq.1.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap bbutot ', Bbutot(iplon, lev)
-if(iplon.eq.1.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap atrans ', Atrans(iplon, lev)
-if(iplon.eq.1.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap cldfmc ', Cldfmcd(iplon, igc,lev)
-if(iplon.eq.1.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap elfrac ', Efclfracs
+if(iplon.eq.IDEBUG.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap bbugas ', Bbugas(iplon, lev)
+if(iplon.eq.IDEBUG.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap bbutot ', Bbutot(iplon, lev)
+if(iplon.eq.IDEBUG.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap atrans ', Atrans(iplon, lev)
+if(iplon.eq.IDEBUG.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap cldfmc ', Cldfmcd(iplon, igc,lev)
+if(iplon.eq.IDEBUG.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap elfrac ', Efclfracs
 
 !  Set clear sky stream to total sky stream as long as all layers
 !  are clear (iclddn=0).  Streams must be calculated separately at 
@@ -14428,9 +14430,9 @@ cn = CHNK
 
       do  i = 1, ns 
 
-write(0,*)'zap before rrtmg_lw_part rei',rei(1,1)
-write(0,*)'zap before rrtmg_lw_part rel',rel(1,1)
-write(0,*)'zap before rrtmg_lw_part res',res(1,1)
+write(0,*)'zap before rrtmg_lw_part rei',rei(IDEBUG,1)
+write(0,*)'zap before rrtmg_lw_part rel',rel(IDEBUG,1)
+write(0,*)'zap before rrtmg_lw_part res',res(IDEBUG,1)
 write(0,*)'zap before rrtmg_lw_part shape res',shape(res)
 
       call rrtmg_lw_part &
@@ -14871,7 +14873,7 @@ integer,external :: omp_get_thread_num
 ! Initializations
       icb(:) = (/  1,2,3,3,3,4,4,4,5, 5, 5, 5, 5, 5, 5, 5 /)
 	 
-write(0,*)'zap before rrtmg_lw_part res',res(1,1)
+write(0,*)'zap before rrtmg_lw_part res',res(IDEBUG,1)
 write(0,*)'zap in rrtmg_lw_part shape res',shape(res)
       oneminus = 1.  - 1.e-6 
       pi = 2.  * asin(1. )
@@ -15025,7 +15027,7 @@ write(0,*)'zap in rrtmg_lw_part shape res',shape(res)
       dimBlock = dim3( 256,2,1)
 #endif
 
-write(0,*)'calling genstoch pmid ',pmid(1,1:4)
+write(0,*)'calling genstoch pmid ',pmid(IDEBUG,1:4)
 write(0,*)'calling genstoch shape pmid ',shape(pmid)
       if (icld > 0) then
          call generate_stochastic_cloudsg _gpuchv (colstart,pncold, nlayd, icldd, ngbd, &
@@ -15036,8 +15038,8 @@ write(0,*)'calling genstoch shape pmid ',shape(pmid)
 !                               ngbd, cldfmcd, clwpmcd, ciwpmcd, taucmcd, 1, zmd)
                                cldfmcd, clwpmcd, ciwpmcd, cswpmcd, taucmcd)
       end if
-write(0,*)'zap after gen stock', cldfmcd(1,1,:)
-write(0,*)'zap after gen stock taucmc ',11,taucmcd(1,1,11)
+write(0,*)'zap after gen stock', cldfmcd(IDEBUG,1,:)
+write(0,*)'zap after gen stock taucmc ',11,taucmcd(IDEBUG,1,11)
 
 
 !jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
@@ -15167,9 +15169,9 @@ write(0,*)'zap after gen stock taucmc ',11,taucmcd(1,1,11)
 !     clwpmcd = 0
 !     clwpmcd = clwpmc
 ! (dmb 2012) Call the cldprmcg kernel
-write(0,*)'zap b4 cldprmc ',planklay(1,1,1)
-write(0,*)'zap b4 cldprmc taucmc ',11,taucmcd(1,1,11)
-write(0,*)'zap b4 cldprmc resnmc ',11,resnmc(1,11)
+write(0,*)'zap b4 cldprmc ',planklay(IDEBUG,1,1)
+write(0,*)'zap b4 cldprmc taucmc ',11,taucmcd(IDEBUG,1,11)
+write(0,*)'zap b4 cldprmc resnmc ',11,resnmc(IDEBUG,11)
       call cldprmcg _gpuchv (pncol, nlayers,                                      &
 #ifndef _CUDA
                 inflag,iceflag,liqflag,ciwpmcd,clwpmcd,cswpmcd,relqmcd,reicmcd,resnmcd, &
@@ -15188,9 +15190,9 @@ write(0,*)'zap b4 cldprmc resnmc ',11,resnmc(1,11)
 ! coefficients and indices needed to compute the optical depths
 ! by interpolating data from stored reference atmospheres. 
 
-write(0,*)'zap b4 setcoef planklayd',planklayd(1,1,1)
-write(0,*)'zap b4 setcoef taucmc ',11,taucmcd(1,1,11)
-write(0,*)'zap b4 setcoef resnmc ',11,resnmcd(1,11)
+write(0,*)'zap b4 setcoef planklayd',planklayd(IDEBUG,1,1)
+write(0,*)'zap b4 setcoef taucmc ',11,taucmcd(IDEBUG,1,11)
+write(0,*)'zap b4 setcoef resnmc ',11,resnmcd(IDEBUG,11)
 
 ! (dmb 2012) Initialize the grid and block dimensions and call the setcoefg kernel
 #ifdef _CUDA
@@ -15207,8 +15209,8 @@ write(0,*)'zap b4 setcoef resnmc ',11,resnmcd(1,11)
 
 ! (dmb 2012) end if GPU flag 
 
-write(0,*)'zap b4 taumo planklayd',planklayd(1,1,1)
-write(0,*)'zap b4 taumo taucmc ',11,taucmcd(1,1,11)
+write(0,*)'zap b4 taumo planklayd',planklayd(IDEBUG,1,1)
+write(0,*)'zap b4 taumo taucmc ',11,taucmcd(IDEBUG,1,11)
 
 !  Calculate the gaseous optical depths and Planck fractions for 
 !  each longwave spectral band.
@@ -15218,8 +15220,8 @@ write(0,*)'zap b4 taumo taucmc ',11,taucmcd(1,1,11)
 # include "taug_cpu_args.h"
                   )
    
-write(0,*)'zap aft taumo planklayd',planklayd(1,1,11)
-write(0,*)'zap aft taumo taucmc ',11,taucmcd(1,1,11)
+write(0,*)'zap aft taumo planklayd',planklayd(IDEBUG,1,11)
+write(0,*)'zap aft taumo taucmc ',11,taucmcd(IDEBUG,1,11)
 
 
 ! Call the radiative transfer routine.
@@ -15245,7 +15247,7 @@ write(0,*)'zap aft taumo taucmc ',11,taucmcd(1,1,11)
 #ifdef _CUDA
       ierr = cudaThreadSynchronize() 
 #endif
-write(0,*)'zap aft rtrnmcg planklayd',planklayd(1,1,11)
+write(0,*)'zap aft rtrnmcg planklayd',planklayd(IDEBUG,1,11)
 
 !jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
 
@@ -15270,16 +15272,16 @@ write(0,*)'zap aft rtrnmcg planklayd',planklayd(1,1,11)
 !ierr = 0
 !!zap
 
-write(0,*)'zap bf rtrn pz ',pz(1,0),pz(1,1)
-write(0,*)'zap bf rtrn pwvcm ',pwvcm(1)
-write(0,*)'zap bf rtrn semiss ',semissd(1,1)
-write(0,*)'zap bf rtrn planklay ',planklayd(1,1,1)
-write(0,*)'zap bf rtrn planklev ',planklevd(1,0:1,1)
-write(0,*)'zap bf rtrn fracs ',fracsd(1,1,1)
-write(0,*)'zap bf rtrn taut ',taug(1,1,1)
-write(0,*)'zap bf rtrn cldfmc ',cldfmcd(1,1,:)
-write(0,*)'zap bf rtrn taucmc ',taucmcd(1,1,1)
-write(0,*)'zap b4 rtrnadd totuflxd ',totufluxd(1,1)
+write(0,*)'zap bf rtrn pz ',pz(IDEBUG,0),pz(IDEBUG,1)
+write(0,*)'zap bf rtrn pwvcm ',pwvcm(IDEBUG)
+write(0,*)'zap bf rtrn semiss ',semissd(IDEBUG,1)
+write(0,*)'zap bf rtrn planklay ',planklayd(IDEBUG,1,1)
+write(0,*)'zap bf rtrn planklev ',planklevd(IDEBUG,0:1,1)
+write(0,*)'zap bf rtrn fracs ',fracsd(IDEBUG,1,1)
+write(0,*)'zap bf rtrn taut ',taug(IDEBUG,1,1)
+write(0,*)'zap bf rtrn cldfmc ',cldfmcd(IDEBUG,1,:)
+write(0,*)'zap bf rtrn taucmc ',taucmcd(IDEBUG,1,1)
+write(0,*)'zap b4 rtrnadd totuflxd ',totufluxd(IDEBUG,1)
 
 ! (dmb 2012) Here we integrate across the g-point fluxes to arrive at total fluxes
 ! This functionality was factored out of the original rtrnmc routine so that I could
@@ -15293,16 +15295,18 @@ write(0,*)'zap b4 rtrnadd totuflxd ',totufluxd(1,1)
       dimGrid = dim3( (pncol+255)/256,nlayers,1)
 #endif
 
-if(colstart.eq.1)write(0,*)'zap aft rtrnadd totuflxd ',totufluxd(1,1)
+write(0,*)'zap aft rtrnadd totuflxd ',totufluxd(IDEBUG,1)
 
 !jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
 ! (dmb 2012) Calculate the heating rates.
       call rtrnheatrates _gpuchv (pncol, nlayers &
 #include "rrtmg_lw_cpu_args.h"
                                  )    
-if(colstart.eq.1)write(0,*)'zap aft rtrnheat totuflxd ',totufluxd(1,1)
-!jmzap write(0,*)'zap --- stop --- '
-!jmzap stop
+write(0,"('zap PAYDIRT aft rtrn totuflxd ',e25.12)")totufluxd(IDEBUG,1)
+if ( colstart <= IDEBUG .and. IDEBUG < colstart+pncol ) then
+write(0,*)'zap --- stop --- '
+stop
+endif
 
 #ifdef CUDA
       ierr = cudaThreadSynchronize() 
@@ -16542,31 +16546,31 @@ if(colstart.eq.1)write(0,*)'zap aft rtrnheat totuflxd ',totufluxd(1,1)
       end do i_loop
    end do j_loop                                           
 
-write(0,*)'zap before rrtmg_lw play',play(1,:)
-write(0,*)'zap before rrtmg_lw plev',plev(1,:)
-write(0,*)'zap before rrtmg_lw tlay',tlay(1,:)
-write(0,*)'zap before rrtmg_lw tlev',tlev(1,:)
-write(0,*)'zap before rrtmg_lw tsfc',tsfc(1)
-write(0,*)'zap before rrtmg_lw h2ovmr',h2ovmr(1,1)
-write(0,*)'zap before rrtmg_lw o3vmr',o3vmr(1,1)
-write(0,*)'zap before rrtmg_lw co2vmr',co2vmr(1,1)
-write(0,*)'zap before rrtmg_lw ch4vmr',ch4vmr(1,1)
-write(0,*)'zap before rrtmg_lw n2ovmr',n2ovmr(1,1)
-write(0,*)'zap before rrtmg_lw o2vmr',o2vmr(1,1)
-write(0,*)'zap before rrtmg_lw cfc11vmr',cfc11vmr(1,1)
-write(0,*)'zap before rrtmg_lw cfc12vmr',cfc12vmr(1,1)
-write(0,*)'zap before rrtmg_lw cfc22vmr',cfc22vmr(1,1)
-write(0,*)'zap before rrtmg_lw ccl4vmr',ccl4vmr(1,1)
-write(0,*)'zap before rrtmg_lw emis',emis(1,1)
-write(0,*)'zap before rrtmg_lw cldfrac',cldfrac(1,1)
-write(0,*)'zap before rrtmg_lw ciwpth',ciwpth(1,1)
-write(0,*)'zap before rrtmg_lw clwpth',clwpth(1,1)
-write(0,*)'zap before rrtmg_lw cswpth',cswpth(1,1)
-write(0,*)'zap before rrtmg_lw rei',rei(1,1)
-write(0,*)'zap before rrtmg_lw rel',rel(1,1)
-write(0,*)'zap before rrtmg_lw res',res(1,1)
-write(0,*)'zap before rrtmg_lw taucld', taucld(1,:,1)
-write(0,*)'zap before rrtmg_lw tauaer', tauaer(1,1,:)
+write(0,*)'zap before rrtmg_lw play',play(IDEBUG,:)
+write(0,*)'zap before rrtmg_lw plev',plev(IDEBUG,:)
+write(0,*)'zap before rrtmg_lw tlay',tlay(IDEBUG,:)
+write(0,*)'zap before rrtmg_lw tlev',tlev(IDEBUG,:)
+write(0,*)'zap before rrtmg_lw tsfc',tsfc(IDEBUG)
+write(0,*)'zap before rrtmg_lw h2ovmr',h2ovmr(IDEBUG,1)
+write(0,*)'zap before rrtmg_lw o3vmr',o3vmr(IDEBUG,1)
+write(0,*)'zap before rrtmg_lw co2vmr',co2vmr(IDEBUG,1)
+write(0,*)'zap before rrtmg_lw ch4vmr',ch4vmr(IDEBUG,1)
+write(0,*)'zap before rrtmg_lw n2ovmr',n2ovmr(IDEBUG,1)
+write(0,*)'zap before rrtmg_lw o2vmr',o2vmr(IDEBUG,1)
+write(0,*)'zap before rrtmg_lw cfc11vmr',cfc11vmr(IDEBUG,1)
+write(0,*)'zap before rrtmg_lw cfc12vmr',cfc12vmr(IDEBUG,1)
+write(0,*)'zap before rrtmg_lw cfc22vmr',cfc22vmr(IDEBUG,1)
+write(0,*)'zap before rrtmg_lw ccl4vmr',ccl4vmr(IDEBUG,1)
+write(0,*)'zap before rrtmg_lw emis',emis(IDEBUG,1)
+write(0,*)'zap before rrtmg_lw cldfrac',cldfrac(IDEBUG,1)
+write(0,*)'zap before rrtmg_lw ciwpth',ciwpth(IDEBUG,1)
+write(0,*)'zap before rrtmg_lw clwpth',clwpth(IDEBUG,1)
+write(0,*)'zap before rrtmg_lw cswpth',cswpth(IDEBUG,1)
+write(0,*)'zap before rrtmg_lw rei',rei(IDEBUG,1)
+write(0,*)'zap before rrtmg_lw rel',rel(IDEBUG,1)
+write(0,*)'zap before rrtmg_lw res',res(IDEBUG,1)
+write(0,*)'zap before rrtmg_lw taucld', taucld(IDEBUG,:,1)
+write(0,*)'zap before rrtmg_lw tauaer', tauaer(IDEBUG,1,:)
 write(0,*)'zap before rrtmg_lw inflglw,iceflglw,liqflglw',inflglw,iceflglw,liqflglw
 !write(0,*)'zap before rrtmg_lw duflx_dt ',duflx_dt
 !write(0,*)'zap before rrtmg_lw duflxc_dt ',duflxc_dt
@@ -16585,7 +16589,7 @@ write(0,*)'zap before rrtmg_lw inflglw,iceflglw,liqflglw',inflglw,iceflglw,liqfl
              uflx    ,dflx    ,hr      ,uflxc   ,dflxc,  hrc, &
              duflx_dt,duflxc_dt)
 
-write(0,*)'zap uflx after rrtmg_lw ',uflx(1,1)
+write(0,*)'zap uflx after rrtmg_lw ',uflx(IDEBUG,1)
 
 ! Output downard surface flux, and outgoing longwave flux and cloud forcing 
 ! at the top of atmosphere (W/m2)

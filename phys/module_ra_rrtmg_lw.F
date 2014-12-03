@@ -1,5 +1,17 @@
 !MODULE module_ra_rrtmg_lw
 
+module debuggal
+logical :: deb=.false.
+contains
+subroutine setdebug
+deb=.true.
+end subroutine setdebug
+subroutine unsetdebug
+deb=.false.
+end subroutine unsetdebug
+end module debuggal
+
+
       module parkind
 !     implicit none
       save
@@ -2075,6 +2087,7 @@ contains
       use rrlw_con, only: grav
       use rrlw_wvn, only: ngb
       use rrlw_vsn
+use debuggal
 
       implicit none
 
@@ -2201,7 +2214,7 @@ contains
 !  Generate the stochastic subcolumns of cloud optical properties for the longwave;
       call generate_stochastic_clouds (ncol, nlay, nsubclw, icld, irng, pmid, cldfrac, clwp, ciwp, cswp, tauc, &
                                cldfmcl, clwpmcl, ciwpmcl, cswpmcl, taucmcl, permuteseed)
-write(0,*)'zap after gen stock', cldfmcl(1,1,:)
+if(deb)write(0,*)'zap after gen stock', cldfmcl(1,1,:)
 
       end subroutine mcica_subcol_lw
 
@@ -2265,6 +2278,7 @@ write(0,*)'zap after gen stock', cldfmcl(1,1,:)
   !   without cloud condensate or the opposite).
   !---------------------------------------------------------------------------------------------------------------
 
+use debuggal
       use mcica_random_numbers
 ! The Mersenne Twister random number engine
       use MersenneTwister, only: randomNumberSequence, &   
@@ -2373,7 +2387,7 @@ write(0,*)'zap after gen stock', cldfmcl(1,1,:)
             endif
          enddo
       enddo
-write(0,*)'irng ',irng,overlap
+if(deb)write(0,*)'irng ',irng,overlap
 
 ! ----- Create seed  --------
    
@@ -2385,7 +2399,7 @@ write(0,*)'irng ',irng,overlap
             if (pmid(i,1).lt.pmid(i,2)) then 
                stop 'MCICA_SUBCOL: KISSVEC SEED GENERATOR REQUIRES PMID FROM BOTTOM FOUR LAYERS.'
             endif 
-write(0,*)'pmid ',pmid(i,1:4)
+if(deb)write(0,*)'pmid ',pmid(i,1:4)
             seed1(i) = (pmid(i,1) - int(pmid(i,1)))  * 1000000000_im
             seed2(i) = (pmid(i,2) - int(pmid(i,2)))  * 1000000000_im
             seed3(i) = (pmid(i,3) - int(pmid(i,3)))  * 1000000000_im
@@ -2440,7 +2454,7 @@ write(0,*)'pmid ',pmid(i,1:4)
             do isubcol = 1,nsubcol
                do ilev = 1,nlay
                   call kissvec(seed1, seed2, seed3, seed4, rand_num) 
-if (isubcol.eq.1)write(0,"('+ ',4i20,e25.12)")seed1, seed2, seed3, seed4, rand_num
+if (deb.and.isubcol.eq.1)write(0,"('+ ',4i20,e25.12)")seed1, seed2, seed3, seed4, rand_num
                   CDF(isubcol,:,ilev) = rand_num
                enddo
             enddo
@@ -2529,8 +2543,8 @@ if (isubcol.eq.1)write(0,"('+ ',4i20,e25.12)")seed1, seed2, seed3, seed4, rand_n
 ! -- generate subcolumns for homogeneous clouds -----
       do ilev = 1,nlay
          iscloudy(:,:,ilev) = (CDF(:,:,ilev) >= 1._rb - spread(cldf(:,ilev), dim=1, nCopies=nsubcol) )
-write(0,*)'zap iscloudy ',iscloudy(1,1,ilev)
-write(0,*)'zap CDF ',CDF(1,1,ilev)
+if(deb)write(0,*)'zap iscloudy ',iscloudy(1,1,ilev)
+if(deb)write(0,*)'zap CDF ',CDF(1,1,ilev)
       enddo
 
 ! where the subcolumn is cloudy, the subcolumn cloud fraction is 1;
@@ -2654,6 +2668,7 @@ write(0,*)'zap CDF ',CDF(1,1,ilev)
                           absice0, absice1, absice2, absice3
       use rrlw_wvn, only: ngb
       use rrlw_vsn, only: hvrclc, hnamclc
+use debuggal
 
       implicit none
 
@@ -2663,7 +2678,6 @@ write(0,*)'zap CDF ',CDF(1,1,ilev)
       subroutine cldprmc(nlayers, inflag, iceflag, liqflag, cldfmc, &
                          ciwpmc, clwpmc, cswpmc, reicmc, relqmc, resnmc, ncbands, taucmc)
 ! ------------------------------------------------------------------------------
-
 ! Purpose:  Compute the cloud optical depth(s) for each cloudy layer.
 
 ! ------- Input -------
@@ -2798,15 +2812,15 @@ write(0,*)'zap CDF ',CDF(1,1,ilev)
 
         do ig = 1, ngptlw
           cwp = ciwpmc(ig,lay) + clwpmc(ig,lay) + cswpmc(ig,lay)
-if(ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc inflag ',11,inflag
-if(ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc cldfmc',11,cldfmc(1,11)
-if(ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc taucmc',11,taucmc(1,11)
-if(ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc ciwpmc',11,ciwpmc(1,11)
-if(ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc clwpmc',11,clwpmc(1,11)
-if(ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc cswpmc',11,cswpmc(1,11)
-if(ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc cldmin',11,cldmin
-if(ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc c1',11,cldfmc(ig,lay) .ge. cldmin
-if(ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc c2',11,taucmc(ig,lay) .ge. cldmin
+if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc inflag ',11,inflag
+if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc cldfmc',11,cldfmc(1,11)
+if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc taucmc',11,taucmc(1,11)
+if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc ciwpmc',11,ciwpmc(1,11)
+if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc clwpmc',11,clwpmc(1,11)
+if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc cswpmc',11,cswpmc(1,11)
+if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc cldmin',11,cldmin
+if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc c1',11,cldfmc(ig,lay) .ge. cldmin
+if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc c2',11,taucmc(ig,lay) .ge. cldmin
           if (cldfmc(ig,lay) .ge. cldmin .and. &
              (cwp .ge. cldmin .or. taucmc(ig,lay) .ge. cldmin)) then
 
@@ -2925,13 +2939,13 @@ if(ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc c2',11,taucmc(ig,lay) .ge. cldmi
                taucmc(ig,lay) = ciwpmc(ig,lay) * abscoice(ig) + &
                                 clwpmc(ig,lay) * abscoliq(ig) + &
                                 cswpmc(ig,lay) * abscosno(ig)
-if(ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc taucmc',11,taucmc(1,11)
-if(ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc ciwpmc',11,ciwpmc(1,11)
-if(ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc clwpmc',11,clwpmc(1,11)
-if(ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc cswpmc',11,cswpmc(1,11)
-if(ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscoice',11,abscoice(11)
-if(ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscoliq',11,abscoliq(11)
-if(ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscosno',11,abscosno(11)
+if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc taucmc',11,taucmc(1,11)
+if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc ciwpmc',11,ciwpmc(1,11)
+if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc clwpmc',11,clwpmc(1,11)
+if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc cswpmc',11,cswpmc(1,11)
+if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscoice',11,abscoice(11)
+if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscoliq',11,abscoliq(11)
+if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscosno',11,abscosno(11)
 
             endif
          endif
@@ -2960,6 +2974,7 @@ if(ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscosno',11,abscosno(11)
 !  --------------------------------------------------------------------------
 
 ! --------- Modules ----------
+use debuggal
 
       use parkind, only : im => kind_im, rb => kind_rb
       use parrrtm, only : mg, nbndlw, ngptlw
@@ -3186,7 +3201,6 @@ integer iplon
       totuclfl(0) = 0.0_rb
       totdclfl(0) = 0.0_rb
 
-write(0,*)'zap woowoo'
       do lay = 1, nlayers
          urad(lay) = 0.0_rb
          drad(lay) = 0.0_rb
@@ -3213,10 +3227,12 @@ write(0,*)'zap woowoo'
                abscld(lay,ig) = 0.0_rb
                efclfrac(lay,ig) = 0.0_rb
             endif
-if(ig.eq.1)write(0,*)'zap cbl: abscld ',lay,abscld(lay,ig)
-if(ig.eq.1)write(0,*)'zap cbl: secdiff',lay,secdiff(ib)
-if(ig.eq.1)write(0,*)'zap cbl: taucmc ',lay,taucmc(ig,lay)
-if(ig.eq.1)write(0,*)'zap cbl: bbutot ',lay,bbutot(lay)
+#if 0
+if(deb.and.ig.eq.1)write(0,*)'zap cbl: abscld ',lay,abscld(lay,ig)
+if(deb.and.ig.eq.1)write(0,*)'zap cbl: secdiff',lay,secdiff(ib)
+if(deb.and.ig.eq.1)write(0,*)'zap cbl: taucmc ',lay,taucmc(ig,lay)
+if(deb.and.ig.eq.1)write(0,*)'zap cbl: bbutot ',lay,bbutot(lay)
+#endif
          enddo
 
       enddo
@@ -3376,14 +3392,14 @@ if(ig.eq.1)write(0,*)'zap cbl: bbutot ',lay,bbutot(lay)
                radlu = radlu + (bbugas(lev)-radlu)*atrans(lev)
                urad(lev) = urad(lev) + radlu
             endif
-if(igc.eq.1.and.lev.eq.11)write(0,*)'zap urad ',igc,lev,urad(lev)
-if(igc.eq.1.and.lev.eq.11)write(0,*)'zap radlu ',igc,lev,radlu
-if(igc.eq.1.and.lev.eq.11)write(0,*)'zap icldlyr ',icldlyr(lev)
-if(igc.eq.1.and.lev.eq.11)write(0,*)'zap bbugas ',bbugas(lev)
-if(igc.eq.1.and.lev.eq.11)write(0,*)'zap bbutot ',bbutot(lev)
-if(igc.eq.1.and.lev.eq.11)write(0,*)'zap atrans ',atrans(lev)
-if(igc.eq.1.and.lev.eq.11)write(0,*)'zap cldfmc ',cldfmc(igc,lev)
-if(igc.eq.1.and.lev.eq.11)write(0,*)'zap elfrac ',efclfrac(lev,igc)
+if(deb.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap urad ',igc,lev,urad(lev)
+if(deb.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap radlu ',igc,lev,radlu
+if(deb.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap icldlyr ',icldlyr(lev)
+if(deb.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap bbugas ',bbugas(lev)
+if(deb.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap bbutot ',bbutot(lev)
+if(deb.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap atrans ',atrans(lev)
+if(deb.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap cldfmc ',cldfmc(igc,lev)
+if(deb.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap elfrac ',efclfrac(lev,igc)
 !  Set clear sky stream to total sky stream as long as all layers
 !  are clear (iclddn=0).  Streams must be calculated separately at 
 !  all layers when a cloud is present (ICLDDN=1), because surface 
@@ -10592,6 +10608,7 @@ if(igc.eq.1.and.lev.eq.11)write(0,*)'zap elfrac ',efclfrac(lev,igc)
 ! *        Patrick D. Brown, Ronald E. Farren, Luke Chen, Robert Bergstrom.  *
 ! *                                                                          *
 ! ****************************************************************************
+use debuggal
 
 ! -------- Modules --------
       use parkind, only : im => kind_im, rb => kind_rb
@@ -10977,7 +10994,7 @@ if(igc.eq.1.and.lev.eq.11)write(0,*)'zap elfrac ',efclfrac(lev,igc)
 !  Prepare atmospheric profile from GCM for use in RRTMG, and define
 !  other input parameters.  
 
-write(0,*)'zap bf inatm taucmc ',11,taucmc(1,11)
+if(deb)write(0,*)'zap bf inatm taucmc ',11,taucmc(1,11)
 
          call inatm (iplon, nlay, icld, iaer, &
               play, plev, tlay, tlev, tsfc, h2ovmr, &
@@ -10994,9 +11011,9 @@ write(0,*)'zap bf inatm taucmc ',11,taucmc(1,11)
 !  effective radius must be passed into cldprop.  Cloud fraction and cloud
 !  optical depth are transferred to rrtmg_lw arrays in cldprop.  
 
-write(0,*)'zap b4 cldprmc ',planklay(1,1)
-write(0,*)'zap bf cldprmc taucmc ',11,taucmc(1,11)
-write(0,*)'zap bf cldprmc resnmc ',11,resnmc(11)
+if(deb)write(0,*)'zap b4 cldprmc ',planklay(1,1)
+if(deb)write(0,*)'zap bf cldprmc taucmc ',11,taucmc(1,11)
+if(deb)write(0,*)'zap bf cldprmc resnmc ',11,resnmc(11)
 
          call cldprmc(nlayers, inflag, iceflag, liqflag, cldfmc, ciwpmc, &
                       clwpmc, cswpmc, reicmc, relqmc, resnmc, ncbands, taucmc)
@@ -11006,9 +11023,9 @@ write(0,*)'zap bf cldprmc resnmc ',11,resnmc(11)
 ! coefficients and indices needed to compute the optical depths
 ! by interpolating data from stored reference atmospheres. 
 
-write(0,*)'zap b4 setcoef planklayd',planklay(1,1)
-write(0,*)'zap bf setcoef taucmc ',11,taucmc(1,11)
-write(0,*)'zap bf setcoef resnmc ',11,resnmc(11)
+if(deb)write(0,*)'zap b4 setcoef planklayd',planklay(1,1)
+if(deb)write(0,*)'zap bf setcoef taucmc ',11,taucmc(1,11)
+if(deb)write(0,*)'zap bf setcoef resnmc ',11,resnmc(11)
 
          call setcoef(nlayers, istart, pavel, tavel, tz, tbound, semiss, &
                       coldry, wkl, wbrodl, &
@@ -11024,8 +11041,8 @@ write(0,*)'zap bf setcoef resnmc ',11,resnmc(11)
 !  Calculate the gaseous optical depths and Planck fractions for 
 !  each longwave spectral band.
 
-write(0,*)'zap b4 taumo planklayd',planklay(1,1)
-write(0,*)'zap bf taumo taucmc ',11,taucmc(1,11)
+if(deb)write(0,*)'zap b4 taumo planklayd',planklay(1,1)
+if(deb)write(0,*)'zap bf taumo taucmc ',11,taucmc(1,11)
 
 
          call taumol(nlayers, pavel, wx, coldry, &
@@ -11039,8 +11056,8 @@ write(0,*)'zap bf taumo taucmc ',11,taucmc(1,11)
                      minorfrac, scaleminor, scaleminorn2, indminor, &
                      fracs, taug)
 
-write(0,*)'zap aft taumo planklayd',planklay(1,1)
-write(0,*)'zap aft taumo taucmc ',11,taucmc(1,11)
+if(deb)write(0,*)'zap aft taumo planklayd',planklay(1,1)
+if(deb)write(0,*)'zap aft taumo taucmc ',11,taucmc(1,11)
 
 ! Combine gaseous and aerosol optical depths, if aerosol active
          if (iaer .eq. 0) then
@@ -11062,16 +11079,16 @@ write(0,*)'zap aft taumo taucmc ',11,taucmc(1,11)
 ! are present, then select routine based on cloud overlap assumption
 ! to be used.  Clear sky calculation is done simultaneously.
 ! For McICA, RTRNMC is called for clear and cloudy calculations.
-write(0,*)'zap bf rtrn pz ',pz(0),pz(1)
-write(0,*)'zap bf rtrn pwvcm ',pwvcm
-write(0,*)'zap bf rtrn semiss ',semiss(1)
-write(0,*)'zap bf rtrn planklay ',planklay(1,1)
-write(0,*)'zap bf rtrn planklev ',planklev(0:1,1)
-write(0,*)'zap bf rtrn fracs ',fracs(1,1)
-write(0,*)'zap bf rtrn taut ',taut(1,1)
-write(0,*)'zap bf rtrn cldfmc ',cldfmc(1,:)
-write(0,*)'zap bf rtrn taucmc ',taucmc(1,1)
-write(0,*)'zap b4 rrtnmcg planklayd',planklay(1,11)
+if(deb)write(0,*)'zap bf rtrn pz ',pz(0),pz(1)
+if(deb)write(0,*)'zap bf rtrn pwvcm ',pwvcm
+if(deb)write(0,*)'zap bf rtrn semiss ',semiss(1)
+if(deb)write(0,*)'zap bf rtrn planklay ',planklay(1,1)
+if(deb)write(0,*)'zap bf rtrn planklev ',planklev(0:1,1)
+if(deb)write(0,*)'zap bf rtrn fracs ',fracs(1,1)
+if(deb)write(0,*)'zap bf rtrn taut ',taut(1,1)
+if(deb)write(0,*)'zap bf rtrn cldfmc ',cldfmc(1,:)
+if(deb)write(0,*)'zap bf rtrn taucmc ',taucmc(1,1)
+if(deb)write(0,*)'zap b4 rrtnmcg planklayd',planklay(1,11)
 
          call rtrnmc(iplon,nlayers, istart, iend, iout, pz, semiss, ncbands, &
                      cldfmc, taucmc, planklay, planklev, plankbnd, &
@@ -11079,10 +11096,12 @@ write(0,*)'zap b4 rrtnmcg planklayd',planklay(1,11)
                      totuflux, totdflux, fnet, htr, &
                      totuclfl, totdclfl, fnetc, htrc )
 
-write(0,*)'zap aft rrtnmcg planklayd',planklay(1,11)
+if(deb)write(0,*)'zap aft rrtnmcg planklayd',planklay(1,11)
 
-!jm zap write(0,*)'zap aft rtrn totuflxd ',totuflux(1)
-!jm zap stop
+if (deb) then
+write(0,"('zap PAYDIRT aft rtrn totuflxd ',e25.12)")totuflux(1)
+stop
+endif
 
 !  Transfer up and down fluxes and heating rate to output arrays.
 !  Vertical indexing goes from bottom to top; reverse here for GCM if necessary.
@@ -11519,6 +11538,7 @@ CONTAINS
                                                                   )
 !------------------------------------------------------------------
 !ccc To use clWRF time varying trace gases
+use debuggal
    USE MODULE_RA_CLWRF_SUPPORT, ONLY : read_CAMgases
 
    IMPLICIT NONE
@@ -12583,7 +12603,9 @@ CONTAINS
       endif  ! aer_ra_feedback
 #endif
 
-if (i.eq.1.and.j.eq.1)then
+call unsetdebug
+if (i.eq.IDEBUG.and.j.eq.1)then
+call setdebug
 write(0,*)'zap before rrtmg_lw play',play(1,:)
 write(0,*)'zap before rrtmg_lw plev',plev(1,:)
 write(0,*)'zap before rrtmg_lw tlay',tlay(1,:)
@@ -12623,7 +12645,7 @@ endif
              tauaer  , &
              uflx    ,dflx    ,hr      ,uflxc   ,dflxc,  hrc)
 
-if (i.eq.1.and.j.eq.1) write(0,*)'zap uflx after rrtmg_lw ',uflx(1,1)
+if (i.eq.IDEBUG.and.j.eq.1) write(0,*)'zap uflx after rrtmg_lw ',uflx(1,1)
 
 
 ! Output downard surface flux, and outgoing longwave flux and cloud forcing 

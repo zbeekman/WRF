@@ -190,6 +190,7 @@ ARCHFLAGS       =    $(COREDEFS) -DIWORDSIZE=$(IWORDSIZE) -DDWORDSIZE=$(DWORDSIZ
                        \
                       -DNETCDF \
                        \
+-DIDEBUG=8 \
                        \
                        \
                        \
