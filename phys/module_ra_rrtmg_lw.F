@@ -2812,15 +2812,15 @@ use debuggal
 
         do ig = 1, ngptlw
           cwp = ciwpmc(ig,lay) + clwpmc(ig,lay) + cswpmc(ig,lay)
-if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc inflag ',11,inflag
-if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc cldfmc',11,cldfmc(1,11)
-if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc taucmc',11,taucmc(1,11)
-if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc ciwpmc',11,ciwpmc(1,11)
-if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc clwpmc',11,clwpmc(1,11)
-if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc cswpmc',11,cswpmc(1,11)
-if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc cldmin',11,cldmin
-if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc c1',11,cldfmc(ig,lay) .ge. cldmin
-if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc c2',11,taucmc(ig,lay) .ge. cldmin
+if(deb.and.ig.eq.1.and.lay.eq.KDEBUG_BASE)write(0,*)'top cldprmc inflag ',KDEBUG_BASE,inflag
+if(deb.and.ig.eq.1.and.lay.eq.KDEBUG_BASE)write(0,*)'top cldprmc cldfmc',KDEBUG_BASE,cldfmc(1,KDEBUG_BASE)
+if(deb.and.ig.eq.1.and.lay.eq.KDEBUG_BASE)write(0,*)'top cldprmc taucmc',KDEBUG_BASE,taucmc(1,KDEBUG_BASE)
+if(deb.and.ig.eq.1.and.lay.eq.KDEBUG_BASE)write(0,*)'top cldprmc ciwpmc',KDEBUG_BASE,ciwpmc(1,KDEBUG_BASE)
+if(deb.and.ig.eq.1.and.lay.eq.KDEBUG_BASE)write(0,*)'top cldprmc clwpmc',KDEBUG_BASE,clwpmc(1,KDEBUG_BASE)
+if(deb.and.ig.eq.1.and.lay.eq.KDEBUG_BASE)write(0,*)'top cldprmc cswpmc',KDEBUG_BASE,cswpmc(1,KDEBUG_BASE)
+if(deb.and.ig.eq.1.and.lay.eq.KDEBUG_BASE)write(0,*)'top cldprmc cldmin',KDEBUG_BASE,cldmin
+if(deb.and.ig.eq.1.and.lay.eq.KDEBUG_BASE)write(0,*)'top cldprmc c1',KDEBUG_BASE,cldfmc(ig,lay) .ge. cldmin
+if(deb.and.ig.eq.1.and.lay.eq.KDEBUG_BASE)write(0,*)'top cldprmc c2',KDEBUG_BASE,taucmc(ig,lay) .ge. cldmin
           if (cldfmc(ig,lay) .ge. cldmin .and. &
              (cwp .ge. cldmin .or. taucmc(ig,lay) .ge. cldmin)) then
 
@@ -2939,13 +2939,13 @@ if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'top cldprmc c2',11,taucmc(ig,lay) .g
                taucmc(ig,lay) = ciwpmc(ig,lay) * abscoice(ig) + &
                                 clwpmc(ig,lay) * abscoliq(ig) + &
                                 cswpmc(ig,lay) * abscosno(ig)
-if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc taucmc',11,taucmc(1,11)
-if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc ciwpmc',11,ciwpmc(1,11)
-if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc clwpmc',11,clwpmc(1,11)
-if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc cswpmc',11,cswpmc(1,11)
-if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscoice',11,abscoice(11)
-if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscoliq',11,abscoliq(11)
-if(deb.and.ig.eq.1.and.lay.eq.11)write(0,*)'in cldprmc abscosno',11,abscosno(11)
+if(deb.and.ig.eq.1.and.lay.eq.KDEBUG_BASE)write(0,*)'in cldprmc taucmc',KDEBUG_BASE,taucmc(1,KDEBUG_BASE)
+if(deb.and.ig.eq.1.and.lay.eq.KDEBUG_BASE)write(0,*)'in cldprmc ciwpmc',KDEBUG_BASE,ciwpmc(1,KDEBUG_BASE)
+if(deb.and.ig.eq.1.and.lay.eq.KDEBUG_BASE)write(0,*)'in cldprmc clwpmc',KDEBUG_BASE,clwpmc(1,KDEBUG_BASE)
+if(deb.and.ig.eq.1.and.lay.eq.KDEBUG_BASE)write(0,*)'in cldprmc cswpmc',KDEBUG_BASE,cswpmc(1,KDEBUG_BASE)
+if(deb.and.ig.eq.1.and.lay.eq.KDEBUG_BASE)write(0,*)'in cldprmc abscoice',KDEBUG_BASE,abscoice(KDEBUG_BASE)
+if(deb.and.ig.eq.1.and.lay.eq.KDEBUG_BASE)write(0,*)'in cldprmc abscoliq',KDEBUG_BASE,abscoliq(KDEBUG_BASE)
+if(deb.and.ig.eq.1.and.lay.eq.KDEBUG_BASE)write(0,*)'in cldprmc abscosno',KDEBUG_BASE,abscosno(KDEBUG_BASE)
 
             endif
          endif
@@ -3392,14 +3392,14 @@ if(deb.and.ig.eq.1)write(0,*)'zap cbl: bbutot ',lay,bbutot(lay)
                radlu = radlu + (bbugas(lev)-radlu)*atrans(lev)
                urad(lev) = urad(lev) + radlu
             endif
-if(deb.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap urad ',igc,lev,urad(lev)
-if(deb.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap radlu ',igc,lev,radlu
-if(deb.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap icldlyr ',icldlyr(lev)
-if(deb.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap bbugas ',bbugas(lev)
-if(deb.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap bbutot ',bbutot(lev)
-if(deb.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap atrans ',atrans(lev)
-if(deb.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap cldfmc ',cldfmc(igc,lev)
-if(deb.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap elfrac ',efclfrac(lev,igc)
+if(deb.and.igc.eq.1.and.lev.eq.KDEBUG_BASE)write(0,*)'zap urad ',igc,lev,urad(lev)
+if(deb.and.igc.eq.1.and.lev.eq.KDEBUG_BASE)write(0,*)'zap radlu ',igc,lev,radlu
+if(deb.and.igc.eq.1.and.lev.eq.KDEBUG_BASE)write(0,*)'zap icldlyr ',icldlyr(lev)
+if(deb.and.igc.eq.1.and.lev.eq.KDEBUG_BASE)write(0,*)'zap bbugas ',bbugas(lev)
+if(deb.and.igc.eq.1.and.lev.eq.KDEBUG_BASE)write(0,*)'zap bbutot ',bbutot(lev)
+if(deb.and.igc.eq.1.and.lev.eq.KDEBUG_BASE)write(0,*)'zap atrans ',atrans(lev)
+if(deb.and.igc.eq.1.and.lev.eq.KDEBUG_BASE)write(0,*)'zap cldfmc ',cldfmc(igc,lev)
+if(deb.and.igc.eq.1.and.lev.eq.KDEBUG_BASE)write(0,*)'zap elfrac ',efclfrac(lev,igc)
 !  Set clear sky stream to total sky stream as long as all layers
 !  are clear (iclddn=0).  Streams must be calculated separately at 
 !  all layers when a cloud is present (ICLDDN=1), because surface 
@@ -3488,6 +3488,8 @@ if(deb.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap elfrac ',efclfrac(lev,igc)
 
 ! ------- Modules -------
 
+
+use debuggal
       use parkind, only : im => kind_im, rb => kind_rb
       use parrrtm, only : nbndlw, mg, maxxsec, mxmol
       use rrlw_wvn, only: totplnk, totplk16
@@ -3665,6 +3667,11 @@ if(deb.and.igc.eq.1.and.lev.eq.11)write(0,*)'zap elfrac ',efclfrac(lev,igc)
             dbdtlev = totplnk(indlev+1,iband) - totplnk(indlev,iband)
             dbdtlay = totplnk(indlay+1,iband) - totplnk(indlay,iband)
             planklay(lay,iband) = totplnk(indlay,iband) + tlayfrac * dbdtlay
+if(deb.and.iband.eq.1.and.lay.eq.KDEBUG_BASE)write(0,*)'zap setcoef 010 totplnkd ',totplnk(indlay,iband)
+if(deb.and.iband.eq.1.and.lay.eq.KDEBUG_BASE)write(0,*)'zap setcoef 010 tlayfrac ',tlayfrac
+if(deb.and.iband.eq.1.and.lay.eq.KDEBUG_BASE)write(0,*)'zap setcoef 010 dbdtlay ',dbdtlay
+if(deb.and.iband.eq.1.and.lay.eq.KDEBUG_BASE)write(0,*)'zap setcoef 010 planklayd ',planklay(lay,iband)
+
             planklev(lay,iband) = totplnk(indlev,iband) + tlevfrac * dbdtlev
          enddo
 
@@ -10994,7 +11001,7 @@ use debuggal
 !  Prepare atmospheric profile from GCM for use in RRTMG, and define
 !  other input parameters.  
 
-if(deb)write(0,*)'zap bf inatm taucmc ',11,taucmc(1,11)
+if(deb)write(0,*)'zap bf inatm taucmc ',KDEBUG_BASE,taucmc(1,KDEBUG_BASE)
 
          call inatm (iplon, nlay, icld, iaer, &
               play, plev, tlay, tlev, tsfc, h2ovmr, &
@@ -11011,9 +11018,9 @@ if(deb)write(0,*)'zap bf inatm taucmc ',11,taucmc(1,11)
 !  effective radius must be passed into cldprop.  Cloud fraction and cloud
 !  optical depth are transferred to rrtmg_lw arrays in cldprop.  
 
-if(deb)write(0,*)'zap b4 cldprmc ',planklay(1,1)
-if(deb)write(0,*)'zap bf cldprmc taucmc ',11,taucmc(1,11)
-if(deb)write(0,*)'zap bf cldprmc resnmc ',11,resnmc(11)
+if(deb)write(0,*)'zap b4 cldprmc planklayd',planklay(1,KDEBUG_BASE)
+if(deb)write(0,*)'zap bf cldprmc taucmc ',KDEBUG_BASE,taucmc(1,KDEBUG_BASE)
+if(deb)write(0,*)'zap bf cldprmc resnmc ',KDEBUG_BASE,resnmc(KDEBUG_BASE)
 
          call cldprmc(nlayers, inflag, iceflag, liqflag, cldfmc, ciwpmc, &
                       clwpmc, cswpmc, reicmc, relqmc, resnmc, ncbands, taucmc)
@@ -11023,9 +11030,9 @@ if(deb)write(0,*)'zap bf cldprmc resnmc ',11,resnmc(11)
 ! coefficients and indices needed to compute the optical depths
 ! by interpolating data from stored reference atmospheres. 
 
-if(deb)write(0,*)'zap b4 setcoef planklayd',planklay(1,1)
-if(deb)write(0,*)'zap bf setcoef taucmc ',11,taucmc(1,11)
-if(deb)write(0,*)'zap bf setcoef resnmc ',11,resnmc(11)
+if(deb)write(0,*)'zap b4 setcoef planklayd',planklay(1,KDEBUG_BASE)
+if(deb)write(0,*)'zap bf setcoef taucmc ',KDEBUG_BASE,taucmc(1,KDEBUG_BASE)
+if(deb)write(0,*)'zap bf setcoef resnmc ',KDEBUG_BASE,resnmc(KDEBUG_BASE)
 
          call setcoef(nlayers, istart, pavel, tavel, tz, tbound, semiss, &
                       coldry, wkl, wbrodl, &
@@ -11041,8 +11048,8 @@ if(deb)write(0,*)'zap bf setcoef resnmc ',11,resnmc(11)
 !  Calculate the gaseous optical depths and Planck fractions for 
 !  each longwave spectral band.
 
-if(deb)write(0,*)'zap b4 taumo planklayd',planklay(1,1)
-if(deb)write(0,*)'zap bf taumo taucmc ',11,taucmc(1,11)
+if(deb)write(0,*)'zap b4 taumo planklayd',planklay(1,KDEBUG_BASE)
+if(deb)write(0,*)'zap bf taumo taucmc ',KDEBUG_BASE,taucmc(1,KDEBUG_BASE)
 
 
          call taumol(nlayers, pavel, wx, coldry, &
@@ -11056,8 +11063,8 @@ if(deb)write(0,*)'zap bf taumo taucmc ',11,taucmc(1,11)
                      minorfrac, scaleminor, scaleminorn2, indminor, &
                      fracs, taug)
 
-if(deb)write(0,*)'zap aft taumo planklayd',planklay(1,1)
-if(deb)write(0,*)'zap aft taumo taucmc ',11,taucmc(1,11)
+if(deb)write(0,*)'zap aft taumo planklayd',planklay(1,KDEBUG_BASE)
+if(deb)write(0,*)'zap aft taumo taucmc ',KDEBUG_BASE,taucmc(1,KDEBUG_BASE)
 
 ! Combine gaseous and aerosol optical depths, if aerosol active
          if (iaer .eq. 0) then
@@ -11082,13 +11089,12 @@ if(deb)write(0,*)'zap aft taumo taucmc ',11,taucmc(1,11)
 if(deb)write(0,*)'zap bf rtrn pz ',pz(0),pz(1)
 if(deb)write(0,*)'zap bf rtrn pwvcm ',pwvcm
 if(deb)write(0,*)'zap bf rtrn semiss ',semiss(1)
-if(deb)write(0,*)'zap bf rtrn planklay ',planklay(1,1)
 if(deb)write(0,*)'zap bf rtrn planklev ',planklev(0:1,1)
 if(deb)write(0,*)'zap bf rtrn fracs ',fracs(1,1)
 if(deb)write(0,*)'zap bf rtrn taut ',taut(1,1)
 if(deb)write(0,*)'zap bf rtrn cldfmc ',cldfmc(1,:)
 if(deb)write(0,*)'zap bf rtrn taucmc ',taucmc(1,1)
-if(deb)write(0,*)'zap b4 rrtnmcg planklayd',planklay(1,11)
+if(deb)write(0,*)'zap b4 rrtnmcg planklayd',planklay(1,KDEBUG_BASE)
 
          call rtrnmc(iplon,nlayers, istart, iend, iout, pz, semiss, ncbands, &
                      cldfmc, taucmc, planklay, planklev, plankbnd, &
@@ -11096,11 +11102,13 @@ if(deb)write(0,*)'zap b4 rrtnmcg planklayd',planklay(1,11)
                      totuflux, totdflux, fnet, htr, &
                      totuclfl, totdclfl, fnetc, htrc )
 
-if(deb)write(0,*)'zap aft rrtnmcg planklayd',planklay(1,11)
+if(deb)write(0,*)'zap aft rtrnmcg planklayd',planklay(1,KDEBUG_BASE)
 
 if (deb) then
-write(0,"('zap PAYDIRT aft rtrn totuflxd ',e25.12)")totuflux(1)
+write(0,"('zap PAYDIRT aft rtrn totuflxd ',e25.12)")totuflux(0:nlayers)
+#if 0
 stop
+#endif
 endif
 
 !  Transfer up and down fluxes and heating rate to output arrays.
@@ -11914,6 +11922,7 @@ use debuggal
      i_loop: do i = its,ite
 
          do k=kts,kte+1
+if (IDEBUG_BASE.eq.i.and.JDEBUG_BASE.eq.j)write(0,*)'p8w',k,p8w(i,k,j)
             Pw1D(K) = p8w(I,K,J)/100.
             Tw1D(K) = t8w(I,K,J)
          enddo
@@ -11945,6 +11954,7 @@ use debuggal
          DO K=kts,kte
             TTEN1D(K)=0.
             T1D(K)=T3D(I,K,J)
+if (IDEBUG_BASE.eq.i.and.JDEBUG_BASE.eq.j)write(0,*)'p3d',k,p3d(i,k,j)
             P1D(K)=P3D(I,K,J)/100.
             DZ1D(K)=dz8w(I,K,J)
          ENDDO
@@ -12131,11 +12141,13 @@ use debuggal
 ! Water vapor and ozone are converted from mmr to vmr. 
 ! Pressures are in units of mb here. 
          plev(ncol,1) = pw1d(1)
+if (i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)write(0,*)'plev ',1,'         ',plev(ncol,1)
          tlev(ncol,1) = tw1d(1)
          tsfc(ncol) = tsk(i,j)
          do k = kts, kte
             play(ncol,k) = p1d(k)
             plev(ncol,k+1) = pw1d(k+1)
+if (i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)write(0,*)'play plev ',k,play(ncol,k),plev(ncol,k+1)
             pdel(ncol,k) = plev(ncol,k) - plev(ncol,k+1)
             tlay(ncol,k) = t1d(k)
             tlev(ncol,k+1) = tw1d(k+1)
@@ -12604,32 +12616,32 @@ use debuggal
 #endif
 
 call unsetdebug
-if (i.eq.IDEBUG.and.j.eq.1)then
+if (i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)then
 call setdebug
 write(0,*)'zap before rrtmg_lw play',play(1,:)
 write(0,*)'zap before rrtmg_lw plev',plev(1,:)
 write(0,*)'zap before rrtmg_lw tlay',tlay(1,:)
 write(0,*)'zap before rrtmg_lw tlev',tlev(1,:)
 write(0,*)'zap before rrtmg_lw tsfc',tsfc(1)
-write(0,*)'zap before rrtmg_lw h2ovmr',h2ovmr(1,1)
-write(0,*)'zap before rrtmg_lw o3vmr',o3vmr(1,1)
-write(0,*)'zap before rrtmg_lw co2vmr',co2vmr(1,1)
-write(0,*)'zap before rrtmg_lw ch4vmr',ch4vmr(1,1)
-write(0,*)'zap before rrtmg_lw n2ovmr',n2ovmr(1,1)
-write(0,*)'zap before rrtmg_lw o2vmr',o2vmr(1,1)
-write(0,*)'zap before rrtmg_lw cfc11vmr',cfc11vmr(1,1)
-write(0,*)'zap before rrtmg_lw cfc12vmr',cfc12vmr(1,1)
-write(0,*)'zap before rrtmg_lw cfc22vmr',cfc22vmr(1,1)
-write(0,*)'zap before rrtmg_lw ccl4vmr',ccl4vmr(1,1)
-write(0,*)'zap before rrtmg_lw emis',emis(1,1)
-write(0,*)'zap before rrtmg_lw cldfrac',cldfrac(1,1)
-write(0,*)'zap before rrtmg_lw ciwpth',ciwpth(1,1)
-write(0,*)'zap before rrtmg_lw clwpth',clwpth(1,1)
-write(0,*)'zap before rrtmg_lw cswpth',cswpth(1,1)
-write(0,*)'zap before rrtmg_lw rei',reicmcl(1,1)
-write(0,*)'zap before rrtmg_lw rel',relqmcl(1,1)
-write(0,*)'zap before rrtmg_lw res',resnmcl(1,1)
-write(0,*)'zap before rrtmg_lw taucld', taucld(:,1,1)
+write(0,*)'zap before rrtmg_lw h2ovmr',h2ovmr(1,KDEBUG_BASE)
+write(0,*)'zap before rrtmg_lw o3vmr',o3vmr(1,KDEBUG_BASE)
+write(0,*)'zap before rrtmg_lw co2vmr',co2vmr(1,KDEBUG_BASE)
+write(0,*)'zap before rrtmg_lw ch4vmr',ch4vmr(1,KDEBUG_BASE)
+write(0,*)'zap before rrtmg_lw n2ovmr',n2ovmr(1,KDEBUG_BASE)
+write(0,*)'zap before rrtmg_lw o2vmr',o2vmr(1,KDEBUG_BASE)
+write(0,*)'zap before rrtmg_lw cfc11vmr',cfc11vmr(1,KDEBUG_BASE)
+write(0,*)'zap before rrtmg_lw cfc12vmr',cfc12vmr(1,KDEBUG_BASE)
+write(0,*)'zap before rrtmg_lw cfc22vmr',cfc22vmr(1,KDEBUG_BASE)
+write(0,*)'zap before rrtmg_lw ccl4vmr',ccl4vmr(1,KDEBUG_BASE)
+write(0,*)'zap before rrtmg_lw emis',emis(1,KDEBUG_BASE)
+write(0,*)'zap before rrtmg_lw cldfrac',cldfrac(1,KDEBUG_BASE)
+write(0,*)'zap before rrtmg_lw ciwpth',ciwpth(1,KDEBUG_BASE)
+write(0,*)'zap before rrtmg_lw clwpth',clwpth(1,KDEBUG_BASE)
+write(0,*)'zap before rrtmg_lw cswpth',cswpth(1,KDEBUG_BASE)
+write(0,*)'zap before rrtmg_lw rei',reicmcl(1,KDEBUG_BASE)
+write(0,*)'zap before rrtmg_lw rel',relqmcl(1,KDEBUG_BASE)
+write(0,*)'zap before rrtmg_lw res',resnmcl(1,KDEBUG_BASE)
+write(0,*)'zap before rrtmg_lw taucld', taucld(:,1,KDEBUG_BASE)
 write(0,*)'zap before rrtmg_lw tauaer', tauaer(1,1,:)
 write(0,*)'zap before rrtmg_lw inflglw,iceflglw,liqflglw',inflglw,iceflglw,liqflglw
 endif
@@ -12645,7 +12657,7 @@ endif
              tauaer  , &
              uflx    ,dflx    ,hr      ,uflxc   ,dflxc,  hrc)
 
-if (i.eq.IDEBUG.and.j.eq.1) write(0,*)'zap uflx after rrtmg_lw ',uflx(1,1)
+if (i.eq.IDEBUG.and.j.eq.1) write(0,*)'zap uflx after rrtmg_lw ',uflx(1,KDEBUG_BASE)
 
 
 ! Output downard surface flux, and outgoing longwave flux and cloud forcing 
@@ -12656,6 +12668,9 @@ if (i.eq.IDEBUG.and.j.eq.1) write(0,*)'zap uflx after rrtmg_lw ',uflx(1,1)
 ! Steven Cavallo: Changed OLR to be valid at the top of atmosphere instead 
 ! of top of model.  Dec 2010.
          olr(i,j) = uflx(1,nlayers+1)
+if (i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE) then
+write(0,*)'OLR ',i,j,olr(i,j)
+endif
          lwcf(i,j) = uflxc(1,nlayers+1) - uflx(1,nlayers+1)
 
          if (present(lwupt)) then 

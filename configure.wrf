@@ -161,7 +161,7 @@ ESMF_LDFLAG     =       $(CPLUSPLUSLIB)
 FCOPTIM         =       #-O3
 FCREDUCEDOPT	=       $(FCOPTIM)
 FCNOOPT		=       -O0 -fno-inline -fno-ip
-FCDEBUG         =       -O0 # -g $(FCNOOPT) -traceback # -fpe0 -check all -ftrapuv -unroll0 -u
+FCDEBUG         =       -O0  -g #$(FCNOOPT) -traceback # -fpe0 -check all -ftrapuv -unroll0 -u
 FORMAT_FIXED    =       -FI
 FORMAT_FREE     =       -FR
 FCSUFFIX        =
@@ -190,7 +190,10 @@ ARCHFLAGS       =    $(COREDEFS) -DIWORDSIZE=$(IWORDSIZE) -DDWORDSIZE=$(DWORDSIZ
                        \
                       -DNETCDF \
                        \
--DIDEBUG=8 \
+-DIDEBUG=11 \
+-DIDEBUG_BASE=11 \
+-DJDEBUG_BASE=2 \
+-DKDEBUG_BASE=55 \
                        \
                        \
                        \
