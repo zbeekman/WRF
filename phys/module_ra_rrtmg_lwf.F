@@ -3608,6 +3608,7 @@ contains
 #endif
                        play, cldfrac, ciwp, clwp, cswp, tauc, ngbd, cldfmcl, &
                        ciwpmcl, clwpmcl, cswpmcl, taucmcl)
+use debuggal
 
 ! ----- Input -----
 ! Control
@@ -3707,11 +3708,11 @@ contains
 ! Convert pressures from mb to Pa
 
 #ifdef  _CUDA
-! JM Not sure we woudn't want to handle the CUDA path the same way as the #else part, but ask AER first
+! JM Not sure we wouldn't want to handle the CUDA path the same way as the #else part, but ask AER first
       pmid(:ncol,:nlay) = play(:ncol,:nlay)*1.e2
 #else
       pmidd(1:ncol,:nlay) = play(colstart:colstart+ncol-1,:nlay)*1.e2
-write(0,*)' in mcica pmid ',pmidd(IDEBUG,1:4)
+if(deb)write(0,*)' in mcica pmid ',pmidd(IDEBUG,1:4)
 #endif
 
 ! For GSFC, not needed for WRF
@@ -3835,6 +3836,7 @@ write(0,*)' in mcica pmid ',pmidd(IDEBUG,1:4)
 ! For GSFC, not needed for WRF
 !                                 tauc_stoch, ih, zm) 
                                  tauc_stoch) 
+use debuggal
 !-------------------------------------------------------------------------------------------------
 
   !----------------------------------------------------------------------------------------------------------------
@@ -3977,6 +3979,7 @@ write(0,*)'irng ',icld
      !   print *, "ppp ", iplon, gp
       if (iplon <= ncol .and. gp <= nsubcol) then
 #else
+write(0,*)'zap in generate_stoch ncol, nsubcol ',ncol,nsubcol
       do iplon = 1, ncol
       do gp = 1, nsubcol
 #endif
@@ -3990,8 +3993,10 @@ write(0,*)'irng ',icld
    
 ! For kissvec, create a seed that depends on the state of the columns. Maybe not the best way, but it works.  
 ! Must use pmid from bottom four layers. 
-if(iplon.eq.IDEBUG.and.gp.eq.1)write(0,*)'pmid ',pmidd(iplon,1:4)
-if(iplon.eq.IDEBUG.and.gp.eq.1)write(0,*)'shape pmid ',shape(pmidd)
+if(deb.and.iplon.eq.IDEBUG.and.gp.eq.1)write(0,*)'pmid ',pmidd(iplon,1:4)
+if(deb.and.iplon.eq.IDEBUG.and.gp.eq.1)write(0,*)'shape pmid ',shape(pmidd)
+if(deb.and.iplon.eq.IDEBUG.and.gp.eq.1)write(0,*)'shape taucd ',shape(taucd)
+if(deb.and.iplon.eq.IDEBUG.and.gp.eq.1)write(0,*)'shape clwpd ',shape(clwpd)
       
 #if 0
            seed1 = (pmidd(iplon,1) - int(pmidd(iplon,1)))  * 1000000000 + (gp) * 11 
@@ -4029,7 +4034,7 @@ if(iplon.eq.IDEBUG.and.gp.eq.1)write(0,*)'shape pmid ',shape(pmidd)
 
            do ilev = 1,nlay
              call kissvec(seed1, seed2, seed3, seed4, rand_num)
-if(iplon.eq.IDEBUG.and.gp.eq.1)write(0,"('+ ',4i20,e25.12)")seed1, seed2, seed3, seed4, rand_num
+if(deb.and.iplon.eq.IDEBUG.and.gp.eq.1)write(0,"('+ ',4i20,e25.12)")seed1, seed2, seed3, seed4, rand_num
              CDF(ilev) = rand_num
            end do
           
@@ -4108,8 +4113,8 @@ if(iplon.eq.IDEBUG.and.gp.eq.1)write(0,"('+ ',4i20,e25.12)")seed1, seed2, seed3,
       do ilev = 1,nlay
         cfs = cldfracd(iplon, ilev)
          !  do gp = 1, nsubcol
-if(iplon.eq.IDEBUG.and.gp.eq.1)write(0,*)'zap iscloudy ',CDF(ilev) >=1.  - cfs
-if(iplon.eq.IDEBUG.and.gp.eq.1)write(0,*)'zap CDF ',CDF(ilev)
+if(deb.and.iplon.eq.IDEBUG.and.gp.eq.1)write(0,*)'zap iscloudy ',ilev,CDF(ilev) >=1.  - cfs
+if(deb.and.iplon.eq.IDEBUG.and.gp.eq.1)write(0,*)'zap CDF ',ilev,CDF(ilev)
                if (CDF(ilev) >=1.  - cfs) then
                   cld_stoch(iplon,gp,ilev) = 1. 
                   clwp_stoch(iplon,gp,ilev) = clwpd(iplon,ilev)
@@ -15054,20 +15059,34 @@ write(0,*)'ZAP shape ',shape(h2ovmr)
       dimGrid = dim3( (ncol+255)/256,(140+1)/2, 1)
       dimBlock = dim3( 256,2,1)
 #endif
+do l=1,nlayers
+if(deb)write(0,*)'zap b4 gen stock cldfrac',l, cldfracq(IDEBUG,l)
+if(deb)write(0,*)'zap b4 gen stock tauc ',l,tauc(IDEBUG,1,l)
+if(deb)write(0,*)'zap b4 gen stock clw ',l,clwp(IDEBUG,l)
+if(deb)write(0,*)'zap b4 gen stock ciw ',l,ciwp(IDEBUG,l)
+if(deb)write(0,*)'zap b4 gen stock csw ',l,cswp(IDEBUG,l)
+enddo
 
-write(0,*)'calling genstoch pmid ',pmid(IDEBUG,1:4)
-write(0,*)'calling genstoch shape pmid ',shape(pmid)
+if(deb)write(0,*)'calling genstoch pmid ',pmid(IDEBUG,1:4)
+if(deb)write(0,*)'calling genstoch shape pmid ',shape(pmid)
+if(deb)write(0,*)'calling genstoch shape tauc ',shape(tauc)
+if(deb)write(0,*)'calling genstoch shape clwp ',shape(clwp)
+if(deb)write(0,*)'calling genstoch shape clwpq ',shape(clwpq)
       if (icld > 0) then
          call generate_stochastic_cloudsg _gpuchv (colstart,pncold, nlayd, icldd, ngbd, &
 #ifndef _CUDA
-                               pmid,cldfracq,clwp,ciwp,cswp,tauc,              &
+                               pmid,cldfracq,clwpq,ciwpq,cswpq,taucq,              &
 #endif
 ! For GSFC, not needed for WRF
 !                               ngbd, cldfmcd, clwpmcd, ciwpmcd, taucmcd, 1, zmd)
                                cldfmcd, clwpmcd, ciwpmcd, cswpmcd, taucmcd)
       end if
-write(0,*)'zap after gen stock', cldfmcd(IDEBUG,1,:)
-write(0,*)'zap after gen stock taucmc ',11,taucmcd(IDEBUG,1,KDEBUG_BASE)
+
+do l=1,nlayers
+if(deb)write(0,*)'zap after gen stock cldfmc',l, cldfmcd(IDEBUG,1,l)
+if(deb)write(0,*)'zap after gen stock taucmc ',l,taucmcd(IDEBUG,1,l)
+if(deb)write(0,*)'zap after gen stock clwpmc ',l,clwpmcd(IDEBUG,1,l)
+enddo
 
 
 !jm write(0,*)__FILE__,__LINE__,omp_get_thread_num()
@@ -16451,6 +16470,7 @@ if (i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)write(0,*)'play,plev ',icol,k,play(ico
 ! Set cloud physical property arrays
             do k = kts, kte
                clwpth(icol,k) = cliqwp(icol,k)
+if(i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)write(0,*)'zap cliqwp ',k,cliqwp(icol,k)
                ciwpth(icol,k) = cicewp(icol,k)
                rel(icol,k) = reliq(icol,k)
                rei(icol,k) = reice(icol,k)

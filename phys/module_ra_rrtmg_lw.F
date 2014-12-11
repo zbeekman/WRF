@@ -2210,11 +2210,23 @@ use debuggal
 !         qi(ilev) = (ciwp(ilev) * grav) / (pdel(ilev) * 1000._rb)
 !         ql(ilev) = (clwp(ilev) * grav) / (pdel(ilev) * 1000._rb)
 !      enddo
+do ilev=1,nlay
+if(deb)write(0,*)'zap b4 gen stock cldfrac',ilev, cldfrac(1,ilev)
+if(deb)write(0,*)'zap b4 gen stock tauc',ilev, tauc(1,1,ilev)
+if(deb)write(0,*)'zap b4 gen stock clwp',ilev, clwp(1,ilev)
+if(deb)write(0,*)'zap b4 gen stock ciwp',ilev, ciwp(1,ilev)
+if(deb)write(0,*)'zap b4 gen stock cswp',ilev, cswp(1,ilev)
+enddo
 
 !  Generate the stochastic subcolumns of cloud optical properties for the longwave;
       call generate_stochastic_clouds (ncol, nlay, nsubclw, icld, irng, pmid, cldfrac, clwp, ciwp, cswp, tauc, &
                                cldfmcl, clwpmcl, ciwpmcl, cswpmcl, taucmcl, permuteseed)
-if(deb)write(0,*)'zap after gen stock', cldfmcl(1,1,:)
+do ilev=1,nlay
+if(deb)write(0,*)'zap after gen stock cldfmc',ilev, cldfmcl(1,1,ilev)
+if(deb)write(0,*)'zap after gen stock taucmc',ilev, taucmcl(1,1,ilev)
+if(deb)write(0,*)'zap after gen stock clwpmc',ilev, clwpmcl(1,1,ilev)
+enddo
+
 
       end subroutine mcica_subcol_lw
 
@@ -2543,8 +2555,8 @@ if (deb.and.isubcol.eq.1)write(0,"('+ ',4i20,e25.12)")seed1, seed2, seed3, seed4
 ! -- generate subcolumns for homogeneous clouds -----
       do ilev = 1,nlay
          iscloudy(:,:,ilev) = (CDF(:,:,ilev) >= 1._rb - spread(cldf(:,ilev), dim=1, nCopies=nsubcol) )
-if(deb)write(0,*)'zap iscloudy ',iscloudy(1,1,ilev)
-if(deb)write(0,*)'zap CDF ',CDF(1,1,ilev)
+if(deb)write(0,*)'zap iscloudy ',ilev,iscloudy(1,1,ilev)
+if(deb)write(0,*)'zap CDF ',ilev,CDF(1,1,ilev)
       enddo
 
 ! where the subcolumn is cloudy, the subcolumn cloud fraction is 1;
@@ -11956,6 +11968,11 @@ use debuggal
 ! longitude loop
      i_loop: do i = its,ite
 
+call unsetdebug
+if (i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)then
+  call setdebug
+endif
+
          do k=kts,kte+1
 if (IDEBUG_BASE.eq.i.and.JDEBUG_BASE.eq.j.and.k.eq.KDEBUG_BASE)write(0,*)'p8w',k,p8w(i,k,j)
             Pw1D(K) = p8w(I,K,J)/100.
@@ -12512,6 +12529,7 @@ if (i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)write(0,*)'play plev ',k,play(ncol,k),
 ! Set cloud physical property arrays
             do k = kts, kte
                clwpth(ncol,k) = cliqwp(ncol,k)
+if(deb)write(0,*)'zap cliqwp ',k,cliqwp(ncol,k)
                ciwpth(ncol,k) = cicewp(ncol,k)
                rel(ncol,k) = reliq(ncol,k)
                rei(ncol,k) = reice(ncol,k)
@@ -12650,9 +12668,9 @@ if (i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)write(0,*)'play plev ',k,play(ncol,k),
       endif  ! aer_ra_feedback
 #endif
 
-call unsetdebug
+!call unsetdebug
 if (i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)then
-call setdebug
+!call setdebug
 write(0,*)'zap before rrtmg_lw play',play(1,:)
 write(0,*)'zap before rrtmg_lw plev',plev(1,:)
 write(0,*)'zap before rrtmg_lw tlay',tlay(1,:)
