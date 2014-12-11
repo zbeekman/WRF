@@ -161,7 +161,7 @@ ESMF_LDFLAG     =       $(CPLUSPLUSLIB)
 FCOPTIM         =       #-O3
 FCREDUCEDOPT	=       $(FCOPTIM)
 FCNOOPT		=       -O0 -fno-inline -fno-ip
-FCDEBUG         =       -O0  -g #$(FCNOOPT) -traceback # -fpe0 -check all -ftrapuv -unroll0 -u
+FCDEBUG         =       -O0  -g -traceback #$(FCNOOPT) -traceback # -fpe0 -check all -ftrapuv -unroll0 -u
 FORMAT_FIXED    =       -FI
 FORMAT_FREE     =       -FR
 FCSUFFIX        =
@@ -193,7 +193,7 @@ ARCHFLAGS       =    $(COREDEFS) -DIWORDSIZE=$(IWORDSIZE) -DDWORDSIZE=$(DWORDSIZ
 -DIDEBUG=11 \
 -DIDEBUG_BASE=11 \
 -DJDEBUG_BASE=2 \
--DKDEBUG_BASE=55 \
+-DKDEBUG_BASE=8 \
                        \
                        \
                        \
@@ -241,14 +241,14 @@ CC_TOOLS_CFLAGS = -DNMM_CORE=$(WRF_NMM_CORE)
                       $(WRF_SRC_ROOT_DIR)/frame/pack_utils.o 
 
  LIB_EXTERNAL    = \
-                      -L$(WRF_SRC_ROOT_DIR)/external/io_netcdf -lwrfio_nf -L/glade/apps/opt/netcdf/4.3.0/intel/13.0.1/lib -lnetcdff -lnetcdf    
+                      $(WRF_SRC_ROOT_DIR)/external/io_netcdf/libwrfio_nf.a -L/home/michalak/netcdf-4.1.3-intel/lib -lnetcdff -lnetcdf    
 
 LIB             =    $(LIB_BUNDLED) $(LIB_EXTERNAL) $(LIB_LOCAL) $(LIB_WRF_HYDRO)
 LDFLAGS         =    $(OMP) $(FCFLAGS) $(LDFLAGS_LOCAL) 
 ENVCOMPDEFS     =    
 WRF_CHEM	=	0 
 CPPFLAGS        =    $(ARCHFLAGS) $(ENVCOMPDEFS) -I$(LIBINCLUDE) $(TRADFLAG) 
-NETCDFPATH      =    /glade/apps/opt/netcdf/4.3.0/intel/13.0.1
+NETCDFPATH      =    /home/michalak/netcdf-4.1.3-intel
 PNETCDFPATH     =    
 
 bundled:  io_only 
