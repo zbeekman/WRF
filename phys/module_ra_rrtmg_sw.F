@@ -1682,6 +1682,7 @@
             endif
          enddo
       enddo
+write(0,*)'changeSeed ',changeSeed
 
 ! ----- Create seed  --------
    
@@ -8049,6 +8050,7 @@
              selffac, selffrac, indself, forfac, forfrac, indfor, &
              pbbfd, pbbfu, pbbcd, pbbcu, puvfd, puvcd, pnifd, pnicd, &
              pbbfddir, pbbcddir, puvfddir, puvcddir, pnifddir, pnicddir)
+use debuggal
 ! ---------------------------------------------------------------------------
 !
 ! Purpose: Contains spectral loop to compute the shortwave radiative fluxes, 
@@ -8484,9 +8486,31 @@
             enddo    
 
 ! Clear sky reflectivities
+
+do ikl=1,klev+1
+if (iw.eq.1) then
+if(deb)write(0,*)'before clearsky reftra_sw lrtchkclr ',ikl,iw,lrtchkclr(ikl)
+if(deb)write(0,*)'before clearsky reftra_sw zgcc ',ikl,iw,zgcc(ikl)
+if(deb)write(0,*)'before clearsky reftra_sw prmu0 ',ikl,iw,prmu0
+if(deb)write(0,*)'before clearsky reftra_sw ztauc ',ikl,iw,ztauc(ikl)
+if(deb)write(0,*)'before clearsky reftra_sw zomcc ',ikl,iw,zomcc(ikl)
+endif
+enddo
+
             call reftra_sw (klev, &
                             lrtchkclr, zgcc, prmu0, ztauc, zomcc, &
                             zrefc, zrefdc, ztrac, ztradc)
+
+do ikl=1,klev+1
+if (iw.eq.1) then
+if(deb)write(0,*)'before cloudy reftra_sw lrtchkcld ',ikl,iw,lrtchkcld(ikl)
+if(deb)write(0,*)'before cloudy reftra_sw pcldfmc ',ikl,iw,pcldfmc(ikl,iw)
+if(deb)write(0,*)'before cloudy reftra_sw zgcc ',ikl,iw,zgco(ikl)
+if(deb)write(0,*)'before cloudy reftra_sw prmu0 ',ikl,iw,prmu0
+if(deb)write(0,*)'before cloudy reftra_sw ztauc ',ikl,iw,ztauo(ikl)
+if(deb)write(0,*)'before cloudy reftra_sw zomcc ',ikl,iw,zomco(ikl)
+endif
+enddo
 
 ! Total sky reflectivities      
             call reftra_sw (klev, &
@@ -8545,17 +8569,66 @@
                  
 ! Vertical quadrature for clear-sky fluxes
 
+do ikl=1,klev+1
+if (iw.eq.1) then
+if(deb)write(0,*)'before clearsky vrtqdr_sw zrefo ',ikl,iw,zrefc(ikl)
+if(deb)write(0,*)'before clearsky vrtqdr_sw zrefd ',ikl,iw,zrefdc(ikl)
+if(deb)write(0,*)'before clearsky vrtqdr_sw ztra ',ikl,iw,ztrac(ikl)
+if(deb)write(0,*)'before clearsky vrtqdr_sw ztrad ',ikl,iw,ztradc(ikl)
+if(deb)write(0,*)'before clearsky vrtqdr_sw zdbt ',ikl,iw,zdbtc(ikl)
+if(deb)write(0,*)'before clearsky vrtqdr_sw zrdnd ',ikl,iw,zrdndc(ikl)
+if(deb)write(0,*)'before clearsky vrtqdr_sw zrup ',ikl,iw,zrupc(ikl)
+if(deb)write(0,*)'before clearsky vrtqdr_sw zrupd ',ikl,iw,zrupdc(ikl)
+if(deb)write(0,*)'before clearsky vrtqdr_sw ztdbt ',ikl,iw,ztdbtc(ikl)
+endif
+enddo
+
+!if(deb)write(0,*)'before clearsky vrtqdr_sw zrefo ',iw,zref(KDEBUG)
             call vrtqdr_sw(klev, iw, &
                            zrefc, zrefdc, ztrac, ztradc, &
                            zdbtc, zrdndc, zrupc, zrupdc, ztdbtc, &
                            zcd, zcu)
+!if(deb)write(0,*)'after clearsky vrtqdr_sw zfd ',iw,zcd(klev+2-KDEBUG,iw)
+!if(deb)write(0,*)'after clearsky vrtqdr_sw zfu ',iw,zcu(klev+2-KDEBUG,iw)
+
+do ikl=1,klev+1
+if (iw.eq.1) then
+!if(deb)write(0,*)'after clearsky vrtqdr_sw zfd ',ikl,iw,zfd(klev+2-ikl,iw)
+!if(deb)write(0,*)'after clearsky vrtqdr_sw zfu ',ikl,iw,zfu(klev+2-ikl,iw)
+if(deb)write(0,*)'after clearsky vrtqdr_sw zfd ',ikl,iw,zcd(ikl,iw)
+if(deb)write(0,*)'after clearsky vrtqdr_sw zfu ',ikl,iw,zcu(ikl,iw)
+endif
+enddo
+
       
 ! Vertical quadrature for cloudy fluxes
+
+do ikl=1,klev+1
+if (iw.eq.1) then
+if(deb)write(0,*)'before cloudy vrtqdr_sw zrefo ',ikl,iw,zref(ikl)
+if(deb)write(0,*)'before cloudy vrtqdr_sw zrefd ',ikl,iw,zrefd(ikl)
+if(deb)write(0,*)'before cloudy vrtqdr_sw ztra ',ikl,iw,ztra(ikl)
+if(deb)write(0,*)'before cloudy vrtqdr_sw ztrad ',ikl,iw,ztrad(ikl)
+if(deb)write(0,*)'before cloudy vrtqdr_sw zdbt ',ikl,iw,zdbt(ikl)
+if(deb)write(0,*)'before cloudy vrtqdr_sw zrdnd ',ikl,iw,zrdnd(ikl)
+if(deb)write(0,*)'before cloudy vrtqdr_sw zrup ',ikl,iw,zrup(ikl)
+if(deb)write(0,*)'before cloudy vrtqdr_sw zrupd ',ikl,iw,zrupd(ikl)
+if(deb)write(0,*)'before cloudy vrtqdr_sw ztdbt ',ikl,iw,ztdbt(ikl)
+endif
+enddo
 
             call vrtqdr_sw(klev, iw, &
                            zref, zrefd, ztra, ztrad, &
                            zdbt, zrdnd, zrup, zrupd, ztdbt, &
                            zfd, zfu)
+do ikl=1,klev+1
+if (iw.eq.1) then
+!if(deb)write(0,*)'after cloudy vrtqdr_sw zfd ',ikl,iw,zfd(klev+2-ikl,iw)
+!if(deb)write(0,*)'after cloudy vrtqdr_sw zfu ',ikl,iw,zfu(klev+2-ikl,iw)
+if(deb)write(0,*)'after cloudy vrtqdr_sw zfd ',ikl,iw,zfd(ikl,iw)
+if(deb)write(0,*)'after cloudy vrtqdr_sw zfu ',ikl,iw,zfu(ikl,iw)
+endif
+enddo
 
 ! Upwelling and downwelling fluxes at levels
 !   Two-stream calculations go from top to bottom; 
@@ -8702,7 +8775,7 @@
              swdkdir,swdkdif                                & ! jararias, 2013/08/10
                                                                 )
 
-
+use debuggal
 ! ------- Description -------
 
 ! This program is the driver for RRTMG_SW, the AER SW radiation model for 
@@ -9094,7 +9167,7 @@
 !      real(kind=rb) :: znicu(nlay+2)         ! temporary clear sky upward near-IR shortwave flux (w/m2)
 !      real(kind=rb) :: znicd(nlay+2)         ! temporary clear sky downward near-IR shortwave flux (w/m2)
 
-
+integer imol
 ! Initializations
 
       iout = 0 !BSINGH(PNNL) initializing iout to zero(Might be wrong!) as this variable is never initialized but used in spcvmc_sw
@@ -9170,6 +9243,10 @@
 !  effective radius must be passed in cldprop.  Cloud fraction and cloud
 !  optical properties are transferred to rrtmg_sw arrays in cldprop.  
 
+do i=1,nlayers+1
+if(deb)write(0,*)'before cldprmc_sw cldfmc ',i,1,cldfmc(i,1)
+enddo
+
          call cldprmc_sw(nlayers, inflag, iceflag, liqflag, cldfmc, &
                          ciwpmc, clwpmc, cswpmc, reicmc, relqmc, resnmc, &
                          taormc, taucmc, ssacmc, asmcmc, fsfcmc)
@@ -9178,6 +9255,43 @@
 ! Calculate coefficients for the temperature and pressure dependence of the 
 ! molecular absorption coefficients by interpolating data from stored
 ! reference atmospheres.
+
+do i=1,nlayers+1
+if(deb)write(0,*)'before setcoef_sw cldfmc ',i,1,cldfmc(i,1)
+if(deb.and.i<=nlayers)write(0,*)'before setcoef_sw play  ',i,1,play(1,i)
+if(deb.and.i<=nlayers)write(0,*)'before setcoef_sw tlay  ',i,1,tlay(1,i)
+if(deb)write(0,*)'before setcoef_sw plev  ',i,1,plev(1,i)
+if(deb)write(0,*)'before setcoef_sw tlev  ',i,1,tlev(1,i)
+if(deb)write(0,*)'before setcoef_sw tsfc  ',i,1,tsfc
+if(deb.and.i<=nlayers)write(0,*)'before setcoef_sw coldry  ',i,1,coldry(i) 
+do imol = 1, nmol
+if(deb.and.i<=nlayers)write(0,*)'before setcoef_sw wkl  ',i,imol,wkl(imol,i)
+enddo
+if(deb)write(0,*)'before setcoef_sw laytrop  ',i,1,laytrop
+if(deb)write(0,*)'before setcoef_sw layswtch  ',i,1,layswtch
+if(deb)write(0,*)'before setcoef_sw laylow  ',i,1,laylow
+!if(deb)write(0,*)'before setcoef_sw jp  ',i,1,jp(i)
+!if(deb)write(0,*)'before setcoef_sw jt  ',i,1,jt(i)
+!if(deb)write(0,*)'before setcoef_sw jt1  ',i,1,jt1(i)
+!if(deb)write(0,*)'before setcoef_sw co2mult  ',i,1,co2mult (i)
+!if(deb)write(0,*)'before setcoef_sw colch4  ',i,1,colch4 (i)
+!if(deb)write(0,*)'before setcoef_sw colco2  ',i,1,colco2 (i)
+!if(deb)write(0,*)'before setcoef_sw colh2o  ',i,1,colh2o (i)
+!if(deb)write(0,*)'before setcoef_sw colmol  ',i,1,colmol (i)
+!if(deb)write(0,*)'before setcoef_sw coln2o  ',i,1,coln2o (i)
+!if(deb)write(0,*)'before setcoef_sw colo2  ',i,1,colo2 (i)
+!if(deb)write(0,*)'before setcoef_sw colo3  ',i,1,colo3 (i)
+!if(deb)write(0,*)'before setcoef_sw fac00  ',i,1,fac00 (i)
+!if(deb)write(0,*)'before setcoef_sw fac01  ',i,1,fac01 (i)
+!if(deb)write(0,*)'before setcoef_sw fac10  ',i,1,fac10 (i)
+!if(deb)write(0,*)'before setcoef_sw fac11  ',i,1,fac11 (i)
+!if(deb)write(0,*)'before setcoef_sw selffac  ',i,1,selffac (i)
+!if(deb)write(0,*)'before setcoef_sw selffrac  ',i,1,selffrac (i)
+!if(deb)write(0,*)'before setcoef_sw indself  ',i,1,indself (i)
+!if(deb)write(0,*)'before setcoef_sw forfac  ',i,1,forfac (i)
+!if(deb)write(0,*)'before setcoef_sw forfrac  ',i,1,forfrac (i)
+!if(deb)write(0,*)'before setcoef_sw indfor  ',i,1,indfor (i)
+enddo
 
          call setcoef_sw(nlayers, pavel, tavel, pz, tz, tbound, coldry, wkl, &
                          laytrop, layswtch, laylow, jp, jt, jt1, &
@@ -9304,6 +9418,11 @@
             znicddir(i) = 0._rb
             znifddir(i) = 0._rb
          enddo
+
+do i=1,nlayers+1
+if(deb)write(0,*)'before spcvmc_sw cldfmc ',i,1,zcldfmc(i,1)
+enddo
+
 
          call spcvmc_sw &
              (nlayers, istart, iend, icpr, iout, &
@@ -9818,6 +9937,7 @@ CONTAINS
                        xcoszen,julian                             & ! jararias 2013/08
                                                                   )
 !------------------------------------------------------------------
+use debuggal
    IMPLICIT NONE
 !------------------------------------------------------------------
    LOGICAL, INTENT(IN )      ::        warm_rain
@@ -10185,6 +10305,8 @@ CONTAINS
 
 ! longitude loop
      i_loop: do i = its,ite
+call unsetdebug
+if (i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)call setdebug
 !
 ! Do shortwave by default, deactivate below if sun below horizon
          dorrsw = .true.
@@ -10761,6 +10883,8 @@ CONTAINS
                        taucmcl, ssacmcl, asmcmcl, fsfcmcl)
 
 
+
+
 !--------------------------------------------------------------------------
 ! Aerosol optical depth, single scattering albedo and asymmetry parameter -czhao 03/2010
 !--------------------------------------------------------------------------
@@ -10908,6 +11032,61 @@ CONTAINS
 
 ! Call RRTMG shortwave radiation model
 
+if (i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE) then
+!write(0,*)'zap b4 rrtmg_sw ncol ',ncol
+write(0,*)'zap b4 rrtmg_sw nlay ',nlay
+write(0,*)'zap b4 rrtmg_sw icld ',icld
+write(0,*)'zap b4 rrtmg_sw play ',play
+write(0,*)'zap b4 rrtmg_sw plev ',plev
+write(0,*)'zap b4 rrtmg_sw tlay ',tlay
+write(0,*)'zap b4 rrtmg_sw tsfc ',tsfc
+write(0,*)'zap b4 rrtmg_sw h2ovmr ',h2ovmr
+write(0,*)'zap b4 rrtmg_sw o3vmr ',o3vmr
+write(0,*)'zap b4 rrtmg_sw co2vmr ',co2vmr
+write(0,*)'zap b4 rrtmg_sw ch4vmr ',ch4vmr
+write(0,*)'zap b4 rrtmg_sw n2ovmr ',n2ovmr
+write(0,*)'zap b4 rrtmg_sw o2vmr ',o2vmr
+write(0,*)'zap b4 rrtmg_sw asdir ',asdir
+write(0,*)'zap b4 rrtmg_sw asdif ',asdif
+write(0,*)'zap b4 rrtmg_sw aldir ',aldir
+write(0,*)'zap b4 rrtmg_sw aldif ',aldif
+write(0,*)'zap b4 rrtmg_sw coszen ',coszen
+write(0,*)'zap b4 rrtmg_sw adjes ',adjes
+write(0,*)'zap b4 rrtmg_sw dyofyr ',dyofyr
+write(0,*)'zap b4 rrtmg_sw scon ',scon
+write(0,*)'zap b4 rrtmg_sw inflgsw ',inflgsw
+write(0,*)'zap b4 rrtmg_sw iceflgsw ',iceflgsw
+write(0,*)'zap b4 rrtmg_sw liqflgsw ',liqflgsw
+!write(0,*)'zap b4 rrtmg_sw cldfmcl ',cldfmcl
+!write(0,*)'zap b4 rrtmg_sw taucmcl ',taucmcl
+!write(0,*)'zap b4 rrtmg_sw ssacmcl ',ssacmcl
+!write(0,*)'zap b4 rrtmg_sw asmcmcl ',asmcmcl
+!write(0,*)'zap b4 rrtmg_sw fsfcmcl ',fsfcmcl
+!write(0,*)'zap b4 rrtmg_sw ciwpmcl ',ciwpmcl
+!write(0,*)'zap b4 rrtmg_sw clwpmcl ',clwpmcl
+!write(0,*)'zap b4 rrtmg_sw cswpmcl ',cswpmcl
+!write(0,*)'zap b4 rrtmg_sw reicmcl ',reicmcl
+!write(0,*)'zap b4 rrtmg_sw relqmcl ',relqmcl
+!write(0,*)'zap b4 rrtmg_sw resnmcl ',resnmcl
+write(0,*)'zap b4 rrtmg_sw tauaer ',tauaer
+write(0,*)'zap b4 rrtmg_sw ssaaer ',ssaaer
+write(0,*)'zap b4 rrtmg_sw asmaer ',asmaer
+write(0,*)'zap b4 rrtmg_sw ecaer ',ecaer
+write(0,*)'zap b4 rrtmg_sw swuflx ',swuflx
+write(0,*)'zap b4 rrtmg_sw swdflx ',swdflx 
+!write(0,*)'zap b4 rrtmg_sw swhr ',swhr
+write(0,*)'zap b4 rrtmg_sw swuflxc ',swuflxc
+write(0,*)'zap b4 rrtmg_sw swdflxc ',swdflxc
+!write(0,*)'zap b4 rrtmg_sw swhrc ',swhrc
+write(0,*)'zap b4 rrtmg_sw aer_opt ',aer_opt
+!write(0,*)'zap b4 rrtmg_sw sibvisdir ',sibvisdir
+!write(0,*)'zap b4 rrtmg_sw sibvisdif ',sibvisdif
+!write(0,*)'zap b4 rrtmg_sw sibnirdir ',sibnirdir
+!write(0,*)'zap b4 rrtmg_sw sibnirdif ',sibnirdif
+write(0,*)'zap b4 rrtmg_sw swdkdir ',swdkdir
+write(0,*)'zap b4 rrtmg_sw swdkdif ',swdkdif
+endif
+
          call rrtmg_sw &
             (ncol    ,nlay    ,icld    , &
              play    ,plev    ,tlay    ,tlev    ,tsfc   , &
@@ -10925,6 +11104,60 @@ CONTAINS
              swdkdir, swdkdif                      &  ! jararias, 2012/08/10
                                                    )
 
+if (i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE) then
+write(0,*)'zap aft rrtmg_sw ncol ',ncol
+write(0,*)'zap aft rrtmg_sw nlay ',nlay
+write(0,*)'zap aft rrtmg_sw icld ',icld
+write(0,*)'zap aft rrtmg_sw play ',play
+write(0,*)'zap aft rrtmg_sw plev ',plev
+write(0,*)'zap aft rrtmg_sw tlay ',tlay
+write(0,*)'zap aft rrtmg_sw tsfc ',tsfc
+write(0,*)'zap aft rrtmg_sw h2ovmr ',h2ovmr
+write(0,*)'zap aft rrtmg_sw o3vmr ',o3vmr
+write(0,*)'zap aft rrtmg_sw co2vmr ',co2vmr
+write(0,*)'zap aft rrtmg_sw ch4vmr ',ch4vmr
+write(0,*)'zap aft rrtmg_sw n2ovmr ',n2ovmr
+write(0,*)'zap aft rrtmg_sw o2vmr ',o2vmr
+write(0,*)'zap aft rrtmg_sw asdir ',asdir
+write(0,*)'zap aft rrtmg_sw asdif ',asdif
+write(0,*)'zap aft rrtmg_sw aldir ',aldir
+write(0,*)'zap aft rrtmg_sw aldif ',aldif
+write(0,*)'zap aft rrtmg_sw coszen ',coszen
+write(0,*)'zap aft rrtmg_sw adjes ',adjes
+write(0,*)'zap aft rrtmg_sw dyofyr ',dyofyr
+write(0,*)'zap aft rrtmg_sw scon ',scon
+write(0,*)'zap aft rrtmg_sw inflgsw ',inflgsw
+write(0,*)'zap aft rrtmg_sw iceflgsw ',iceflgsw
+write(0,*)'zap aft rrtmg_sw liqflgsw ',liqflgsw
+!write(0,*)'zap aft rrtmg_sw cldfmcl ',cldfmcl
+!write(0,*)'zap aft rrtmg_sw taucmcl ',taucmcl
+!write(0,*)'zap aft rrtmg_sw ssacmcl ',ssacmcl
+!write(0,*)'zap aft rrtmg_sw asmcmcl ',asmcmcl
+!write(0,*)'zap aft rrtmg_sw fsfcmcl ',fsfcmcl
+!write(0,*)'zap aft rrtmg_sw ciwpmcl ',ciwpmcl
+!write(0,*)'zap aft rrtmg_sw clwpmcl ',clwpmcl
+!write(0,*)'zap aft rrtmg_sw cswpmcl ',cswpmcl
+!write(0,*)'zap aft rrtmg_sw reicmcl ',reicmcl
+!write(0,*)'zap aft rrtmg_sw relqmcl ',relqmcl
+!write(0,*)'zap aft rrtmg_sw resnmcl ',resnmcl
+write(0,*)'zap aft rrtmg_sw tauaer ',tauaer
+write(0,*)'zap aft rrtmg_sw ssaaer ',ssaaer
+write(0,*)'zap aft rrtmg_sw asmaer ',asmaer
+write(0,*)'zap aft rrtmg_sw ecaer ',ecaer
+write(0,*)'zap aft rrtmg_sw swuflx ',swuflx
+write(0,*)'zap aft rrtmg_sw swdflx ',swdflx 
+write(0,*)'zap aft rrtmg_sw swhr ',swhr
+write(0,*)'zap aft rrtmg_sw swuflxc ',swuflxc
+write(0,*)'zap aft rrtmg_sw swdflxc ',swdflxc
+write(0,*)'zap aft rrtmg_sw swhrc ',swhrc
+write(0,*)'zap aft rrtmg_sw aer_opt ',aer_opt
+write(0,*)'zap aft rrtmg_sw sibvisdir ',sibvisdir
+write(0,*)'zap aft rrtmg_sw sibvisdif ',sibvisdif
+write(0,*)'zap aft rrtmg_sw sibnirdir ',sibnirdir
+write(0,*)'zap aft rrtmg_sw sibnirdif ',sibnirdif
+write(0,*)'zap aft rrtmg_sw swdkdir ',swdkdir
+write(0,*)'zap aft rrtmg_sw swdkdif ',swdkdif
+endif
 
 ! Output net absorbed shortwave surface flux and shortwave cloud forcing
 ! at the top of atmosphere (W/m2)

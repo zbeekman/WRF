@@ -1514,6 +1514,11 @@
 !      real     :: rind1, rind2
 !      integer  :: ind1, ind2
 !      real     :: zcw
+#ifndef _CUDA
+      integer :: m, k
+! inline function
+      m(k, n) = ieor (k, ishft (k, n) )
+#endif
 !------------------------------------------------------------------------------------------ 
 
 ! Check that irng is in bounds; if not, set to default
@@ -1555,6 +1560,7 @@
 
 ! Maximum-Random cloud overlap
       if (icld==2) then
+#ifdef _CUDA
 !$acc kernels 
            
             do ilev = 1,nlay
@@ -1587,6 +1593,74 @@
             end do
             
 !$acc end kernels      
+#else
+!jm set up to match the ra_sw_physics=4 random number generator '
+
+!! For kissvec, create a seed that depends on the state of the columns. Maybe not the best way, but it works.
+!! Must use pmid from bottom four layers.
+!         do i=1,ncol
+!            if (pmid(i,1).lt.pmid(i,2)) then
+!               stop 'MCICA_SUBCOL: KISSVEC SEED GENERATOR REQUIRES PMID FROM BOTTOM FOUR LAYERS.'
+!            endif
+!            seed1(i) = (pmid(i,1) - int(pmid(i,1)))  * 1000000000_im
+!            seed2(i) = (pmid(i,2) - int(pmid(i,2)))  * 1000000000_im
+!            seed3(i) = (pmid(i,3) - int(pmid(i,3)))  * 1000000000_im
+!            seed4(i) = (pmid(i,4) - int(pmid(i,4)))  * 1000000000_im
+!         enddo
+!         do i=1,changeSeed  (note, changeSeed is 1)
+!            call kissvec(seed1, seed2, seed3, seed4, rand_num)
+!         enddo
+!
+!         if (irng.eq.0) then
+!            do isubcol = 1,nsubcol
+!               do ilev = 1,nlay
+!                  call kissvec(seed1, seed2, seed3, seed4, rand_num)
+!                  CDF(isubcol,:,ilev) = rand_num
+!               enddo
+!            enddo
+!! inline function
+!      m(k, n) = ieor (k, ishft (k, n) )
+!
+!      sz = size(ran_arr)
+!      do i = 1, sz
+!         seed1(i) = 69069_im * seed1(i) + 1327217885_im
+!         seed2(i) = m (m (m (seed2(i), 13_im), - 17_im), 5_im)
+!         seed3(i) = 18000_im * iand (seed3(i), 65535_im) + ishft (seed3(i), - 16_im)
+!         seed4(i) = 30903_im * iand (seed4(i), 65535_im) + ishft (seed4(i), - 16_im)
+!         kiss = seed1(i) + seed2(i) + ishft (seed3(i), 16_im) + seed4(i)
+!         ran_arr(i) = kiss*2.328306e-10_rb + 0.5_rb
+!      end do
+
+           do ilev = 1,nlay
+               do i = 1, ncol
+                  seed1 = (play(i,1) - int(play(i,1)))  * 100000000  !jm
+                  seed2 = (play(i,2) - int(play(i,2)))  * 100000000  !jm
+                  seed3 = (play(i,3) - int(play(i,3)))  * 100000000  !jm
+                  seed4 = (play(i,4) - int(play(i,4)))  * 100000000
+                  do isubcol = 1,nsubcol
+                     seed1 = 69069  * seed1 + 132721785
+!jm                     seed2 = 11002  * iand (seed2, 65535 ) + ishft (seed2, - 16 )
+                     seed2 = m (m (m (seed2, 13), - 17), 5)
+                     seed3 = 18000  * iand (seed3, 65535 ) + ishft (seed3, - 16 )
+                     seed4 = 30903  * iand (seed4, 65535 ) + ishft (seed4, - 16 )
+                     kiss = seed1 + seed2 + ishft (seed3, 16 ) + seed4
+                     CDF(i,ilev,isubcol) = kiss*2.328306e-10  + 0.5
+                  end do
+               end do
+            end do
+
+            do ilev = 2,nlay
+               do i = 1, ncol
+                  do isubcol = 1,nsubcol
+                     if (CDF(i,ilev-1,isubcol) > 1.  - cld(i, ilev-1)) then
+                        CDF(i,ilev,isubcol) = CDF(i,ilev-1,isubcol)
+                     else
+                        CDF(i,ilev,isubcol) = CDF(i,ilev,isubcol) * (1. - cld(i, ilev-1))
+                     end if
+                  end do
+               end do
+            end do
+#endif
       endif
 
 ! Maximum cloud overlap
@@ -8382,6 +8456,7 @@ end subroutine setcoef_sw
              pbbfddir, pbbcddir, puvfddir, puvcddir, pnifddir, pnicddir, &
              zgco,zomco,zrdnd,zref,zrefo,zrefd,zrefdo,ztauo,zdbt,ztdbt, &
              ztra,ztrao,ztrad,ztrado,zfd,zfu,ztaug, ztaur, zsflxzen)
+use debuggal
 ! For GSFC, not needed for WRF
 !             znirr,znirf,zparr,zparf,zuvrr,zuvrf)
 ! ---------------------------------------------------------------------------
@@ -8668,6 +8743,17 @@ end subroutine setcoef_sw
       end do
 !$acc end kernels               
 
+!do iw = 1, 112
+do ikl =1,klev+1
+iw = 1
+if(deb)write(0,*)'before clearsky reftra_sw lrtchkclr ',ikl,iw,pcldfmc(IDEBUG,iw,ikl)<=repclc
+if(deb)write(0,*)'before clearsky reftra_sw zgcc ',ikl,iw,zgco(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before clearsky reftra_sw prmu0 ',ikl,iw,prmu0(IDEBUG)
+if(deb)write(0,*)'before clearsky reftra_sw ztauc ',ikl,iw,ztauo(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before clearsky reftra_sw zomcc ',ikl,iw,zomco(IDEBUG,iw,ikl)
+enddo
+
+
     
 ! Clear sky reflectivities
       call reftra_sw (ncol, nlayers, &
@@ -8722,12 +8808,32 @@ end subroutine setcoef_sw
       end do
 !$acc end kernels  
 
+
+!do iw = 1, 112
+do ikl =1,klev+1
+iw = 1
+if(deb)write(0,*)'before clearsky vrtqdr_sw zrefo ',ikl,iw,zrefo(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before clearsky vrtqdr_sw zrefd ',ikl,iw,zrefdo(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before clearsky vrtqdr_sw ztra ',ikl,iw,ztrao(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before clearsky vrtqdr_sw ztrad ',ikl,iw,ztrado(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before clearsky vrtqdr_sw zdbt ',ikl,iw,zdbt(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before clearsky vrtqdr_sw zrdnd ',ikl,iw,zrdnd(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before clearsky vrtqdr_sw zrup ',ikl,iw,zgco(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before clearsky vrtqdr_sw zrupd ',ikl,iw,zomco(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before clearsky vrtqdr_sw ztdbt ',ikl,iw,ztdbt(IDEBUG,iw,ikl)
+enddo
+
             call vrtqdr_sw(ncol, klev, &
                            zrefo  , zrefdo  , ztrao  , ztrado  , &
                            zdbt , zrdnd  , zgco, zomco, ztdbt  , &
                            zfd , zfu  , ztra)
-            
-            
+
+do ikl =1,klev+1
+!if(deb)write(0,*)'after clearsky vrtqdr_sw zfd ',ikl,iw,zfd(IDEBUG,iw,klev+2-KDEBUG)
+!if(deb)write(0,*)'after clearsky vrtqdr_sw zfu ',ikl,iw,zfu(IDEBUG,iw,klev+2-KDEBUG)
+if(deb)write(0,*)'after clearsky vrtqdr_sw zfd ',ikl,iw,zfd(IDEBUG,iw,ikl)
+if(deb)write(0,*)'after clearsky vrtqdr_sw zfu ',ikl,iw,zfu(IDEBUG,iw,ikl)
+enddo
             
 ! perform band integration for clear cases      
 !$acc kernels loop
@@ -8816,6 +8922,16 @@ end subroutine setcoef_sw
         end do
 !$acc end kernels
 
+!do iw = 1, 112
+do ikl =1,klev+1
+iw = 1
+if(deb)write(0,*)'before cloudy reftra_sw lrtchkcld ',ikl,iw,pcldfmc(IDEBUG,iw,ikl)>repclc
+if(deb)write(0,*)'before cloudy reftra_sw pcldfmc ',ikl,iw,pcldfmc(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before cloudy reftra_sw zgcc ',ikl,iw,zgco(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before cloudy reftra_sw prmu0 ',ikl,iw,prmu0(IDEBUG)
+if(deb)write(0,*)'before cloudy reftra_sw ztauc ',ikl,iw,ztauo(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before cloudy reftra_sw zomcc ',ikl,iw,zomco(IDEBUG,iw,ikl)
+enddo
             
 ! Total sky reflectivities      
         call reftra_sw (ncol, nlayers, &
@@ -8888,10 +9004,31 @@ end subroutine setcoef_sw
 
 ! Vertical quadrature for cloudy fluxes
 
+
+!do iw = 1, 112
+do ikl =1,klev+1
+iw = 1
+if(deb)write(0,*)'before cloudy vrtqdr_sw zrefo ',ikl,iw,zref(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before cloudy vrtqdr_sw zrefd ',ikl,iw,zrefd(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before cloudy vrtqdr_sw ztra ',ikl,iw,ztra(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before cloudy vrtqdr_sw ztrad ',ikl,iw,ztrad(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before cloudy vrtqdr_sw zdbt ',ikl,iw,zdbt(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before cloudy vrtqdr_sw zrdnd ',ikl,iw,zrdnd(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before cloudy vrtqdr_sw zrup ',ikl,iw,zgco(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before cloudy vrtqdr_sw zrupd ',ikl,iw,zomco(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before cloudy vrtqdr_sw ztdbt ',ikl,iw,ztdbt(IDEBUG,iw,ikl)
+enddo
         call vrtqdr_sw(ncol, klev, &
                        zref  , zrefd  , ztra  , ztrad , &
                        zdbt , zrdnd  , zgco, zomco , ztdbt  , &
                        zfd , zfu  ,  ztrao)
+!do iw = 1, 112
+do ikl =1,klev+1
+!if(deb)write(0,*)'after cloudy vrtqdr_sw zfd ',ikl,iw,zfd(IDEBUG,iw,klev+2-KDEBUG)
+!if(deb)write(0,*)'after cloudy vrtqdr_sw zfu ',ikl,iw,zfu(IDEBUG,iw,klev+2-KDEBUG)
+if(deb)write(0,*)'after cloudy vrtqdr_sw zfd ',ikl,iw,zfd(IDEBUG,iw,ikl)
+if(deb)write(0,*)'after cloudy vrtqdr_sw zfu ',ikl,iw,zfu(IDEBUG,iw,ikl)
+enddo
 
 ! Upwelling and downwelling fluxes at levels
 !   Two-stream calculations go from top to bottom; 
@@ -8944,7 +9081,7 @@ end subroutine setcoef_sw
 !$acc end kernels
 
 
-      else
+      else      ! cc = 1
 !$acc kernels
          pbbfd = pbbcd
          pbbfu = pbbcu
@@ -8953,7 +9090,7 @@ end subroutine setcoef_sw
          pnifd = pnicd
          pnifddir = pnicddir
 !$acc end kernels    
-      end if
+      end if    ! if cc=2, else, endif
 
 
 !$acc kernels
@@ -9708,6 +9845,7 @@ end subroutine setcoef_sw
 
       call cpu_time(t1)
                                                       
+write(0,*)'zap calling rrtmg_sw_sub pncol, ncol ',pncol,ncol
       call rrtmg_sw_sub &
             (pncol   ,ncol    ,nlay    ,icld    ,iaer   , &
              play    ,plev    ,tlay    ,tlev    ,tsfc   , &
@@ -9753,6 +9891,7 @@ end subroutine setcoef_sw
              sibvisdir, sibvisdif, sibnirdir, sibnirdif,         &
              swdkdir  , swdkdif                                  & ! jararias, 2013/08/10
                                 )
+use debuggal
 
       use parrrsw_f, only : nbndsw, ngptsw, naerec, nstr, nmol, mxmol, &
                           jpband, jpb1, jpb2, rrsw_scon
@@ -10146,6 +10285,8 @@ end subroutine setcoef_sw
       integer :: ipart, cols, cole, colr, ncolc, ncolb
       integer :: irng, cc, ncolst
 
+!write(0,*)'zap in rrtmg_sw_sub ncol, gncol ',ncol    ,gncol
+
 ! Initializations
       
       zepsec = 1.e-06 
@@ -10193,6 +10334,7 @@ end subroutine setcoef_sw
             cols=cols+1
             profic(cols) = iplon
         end if
+!write(0,'("iplon cldflag cole cols ",4i6)')iplon,cldflag(iplon),cole,cols
       end do
     
 ! icld=4 option inactive for WRF
@@ -10314,6 +10456,7 @@ end subroutine setcoef_sw
          
           npart = npartc
           ncolst = ncolc
+
         else
         
           npart = npartb
@@ -10322,6 +10465,8 @@ end subroutine setcoef_sw
         end if
      
         do ipart = 0,npart-1
+call unsetdebug
+if (ipart.eq.0) call setdebug
           cols = ipart * ncol + 1
           cole = (ipart + 1) * ncol
           if (cole>ncolst) cole=ncolst
@@ -10483,7 +10628,7 @@ end subroutine setcoef_sw
               coszen(iplon)  = gcoszen(piplon)
             end do
 !$acc end kernels
-          end if
+          end if    ! if-else-endif cc=1 (clear and cloudy cases)
 
 !$acc kernels
           cossza = max(zepzen,coszen)
@@ -10509,7 +10654,12 @@ end subroutine setcoef_sw
           end do
 !$acc end kernels
 
-          if (cc==2) then
+!do l =1,nlay+1
+!iw = 1
+!if(deb)write(0,*)'before mcica_sw cld ',l,iw,cld(IDEBUG,l)
+!enddo
+
+          if (cc==2) then   ! call mcica for cloudy cases
             call mcica_sw(colr, nlay, 112, icld, irng, play, &
                           cld, ciwp, clwp, cswp, tauc, ssac, asmc, fsfc, &
                           cldfmcl, ciwpmcl, clwpmcl, cswpmcl, &
@@ -10520,11 +10670,52 @@ end subroutine setcoef_sw
 !                          dyofyr, rdl, adl)
           end if   
 
-          if (cc==2) then
+do l =1,nlay+1
+if(deb)write(0,*)'before cldprmc_sw cldfmc ',l,1,cldfmcl(IDEBUG,1,l)
+enddo
+
+          if (cc==2) then   ! call cldprmc for cloudy cases
             call cldprmc_sw(colr, nlay, inflgsw, iceflgsw, liqflgsw,  &
                             cldfmcl, ciwpmcl, clwpmcl, cswpmcl, rei, rel, res, &
                             taormc, taucmc, ssacmc, asmcmc, fsfcmc)
           end if
+
+do l =1,nlay+1
+if(deb)write(0,*)'before setcoef_sw cldfmc ',l,1,cldfmcl(IDEBUG,1,l)
+if(deb.and.l<=nlay)write(0,*)'before setcoef_sw play  ',l,1,play (IDEBUG,l)
+if(deb.and.l<=nlay)write(0,*)'before setcoef_sw tlay  ',l,1,tlay (IDEBUG,l)
+if(deb)write(0,*)'before setcoef_sw plev  ',l,1,plev (IDEBUG,l)
+if(deb)write(0,*)'before setcoef_sw tlev  ',l,1,tlev (IDEBUG,l)
+if(deb)write(0,*)'before setcoef_sw tsfc  ',l,1,tsfc (IDEBUG)
+if(deb.and.l<=nlay)write(0,*)'before setcoef_sw coldry  ',l,1,coldry (IDEBUG,l)
+do imol = 1, nmol
+if(deb.and.l<=nlay)write(0,*)'before setcoef_sw wkl  ',l,imol,wkl (IDEBUG,imol,l)
+enddo
+if(deb)write(0,*)'before setcoef_sw laytrop  ',l,1,laytrop (IDEBUG)
+if(deb)write(0,*)'before setcoef_sw layswtch  ',l,1,layswtch (IDEBUG)
+if(deb)write(0,*)'before setcoef_sw laylow  ',l,1,laylow (IDEBUG)
+!if(deb)write(0,*)'before setcoef_sw jp  ',l,1,jp (IDEBUG,l)
+!if(deb)write(0,*)'before setcoef_sw jt  ',l,1,jt (IDEBUG,l)
+!if(deb)write(0,*)'before setcoef_sw jt1  ',l,1,jt1 (IDEBUG,l)
+!if(deb)write(0,*)'before setcoef_sw co2mult  ',l,1,co2mult (IDEBUG,l)
+!if(deb)write(0,*)'before setcoef_sw colch4  ',l,1,colch4 (IDEBUG,l)
+!if(deb)write(0,*)'before setcoef_sw colco2  ',l,1,colco2 (IDEBUG,l)
+!if(deb)write(0,*)'before setcoef_sw colh2o  ',l,1,colh2o (IDEBUG,l)
+!if(deb)write(0,*)'before setcoef_sw colmol  ',l,1,colmol (IDEBUG,l)
+!if(deb)write(0,*)'before setcoef_sw coln2o  ',l,1,coln2o (IDEBUG,l)
+!if(deb)write(0,*)'before setcoef_sw colo2  ',l,1,colo2 (IDEBUG,l)
+!if(deb)write(0,*)'before setcoef_sw colo3  ',l,1,colo3 (IDEBUG,l)
+!if(deb)write(0,*)'before setcoef_sw fac00  ',l,1,fac00 (IDEBUG,l)
+!if(deb)write(0,*)'before setcoef_sw fac01  ',l,1,fac01 (IDEBUG,l)
+!if(deb)write(0,*)'before setcoef_sw fac10  ',l,1,fac10 (IDEBUG,l)
+!if(deb)write(0,*)'before setcoef_sw fac11  ',l,1,fac11 (IDEBUG,l)
+!if(deb)write(0,*)'before setcoef_sw selffac  ',l,1,selffac (IDEBUG,l)
+!if(deb)write(0,*)'before setcoef_sw selffrac  ',l,1,selffrac (IDEBUG,l)
+!if(deb)write(0,*)'before setcoef_sw indself  ',l,1,indself (IDEBUG,l)
+!if(deb)write(0,*)'before setcoef_sw forfac  ',l,1,forfac (IDEBUG,l)
+!if(deb)write(0,*)'before setcoef_sw forfrac  ',l,1,forfrac (IDEBUG,l)
+!if(deb)write(0,*)'before setcoef_sw indfor  ',l,1,indfor (IDEBUG,l)
+enddo
 
           call setcoef_sw(colr, nlay, play , tlay , plev , tlev , tsfc , &
                           coldry , wkl , &
@@ -10532,6 +10723,10 @@ end subroutine setcoef_sw
                           co2mult , colch4 , colco2 , colh2o , colmol , coln2o , &
                           colo2 , colo3 , fac00 , fac01 , fac10 , fac11 , &
                           selffac , selffrac , indself , forfac , forfrac , indfor )
+
+do l =1,nlay+1
+if(deb)write(0,*)'before spcvmc_sw cldfmc ',l,1,cldfmcl(IDEBUG,1,l)
+enddo
 
           call spcvmc_sw(cc, ncol, colr, nlay, istart, iend, icpr, idelm, iout, &
                          play, tlay, plev, tlev, &
@@ -10555,7 +10750,7 @@ end subroutine setcoef_sw
 ! Transfer up and down, clear and total sky fluxes to output arrays.
 ! Vertical indexing goes from bottom to top; reverse here for GCM if necessary.
 
-          if (cc==1) then
+          if (cc==1) then   ! clear
 !$acc kernels loop independent
             do iplon = 1, colr
               piplon = profic(iplon + cols - 1)
@@ -10610,7 +10805,7 @@ end subroutine setcoef_sw
 !            end do
 !! !$acc end kernels 
 
-          else
+          else     ! cc = 2, cloudy
 !$acc kernels loop independent
             do iplon = 1, colr
               piplon = profi(iplon + cols - 1)
@@ -10665,7 +10860,7 @@ end subroutine setcoef_sw
 !            end do
 !! !$acc end kernels 
 
-          end if
+          end if   ! if-else-endif clear-cloudy
 
 ! End partition loops
         end do
@@ -11161,6 +11356,8 @@ end subroutine setcoef_sw
       rpart = 0
 #else
       rpart = 2
+write(0,*)'warning rpart = 1'
+      rpart = 1
 #endif
 
 
@@ -11940,6 +12137,62 @@ end subroutine setcoef_sw
       if (icnt .eq. 0) dorrsw = .false.
       if (dorrsw) then
 
+!write(0,*)'zap b4 rrtmg_sw ncol ',ncol
+write(0,*)'zap b4 rrtmg_sw nlay ',nlay
+write(0,*)'zap b4 rrtmg_sw icld ',icld
+write(0,*)'zap b4 rrtmg_sw play ',play(IDEBUG,:)
+write(0,*)'zap b4 rrtmg_sw plev ',plev(IDEBUG,:)
+write(0,*)'zap b4 rrtmg_sw tlay ',tlay(IDEBUG,:)
+write(0,*)'zap b4 rrtmg_sw tsfc ',tsfc(IDEBUG)
+write(0,*)'zap b4 rrtmg_sw h2ovmr ',h2ovmr(IDEBUG,:)
+write(0,*)'zap b4 rrtmg_sw o3vmr ',o3vmr(IDEBUG,:)
+write(0,*)'zap b4 rrtmg_sw co2vmr ',co2vmr(IDEBUG,:)
+write(0,*)'zap b4 rrtmg_sw ch4vmr ',ch4vmr(IDEBUG,:)
+write(0,*)'zap b4 rrtmg_sw n2ovmr ',n2ovmr(IDEBUG,:)
+write(0,*)'zap b4 rrtmg_sw o2vmr ',o2vmr(IDEBUG,:)
+write(0,*)'zap b4 rrtmg_sw asdir ',asdir(IDEBUG)
+write(0,*)'zap b4 rrtmg_sw asdif ',asdif(IDEBUG)
+write(0,*)'zap b4 rrtmg_sw aldir ',aldir(IDEBUG)
+write(0,*)'zap b4 rrtmg_sw aldif ',aldif(IDEBUG)
+write(0,*)'zap b4 rrtmg_sw coszen ',coszen(IDEBUG)
+write(0,*)'zap b4 rrtmg_sw adjes ',adjes
+write(0,*)'zap b4 rrtmg_sw dyofyr ',dyofyr
+write(0,*)'zap b4 rrtmg_sw scon ',scon
+write(0,*)'zap b4 rrtmg_sw inflgsw ',inflgsw
+write(0,*)'zap b4 rrtmg_sw iceflgsw ',iceflgsw
+write(0,*)'zap b4 rrtmg_sw liqflgsw ',liqflgsw
+!write(0,*)'zap b4 rrtmg_sw cldfmcl ',cldfmcl(IDEBUG,:)
+!write(0,*)'zap b4 rrtmg_sw taucmcl ',taucmcl(IDEBUG,:)
+!write(0,*)'zap b4 rrtmg_sw ssacmcl ',ssacmcl(IDEBUG,:)
+!write(0,*)'zap b4 rrtmg_sw asmcmcl ',asmcmcl(IDEBUG,:)
+!write(0,*)'zap b4 rrtmg_sw fsfcmcl ',fsfcmcl(IDEBUG,:)
+!write(0,*)'zap b4 rrtmg_sw ciwpmcl ',ciwpmcl(IDEBUG,:)
+!write(0,*)'zap b4 rrtmg_sw clwpmcl ',clwpmcl(IDEBUG,:)
+!write(0,*)'zap b4 rrtmg_sw cswpmcl ',cswpmcl(IDEBUG,:)
+!write(0,*)'zap b4 rrtmg_sw reicmcl ',reicmcl(IDEBUG,:)
+!write(0,*)'zap b4 rrtmg_sw relqmcl ',relqmcl(IDEBUG,:)
+!write(0,*)'zap b4 rrtmg_sw resnmcl ',resnmcl(IDEBUG,:)
+write(0,*)'zap b4 rrtmg_sw tauaer ',tauaer(IDEBUG,:,:)
+write(0,*)'zap b4 rrtmg_sw ssaaer ',ssaaer(IDEBUG,:,:)
+write(0,*)'zap b4 rrtmg_sw asmaer ',asmaer(IDEBUG,:,:)
+write(0,*)'zap b4 rrtmg_sw ecaer ',ecaer(IDEBUG,:,:)
+write(0,*)'zap b4 rrtmg_sw swuflx ',swuflx(IDEBUG,:)
+write(0,*)'zap b4 rrtmg_sw swdflx ',swdflx(IDEBUG,:)
+!write(0,*)'zap b4 rrtmg_sw swhr ',swhr(IDEBUG,:)
+write(0,*)'zap b4 rrtmg_sw swuflxc ',swuflxc(IDEBUG,:)
+write(0,*)'zap b4 rrtmg_sw swdflxc ',swdflxc(IDEBUG,:)
+!write(0,*)'zap b4 rrtmg_sw swhrc ',swhrc(IDEBUG,:)
+write(0,*)'zap b4 rrtmg_sw aer_opt ',aer_opt
+!write(0,*)'zap b4 rrtmg_sw sibvisdir ',sibvisdir(IDEBUG,:)
+!write(0,*)'zap b4 rrtmg_sw sibvisdif ',sibvisdif(IDEBUG,:)
+!write(0,*)'zap b4 rrtmg_sw sibnirdir ',sibnirdir(IDEBUG,:)
+!write(0,*)'zap b4 rrtmg_sw sibnirdif ',sibnirdif(IDEBUG,:)
+write(0,*)'zap b4 rrtmg_sw swdkdir ',swdkdir(IDEBUG,:)
+write(0,*)'zap b4 rrtmg_sw swdkdif ',swdkdif(IDEBUG,:)
+
+
+write(0,*)'calling rrtmg_sw rpart   ncol  inflgsw   iceflgsw  liqflgsw'
+write(0,*)'calling rrtmg_sw ',rpart,ncol,inflgsw ,iceflgsw,liqflgsw
          call rrtmg_sw &
             (rpart   ,ncol    ,nlay    ,icld    ,iaer   , &
              play    ,plev    ,tlay    ,tlev    ,tsfc   , &
@@ -11960,6 +12213,59 @@ end subroutine setcoef_sw
                                                   )
 
       endif
+
+write(0,*)'zap aft rrtmg_sw ncol ',ncol
+write(0,*)'zap aft rrtmg_sw nlay ',nlay
+write(0,*)'zap aft rrtmg_sw icld ',icld
+write(0,*)'zap aft rrtmg_sw play ',play(IDEBUG,:)
+write(0,*)'zap aft rrtmg_sw plev ',plev(IDEBUG,:)
+write(0,*)'zap aft rrtmg_sw tlay ',tlay(IDEBUG,:)
+write(0,*)'zap aft rrtmg_sw tsfc ',tsfc(IDEBUG)
+write(0,*)'zap aft rrtmg_sw h2ovmr ',h2ovmr(IDEBUG,:)
+write(0,*)'zap aft rrtmg_sw o3vmr ',o3vmr(IDEBUG,:)
+write(0,*)'zap aft rrtmg_sw co2vmr ',co2vmr(IDEBUG,:)
+write(0,*)'zap aft rrtmg_sw ch4vmr ',ch4vmr(IDEBUG,:)
+write(0,*)'zap aft rrtmg_sw n2ovmr ',n2ovmr(IDEBUG,:)
+write(0,*)'zap aft rrtmg_sw o2vmr ',o2vmr(IDEBUG,:)
+write(0,*)'zap aft rrtmg_sw asdir ',asdir(IDEBUG)
+write(0,*)'zap aft rrtmg_sw asdif ',asdif(IDEBUG)
+write(0,*)'zap aft rrtmg_sw aldir ',aldir(IDEBUG)
+write(0,*)'zap aft rrtmg_sw aldif ',aldif(IDEBUG)
+write(0,*)'zap aft rrtmg_sw coszen ',coszen(IDEBUG)
+write(0,*)'zap aft rrtmg_sw adjes ',adjes
+write(0,*)'zap aft rrtmg_sw dyofyr ',dyofyr
+write(0,*)'zap aft rrtmg_sw scon ',scon
+write(0,*)'zap aft rrtmg_sw inflgsw ',inflgsw
+write(0,*)'zap aft rrtmg_sw iceflgsw ',iceflgsw
+write(0,*)'zap aft rrtmg_sw liqflgsw ',liqflgsw
+!write(0,*)'zap aft rrtmg_sw cldfmcl ',cldfmcl(IDEBUG,:)
+!write(0,*)'zap aft rrtmg_sw taucmcl ',taucmcl(IDEBUG,:)
+!write(0,*)'zap aft rrtmg_sw ssacmcl ',ssacmcl(IDEBUG,:)
+!write(0,*)'zap aft rrtmg_sw asmcmcl ',asmcmcl(IDEBUG,:)
+!write(0,*)'zap aft rrtmg_sw fsfcmcl ',fsfcmcl(IDEBUG,:)
+!write(0,*)'zap aft rrtmg_sw ciwpmcl ',ciwpmcl(IDEBUG,:)
+!write(0,*)'zap aft rrtmg_sw clwpmcl ',clwpmcl(IDEBUG,:)
+!write(0,*)'zap aft rrtmg_sw cswpmcl ',cswpmcl(IDEBUG,:)
+!write(0,*)'zap aft rrtmg_sw reicmcl ',reicmcl(IDEBUG,:)
+!write(0,*)'zap aft rrtmg_sw relqmcl ',relqmcl(IDEBUG,:)
+!write(0,*)'zap aft rrtmg_sw resnmcl ',resnmcl(IDEBUG,:)
+write(0,*)'zap aft rrtmg_sw tauaer ',tauaer(IDEBUG,:,:)
+write(0,*)'zap aft rrtmg_sw ssaaer ',ssaaer(IDEBUG,:,:)
+write(0,*)'zap aft rrtmg_sw asmaer ',asmaer(IDEBUG,:,:)
+write(0,*)'zap aft rrtmg_sw ecaer ',ecaer(IDEBUG,:,:)
+write(0,*)'zap aft rrtmg_sw swuflx ',swuflx(IDEBUG,:)
+write(0,*)'zap aft rrtmg_sw swdflx ',swdflx(IDEBUG,:)
+write(0,*)'zap aft rrtmg_sw swhr ',swhr(IDEBUG,:)
+write(0,*)'zap aft rrtmg_sw swuflxc ',swuflxc(IDEBUG,:)
+write(0,*)'zap aft rrtmg_sw swdflxc ',swdflxc(IDEBUG,:)
+write(0,*)'zap aft rrtmg_sw swhrc ',swhrc(IDEBUG,:)
+write(0,*)'zap aft rrtmg_sw aer_opt ',aer_opt
+write(0,*)'zap aft rrtmg_sw sibvisdir ',sibvisdir(IDEBUG,:)
+write(0,*)'zap aft rrtmg_sw sibvisdif ',sibvisdif(IDEBUG,:)
+write(0,*)'zap aft rrtmg_sw sibnirdir ',sibnirdir(IDEBUG,:)
+write(0,*)'zap aft rrtmg_sw sibnirdif ',sibnirdif(IDEBUG,:)
+write(0,*)'zap aft rrtmg_sw swdkdir ',swdkdir(IDEBUG,:)
+write(0,*)'zap aft rrtmg_sw swdkdif ',swdkdif(IDEBUG,:)
 
 ! Output net absorbed shortwave surface flux and shortwave cloud forcing
 ! at the top of atmosphere (W/m2)
