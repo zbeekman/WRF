@@ -1632,24 +1632,16 @@ use debuggal
 !         ran_arr(i) = kiss*2.328306e-10_rb + 0.5_rb
 !      end do
 
-                  do isubcol = 1,nsubcol
+!jm moved isubcol loop out of here and put in the ilev.eq.1 conditional for initial
+!jm computation of seeds so we get the same results as the ra_sw_physics=4 option
+           do isubcol = 1,nsubcol
            do ilev = 1,nlay
                do i = 1, ncol
-if (ilev.eq.1)then
-if(deb.and.i.eq.1.and.ilev.eq.1)write(0,*)'zep play 1 ',1,ilev,play(i,1)*100
-if(deb.and.i.eq.1.and.ilev.eq.1)write(0,*)'zep int(play1)',1,ilev,int(play(i,1)*100)
-if(deb.and.i.eq.1.and.ilev.eq.1)write(0,*)'zep play 1 - int(play 1)',1,ilev,(play(i,1)*100 - int(play(i,1)*100))
-if(deb.and.i.eq.1.and.ilev.eq.1)write(0,*)'zep play 2 ',1,ilev,play(i,2)*100
-if(deb.and.i.eq.1.and.ilev.eq.1)write(0,*)'zep play 3 ',1,ilev,play(i,3)*100
-if(deb.and.i.eq.1.and.ilev.eq.1)write(0,*)'zep play 4 ',1,ilev,play(i,4)*100
+                if (ilev.eq.1)then
                   seed1 = (play(i,1)*100 - int(play(i,1)*100))  * 1000000000  !jm
                   seed2 = (play(i,2)*100 - int(play(i,2)*100))  * 1000000000  !jm
                   seed3 = (play(i,3)*100 - int(play(i,3)*100))  * 1000000000  !jm
                   seed4 = (play(i,4)*100 - int(play(i,4)*100))  * 1000000000
-if(deb.and.i.eq.1.and.ilev.eq.1)write(0,*)'zep seed1 ',1,ilev,seed1
-if(deb.and.i.eq.1.and.ilev.eq.1)write(0,*)'zep seed2 ',1,ilev,seed2
-if(deb.and.i.eq.1.and.ilev.eq.1)write(0,*)'zep seed3 ',1,ilev,seed3
-if(deb.and.i.eq.1.and.ilev.eq.1)write(0,*)'zep seed4 ',1,ilev,seed4
                      seed1 = 69069  * seed1 + 1327217885
 !jm                     seed2 = 11002  * iand (seed2, 65535 ) + ishft (seed2, - 16 )
                      seed2 = m (m (m (seed2, 13), - 17), 5)
@@ -1657,7 +1649,7 @@ if(deb.and.i.eq.1.and.ilev.eq.1)write(0,*)'zep seed4 ',1,ilev,seed4
                      seed4 = 30903  * iand (seed4, 65535 ) + ishft (seed4, - 16 )
                      kiss = seed1 + seed2 + ishft (seed3, 16 ) + seed4
 
-endif
+                 endif
 
 !                  do isubcol = 1,nsubcol
                      seed1 = 69069  * seed1 + 1327217885
@@ -1667,16 +1659,11 @@ endif
                      seed4 = 30903  * iand (seed4, 65535 ) + ishft (seed4, - 16 )
                      kiss = seed1 + seed2 + ishft (seed3, 16 ) + seed4
 
-if(deb.and.i.eq.1.and.isubcol.eq.1)write(0,*)'zep seed 1 ',1,ilev,seed1
-if(deb.and.i.eq.1.and.isubcol.eq.1)write(0,*)'zep seed 2 ',1,ilev,seed2
-if(deb.and.i.eq.1.and.isubcol.eq.1)write(0,*)'zep seed 3 ',1,ilev,seed3
-if(deb.and.i.eq.1.and.isubcol.eq.1)write(0,*)'zep seed 4 ',1,ilev,seed4
                      CDF(i,ilev,isubcol) = kiss*2.328306e-10  + 0.5
-if(deb.and.i.eq.1.and.isubcol.eq.1)write(0,*)'zep CDF ',1,ilev,CDF(1,ilev,1)
 !                  end do
                end do
             end do
-                  end do
+            end do
 
             do ilev = 2,nlay
                do i = 1, ncol
@@ -1910,8 +1897,6 @@ if(deb.and.i.eq.1.and.isubcol.eq.1)write(0,*)'zep CDF ',1,ilev,CDF(1,ilev,1)
 !               elseif ( CDF(i,ilev,isubcol)>=(1.0 - cld(i,ilev)) ) then
 
 if(deb.and.isubcol.eq.1)write(0,*)'zop CDF ',1,ilev,CDF(i,ilev,isubcol)
-if(deb.and.isubcol.eq.1)write(0,*)'zop cld ',1,ilev,cld(i,ilev)
-if(deb.and.isubcol.eq.1)write(0,*)'zop iscloudy ',1,ilev,CDF(i,ilev,isubcol)>=(1.0 - cld(i,ilev))
                if ( CDF(i,ilev,isubcol)>=(1.0 - cld(i,ilev)) ) then
                   cld_stoch(i,ilev,isubcol) = 1.0 
                   clwp_stoch(i,ilev,isubcol) = clwp(i,ilev)
@@ -1961,6 +1946,7 @@ if(deb.and.isubcol.eq.1)write(0,*)'zop iscloudy ',1,ilev,CDF(i,ilev,isubcol)>=(1
       subroutine cldprmc_sw(ncol, nlayers, inflag, iceflag, liqflag, cldfmc, &
                             ciwpmc, clwpmc, cswpmc, reicmc, relqmc, resnmc, &
                             taormc, taucmc, ssacmc, asmcmc, fsfcmc)
+use debuggal
 ! ----------------------------------------------------------------------------
 
 ! Purpose: Compute the cloud optical properties for each cloudy layer
@@ -2060,6 +2046,9 @@ if(deb.and.isubcol.eq.1)write(0,*)'zop iscloudy ',1,ilev,CDF(i,ilev,isubcol)>=(1
          !$acc loop private(fdelta,extcoice,gice,ssacoice,forwice,extcoliq,gliq,ssacoliq,forwliq,gsno,forwsno,scatsno)
          do ig = 1, ngptsw 
             cwp = ciwpmc(iplon,lay,ig) + clwpmc(iplon,lay,ig) + cswpmc(iplon,lay,ig)  
+
+!if(deb.and.iplon.eq.IDEBUG.and.ig.eq.1)write(0,*)'test in cldprmmc ',lay,cldfmc(iplon,lay,ig)   .ge. cldmin .and.  (cwp .ge. cldmin .or. taucmc(iplon,lay,ig)   .ge. cldmin)
+
             if (cldfmc(iplon,lay,ig)   .ge. cldmin .and. &
                (cwp .ge. cldmin .or. taucmc(iplon,lay,ig)   .ge. cldmin)) then
 
@@ -2080,7 +2069,7 @@ if(deb.and.isubcol.eq.1)write(0,*)'zop iscloudy ',1,ilev,CDF(i,ilev,isubcol)>=(1
                   asmcmc(iplon,lay,ig)   = (asmcmc(iplon,lay,ig)   - ffp) / (ffp1)
 
 ! (inflag=2): Separate treatement of ice clouds and water clouds.
-               elseif (inflag .eq. 2) then       
+               elseif (inflag .ge. 2) then       
                   radice = reicmc(iplon,lay) 
 
 ! Calculation of absorption coefficients due to ice clouds.
@@ -2148,7 +2137,7 @@ if(deb.and.isubcol.eq.1)write(0,*)'zop iscloudy ',1,ilev,CDF(i,ilev,isubcol)>=(1
 
 ! For iceflag=3 option, ice particle generalized effective size is limited to 5.0 to 140.0 microns
 
-                  elseif (iceflag .eq. 3) then
+                  elseif (iceflag .ge. 3) then
                     
                      factor = (radice - 2. )/3. 
                      index = int(factor)
@@ -2261,6 +2250,8 @@ if(deb.and.isubcol.eq.1)write(0,*)'zop iscloudy ',1,ilev,CDF(i,ilev,isubcol)>=(1
 !
                   endif
    
+if(deb)write(0,*)'asdfasdf ',iplon,ig
+if(deb.and.ig.eq.1.and.iplon.eq.IDEBUG)write(0,*)'in cldprmc_sw iceflag ',iceflag
                   if (iceflag .lt. 5) then
                      tauliqorig = clwpmc(iplon,lay,ig)   * extcoliq
                      tauiceorig = ciwpmc(iplon,lay,ig)   * extcoice
@@ -2296,6 +2287,16 @@ if(deb.and.isubcol.eq.1)write(0,*)'zop iscloudy ',1,ilev,CDF(i,ilev,isubcol)>=(1
                      scatice = ssaice * tauice
                      scatsno = ssasno * tausno
                      taucmc(iplon,lay,ig)   = tauliq + tauice + tausno
+if(deb.and.ig.eq.1.and.iplon.eq.IDEBUG)write(0,*)'in cldprmc_sw tauliq',tauliq
+if(deb.and.ig.eq.1.and.iplon.eq.IDEBUG)write(0,*)'in cldprmc_sw tauice',tauice
+if(deb.and.ig.eq.1.and.iplon.eq.IDEBUG)write(0,*)'in cldprmc_sw tausno',tausno
+if(deb.and.ig.eq.1.and.iplon.eq.IDEBUG)write(0,*)'in cldprmc_sw clwpmc',clwpmc(IDEBUG,ig,lay)
+if(deb.and.ig.eq.1.and.iplon.eq.IDEBUG)write(0,*)'in cldprmc_sw ciwpmc',ciwpmc(IDEBUG,ig,lay)
+if(deb.and.ig.eq.1.and.iplon.eq.IDEBUG)write(0,*)'in cldprmc_sw cswpmc',cswpmc(IDEBUG,ig,lay)
+if(deb.and.ig.eq.1.and.iplon.eq.IDEBUG)write(0,*)'in cldprmc_sw extcoliq',extcoliq
+if(deb.and.ig.eq.1.and.iplon.eq.IDEBUG)write(0,*)'in cldprmc_sw extcoice',extcoice
+if(deb.and.ig.eq.1.and.iplon.eq.IDEBUG)write(0,*)'in cldprmc_sw extcosno',extcosno
+
                   endif
 
 ! Ensure non-zero taucmc and scatice
@@ -8778,7 +8779,8 @@ use debuggal
 !do iw = 1, 112
 do ikl =1,klev+1
 iw = 1
-if(deb)write(0,*)'before clearsky reftra_sw lrtchkclr ',ikl,iw,pcldfmc(IDEBUG,iw,ikl)<=repclc
+if(deb)write(0,*)'before clearsky reftra_sw lrtchkclr ',ikl,iw,pcldfmc(IDEBUG,ikl,iw)<=repclc
+if(deb)write(0,*)'before clearsky reftra_sw pcldfmc ',ikl,iw,pcldfmc(IDEBUG,ikl,iw)
 if(deb)write(0,*)'before clearsky reftra_sw zgcc ',ikl,iw,zgco(IDEBUG,iw,ikl)
 if(deb)write(0,*)'before clearsky reftra_sw prmu0 ',ikl,iw,prmu0(IDEBUG)
 if(deb)write(0,*)'before clearsky reftra_sw ztauc ',ikl,iw,ztauo(IDEBUG,iw,ikl)
@@ -8957,12 +8959,18 @@ enddo
 !do iw = 1, 112
 do ikl =1,klev+1
 iw = 1
-if(deb)write(0,*)'before cloudy reftra_sw lrtchkcld ',ikl,iw,pcldfmc(IDEBUG,iw,ikl)>repclc
-if(deb)write(0,*)'before cloudy reftra_sw pcldfmc ',ikl,iw,pcldfmc(IDEBUG,iw,ikl)
-if(deb)write(0,*)'before cloudy reftra_sw zgcc ',ikl,iw,zgco(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before cloudy reftra_sw ptaua ',ikl,iw,ptaua(IDEBUG,ikl,ibm)
+if(deb)write(0,*)'before cloudy reftra_sw pomga ',ikl,iw,pomga(IDEBUG,ikl,ibm)
+if(deb)write(0,*)'before cloudy reftra_sw pasya ',ikl,iw,pasya(IDEBUG,ikl,ibm)
+if(deb)write(0,*)'before cloudy reftra_sw ptaucmc ',ikl,iw,ptaucmc(IDEBUG,ikl,iw)
+if(deb)write(0,*)'before cloudy reftra_sw pomgcmc ',ikl,iw,pomgcmc(IDEBUG,ikl,iw)
+if(deb)write(0,*)'before cloudy reftra_sw pasycmc ',ikl,iw,pasycmc(IDEBUG,ikl,iw)
+if(deb)write(0,*)'before cloudy reftra_sw lrtchkcld ',ikl,iw,pcldfmc(IDEBUG,ikl,iw)>repclc
+if(deb)write(0,*)'before cloudy reftra_sw pcldfmc ',ikl,iw,pcldfmc(IDEBUG,ikl,iw)
+if(deb)write(0,*)'before cloudy reftra_sw zgco ',ikl,iw,zgco(IDEBUG,iw,ikl)
 if(deb)write(0,*)'before cloudy reftra_sw prmu0 ',ikl,iw,prmu0(IDEBUG)
-if(deb)write(0,*)'before cloudy reftra_sw ztauc ',ikl,iw,ztauo(IDEBUG,iw,ikl)
-if(deb)write(0,*)'before cloudy reftra_sw zomcc ',ikl,iw,zomco(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before cloudy reftra_sw ztauo ',ikl,iw,ztauo(IDEBUG,iw,ikl)
+if(deb)write(0,*)'before cloudy reftra_sw zomco ',ikl,iw,zomco(IDEBUG,iw,ikl)
 enddo
             
 ! Total sky reflectivities      
@@ -9159,6 +9167,7 @@ enddo
 ! --------------------------------------------------------------------
       subroutine reftra_sw(ncol, nlayers, pcldfmc, pgg, prmuzl, ptau, pw, &
                            pref, prefd, ptra, ptrad, ac)
+use debuggal
 ! --------------------------------------------------------------------
   
 ! Purpose: computes the reflectivity and transmissivity of a clear or 
@@ -9194,6 +9203,8 @@ enddo
 !              = 2 pifm (zdunkowski et al., 1980)
 !              = 3 discrete ordinates (liou, 1973)
 !
+! ac = 1 -- clear
+! ac = 0 -- total (clear and cloudy)
 !
 ! Modifications:
 ! --------------
@@ -9263,6 +9274,7 @@ enddo
 !$acc loop private(zgamma1, zgamma2, zgamma3, zgamma4)
           do jk=1, nlayers
              prmuz = prmuzl(iplon)
+if(deb.and.iplon.eq.1.and.iw.eq.1)write(0,*)'zark condition ',jk,(.not.(pcldfmc(iplon,nlayers+1-jk,iw))  > 1.e-12) .and. ac==0 
              if ((.not.(pcldfmc(iplon,nlayers+1-jk,iw))  > 1.e-12) .and. ac==0  ) then
                pref(iplon,iw,jk)   =0. 
                ptra(iplon,iw,jk)   =1. 
@@ -9389,6 +9401,8 @@ enddo
                endif
 
             endif         
+
+if(deb.and.iplon.eq.1.and.iw.eq.1)write(0,*)'zark pref ',jk,pref(iplon,iw,jk)
 
           end do  
         end do
@@ -10702,8 +10716,13 @@ if (ipart.eq.0) call setdebug
 !                          dyofyr, rdl, adl)
           end if   
 
+if(deb)write(0,*)'iceflag ',iceflgsw
+if(deb)write(0,*)'inflag ',inflgsw
+if(deb)write(0,*)'liqflag ',liqflgsw
+
 do l =1,nlay+1
 if(deb)write(0,*)'before cldprmc_sw cldfmc ',l,1,cldfmcl(IDEBUG,l,1)
+if(deb)write(0,*)'before cldprmc_sw taucmc ',l,1,taucmc(IDEBUG,l,1)
 enddo
 
           if (cc==2) then   ! call cldprmc for cloudy cases
@@ -10713,6 +10732,7 @@ enddo
           end if
 
 do l =1,nlay+1
+if(deb)write(0,*)'before setcoef_sw taucmc ',l,1,taucmc(IDEBUG,l,1)
 if(deb)write(0,*)'before setcoef_sw cldfmc ',l,1,cldfmcl(IDEBUG,l,1)
 if(deb.and.l<=nlay)write(0,*)'before setcoef_sw play  ',l,1,play (IDEBUG,l)
 if(deb.and.l<=nlay)write(0,*)'before setcoef_sw tlay  ',l,1,tlay (IDEBUG,l)
@@ -10758,6 +10778,7 @@ enddo
 
 do l =1,nlay+1
 if(deb)write(0,*)'before spcvmc_sw cldfmc ',l,1,cldfmcl(IDEBUG,l,1)
+if(deb)write(0,*)'before spcvmc_sw taucmc ',l,1,taucmc(IDEBUG,l,1)
 enddo
 
           call spcvmc_sw(cc, ncol, colr, nlay, istart, iend, icpr, idelm, iout, &

@@ -1694,28 +1694,14 @@ use debuggal
             if (pmid(i,1).lt.pmid(i,2)) then
                stop 'MCICA_SUBCOL: KISSVEC SEED GENERATOR REQUIRES PMID FROM BOTTOM FOUR LAYERS.'
             endif
-if(deb)write(0,*)'zep play 1 ',1,1,pmid(i,1)
-if(deb)write(0,*)'zep int(play1)',1,1,int(pmid(i,1))
-if(deb)write(0,*)'zep play 1 - int(play 1)',1,1,pmid(i,1)-int(pmid(i,1))
-if(deb)write(0,*)'zep play 2 ',1,1,pmid(i,2)
-if(deb)write(0,*)'zep play 3 ',1,1,pmid(i,3)
-if(deb)write(0,*)'zep play 4 ',1,1,pmid(i,4)
             seed1(i) = (pmid(i,1) - int(pmid(i,1)))  * 1000000000_im
             seed2(i) = (pmid(i,2) - int(pmid(i,2)))  * 1000000000_im
             seed3(i) = (pmid(i,3) - int(pmid(i,3)))  * 1000000000_im
             seed4(i) = (pmid(i,4) - int(pmid(i,4)))  * 1000000000_im
-if(deb)write(0,*)'zep seed1 ',1,1,seed1(1)
-if(deb)write(0,*)'zep seed2 ',1,1,seed2(1)
-if(deb)write(0,*)'zep seed3 ',1,1,seed3(1)
-if(deb)write(0,*)'zep seed4 ',1,1,seed4(1)
           enddo
          do i=1,changeSeed
             call kissvec(seed1, seed2, seed3, seed4, rand_num)
          enddo
-if(deb)write(0,*)'zep seed 1 ',1,1,seed1(1)
-if(deb)write(0,*)'zep seed 2 ',1,1,seed2(1)
-if(deb)write(0,*)'zep seed 3 ',1,1,seed3(1)
-if(deb)write(0,*)'zep seed 4 ',1,1,seed4(1)
       elseif (irng.eq.1) then
          randomNumbers = new_RandomNumberSequence(seed = changeSeed)
       endif 
@@ -1760,12 +1746,7 @@ if(deb)write(0,*)'zep seed 4 ',1,1,seed4(1)
             do isubcol = 1,nsubcol
                do ilev = 1,nlay
                   call kissvec(seed1, seed2, seed3, seed4, rand_num)
-if(deb.and.isubcol.eq.1)write(0,*)'zep seed  1 ',1,ilev,seed1(1)
-if(deb.and.isubcol.eq.1)write(0,*)'zep seed  2 ',1,ilev,seed2(1)
-if(deb.and.isubcol.eq.1)write(0,*)'zep seed  3 ',1,ilev,seed3(1)
-if(deb.and.isubcol.eq.1)write(0,*)'zep seed  4 ',1,ilev,seed4(1)
                   CDF(isubcol,:,ilev) = rand_num
-if(deb.and.isubcol.eq.1)write(0,*)'zep CDF ',1,ilev,CDF(1,1,ilev)
                enddo
             enddo
          elseif (irng.eq.1) then
@@ -1854,8 +1835,6 @@ if(deb.and.isubcol.eq.1)write(0,*)'zep CDF ',1,ilev,CDF(1,1,ilev)
       do ilev = 1, nlay
          isCloudy(:,:,ilev) = (CDF(:,:,ilev) >= 1._rb - spread(cldf(:,ilev), dim=1, nCopies=nsubcol) )
 if(deb)write(0,*)'zop CDF ',1,ilev,CDF(1,1,ilev)
-if(deb)write(0,*)'zop cld ',1,ilev,cldf(1,ilev)
-if(deb)write(0,*)'zop iscloudy ',1,ilev,isCloudy(1,1,ilev)
       enddo
 
 ! where the subcolumn is cloudy, the subcolumn cloud fraction is 1;
@@ -1992,6 +1971,7 @@ if(deb)write(0,*)'zop iscloudy ',1,ilev,isCloudy(1,1,ilev)
       subroutine cldprmc_sw(nlayers, inflag, iceflag, liqflag, cldfmc, &
                             ciwpmc, clwpmc, cswpmc, reicmc, relqmc, resnmc, &
                             taormc, taucmc, ssacmc, asmcmc, fsfcmc)
+use debuggal
 ! ----------------------------------------------------------------------------
 
 ! Purpose: Compute the cloud optical properties for each cloudy layer
@@ -2360,6 +2340,15 @@ if(deb)write(0,*)'zop iscloudy ',1,ilev,isCloudy(1,1,ilev)
                       scatice = ssaice * tauice
                       scatsno = ssasno * tausno
                       taucmc(ig,lay) = tauliq + tauice + tausno
+if(deb.and.ig.eq.1)write(0,*)'in cldprmc_sw tauliq',tauliq
+if(deb.and.ig.eq.1)write(0,*)'in cldprmc_sw tauice',tauice
+if(deb.and.ig.eq.1)write(0,*)'in cldprmc_sw tausno',tausno
+if(deb.and.ig.eq.1)write(0,*)'in cldprmc_sw clwpmc',clwpmc(ig,lay)
+if(deb.and.ig.eq.1)write(0,*)'in cldprmc_sw ciwpmc',ciwpmc(ig,lay)
+if(deb.and.ig.eq.1)write(0,*)'in cldprmc_sw cswpmc',cswpmc(ig,lay)
+if(deb.and.ig.eq.1)write(0,*)'in cldprmc_sw extcoliq',extcoliq(ig)
+if(deb.and.ig.eq.1)write(0,*)'in cldprmc_sw extcoice',extcoice(ig)
+if(deb.and.ig.eq.1)write(0,*)'in cldprmc_sw extcosno',extcosno(ig)
                   endif
 
 ! Ensure non-zero taucmc and scatice
@@ -2442,8 +2431,9 @@ if(deb)write(0,*)'zop iscloudy ',1,ilev,isCloudy(1,1,ilev)
       contains
 
 ! --------------------------------------------------------------------
-      subroutine reftra_sw(nlayers, lrtchk, pgg, prmuz, ptau, pw, &
+      subroutine reftra_sw(iw,nlayers, lrtchk, pgg, prmuz, ptau, pw, &
                            pref, prefd, ptra, ptrad)
+use debuggal
 ! --------------------------------------------------------------------
   
 ! Purpose: computes the reflectivity and transmissivity of a clear or 
@@ -2493,7 +2483,7 @@ if(deb)write(0,*)'zop iscloudy ',1,ilev,isCloudy(1,1,ilev)
 
 ! ------- Input -------
 
-      integer(kind=im), intent(in) :: nlayers
+      integer(kind=im), intent(in) :: nlayers,iw
 
       logical, intent(in) :: lrtchk(:)                         ! Logical flag for reflectivity and
                                                                ! and transmissivity calculation; 
@@ -2547,6 +2537,7 @@ if(deb)write(0,*)'zop iscloudy ',1,ilev,isCloudy(1,1,ilev)
       kmodts=2
 
       do jk=1, nlayers
+if(deb.and.iw.eq.1)write(0,*)'zark condition ',jk,.not.lrtchk(jk)
          if (.not.lrtchk(jk)) then
             pref(jk) =0._rb
             ptra(jk) =1._rb
@@ -2719,6 +2710,7 @@ if(deb)write(0,*)'zop iscloudy ',1,ilev,isCloudy(1,1,ilev)
 
          endif         
 
+if(deb.and.iw.eq.1)write(0,*)'zark pref ',jk,pref(jk)
       enddo    
 
       end subroutine reftra_sw
@@ -8512,6 +8504,7 @@ use debuggal
 do ikl=1,klev+1
 if (iw.eq.1) then
 if(deb)write(0,*)'before clearsky reftra_sw lrtchkclr ',ikl,iw,lrtchkclr(ikl)
+if(deb)write(0,*)'before clearsky reftra_sw pcldfmc ',ikl,iw,pcldfmc(ikl,iw)
 if(deb)write(0,*)'before clearsky reftra_sw zgcc ',ikl,iw,zgcc(ikl)
 if(deb)write(0,*)'before clearsky reftra_sw prmu0 ',ikl,iw,prmu0
 if(deb)write(0,*)'before clearsky reftra_sw ztauc ',ikl,iw,ztauc(ikl)
@@ -8519,23 +8512,29 @@ if(deb)write(0,*)'before clearsky reftra_sw zomcc ',ikl,iw,zomcc(ikl)
 endif
 enddo
 
-            call reftra_sw (klev, &
+            call reftra_sw (iw,klev, &
                             lrtchkclr, zgcc, prmu0, ztauc, zomcc, &
                             zrefc, zrefdc, ztrac, ztradc)
 
 do ikl=1,klev+1
 if (iw.eq.1) then
+if(deb)write(0,*)'before cloudy reftra_sw ptaua ',ikl,iw,ptaua(ikl,ibm)
+if(deb)write(0,*)'before cloudy reftra_sw pomga ',ikl,iw,pomga(ikl,ibm)
+if(deb)write(0,*)'before cloudy reftra_sw pasya ',ikl,iw,pasya(ikl,ibm)
+if(deb)write(0,*)'before cloudy reftra_sw ptaucmc ',ikl,iw,ptaucmc(ikl,iw)
+if(deb)write(0,*)'before cloudy reftra_sw pomgcmc ',ikl,iw,pomgcmc(ikl,iw)
+if(deb)write(0,*)'before cloudy reftra_sw pasycmc ',ikl,iw,pasycmc(ikl,iw)
 if(deb)write(0,*)'before cloudy reftra_sw lrtchkcld ',ikl,iw,lrtchkcld(ikl)
 if(deb)write(0,*)'before cloudy reftra_sw pcldfmc ',ikl,iw,pcldfmc(ikl,iw)
-if(deb)write(0,*)'before cloudy reftra_sw zgcc ',ikl,iw,zgco(ikl)
+if(deb)write(0,*)'before cloudy reftra_sw zgco ',ikl,iw,zgco(ikl)
 if(deb)write(0,*)'before cloudy reftra_sw prmu0 ',ikl,iw,prmu0
-if(deb)write(0,*)'before cloudy reftra_sw ztauc ',ikl,iw,ztauo(ikl)
-if(deb)write(0,*)'before cloudy reftra_sw zomcc ',ikl,iw,zomco(ikl)
+if(deb)write(0,*)'before cloudy reftra_sw ztauo ',ikl,iw,ztauo(ikl)
+if(deb)write(0,*)'before cloudy reftra_sw zomco ',ikl,iw,zomco(ikl)
 endif
 enddo
 
 ! Total sky reflectivities      
-            call reftra_sw (klev, &
+            call reftra_sw (iw,klev, &
                             lrtchkcld, zgco, prmu0, ztauo, zomco, &
                             zrefo, zrefdo, ztrao, ztrado)
 
@@ -9265,8 +9264,12 @@ integer imol
 !  effective radius must be passed in cldprop.  Cloud fraction and cloud
 !  optical properties are transferred to rrtmg_sw arrays in cldprop.  
 
+if(deb)write(0,*)'iceflag ',iceflag
+if(deb)write(0,*)'inflag ',inflag
+if(deb)write(0,*)'liqflag ',liqflag
 do i=1,nlayers+1
 if(deb)write(0,*)'before cldprmc_sw cldfmc ',i,1,cldfmc(1,i)
+if(deb)write(0,*)'before cldprmc_sw taucmc ',i,1,taucmc(1,i)
 enddo
 
          call cldprmc_sw(nlayers, inflag, iceflag, liqflag, cldfmc, &
@@ -9280,6 +9283,7 @@ enddo
 
 do i=1,nlayers+1
 if(deb)write(0,*)'before setcoef_sw cldfmc ',i,1,cldfmc(1,i)
+if(deb)write(0,*)'before setcoef_sw taucmc ',i,1,taucmc(1,i)
 if(deb.and.i<=nlayers)write(0,*)'before setcoef_sw play  ',i,1,play(1,i)
 if(deb.and.i<=nlayers)write(0,*)'before setcoef_sw tlay  ',i,1,tlay(1,i)
 if(deb)write(0,*)'before setcoef_sw plev  ',i,1,plev(1,i)
@@ -9446,6 +9450,7 @@ enddo
 
 do i=1,nlayers+1
 if(deb)write(0,*)'before spcvmc_sw cldfmc ',i,1,zcldfmc(i,1)
+if(deb)write(0,*)'before spcvmc_sw taucmc ',i,1,ztaucmc(i,1)
 enddo
 
 
