@@ -1366,6 +1366,7 @@
 !                          CDF2, CDF3, alpha, &
 !                          zm, alat, &
 !                          DOY, rdl, adl) 
+use debuggal
 !-------------------------------------------------------------------------------------------------
 
   !----------------------------------------------------------------------------------------------------------------
@@ -1631,23 +1632,51 @@
 !         ran_arr(i) = kiss*2.328306e-10_rb + 0.5_rb
 !      end do
 
+                  do isubcol = 1,nsubcol
            do ilev = 1,nlay
                do i = 1, ncol
-                  seed1 = (play(i,1) - int(play(i,1)))  * 100000000  !jm
-                  seed2 = (play(i,2) - int(play(i,2)))  * 100000000  !jm
-                  seed3 = (play(i,3) - int(play(i,3)))  * 100000000  !jm
-                  seed4 = (play(i,4) - int(play(i,4)))  * 100000000
-                  do isubcol = 1,nsubcol
-                     seed1 = 69069  * seed1 + 132721785
+if (ilev.eq.1)then
+if(deb.and.i.eq.1.and.ilev.eq.1)write(0,*)'zep play 1 ',1,ilev,play(i,1)*100
+if(deb.and.i.eq.1.and.ilev.eq.1)write(0,*)'zep int(play1)',1,ilev,int(play(i,1)*100)
+if(deb.and.i.eq.1.and.ilev.eq.1)write(0,*)'zep play 1 - int(play 1)',1,ilev,(play(i,1)*100 - int(play(i,1)*100))
+if(deb.and.i.eq.1.and.ilev.eq.1)write(0,*)'zep play 2 ',1,ilev,play(i,2)*100
+if(deb.and.i.eq.1.and.ilev.eq.1)write(0,*)'zep play 3 ',1,ilev,play(i,3)*100
+if(deb.and.i.eq.1.and.ilev.eq.1)write(0,*)'zep play 4 ',1,ilev,play(i,4)*100
+                  seed1 = (play(i,1)*100 - int(play(i,1)*100))  * 1000000000  !jm
+                  seed2 = (play(i,2)*100 - int(play(i,2)*100))  * 1000000000  !jm
+                  seed3 = (play(i,3)*100 - int(play(i,3)*100))  * 1000000000  !jm
+                  seed4 = (play(i,4)*100 - int(play(i,4)*100))  * 1000000000
+if(deb.and.i.eq.1.and.ilev.eq.1)write(0,*)'zep seed1 ',1,ilev,seed1
+if(deb.and.i.eq.1.and.ilev.eq.1)write(0,*)'zep seed2 ',1,ilev,seed2
+if(deb.and.i.eq.1.and.ilev.eq.1)write(0,*)'zep seed3 ',1,ilev,seed3
+if(deb.and.i.eq.1.and.ilev.eq.1)write(0,*)'zep seed4 ',1,ilev,seed4
+                     seed1 = 69069  * seed1 + 1327217885
 !jm                     seed2 = 11002  * iand (seed2, 65535 ) + ishft (seed2, - 16 )
                      seed2 = m (m (m (seed2, 13), - 17), 5)
                      seed3 = 18000  * iand (seed3, 65535 ) + ishft (seed3, - 16 )
                      seed4 = 30903  * iand (seed4, 65535 ) + ishft (seed4, - 16 )
                      kiss = seed1 + seed2 + ishft (seed3, 16 ) + seed4
+
+endif
+
+!                  do isubcol = 1,nsubcol
+                     seed1 = 69069  * seed1 + 1327217885
+!jm                     seed2 = 11002  * iand (seed2, 65535 ) + ishft (seed2, - 16 )
+                     seed2 = m (m (m (seed2, 13), - 17), 5)
+                     seed3 = 18000  * iand (seed3, 65535 ) + ishft (seed3, - 16 )
+                     seed4 = 30903  * iand (seed4, 65535 ) + ishft (seed4, - 16 )
+                     kiss = seed1 + seed2 + ishft (seed3, 16 ) + seed4
+
+if(deb.and.i.eq.1.and.isubcol.eq.1)write(0,*)'zep seed 1 ',1,ilev,seed1
+if(deb.and.i.eq.1.and.isubcol.eq.1)write(0,*)'zep seed 2 ',1,ilev,seed2
+if(deb.and.i.eq.1.and.isubcol.eq.1)write(0,*)'zep seed 3 ',1,ilev,seed3
+if(deb.and.i.eq.1.and.isubcol.eq.1)write(0,*)'zep seed 4 ',1,ilev,seed4
                      CDF(i,ilev,isubcol) = kiss*2.328306e-10  + 0.5
-                  end do
+if(deb.and.i.eq.1.and.isubcol.eq.1)write(0,*)'zep CDF ',1,ilev,CDF(1,ilev,1)
+!                  end do
                end do
             end do
+                  end do
 
             do ilev = 2,nlay
                do i = 1, ncol
@@ -1880,6 +1909,9 @@
 !                
 !               elseif ( CDF(i,ilev,isubcol)>=(1.0 - cld(i,ilev)) ) then
 
+if(deb.and.isubcol.eq.1)write(0,*)'zop CDF ',1,ilev,CDF(i,ilev,isubcol)
+if(deb.and.isubcol.eq.1)write(0,*)'zop cld ',1,ilev,cld(i,ilev)
+if(deb.and.isubcol.eq.1)write(0,*)'zop iscloudy ',1,ilev,CDF(i,ilev,isubcol)>=(1.0 - cld(i,ilev))
                if ( CDF(i,ilev,isubcol)>=(1.0 - cld(i,ilev)) ) then
                   cld_stoch(i,ilev,isubcol) = 1.0 
                   clwp_stoch(i,ilev,isubcol) = clwp(i,ilev)
@@ -10671,7 +10703,7 @@ if (ipart.eq.0) call setdebug
           end if   
 
 do l =1,nlay+1
-if(deb)write(0,*)'before cldprmc_sw cldfmc ',l,1,cldfmcl(IDEBUG,1,l)
+if(deb)write(0,*)'before cldprmc_sw cldfmc ',l,1,cldfmcl(IDEBUG,l,1)
 enddo
 
           if (cc==2) then   ! call cldprmc for cloudy cases
@@ -10681,7 +10713,7 @@ enddo
           end if
 
 do l =1,nlay+1
-if(deb)write(0,*)'before setcoef_sw cldfmc ',l,1,cldfmcl(IDEBUG,1,l)
+if(deb)write(0,*)'before setcoef_sw cldfmc ',l,1,cldfmcl(IDEBUG,l,1)
 if(deb.and.l<=nlay)write(0,*)'before setcoef_sw play  ',l,1,play (IDEBUG,l)
 if(deb.and.l<=nlay)write(0,*)'before setcoef_sw tlay  ',l,1,tlay (IDEBUG,l)
 if(deb)write(0,*)'before setcoef_sw plev  ',l,1,plev (IDEBUG,l)
@@ -10725,7 +10757,7 @@ enddo
                           selffac , selffrac , indself , forfac , forfrac , indfor )
 
 do l =1,nlay+1
-if(deb)write(0,*)'before spcvmc_sw cldfmc ',l,1,cldfmcl(IDEBUG,1,l)
+if(deb)write(0,*)'before spcvmc_sw cldfmc ',l,1,cldfmcl(IDEBUG,l,1)
 enddo
 
           call spcvmc_sw(cc, ncol, colr, nlay, istart, iend, icpr, idelm, iout, &
