@@ -10432,7 +10432,7 @@ use debuggal
       real , parameter :: amdo2 = 0.905140  ! Molecular weight of dry air / oxygen
 
       real , parameter :: sbc = 5.67e-08    ! Stefan-Boltzmann constant (W/m2K4)
-
+integer ii
       integer  :: isp, l, ix, n, imol  ! Loop indices
       real  :: amm, summol                      ! 
       real  :: adjflx                           ! flux adjustment for Earth/Sun distance
@@ -10838,9 +10838,11 @@ if(deb)write(0,*)'iceflag ',iceflgsw
 if(deb)write(0,*)'inflag ',inflgsw
 if(deb)write(0,*)'liqflag ',liqflgsw
 
+do ii=1,ngptsw
 do l =1,nlay+1
-if(deb)write(0,*)'before cldprmc_sw cldfmc ',l,1,cldfmcl(IDEBUG,l,1)
-if(deb)write(0,*)'before cldprmc_sw taucmc ',l,1,taucmc(IDEBUG,l,1)
+if(deb)write(0,*)'before cldprmc_sw cldfmc ',l,1,cldfmcl(IDEBUG,l,ii)
+if(deb)write(0,*)'before cldprmc_sw taucmc ',l,1,taucmc(IDEBUG,l,ii)
+enddo
 enddo
 
           if (cc==2) then   ! call cldprmc for cloudy cases

@@ -9249,6 +9249,7 @@ use debuggal
 !      real(kind=rb) :: znifd(nlay+2)         ! temporary downward near-IR shortwave flux (w/m2)
 !      real(kind=rb) :: znicu(nlay+2)         ! temporary clear sky upward near-IR shortwave flux (w/m2)
 !      real(kind=rb) :: znicd(nlay+2)         ! temporary clear sky downward near-IR shortwave flux (w/m2)
+integer ii
 
 integer imol
 ! Initializations
@@ -9329,9 +9330,11 @@ integer imol
 if(deb)write(0,*)'iceflag ',iceflag
 if(deb)write(0,*)'inflag ',inflag
 if(deb)write(0,*)'liqflag ',liqflag
+do ii=1,ngptsw
 do i=1,nlayers+1
-if(deb)write(0,*)'before cldprmc_sw cldfmc ',i,1,cldfmc(1,i)
-if(deb)write(0,*)'before cldprmc_sw taucmc ',i,1,taucmc(1,i)
+if(deb)write(0,*)'before cldprmc_sw cldfmc ',i,ii,cldfmc(ii,i)
+if(deb)write(0,*)'before cldprmc_sw taucmc ',i,ii,taucmc(ii,i)
+enddo
 enddo
 
          call cldprmc_sw(nlayers, inflag, iceflag, liqflag, cldfmc, &
