@@ -1637,7 +1637,7 @@ use debuggal
            do isubcol = 1,nsubcol
            do ilev = 1,nlay
                do i = 1, ncol
-                if (ilev.eq.1)then
+                if (ilev.eq.1.and.isubcol.eq.1)then
                   seed1 = (play(i,1)*100 - int(play(i,1)*100))  * 1000000000  !jm
                   seed2 = (play(i,2)*100 - int(play(i,2)*100))  * 1000000000  !jm
                   seed3 = (play(i,3)*100 - int(play(i,3)*100))  * 1000000000  !jm
@@ -1896,7 +1896,7 @@ use debuggal
 !                
 !               elseif ( CDF(i,ilev,isubcol)>=(1.0 - cld(i,ilev)) ) then
 
-!jm if(deb.and.isubcol.eq.1)write(0,*)'zop CDF ',1,ilev,CDF(i,ilev,isubcol)
+if(deb)write(0,"('gen iscloudy ',2i4,L,2e25.12)")isubcol,ilev,CDF(1,ilev,isubcol)>=(1.0 - cld(1,ilev)),cld(1,ilev),CDF(1,ilev,isubcol)
                if ( CDF(i,ilev,isubcol)>=(1.0 - cld(i,ilev)) ) then
                   cld_stoch(i,ilev,isubcol) = 1.0 
                   clwp_stoch(i,ilev,isubcol) = clwp(i,ilev)
@@ -10840,8 +10840,8 @@ if(deb)write(0,*)'liqflag ',liqflgsw
 
 do ii=1,ngptsw
 do l =1,nlay+1
-if(deb)write(0,*)'before cldprmc_sw cldfmc ',l,1,cldfmcl(IDEBUG,l,ii)
-if(deb)write(0,*)'before cldprmc_sw taucmc ',l,1,taucmc(IDEBUG,l,ii)
+if(deb)write(0,*)'before cldprmc_sw cldfmc ',l,ii,cldfmcl(IDEBUG,l,ii)
+if(deb)write(0,*)'before cldprmc_sw taucmc ',l,ii,taucmc(IDEBUG,l,ii)
 enddo
 enddo
 

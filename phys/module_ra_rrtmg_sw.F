@@ -1846,6 +1846,7 @@ use debuggal
       do ilev = 1,nlay
          do i = 1, ncol
             do isubcol = 1, nsubcol
+if(deb)write(0,"('gen iscloudy ',2i4,L,2e25.12)")isubcol,ilev,iscloudy(isubcol,i,ilev),cldf(1,ilev),CDF(isubcol,1,ilev)
                if ( iscloudy(isubcol,i,ilev) ) then
                   cld_stoch(isubcol,i,ilev) = 1._rb
                   clwp_stoch(isubcol,i,ilev) = clwp(i,ilev)
