@@ -1834,7 +1834,7 @@ use debuggal
 ! -- generate subcolumns for homogeneous clouds -----
       do ilev = 1, nlay
          isCloudy(:,:,ilev) = (CDF(:,:,ilev) >= 1._rb - spread(cldf(:,ilev), dim=1, nCopies=nsubcol) )
-if(deb)write(0,*)'zop CDF ',1,ilev,CDF(1,1,ilev)
+!jm if(deb)write(0,*)'zop CDF ',1,ilev,CDF(1,1,ilev)
       enddo
 
 ! where the subcolumn is cloudy, the subcolumn cloud fraction is 1;
@@ -2537,7 +2537,6 @@ use debuggal
       kmodts=2
 
       do jk=1, nlayers
-if(deb.and.iw.eq.1)write(0,*)'zark condition ',jk,.not.lrtchk(jk)
          if (.not.lrtchk(jk)) then
             pref(jk) =0._rb
             ptra(jk) =1._rb
@@ -3317,6 +3316,7 @@ if(deb.and.iw.eq.1)write(0,*)'zark pref ',jk,pref(jk)
       use parrrsw, only : ng16
       use rrsw_kg16, only : absa, ka, absb, kb, forref, selfref, &
                             sfluxref, rayl, layreffr, strrat1
+use debuggal
 
 ! ------- Declarations -------
 
@@ -3331,6 +3331,9 @@ if(deb.and.iw.eq.1)write(0,*)'zark pref ',jk,pref(jk)
 ! temperature, and appropriate species.  Below LAYTROP, the water
 ! vapor self-continuum is interpolated (in temperature) separately.  
 
+if(deb)write(0,*)'in taumol16 laytrop ',laytrop
+if(deb)write(0,*)'in taumol16 nspa ',nspa(16)
+if(deb)write(0,*)'in taumol16 nspb ',nspb(16)
 ! Lower atmosphere loop
       do lay = 1, laytrop
          speccomb = colh2o(lay) + strrat1*colch4(lay)
@@ -3352,6 +3355,31 @@ if(deb.and.iw.eq.1)write(0,*)'zark pref ',jk,pref(jk)
          inds = indself(lay)
          indf = indfor(lay)
          tauray = colmol(lay) * rayl
+if(deb)write(0,*)'in taumol16 speccomb ',lay,speccomb
+if(deb)write(0,*)'in taumol16 specparm ',lay,specparm
+if(deb)write(0,*)'in taumol16 specmult ',lay,specmult
+if(deb)write(0,*)'in taumol16 js ',lay,js
+if(deb)write(0,*)'in taumol16 fs ',lay,fs
+if(deb)write(0,*)'in taumol16 jp ',lay,jp(lay)
+if(deb)write(0,*)'in taumol16 jt ',lay,jt(lay)
+if(deb)write(0,*)'in taumol16 jt1 ',lay,jt1(lay)
+if(deb)write(0,*)'in taumol16 fac000 ',lay,fac000
+if(deb)write(0,*)'in taumol16 fac010 ',lay,fac010
+if(deb)write(0,*)'in taumol16 fac100 ',lay,fac100
+if(deb)write(0,*)'in taumol16 fac110 ',lay,fac110
+if(deb)write(0,*)'in taumol16 fac001 ',lay,fac001
+if(deb)write(0,*)'in taumol16 fac011 ',lay,fac011
+if(deb)write(0,*)'in taumol16 fac101 ',lay,fac101
+if(deb)write(0,*)'in taumol16 fac111 ',lay,fac111
+if(deb)write(0,*)'in taumol16 ind0 ',lay,ind0
+if(deb)write(0,*)'in taumol16 ind1 ',lay,ind1
+if(deb)write(0,*)'in taumol16 inds ',lay,inds
+if(deb)write(0,*)'in taumol16 indf ',lay,indf
+if(deb)write(0,*)'in taumol16 colh2o ',lay,colh2o(lay)
+if(deb)write(0,*)'in taumol16 selffac ',lay,selffac(lay)
+if(deb)write(0,*)'in taumol16 selffrac ',lay,selffrac(lay)
+if(deb)write(0,*)'in taumol16 forfac ',lay,forfac(lay)
+if(deb)write(0,*)'in taumol16 forfrac ',lay,forfrac(lay)
 
          do ig = 1, ng16
             taug(lay,ig) = speccomb * &
@@ -3370,6 +3398,13 @@ if(deb.and.iw.eq.1)write(0,*)'zark pref ',jk,pref(jk)
                  forfac(lay) * (forref(indf,ig) + &
                  forfrac(lay) * &
                  (forref(indf+1,ig) - forref(indf,ig)))) 
+
+if(deb)write(0,*)'in taumol16 selfref ',lay,selfref(inds,ig),ig
+if(deb)write(0,*)'in taumol16 selfref+1 ',lay,selfref(inds+1,ig),ig
+if(deb)write(0,*)'in taumol16 forref ',lay,forref(indf,ig),ig
+if(deb)write(0,*)'in taumol16 forref+1 ',lay,forref(indf+1,ig),ig
+if(deb)write(0,*)'in taumol16 taug ',lay,taug(lay,ig),ig
+
 !            ssa(lay,ig) = tauray/taug(lay,ig)
             taur(lay,ig) = tauray
          enddo
@@ -3384,6 +3419,15 @@ if(deb.and.iw.eq.1)write(0,*)'zark pref ',jk,pref(jk)
          ind0 = ((jp(lay)-13)*5+(jt(lay)-1))*nspb(16) + 1
          ind1 = ((jp(lay)-12)*5+(jt1(lay)-1))*nspb(16) + 1
          tauray = colmol(lay) * rayl
+
+if(deb)write(0,*)'in taumol16 ind0 ',lay,ind0
+if(deb)write(0,*)'in taumol16 ind1 ',lay,ind1
+if(deb)write(0,*)'in taumol16 inds ',lay,inds
+if(deb)write(0,*)'in taumol16 fac00 ',lay,fac00(lay)
+if(deb)write(0,*)'in taumol16 fac10 ',lay,fac10(lay)
+if(deb)write(0,*)'in taumol16 fac01 ',lay,fac01(lay)
+if(deb)write(0,*)'in taumol16 fac11 ',lay,fac11(lay)
+if(deb)write(0,*)'in taumol16 colch4 ',lay,colch4(lay)
 
          do ig = 1, ng16
             taug(lay,ig) = colch4(lay) * &
@@ -7931,7 +7975,7 @@ if(deb.and.iw.eq.1)write(0,*)'zark pref ',jk,pref(jk)
       real(kind=rb), intent(in) :: ptdbt(:)
                                                               !   Dimensions: (nlayers+1)
 
-      real(kind=rb), intent(inout) :: prdnd(:)
+      real(kind=rb), intent(out) :: prdnd(:)
                                                               !   Dimensions: (nlayers+1)
       real(kind=rb), intent(inout) :: prup(:)
                                                               !   Dimensions: (nlayers+1)
@@ -8413,6 +8457,13 @@ use debuggal
 !               zomco(jk) = zomco(jk) / ztauo(jk)
 
 ! Clear-sky optical parameters including aerosols
+
+if(deb)write(0,*)'before clearsky reftra_sw ztaur ',ikl,iw,ztaur(ikl,iw)
+if(deb)write(0,*)'before clearsky reftra_sw ztaug ',ikl,iw,ztaug(ikl,iw)
+if(deb)write(0,*)'before clearsky reftra_sw ptaua ',ikl,iw,ptaua(ikl,ibm)
+if(deb)write(0,*)'before clearsky reftra_sw pomga ',ikl,iw,pomga(ikl,ibm)
+if(deb)write(0,*)'before clearsky reftra_sw pasya ',ikl,iw,pasya(ikl,ibm)
+
                ztauc(jk) = ztaur(ikl,iw) + ztaug(ikl,iw) + ptaua(ikl,ibm)
                zomcc(jk) = ztaur(ikl,iw) * 1.0_rb + ptaua(ikl,ibm) * pomga(ikl,ibm)
                zgcc(jk) = pasya(ikl,ibm) * pomga(ikl,ibm) * ptaua(ikl,ibm) / zomcc(jk)
@@ -8470,7 +8521,10 @@ use debuggal
 
 ! Total sky optical parameters (cloud properties already delta-scaled)
 !   Use this code if cloud properties are derived in rrtmg_sw_cldprop       
+!jm icpr is 1
                if (icpr .ge. 1) then
+
+
                   ztauo(jk) = ztauc(jk) + ptaucmc(ikl,iw)
                   zomco(jk) = ztauc(jk) * zomcc(jk) + ptaucmc(ikl,iw) * pomgcmc(ikl,iw) 
                   zgco (jk) = (ptaucmc(ikl,iw) * pomgcmc(ikl,iw) * pasycmc(ikl,iw) + &
@@ -8501,23 +8555,20 @@ use debuggal
 
 ! Clear sky reflectivities
 
-do ikl=1,klev+1
-if (iw.eq.1) then
+do ikl=1,klev
 if(deb)write(0,*)'before clearsky reftra_sw lrtchkclr ',ikl,iw,lrtchkclr(ikl)
 if(deb)write(0,*)'before clearsky reftra_sw pcldfmc ',ikl,iw,pcldfmc(ikl,iw)
 if(deb)write(0,*)'before clearsky reftra_sw zgcc ',ikl,iw,zgcc(ikl)
 if(deb)write(0,*)'before clearsky reftra_sw prmu0 ',ikl,iw,prmu0
 if(deb)write(0,*)'before clearsky reftra_sw ztauc ',ikl,iw,ztauc(ikl)
 if(deb)write(0,*)'before clearsky reftra_sw zomcc ',ikl,iw,zomcc(ikl)
-endif
 enddo
 
             call reftra_sw (iw,klev, &
                             lrtchkclr, zgcc, prmu0, ztauc, zomcc, &
                             zrefc, zrefdc, ztrac, ztradc)
 
-do ikl=1,klev+1
-if (iw.eq.1) then
+do ikl=1,klev
 if(deb)write(0,*)'before cloudy reftra_sw ptaua ',ikl,iw,ptaua(ikl,ibm)
 if(deb)write(0,*)'before cloudy reftra_sw pomga ',ikl,iw,pomga(ikl,ibm)
 if(deb)write(0,*)'before cloudy reftra_sw pasya ',ikl,iw,pasya(ikl,ibm)
@@ -8530,7 +8581,6 @@ if(deb)write(0,*)'before cloudy reftra_sw zgco ',ikl,iw,zgco(ikl)
 if(deb)write(0,*)'before cloudy reftra_sw prmu0 ',ikl,iw,prmu0
 if(deb)write(0,*)'before cloudy reftra_sw ztauo ',ikl,iw,ztauo(ikl)
 if(deb)write(0,*)'before cloudy reftra_sw zomco ',ikl,iw,zomco(ikl)
-endif
 enddo
 
 ! Total sky reflectivities      
@@ -8591,17 +8641,17 @@ enddo
 ! Vertical quadrature for clear-sky fluxes
 
 do ikl=1,klev+1
-if (iw.eq.1) then
-if(deb)write(0,*)'before clearsky vrtqdr_sw zrefo ',ikl,iw,zrefc(ikl)
-if(deb)write(0,*)'before clearsky vrtqdr_sw zrefd ',ikl,iw,zrefdc(ikl)
-if(deb)write(0,*)'before clearsky vrtqdr_sw ztra ',ikl,iw,ztrac(ikl)
-if(deb)write(0,*)'before clearsky vrtqdr_sw ztrad ',ikl,iw,ztradc(ikl)
-if(deb)write(0,*)'before clearsky vrtqdr_sw zdbt ',ikl,iw,zdbtc(ikl)
-if(deb)write(0,*)'before clearsky vrtqdr_sw zrdnd ',ikl,iw,zrdndc(ikl)
-if(deb)write(0,*)'before clearsky vrtqdr_sw zrup ',ikl,iw,zrupc(ikl)
-if(deb)write(0,*)'before clearsky vrtqdr_sw zrupd ',ikl,iw,zrupdc(ikl)
+!if (iw.eq.1) then
+if(deb)write(0,*)'before clearsky vrtqdr_sw zrefc ',ikl,iw,zrefc(ikl)
+if(deb)write(0,*)'before clearsky vrtqdr_sw zrefdc ',ikl,iw,zrefdc(ikl)
+if(deb)write(0,*)'before clearsky vrtqdr_sw ztrac ',ikl,iw,ztrac(ikl)
+if(deb)write(0,*)'before clearsky vrtqdr_sw ztradc ',ikl,iw,ztradc(ikl)
+if(deb)write(0,*)'before clearsky vrtqdr_sw zdbtc ',ikl,iw,zdbtc(ikl)
+!if(deb)write(0,*)'before clearsky vrtqdr_sw zrdnd ',ikl,iw,zrdndc(ikl)
+if(deb.and.ikl.eq.klev+1)write(0,*)'before clearsky vrtqdr_sw zrupc ',ikl,iw,zrupc(ikl)
+if(deb.and.ikl.eq.klev+1)write(0,*)'before clearsky vrtqdr_sw zrupdc ',ikl,iw,zrupdc(ikl)
 if(deb)write(0,*)'before clearsky vrtqdr_sw ztdbt ',ikl,iw,ztdbtc(ikl)
-endif
+!endif
 enddo
 
 !if(deb)write(0,*)'before clearsky vrtqdr_sw zrefo ',iw,zref(KDEBUG)
@@ -8613,29 +8663,31 @@ enddo
 !if(deb)write(0,*)'after clearsky vrtqdr_sw zfu ',iw,zcu(klev+2-KDEBUG,iw)
 
 do ikl=1,klev+1
-if (iw.eq.1) then
+!if (iw.eq.1) then
 !if(deb)write(0,*)'after clearsky vrtqdr_sw zfd ',ikl,iw,zfd(klev+2-ikl,iw)
 !if(deb)write(0,*)'after clearsky vrtqdr_sw zfu ',ikl,iw,zfu(klev+2-ikl,iw)
-if(deb)write(0,*)'after clearsky vrtqdr_sw zfd ',ikl,iw,zcd(ikl,iw)
-if(deb)write(0,*)'after clearsky vrtqdr_sw zfu ',ikl,iw,zcu(ikl,iw)
-endif
+if(deb)write(0,*)'after clearsky vrtqdr_sw zcd ',ikl,iw,zcd(ikl,iw)
+if(deb)write(0,*)'after clearsky vrtqdr_sw zcu ',ikl,iw,zcu(ikl,iw)
+if(deb)write(0,*)'after clearsky vrtqdr_sw zrdnd ',ikl,iw,zrdndc(ikl)
+if(deb)write(0,*)'after clearsky b4 accum pbbcu',ikl,iw,pbbcu(ikl)
+!endif
 enddo
 
       
 ! Vertical quadrature for cloudy fluxes
 
 do ikl=1,klev+1
-if (iw.eq.1) then
-if(deb)write(0,*)'before cloudy vrtqdr_sw zrefo ',ikl,iw,zref(ikl)
+!if (iw.eq.1) then
+if(deb)write(0,*)'before cloudy vrtqdr_sw zref ',ikl,iw,zref(ikl)
 if(deb)write(0,*)'before cloudy vrtqdr_sw zrefd ',ikl,iw,zrefd(ikl)
 if(deb)write(0,*)'before cloudy vrtqdr_sw ztra ',ikl,iw,ztra(ikl)
 if(deb)write(0,*)'before cloudy vrtqdr_sw ztrad ',ikl,iw,ztrad(ikl)
 if(deb)write(0,*)'before cloudy vrtqdr_sw zdbt ',ikl,iw,zdbt(ikl)
-if(deb)write(0,*)'before cloudy vrtqdr_sw zrdnd ',ikl,iw,zrdnd(ikl)
-if(deb)write(0,*)'before cloudy vrtqdr_sw zrup ',ikl,iw,zrup(ikl)
-if(deb)write(0,*)'before cloudy vrtqdr_sw zrupd ',ikl,iw,zrupd(ikl)
+!if(deb)write(0,*)'before cloudy vrtqdr_sw zrdnd ',ikl,iw,zrdnd(ikl)
+if(deb.and.ikl.eq.klev+1)write(0,*)'before cloudy vrtqdr_sw zrup ',ikl,iw,zrup(ikl)
+if(deb.and.ikl.eq.klev+1)write(0,*)'before cloudy vrtqdr_sw zrupd ',ikl,iw,zrupd(ikl)
 if(deb)write(0,*)'before cloudy vrtqdr_sw ztdbt ',ikl,iw,ztdbt(ikl)
-endif
+!endif
 enddo
 
             call vrtqdr_sw(klev, iw, &
@@ -8643,12 +8695,13 @@ enddo
                            zdbt, zrdnd, zrup, zrupd, ztdbt, &
                            zfd, zfu)
 do ikl=1,klev+1
-if (iw.eq.1) then
+!if (iw.eq.1) then
 !if(deb)write(0,*)'after cloudy vrtqdr_sw zfd ',ikl,iw,zfd(klev+2-ikl,iw)
 !if(deb)write(0,*)'after cloudy vrtqdr_sw zfu ',ikl,iw,zfu(klev+2-ikl,iw)
 if(deb)write(0,*)'after cloudy vrtqdr_sw zfd ',ikl,iw,zfd(ikl,iw)
 if(deb)write(0,*)'after cloudy vrtqdr_sw zfu ',ikl,iw,zfu(ikl,iw)
-endif
+if(deb)write(0,*)'after cloudy vrtqdr_sw zrdnd ',ikl,iw,zrdnd(ikl)
+!endif
 enddo
 
 ! Upwelling and downwelling fluxes at levels
@@ -8669,6 +8722,7 @@ enddo
 ! Accumulate spectral fluxes over whole spectrum  
                pbbfu(ikl) = pbbfu(ikl) + zincflx(iw)*zfu(jk,iw)
                pbbfd(ikl) = pbbfd(ikl) + zincflx(iw)*zfd(jk,iw)
+if(deb)write(0,"('after cloudy in accum pbbfd',2i4,3e25.12)")ikl,iw,pbbfd(ikl),zfd(jk,iw),zcd(jk,iw)
                pbbcu(ikl) = pbbcu(ikl) + zincflx(iw)*zcu(jk,iw)
                pbbcd(ikl) = pbbcd(ikl) + zincflx(iw)*zcd(jk,iw)
                pbbfddir(ikl) = pbbfddir(ikl) + zincflx(iw)*ztdbt_nodel(jk)
@@ -8695,6 +8749,14 @@ enddo
 
 ! End loop on jb, spectral band
       enddo                    
+
+do jk=1,klev+1
+ikl=klev+2-jk
+if(deb)write(0,*)'end of spcvmc_sw pbbfu',ikl,pbbfu(ikl)
+if(deb)write(0,*)'end of spcvmc_sw pbbfd',ikl,pbbfd(ikl)
+if(deb)write(0,*)'end of spcvmc_sw pbbcu',ikl,pbbcu(ikl)
+if(deb)write(0,*)'end of spcvmc_sw pbbcd',ikl,pbbcd(ikl)
+enddo
 
       end subroutine spcvmc_sw
 
@@ -9293,9 +9355,9 @@ if(deb.and.i<=nlayers)write(0,*)'before setcoef_sw coldry  ',i,1,coldry(i)
 do imol = 1, nmol
 if(deb.and.i<=nlayers)write(0,*)'before setcoef_sw wkl  ',i,imol,wkl(imol,i)
 enddo
-if(deb)write(0,*)'before setcoef_sw laytrop  ',i,1,laytrop
-if(deb)write(0,*)'before setcoef_sw layswtch  ',i,1,layswtch
-if(deb)write(0,*)'before setcoef_sw laylow  ',i,1,laylow
+!if(deb)write(0,*)'before setcoef_sw laytrop  ',i,1,laytrop
+!if(deb)write(0,*)'before setcoef_sw layswtch  ',i,1,layswtch
+!if(deb)write(0,*)'before setcoef_sw laylow  ',i,1,laylow
 !if(deb)write(0,*)'before setcoef_sw jp  ',i,1,jp(i)
 !if(deb)write(0,*)'before setcoef_sw jt  ',i,1,jt(i)
 !if(deb)write(0,*)'before setcoef_sw jt1  ',i,1,jt1(i)
@@ -9325,9 +9387,9 @@ enddo
                          colo2, colo3, fac00, fac01, fac10, fac11, &
                          selffac, selffrac, indself, forfac, forfrac, indfor)
 
-do i=1,nlayers+1
-if(deb)write(0,*)'after setcoef_sw cldfmc ',i,1,cldfmc(1,i)
-enddo
+if(deb)write(0,*)'after setcoef_sw laytrop  ',laytrop
+if(deb)write(0,*)'after setcoef_sw layswtch  ',layswtch
+if(deb)write(0,*)'after setcoef_sw laylow  ',laylow
 
 ! Cosine of the solar zenith angle 
 !  Prevent using value of zero; ideally, SW model is not called from host model when sun 
@@ -9340,6 +9402,10 @@ enddo
 
 ! Surface albedo
 !  Near-IR bands 16-24 and 29 (1-9 and 14), 820-16000 cm-1, 0.625-12.195 microns
+if(deb)write(0,*)'setting aldir ',aldir(iplon)
+if(deb)write(0,*)'setting aldif ',aldif(iplon)
+if(deb)write(0,*)'setting asdir ',asdir(iplon)
+if(deb)write(0,*)'setting asdif ',asdif(iplon)
          do ib=1,9
             albdir(ib) = aldir(iplon)
             albdif(ib) = aldif(iplon)
@@ -9451,6 +9517,17 @@ enddo
 do i=1,nlayers+1
 if(deb)write(0,*)'before spcvmc_sw cldfmc ',i,1,zcldfmc(i,1)
 if(deb)write(0,*)'before spcvmc_sw taucmc ',i,1,ztaucmc(i,1)
+enddo
+
+do ib=1,9
+if(deb)write(0,*)'abdif ',ib,albdif(ib)
+if(deb)write(0,*)'abdir ',ib,albdir(ib)
+enddo
+if(deb)write(0,*)'abdif ',nbndsw,albdif(nbndsw)
+if(deb)write(0,*)'abdir ',nbndsw,albdir(nbndsw)
+do ib=10,13
+if(deb)write(0,*)'abdif ',ib,albdif(ib)
+if(deb)write(0,*)'abdir ',ib,albdir(ib)
 enddo
 
 
@@ -10336,7 +10413,10 @@ use debuggal
 ! longitude loop
      i_loop: do i = its,ite
 call unsetdebug
-if (i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)call setdebug
+if (i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)then
+write(0,*)'calling setdebug for ',i,j
+ call setdebug
+endif
 !
 ! Do shortwave by default, deactivate below if sun below horizon
          dorrsw = .true.
@@ -11102,19 +11182,19 @@ write(0,*)'zap b4 rrtmg_sw tauaer ',tauaer
 write(0,*)'zap b4 rrtmg_sw ssaaer ',ssaaer
 write(0,*)'zap b4 rrtmg_sw asmaer ',asmaer
 write(0,*)'zap b4 rrtmg_sw ecaer ',ecaer
-write(0,*)'zap b4 rrtmg_sw swuflx ',swuflx
-write(0,*)'zap b4 rrtmg_sw swdflx ',swdflx 
+!write(0,*)'zap b4 rrtmg_sw swuflx ',swuflx
+!write(0,*)'zap b4 rrtmg_sw swdflx ',swdflx 
 !write(0,*)'zap b4 rrtmg_sw swhr ',swhr
-write(0,*)'zap b4 rrtmg_sw swuflxc ',swuflxc
-write(0,*)'zap b4 rrtmg_sw swdflxc ',swdflxc
+!write(0,*)'zap b4 rrtmg_sw swuflxc ',swuflxc
+!write(0,*)'zap b4 rrtmg_sw swdflxc ',swdflxc
 !write(0,*)'zap b4 rrtmg_sw swhrc ',swhrc
 write(0,*)'zap b4 rrtmg_sw aer_opt ',aer_opt
 !write(0,*)'zap b4 rrtmg_sw sibvisdir ',sibvisdir
 !write(0,*)'zap b4 rrtmg_sw sibvisdif ',sibvisdif
 !write(0,*)'zap b4 rrtmg_sw sibnirdir ',sibnirdir
 !write(0,*)'zap b4 rrtmg_sw sibnirdif ',sibnirdif
-write(0,*)'zap b4 rrtmg_sw swdkdir ',swdkdir
-write(0,*)'zap b4 rrtmg_sw swdkdif ',swdkdif
+!write(0,*)'zap b4 rrtmg_sw swdkdir ',swdkdir
+!write(0,*)'zap b4 rrtmg_sw swdkdif ',swdkdif
 endif
 
          call rrtmg_sw &
@@ -11174,12 +11254,14 @@ write(0,*)'zap aft rrtmg_sw tauaer ',tauaer
 write(0,*)'zap aft rrtmg_sw ssaaer ',ssaaer
 write(0,*)'zap aft rrtmg_sw asmaer ',asmaer
 write(0,*)'zap aft rrtmg_sw ecaer ',ecaer
-write(0,*)'zap aft rrtmg_sw swuflx ',swuflx
-write(0,*)'zap aft rrtmg_sw swdflx ',swdflx 
-write(0,*)'zap aft rrtmg_sw swhr ',swhr
-write(0,*)'zap aft rrtmg_sw swuflxc ',swuflxc
-write(0,*)'zap aft rrtmg_sw swdflxc ',swdflxc
-write(0,*)'zap aft rrtmg_sw swhrc ',swhrc
+do k=kts,kte 
+write(0,*)'zap aft rrtmg_sw swuflx ',k,swuflx(1,k)
+write(0,*)'zap aft rrtmg_sw swdflx ',k,swdflx(1,k)
+write(0,*)'zap aft rrtmg_sw swhr ',k,swhr(1,k)
+write(0,*)'zap aft rrtmg_sw swuflxc ',k,swuflxc(1,k)
+write(0,*)'zap aft rrtmg_sw swdflxc ',k,swdflxc(1,k)
+write(0,*)'zap aft rrtmg_sw swhrc ',k,swhrc(1,k)
+enddo
 write(0,*)'zap aft rrtmg_sw aer_opt ',aer_opt
 write(0,*)'zap aft rrtmg_sw sibvisdir ',sibvisdir
 write(0,*)'zap aft rrtmg_sw sibvisdif ',sibvisdif

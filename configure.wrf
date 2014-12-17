@@ -190,8 +190,8 @@ ARCHFLAGS       =    $(COREDEFS) -DIWORDSIZE=$(IWORDSIZE) -DDWORDSIZE=$(DWORDSIZ
                        \
                       -DNETCDF \
                        \
--DIDEBUG=1 \
--DIDEBUG_BASE=1 \
+-DIDEBUG=35 \
+-DIDEBUG_BASE=35 \
 -DJDEBUG_BASE=1 \
 -DKDEBUG_BASE=1 \
 -DKDEBUG=1 \

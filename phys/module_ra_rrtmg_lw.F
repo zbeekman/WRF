@@ -2,6 +2,7 @@
 
 module debuggal
 logical :: deb=.false.
+integer :: ideb
 contains
 subroutine setdebug
 deb=.true.
