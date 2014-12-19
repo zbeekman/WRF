@@ -2076,10 +2076,11 @@ endif
 ! jararias, 14/08/2013
      ! surface direct and diffuse SW fluxes computation. Only for schemes other than RRTMG and Goddard
      ! Backup method in case sw scheme in use does not provide surface SW direct and diffuse irradiances
-     if ((sw_physics .ne. rrtmg_swscheme) .and. (sw_physics .ne. goddardswscheme)) then
-        do j=jts,jte
-           do i=its,ite
-              if (coszen(i,j).gt.1e-3) then
+     IF ((sw_physics .NE. RRTMG_SWSCHEME) .AND. (sw_physics .NE. RRTMG_SWSCHEME_FAST) &
+           .AND. (sw_physics .ne. GODDARDSWSCHEME)) THEN
+        DO j=jts,jte
+           DO i=its,ite
+              IF (coszen(i,j).GT.1e-3) THEN
                  ioh=solcon*coszen(i,j) ! TOA irradiance
                  kt=swdown(i,j)/max(ioh,1e-3) ! clearness index
                  ! Optical air mass: Rigollier et al. (2000) doi: 10.1016/S0038-092X(99)00055-9
@@ -2092,10 +2093,10 @@ endif
                  swddif(i,j)=kd*swdown(i,j)
                  swddir(i,j)=(1.-kd)*swdown(i,j)
                  swddni(i,j)=swddir(i,j)/max(coszen(i,j),1e-4)
-              end if
-           end do
-        end do
-     end if
+              ENDIF
+           ENDDO
+        ENDDO
+     ENDIF
 
      !JOE: save the total clouds (resolved & subgrid) for output.
      !     For this, we will use the qc_total array for both qc & qi

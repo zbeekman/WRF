@@ -43,7 +43,7 @@
 ! ngsNN  :  integer: cumulative number of g-intervals per band
 !------------------------------------------------------------------
 
-      integer , parameter :: mxlay  = 100   !jplay, klev
+      integer , parameter :: mxlay  = 203   !jplay, klev
       integer , parameter :: mg     = 16     !jpg
       integer , parameter :: nbndsw = 14     !jpsw, ksw
       integer , parameter :: naerec  = 6     !jpaer
@@ -8706,6 +8706,13 @@ real gpu_device  :: zcd(tncol,ngptsw,nlayers+1)  , zcu(tncol,ngptsw,nlayers+1)
       real  :: zdbtmc, zdbtmo, zf, zgw, zreflect
       real  :: zwf, tauorig, repclc
 
+#ifndef _CUDA
+      real :: zdbt_nodel(tncol,ngptsw,nlayers+1)
+      real :: zdbtc_nodel(tncol,ngptsw,nlayers+1)
+      real :: ztdbt_nodel(tncol,ngptsw,nlayers+1)
+      real :: ztdbtc_nodel(tncol,ngptsw,nlayers+1)
+#endif
+
 
 ! Arrays from rrtmg_sw_vrtqdr routine
   
@@ -8775,6 +8782,7 @@ if(deb)write(0,*)'palbd ',palbd(1,:)
 ! Clear-sky    
 !   TOA direct beam    
            
+          ztdbtc_nodel(iplon,iw,1)=1.0  !jm
            
 ! Cloudy-sky    
 !   Surface values
@@ -8787,6 +8795,8 @@ if(deb)write(0,*)'assigning zrefo ',iw,ibm,klev+1,zrefo(iplon,iw,klev+1)
 ! Total sky    
 !   TOA direct beam    
           ztdbt(iplon,iw,1)  =1.0 
+          ztdbt_nodel(iplon,iw,1)=1.0
+
     
 !   Surface values
           zdbt(iplon,iw,klev+1)   =0.0 
@@ -8820,6 +8830,47 @@ if(deb)write(0,*)'before clearsky reftra_sw pasya ',ikl,iw,pasya(1,ikl,ibm)
 
                ! Clear-sky optical parameters including aerosols
                ztauo(iplon,iw,jk)   = ztaur(iplon,ikl,iw)  + ztaug(iplon,ikl,iw) + ptaua(iplon,ikl,ibm)      
+
+#ifndef _CUDA
+! Use exponential lookup table for transmittance, or expansion of
+! exponential for low tau
+               zclear = 1.0  - pcldfmc(iplon,ikl,iw)
+               zcloud =  pcldfmc(iplon,ikl,iw)
+
+               ze1 = ztauo(iplon,iw,jk) / prmu0(iplon)  ! ztauo corresponds to ztauc at this point in _sw.F version
+               if (ze1 .le. od_lo) then
+                  zdbtmc = 1. - ze1 + 0.5 * ze1 * ze1
+               else
+                  tblind = ze1 / (bpade + ze1)
+                  itind = tblint * tblind + 0.5
+                  zdbtmc = exp_tbl(itind)
+               endif
+
+               zdbtc_nodel(iplon,iw,jk) = zdbtmc
+if(deb)write(0,*)'computing ztdbtc_nodel zdbtmc',jk,iw,zdbtmc
+               ztdbtc_nodel(iplon,iw,jk+1) = zdbtc_nodel(iplon,iw,jk) * ztdbtc_nodel(iplon,iw,jk)
+if(deb)write(0,*)'computing ztdbtc_nodel ztdbtc_nodel',jk,iw,ztdbtc_nodel(iplon,iw,jk)
+
+               tauorig = ztauo(iplon,iw,jk) + ptaormc(iplon,ikl,iw)    ! ztauo corresponds to ztauc at this point in _sw.F version
+               ze1 = tauorig / prmu0(iplon)
+               if (ze1 .le. od_lo) then
+                  zdbtmo = 1. - ze1 + 0.5 * ze1 * ze1
+               else
+                  tblind = ze1 / (bpade + ze1)
+                  itind = tblint * tblind + 0.5
+                  zdbtmo = exp_tbl(itind)
+               endif
+
+               zdbt_nodel(iplon,iw,jk) = zclear*zdbtmc + zcloud*zdbtmo
+if(deb)write(0,*)'computing ztdbtc_nodel zdbtmc',jk,iw,zdbtmc
+if(deb)write(0,*)'computing ztdbtc_nodel zclear',jk,iw,zclear
+if(deb)write(0,*)'computing ztdbtc_nodel zcloud',jk,iw,zcloud
+if(deb)write(0,*)'computing ztdbtc_nodel zdbtmo',jk,iw,zdbtmo
+               ztdbt_nodel(iplon,iw,jk+1) = zdbt_nodel(iplon,iw,jk) * ztdbt_nodel(iplon,iw,jk)
+if(deb)write(0,*)'computing ztdbtc_nodel ztdbt_nodel',jk,iw,ztdbt_nodel(iplon,iw,jk)
+
+#endif
+
                zomco(iplon,iw,jk)   = ztaur(iplon,ikl,iw) + ptaua(iplon,ikl,ibm) * pomga(iplon,ikl,ibm)
                zgco(iplon,iw,jk) = pasya(iplon,ikl,ibm) * pomga(iplon,ikl,ibm) * ptaua(iplon,ikl,ibm) / zomco(iplon,iw,jk)   
                zomco(iplon,iw,jk)   = zomco(iplon,iw,jk) / ztauo(iplon,iw,jk)
@@ -8827,6 +8878,7 @@ if(deb)write(0,*)'before clearsky reftra_sw pasya ',ikl,iw,pasya(1,ikl,ibm)
                zf = zgco(iplon, iw, jk)
                zf = zf * zf
                zwf = zomco(iplon, iw, jk) * zf
+
                ztauo(iplon, iw, jk) = (1.0 - zwf) * ztauo(iplon, iw, jk)
                zomco(iplon, iw, jk) = (zomco(iplon, iw, jk) - zwf) / (1.0 - zwf)
                zgco(iplon, iw, jk) = (zgco(iplon, iw, jk) - zf) / (1.0 - zf)
@@ -8929,7 +8981,7 @@ if(deb)write(0,*)'before clearsky vrtqdr_sw zdbtc ',ikl,iw,zdbt(1,iw,ikl)
 !if(deb)write(0,*)'before clearsky vrtqdr_sw zrdnd ',ikl,iw,zrdnd(1,iw,ikl)
 if(deb.and.ikl.eq.klev+1)write(0,*)'before clearsky vrtqdr_sw zrupc ',ikl,iw,zgco(1,iw,ikl)
 if(deb.and.ikl.eq.klev+1)write(0,*)'before clearsky vrtqdr_sw zrupdc ',ikl,iw,zomco(1,iw,ikl)
-if(deb)write(0,*)'before clearsky vrtqdr_sw ztdbt ',ikl,iw,ztdbt(1,iw,ikl)
+if(deb)write(0,*)'before clearsky vrtqdr_sw ztdbtc ',ikl,iw,ztdbt(1,iw,ikl)
 enddo
 enddo
 
@@ -8968,18 +9020,18 @@ enddo
               
              pbbcu(iplon,ikl)  = pbbcu(iplon,ikl)  + zincflx*zcu(iplon,iw,jk)  
              pbbcd(iplon,ikl)  = pbbcd(iplon,ikl)  + zincflx*zcd(iplon,iw,jk)  
-             pbbcddir(iplon,ikl)  = pbbcddir(iplon,ikl)  + zincflx*ztdbt(iplon,iw,jk)  
+             pbbcddir(iplon,ikl)  = pbbcddir(iplon,ikl)  + zincflx*ztdbtc_nodel(iplon,iw,jk)  
               
 
 ! Accumulate direct fluxes for UV/visible bands
              if (ibm >= 10 .and. ibm <= 13) then
                 puvcd(iplon,ikl)  = puvcd(iplon,ikl)  + zincflx*zcd(iplon,iw,jk)  
-                puvcddir(iplon,ikl)  = puvcddir(iplon,ikl)  + zincflx*ztdbt(iplon,iw,jk)  
+                puvcddir(iplon,ikl)  = puvcddir(iplon,ikl)  + zincflx*ztdbtc_nodel(iplon,iw,jk)  
                  
 ! Accumulate direct fluxes for near-IR bands
              else if (ibm == 14 .or. ibm <= 9) then  
                 pnicd(iplon,ikl)  = pnicd(iplon,ikl)  + zincflx*zcd(iplon,iw,jk)  
-                pnicddir(iplon,ikl)  = pnicddir(iplon,ikl)  + zincflx*ztdbt(iplon,iw,jk)  
+                pnicddir(iplon,ikl)  = pnicddir(iplon,ikl)  + zincflx*ztdbtc_nodel(iplon,iw,jk)  
                  
              endif
 
@@ -9197,20 +9249,22 @@ enddo
                pbbfu(iplon,ikl)  = pbbfu(iplon,ikl)  + zincflx*zfu(iplon,iw,jk)  
                pbbfd(iplon,ikl)  = pbbfd(iplon,ikl)  + zincflx*zfd(iplon,iw,jk)              
 if(deb)write(0,"('after cloudy in accum pbbfd',2i4,3e25.12)")ikl,iw,pbbfd(1,ikl),zfd(iplon,iw,jk),zcd(iplon,iw,jk)
-               pbbfddir(iplon,ikl)  = pbbfddir(iplon,ikl)  + zincflx*ztdbt(iplon,iw,jk)  
+               pbbfddir(iplon,ikl)  = pbbfddir(iplon,ikl)  + zincflx*ztdbt_nodel(iplon,iw,jk)  
+if(deb)write(0,"('after cloudy in accum pbbfddir',2i4,3e25.12)")ikl,iw,pbbfddir(1,ikl),zincflx,ztdbt_nodel(iplon,iw,jk)
+if(deb)write(0,"('after cloudy in accum ztdbt',2i4,1e25.12)")ikl,iw,ztdbt_nodel(iplon,iw,jk)
 
 ! Accumulate direct fluxes for UV/visible bands
                if (ibm >= 10 .and. ibm <= 13) then
                  
                   puvfd(iplon,ikl)  = puvfd(iplon,ikl)  + zincflx*zfd(iplon,iw,jk)  
-                  puvfddir(iplon,ikl)  = puvfddir(iplon,ikl)  + zincflx*ztdbt(iplon,iw,jk)  
+                  puvfddir(iplon,ikl)  = puvfddir(iplon,ikl)  + zincflx*ztdbt_nodel(iplon,iw,jk)  
                  
                  
 ! Accumulate direct fluxes for near-IR bands
                else if (ibm == 14 .or. ibm <= 9) then  
                 
                   pnifd(iplon,ikl)  = pnifd(iplon,ikl)  + zincflx*zfd(iplon,iw,jk)  
-                  pnifddir(iplon,ikl)  = pnifddir(iplon,ikl)  + zincflx*ztdbt(iplon,iw,jk)  
+                  pnifddir(iplon,ikl)  = pnifddir(iplon,ikl)  + zincflx*ztdbt_nodel(iplon,iw,jk)  
                    
                  
                endif
@@ -12464,7 +12518,9 @@ write(0,*)'zap aft rrtmg_sw sibvisdir ',sibvisdir(IDEBUG,:)
 write(0,*)'zap aft rrtmg_sw sibvisdif ',sibvisdif(IDEBUG,:)
 write(0,*)'zap aft rrtmg_sw sibnirdir ',sibnirdir(IDEBUG,:)
 write(0,*)'zap aft rrtmg_sw sibnirdif ',sibnirdif(IDEBUG,:)
-write(0,*)'zap aft rrtmg_sw swdkdir ',swdkdir(IDEBUG,:)
+do k =kts,kte
+write(0,*)'zap aft rrtmg_sw swdkdir ',swdkdir(IDEBUG,k)
+enddo
 write(0,*)'zap aft rrtmg_sw swdkdif ',swdkdif(IDEBUG,:)
 
 ! Output net absorbed shortwave surface flux and shortwave cloud forcing
@@ -12480,6 +12536,14 @@ write(0,*)'zap aft rrtmg_sw swdkdif ',swdkdif(IDEBUG,:)
       if (coszr(i,j).le.0.0) dorrsw = .false.
 ! Complete shortwave calculation if sun above horizon
       if (dorrsw) then
+
+         if (present(xcoszen)) then
+            coszr(i,j)=xcoszen(i,j)
+            coszrs=xcoszen(i,j)
+         else
+            call wrf_error_fatal('xcoszen must be passed into RRTMG_SWRAD_FAST')
+         endif
+
 
          icol = i + (j-jts)*(ite-its+1)
 
@@ -12510,6 +12574,8 @@ write(0,*)'zap aft rrtmg_sw swdkdif ',swdkdif(IDEBUG,:)
          endif
             swddir(i,j)    = swdkdir(icol,1)       ! jararias 2013/08/10
             swddni(i,j)    = swddir(i,j) / coszrs  ! jararias 2013/08/10
+if(i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)write(0,*)'swddni sun up ',swddni(i,j)
+if(i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)write(0,*)'swddir sun up ',swddir(i,j)
             swddif(i,j)    = swdkdif(icol,1)          ! jararias 2013/08/10
 
 ! Output up and down layer fluxes for total and clear sky.
@@ -12550,6 +12616,8 @@ write(0,*)'zap aft rrtmg_sw swdkdif ',swdkdif(IDEBUG,:)
             swddir(i,j)    = 0.  ! jararias 2013/08/10
             swddni(i,j)    = 0.  ! jararias 2013/08/10
             swddif(i,j)    = 0.  ! jararias 2013/08/10
+if(i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)write(0,*)'swddni sun down ',swddni(i,j)
+if(i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)write(0,*)'swddir sun down ',swddir(i,j)
 
       endif
 
