@@ -1,7 +1,8 @@
 !MODULE module_ra_rrtmg_lwf
 !#define CHNK 8
 !#define CHNK 1849
-#define CHNK 43
+!#define CHNK 43
+#define CHNK 1
 
 !  --------------------------------------------------------------------------
 ! |                                                                          |
@@ -3829,7 +3830,7 @@ use debuggal
 !-------------------------------------------------------------------------------------------------
        _gpuker subroutine generate_stochastic_cloudsg(colstart,ncol, nlay, icld, ngbd, &
 #ifndef _CUDA
-                                 pmidd,cldfracd,clwpd,ciwpd,cswpd,taucd, &
+                                 pmidd,cldfracd,clwpd,ciwpd,cswpd,taucd,changeSeed, &
 #endif
                                  cld_stoch, clwp_stoch, ciwp_stoch, cswp_stoch, &
 ! For GSFC, not needed for WRF
@@ -3906,6 +3907,7 @@ use debuggal
 ! were module data but changed to arguments because not thread-safe
       real  :: pmidd(:, :)
       real  :: cldfracd(:,:), clwpd(:,:), ciwpd(:,:), cswpd(:,:), taucd(:,:,:)
+      integer, intent(in) :: changeSeed
 #endif
 
 !      real , intent(in) :: ssac(:,:,:)       ! in-cloud single scattering albedo
@@ -3978,7 +3980,6 @@ use debuggal
       if (iplon <= ncol .and. gp <= nsubcol) then
 #else
       do iplon = 1, ncol
-      do gp = 1, nsubcol
 #endif
 
 
@@ -3990,18 +3991,25 @@ use debuggal
    
 ! For kissvec, create a seed that depends on the state of the columns. Maybe not the best way, but it works.  
 ! Must use pmid from bottom four layers. 
-#if 0
+#ifdef _CUDA
            seed1 = (pmidd(iplon,1) - int(pmidd(iplon,1)))  * 1000000000 + (gp) * 11 
            seed3 = (pmidd(iplon,3) - int(pmidd(iplon,3)))  * 1000000000 + (gp) * 13 
            seed2 = seed1 + gp
            seed4 = seed3 - gp 
 #else
-     if (gp.eq.1)then
+! Have it agree with the original _lw.F version, jm 20141222
        seed1 = (pmidd(iplon,1) - int(pmidd(iplon,1)))  * 1000000000
        seed2 = (pmidd(iplon,2) - int(pmidd(iplon,2)))  * 1000000000
        seed3 = (pmidd(iplon,3) - int(pmidd(iplon,3)))  * 1000000000
        seed4 = (pmidd(iplon,4) - int(pmidd(iplon,4)))  * 1000000000
-     endif
+if(deb)write(0,'("zap begin ",4i15)')seed1, seed2, seed3, seed4
+if(deb)write(0,'("zap begin ",4e20.12)')pmidd(iplon,1),pmidd(iplon,2),pmidd(iplon,3),pmidd(iplon,4)
+       do i=1,changeSeed
+          call kissvec(seed1, seed2, seed3, seed4, rand_num)
+if(deb)write(0,'("zap change ",i4,4i15)')i,seed1, seed2, seed3, seed4
+       enddo
+
+     do gp = 1, nsubcol
 
 #endif
   
@@ -4025,6 +4033,7 @@ use debuggal
        case(2)
 
            do ilev = 1,nlay
+if(deb)write(0,'("zap ",2i4,4i15)')gp,ilev,seed1, seed2, seed3, seed4
              call kissvec(seed1, seed2, seed3, seed4, rand_num)
              CDF(ilev) = rand_num
            end do
@@ -14367,7 +14376,7 @@ cn = CHNK
 
       do  i = 1, ns 
 
-if ( i .eq. 2 ) then
+if ( i .eq. IDEBUG_BASE ) then
 call setdebug
 else 
 call unsetdebug
@@ -14390,6 +14399,7 @@ endif
 !             tauaer  , zm, cloudMH, cloudHH, &
 !             uflx    ,dflx    ,hr      ,uflxc   ,dflxc,  hrc, &
 !             duflx_dt,duflxc_dt,cloudFlag)    
+
       end do  
       
 ! mji - time      
@@ -14758,6 +14768,7 @@ use debuggal
 ! For GSFC, not needed for WRF
 !      real  :: zmp(pncol, mxlay+1)
   
+      integer :: permuteseed  ! this is set, below
       integer  :: icb(16)
 	 
       ! local looping variables
@@ -14948,7 +14959,8 @@ integer,external :: omp_get_thread_num
 ! For GSFC, not needed for WRF
 !      zmd = zmp
       
-      call mcica_subcol_lwg(colstart, pncol, nlay, icld, counter, 0,                             &
+      permuteseed=150 ! if you change this, change value in module_ra_rrtmg_lw.F
+      call mcica_subcol_lwg(colstart, pncol, nlay, icld, counter, permuteseed,            &
 #ifndef _CUDA
                             pmid,clwp,ciwp,cswp,tauc,                                     &
 #endif
@@ -14967,7 +14979,7 @@ integer,external :: omp_get_thread_num
       if (icld > 0) then
          call generate_stochastic_cloudsg _gpuchv (colstart,pncold, nlayd, icldd, ngbd, &
 #ifndef _CUDA
-                               pmid,cldfracq,clwpq,ciwpq,cswpq,taucq,              &
+                               pmid,cldfracq,clwpq,ciwpq,cswpq,taucq,permuteseed,  &
 #endif
 ! For GSFC, not needed for WRF
 !                               ngbd, cldfmcd, clwpmcd, ciwpmcd, taucmcd, 1, zmd)
@@ -16366,7 +16378,6 @@ use debuggal
 ! mji - mcica sub-column generator called inside rrtmg_lw for gpu
 !         iplon = 1
 !         irng = 0
-!         permuteseed = 150
 
 ! Sub-column generator for McICA
 !         call mcica_subcol_lw(iplon, ncol, nlay, icld, permuteseed, irng, play, &
