@@ -1654,15 +1654,11 @@ use debuggal
                   seed2(i) = (play(i,2)*100 - int(play(i,2)*100))  * 1000000000  !jm
                   seed3(i) = (play(i,3)*100 - int(play(i,3)*100))  * 1000000000  !jm
                   seed4(i) = (play(i,4)*100 - int(play(i,4)*100))  * 1000000000
-if(i.eq.IDEBUG)write(0,"('zap begin ',4i15)")seed1(i),seed2(i),seed3(i),seed4(i)
                      seed1(i) = 69069  * seed1(i) + 1327217885
                      seed2(i) = m (m (m (seed2(i), 13), - 17), 5)
                      seed3(i) = 18000  * iand (seed3(i), 65535 ) + ishft (seed3(i), - 16 )
                      seed4(i) = 30903  * iand (seed4(i), 65535 ) + ishft (seed4(i), - 16 )
                      kiss = seed1(i) + seed2(i) + ishft (seed3(i), 16 ) + seed4(i)
-if(i.eq.IDEBUG)write(0,"('zap change ',4i15)")seed1(i),seed2(i),seed3(i),seed4(i)
-if(i.eq.IDEBUG)write(0,"('zap change ',4e19.12)")play(i,1),play(i,2),play(i,3),play(i,4)
-
                  endif
 
                  seed1(i) = 69069  * seed1(i) + 1327217885
@@ -1672,8 +1668,6 @@ if(i.eq.IDEBUG)write(0,"('zap change ',4e19.12)")play(i,1),play(i,2),play(i,3),p
                  kiss = seed1(i) + seed2(i) + ishft (seed3(i), 16 ) + seed4(i)
 
                  CDF(i,ilev,isubcol) = kiss*2.328306e-10  + 0.5
-if(i.eq.IDEBUG)write(0,"('zap CDF ',2i4,4i15)")ilev,isubcol,seed1(i),seed2(i),seed3(i),seed4(i)
-if(i.eq.IDEBUG)write(0,"('zap CDF ',2i4,e19.12)")ilev,isubcol,CDF(i,ilev,isubcol)
                end do
             end do
             end do
