@@ -1,8 +1,8 @@
 !MODULE module_ra_rrtmg_lwf
-!#define CHNK 8
+#define CHNK 8
 !#define CHNK 1849
 !#define CHNK 43
-#define CHNK 1
+!#define CHNK 1
 
 !  --------------------------------------------------------------------------
 ! |                                                                          |
@@ -4002,11 +4002,8 @@ use debuggal
        seed2 = (pmidd(iplon,2) - int(pmidd(iplon,2)))  * 1000000000
        seed3 = (pmidd(iplon,3) - int(pmidd(iplon,3)))  * 1000000000
        seed4 = (pmidd(iplon,4) - int(pmidd(iplon,4)))  * 1000000000
-if(deb)write(0,'("zap begin ",4i15)')seed1, seed2, seed3, seed4
-if(deb)write(0,'("zap begin ",4e20.12)')pmidd(iplon,1),pmidd(iplon,2),pmidd(iplon,3),pmidd(iplon,4)
        do i=1,changeSeed
           call kissvec(seed1, seed2, seed3, seed4, rand_num)
-if(deb)write(0,'("zap change ",i4,4i15)')i,seed1, seed2, seed3, seed4
        enddo
 
      do gp = 1, nsubcol
@@ -4033,7 +4030,6 @@ if(deb)write(0,'("zap change ",i4,4i15)')i,seed1, seed2, seed3, seed4
        case(2)
 
            do ilev = 1,nlay
-if(deb)write(0,'("zap ",2i4,4i15)')gp,ilev,seed1, seed2, seed3, seed4
              call kissvec(seed1, seed2, seed3, seed4, rand_num)
              CDF(ilev) = rand_num
            end do

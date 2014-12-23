@@ -2403,14 +2403,9 @@ use debuggal
             seed3(i) = (pmid(i,3) - int(pmid(i,3)))  * 1000000000_im
             seed4(i) = (pmid(i,4) - int(pmid(i,4)))  * 1000000000_im
           enddo
-if(deb)write(0,'("zap begin ",4i15)')seed1(1), seed2(1), seed3(1), seed4(1)
-if(deb)write(0,'("zap begin ",4e20.12)')pmid(i,1),pmid(i,2),pmid(i,3),pmid(i,4)
-#if 1
          do i=1,changeSeed
             call kissvec(seed1, seed2, seed3, seed4, rand_num)
-if(deb)write(0,'("zap change ",i4,4i15)')i,seed1(1), seed2(1), seed3(1), seed4(1)
          enddo
-#endif
       elseif (irng.eq.1) then
          randomNumbers = new_RandomNumberSequence(seed = changeSeed)
       endif 
@@ -2454,7 +2449,6 @@ if(deb)write(0,'("zap change ",i4,4i15)')i,seed1(1), seed2(1), seed3(1), seed4(1
          if (irng.eq.0) then 
             do isubcol = 1,nsubcol
                do ilev = 1,nlay
-if(deb)write(0,'("zap ",2i4,4i15)')isubcol,ilev,seed1(1), seed2(1), seed3(1), seed4(1)
                   call kissvec(seed1, seed2, seed3, seed4, rand_num) 
                   CDF(isubcol,:,ilev) = rand_num
                enddo

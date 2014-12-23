@@ -1,5 +1,9 @@
 !!MODULE module_ra_rrtmg_swf
-                
+#define CHNK 8
+!#define CHNK 1849
+!#define CHNK 43
+!#define CHNK 1
+
 !  --------------------------------------------------------------------------
 ! |                                                                          |
 ! |  Copyright 2002-2013, Atmospheric & Environmental Research, Inc. (AER).  |
@@ -1499,7 +1503,11 @@ use debuggal
 ! Variables related to random number and seed 
      
       real, dimension(ncol, nlay, nsubcol) gpu_device :: CDF       
+#ifdef _CUDA
       integer :: seed1, seed2, seed3, seed4  ! seed to create random number
+#else
+      integer, dimension(ncol) :: seed1, seed2, seed3, seed4  ! seed to create random number
+#enidf
     
       integer  :: iseed                        ! seed to create random number (Mersenne Twister)
 !      real  :: rand_num_mt                     ! random number (Mersenne Twister)
@@ -1539,6 +1547,7 @@ use debuggal
       if (icld==1) then
 !$acc kernels 
            
+#ifdef _CUDA
             do ilev = 1,nlay
                do i = 1, ncol
                   seed1 = (play(i,1) - int(play(i,1)))  * 100000000 - ilev
@@ -1555,6 +1564,9 @@ use debuggal
                   end do
                end do
             end do
+#else
+         CALL wrf_error_fatal("icld == 1 not supported in module_ra_rrtmg_swf.F")
+#endif
 
 !$acc end kernels      
       endif
@@ -1638,29 +1650,30 @@ use debuggal
            do ilev = 1,nlay
                do i = 1, ncol
                 if (ilev.eq.1.and.isubcol.eq.1)then
-                  seed1 = (play(i,1)*100 - int(play(i,1)*100))  * 1000000000  !jm
-                  seed2 = (play(i,2)*100 - int(play(i,2)*100))  * 1000000000  !jm
-                  seed3 = (play(i,3)*100 - int(play(i,3)*100))  * 1000000000  !jm
-                  seed4 = (play(i,4)*100 - int(play(i,4)*100))  * 1000000000
-                     seed1 = 69069  * seed1 + 1327217885
-!jm                     seed2 = 11002  * iand (seed2, 65535 ) + ishft (seed2, - 16 )
-                     seed2 = m (m (m (seed2, 13), - 17), 5)
-                     seed3 = 18000  * iand (seed3, 65535 ) + ishft (seed3, - 16 )
-                     seed4 = 30903  * iand (seed4, 65535 ) + ishft (seed4, - 16 )
-                     kiss = seed1 + seed2 + ishft (seed3, 16 ) + seed4
+                  seed1(i) = (play(i,1)*100 - int(play(i,1)*100))  * 1000000000  !jm
+                  seed2(i) = (play(i,2)*100 - int(play(i,2)*100))  * 1000000000  !jm
+                  seed3(i) = (play(i,3)*100 - int(play(i,3)*100))  * 1000000000  !jm
+                  seed4(i) = (play(i,4)*100 - int(play(i,4)*100))  * 1000000000
+if(i.eq.IDEBUG)write(0,"('zap begin ',4i15)")seed1(i),seed2(i),seed3(i),seed4(i)
+                     seed1(i) = 69069  * seed1(i) + 1327217885
+                     seed2(i) = m (m (m (seed2(i), 13), - 17), 5)
+                     seed3(i) = 18000  * iand (seed3(i), 65535 ) + ishft (seed3(i), - 16 )
+                     seed4(i) = 30903  * iand (seed4(i), 65535 ) + ishft (seed4(i), - 16 )
+                     kiss = seed1(i) + seed2(i) + ishft (seed3(i), 16 ) + seed4(i)
+if(i.eq.IDEBUG)write(0,"('zap change ',4i15)")seed1(i),seed2(i),seed3(i),seed4(i)
+if(i.eq.IDEBUG)write(0,"('zap change ',4e19.12)")play(i,1),play(i,2),play(i,3),play(i,4)
 
                  endif
 
-!                  do isubcol = 1,nsubcol
-                     seed1 = 69069  * seed1 + 1327217885
-!jm                     seed2 = 11002  * iand (seed2, 65535 ) + ishft (seed2, - 16 )
-                     seed2 = m (m (m (seed2, 13), - 17), 5)
-                     seed3 = 18000  * iand (seed3, 65535 ) + ishft (seed3, - 16 )
-                     seed4 = 30903  * iand (seed4, 65535 ) + ishft (seed4, - 16 )
-                     kiss = seed1 + seed2 + ishft (seed3, 16 ) + seed4
+                 seed1(i) = 69069  * seed1(i) + 1327217885
+                 seed2(i) = m (m (m (seed2(i), 13), - 17), 5)
+                 seed3(i) = 18000  * iand (seed3(i), 65535 ) + ishft (seed3(i), - 16 )
+                 seed4(i) = 30903  * iand (seed4(i), 65535 ) + ishft (seed4(i), - 16 )
+                 kiss = seed1(i) + seed2(i) + ishft (seed3(i), 16 ) + seed4(i)
 
-                     CDF(i,ilev,isubcol) = kiss*2.328306e-10  + 0.5
-!                  end do
+                 CDF(i,ilev,isubcol) = kiss*2.328306e-10  + 0.5
+if(i.eq.IDEBUG)write(0,"('zap CDF ',2i4,4i15)")ilev,isubcol,seed1(i),seed2(i),seed3(i),seed4(i)
+if(i.eq.IDEBUG)write(0,"('zap CDF ',2i4,e19.12)")ilev,isubcol,CDF(i,ilev,isubcol)
                end do
             end do
             end do
@@ -1683,6 +1696,7 @@ use debuggal
       if (icld==3) then
 !$acc kernels 
            
+#ifdef _CUDA
             do i = 1, ncol
                seed1 = (play(i,1) - int(play(i,1)))  * 100000000 - ilev
                seed2 = (play(i,2) - int(play(i,2)))  * 100000000 + ilev
@@ -1699,159 +1713,12 @@ use debuggal
                   end do
                end do
             end do
+#else
+         CALL wrf_error_fatal("icld == 3 not supported in module_ra_rrtmg_swf.F")
+#endif
 
 !$acc end kernels      
       endif
-
-! Exponential cloud overlap (icld=4 option, inactive)
-!      if (icld==4) then
-!      ! Exponential overlap: weighting between maximum and random overlap increases with the distance. 
-!      ! The random numbers for exponential overlap verify:
-!      ! j=1   RAN(j)=RND1
-!      ! j>1   if RND1 < alpha(j,j-1) => RAN(j) = RAN(j-1)
-!      !                                 RAN(j) = RND2
-!      ! alpha is obtained from the equation
-!      ! alpha = exp(- (Zi-Zj-1)/Zo) where Zo is a characteristic length scale    
-!
-!!  !$acc kernels
-!         AM1 = 1.4315
-!         AM2 = 2.1219
-!         AM4 = -25.584
-!         AMR = 7.
-!         IF ( DOY .GT. 181 ) THEN
-!            AM3 = -4.*AMR/365*(DOY-272)
-!         ELSE
-!            AM3 = 4.*AMR/365.*(DOY-91)
-!         ENDIF
-!         adl(:) = AM1+AM2*EXP(-(ALAT(:)*180./3.141592-AM3)**2/AM4**2)
-!         adl(:) = adl(:)*1.e3
-!         AM1 = 0.72192
-!         AM2 = 0.78996
-!         AM4 = 40.404
-!         AMR = 8.5
-!         IF ( DOY .GT. 181 ) THEN
-!            AM3 = -4.*AMR/365*(DOY-272)
-!         ELSE
-!            AM3 = 4.*AMR/365.*(DOY-91)
-!         ENDIF
-!         rdl(:) = AM1+AM2*EXP(-(ALAT(:)*180./3.141592-AM3)**2/AM4**2)
-!         rdl(:) = rdl(:)*1.e3
-!!  !$acc end kernels      
-!      
-!!  !$acc kernels
-!         alpha(:,1) = 0.
-!         do ilev = 2, nlay
-!            alpha(:,ilev) = exp( -(zm(:,ilev) - zm(:,ilev-1)) / adl(:))
-!         end do
-!!  !$acc end kernels
-!        
-!!  !$acc kernels
-!         do ilev = 1,nlay
-!               do i = 1, ncol
-!                   seed1 = (play(i,1) - int(play(i,1)))  * 100000000 - ilev
-!                   seed2 = (play(i,2) - int(play(i,2)))  * 100000000 + ilev
-!                   seed3 = (play(i,3) - int(play(i,3)))  * 100000000 + ilev * 6.2
-!                   seed4 = (play(i,4) - int(play(i,4)))  * 100000000           
-!                   do isubcol = 1,nsubcol
-!                       
-!                        seed1 = 69069  * seed1 + 132721785 
-!                        seed2 = 11002  * iand (seed2, 65535 ) + ishft (seed2, - 16 )
-!                        seed3 = 18000  * iand (seed3, 65535 ) + ishft (seed3, - 16 )
-!                        seed4 = 30903  * iand (seed4, 65535 ) + ishft (seed4, - 16 )
-!                        kiss = seed1 + seed2 + ishft (seed3, 16 ) + seed4
-!                        CDF(i,ilev,isubcol) = kiss*2.328306e-10  + 0.5 
-!                        ! for testing purposes to generate determanistic sequence
-!                        !CDF(i,ilev,isubcol) = real(MOD((isubcol * 37 + ilev * 71) , 10000))/10000.0
-!                        
-!                        seed1 = 69069  * seed1 + 132721785 
-!                        seed2 = 11002  * iand (seed2, 65535 ) + ishft (seed2, - 16 )
-!                        seed3 = 18000  * iand (seed3, 65535 ) + ishft (seed3, - 16 )
-!                        seed4 = 30903  * iand (seed4, 65535 ) + ishft (seed4, - 16 )
-!                        kiss = seed1 + seed2 + ishft (seed3, 16 ) + seed4
-!                        CDF2(i,ilev,isubcol) = kiss*2.328306e-10  + 0.5 
-!                        ! for testing purposes to generate determanistic sequence
-!                        !CDF2(i,ilev,isubcol) =  real(MOD((isubcol * 37 + ilev * 73) , 10000))/10000.0
-!                    
-!                    end do
-!               end do
-!         end do
-!!  !$acc end kernels        
-!       
-!!  !$acc kernels
-!         do iplon = 1, ncol
-!            do isubcol = 1, nsubcol
-!                      do ilev = 2, nlay
-!                    if (CDF2(iplon, ilev, isubcol) < alpha(iplon,ilev)) then
-!                        CDF(iplon,  ilev, isubcol) = CDF(iplon, ilev-1, isubcol) 
-!                    end if
-!                end do
-!            end do
-!         end do
-!!  !$acc end kernels
-!         inhm = 1
-!    
-!      end if
-!
-!      if (inhm>=1) then
-!        
-!!  !$acc kernels      
-!        alpha(:,1)=0.
-!        do ilev = 2, nlay
-!            alpha(:, ilev) = exp( -( zm(:, ilev) - zm(:, ilev-1))/rdl(:))
-!        end do
-!!  !$acc end kernels
-!        
-!!  !$acc kernels
-!          do ilev = 1,nlay
-!               do i = 1, ncol
-!                   seed1 = (play(i,1) - int(play(i,1)))  * 100000000 - ilev
-!                   seed2 = (play(i,2) - int(play(i,2)))  * 100000000 + ilev
-!                   seed3 = (play(i,3) - int(play(i,3)))  * 100000000 + ilev * 6.2
-!                   seed4 = (play(i,4) - int(play(i,4)))  * 100000000           
-!                   do isubcol = 1,nsubcol
-!                     
-!                       
-!                        seed1 = 69069  * seed1 + 132721785 
-!                        seed2 = 11002  * iand (seed2, 65535 ) + ishft (seed2, - 16 )
-!                        seed3 = 18000  * iand (seed3, 65535 ) + ishft (seed3, - 16 )
-!                        seed4 = 30903  * iand (seed4, 65535 ) + ishft (seed4, - 16 )
-!                        kiss = seed1 + seed2 + ishft (seed3, 16 ) + seed4
-!                        CDF2(i,ilev,isubcol) = kiss*2.328306e-10  + 0.5 
-!                        ! for testing purposes to generate determanistic sequence
-!                        !CDF2(i,ilev,isubcol) = real(MOD((isubcol * 7 + ilev * 101) , 10000))/10000.0
-!                    
-!                        seed1 = 69069  * seed1 + 132721785 
-!                        seed2 = 11002  * iand (seed2, 65535 ) + ishft (seed2, - 16 )
-!                        seed3 = 18000  * iand (seed3, 65535 ) + ishft (seed3, - 16 )
-!                        seed4 = 30903  * iand (seed4, 65535 ) + ishft (seed4, - 16 )
-!                        kiss = seed1 + seed2 + ishft (seed3, 16 ) + seed4
-!                        CDF3(i,ilev,isubcol) = kiss*2.328306e-10  + 0.5 
-!                        ! for testing purposes to generate determanistic sequence
-!                        !CDF3(i,ilev,isubcol) =  real(MOD((isubcol * 41 + ilev * 89) , 10000))/10000.0
-!                    
-!                    end do
-!               end do
-!          end do
-!!  !$acc end kernels
-!
-!!  !$acc kernels
-!          do iplon = 1, ncol
-!            do isubcol = 1, nsubcol
-!                      do ilev = 2, nlay
-!                    if (CDF2(iplon, ilev, isubcol) < alpha(iplon,ilev)) then
-!                        CDF3(iplon, ilev, isubcol) = CDF3(iplon, ilev-1, isubcol)
-!                    end if
-!                end do
-!            end do
-!          end do
-!!  !$acc end kernels        
-!      end if
-
-
-! where the subcolumn is cloudy, the subcolumn cloud fraction is 1;
-! where the subcolumn is not cloudy, the subcolumn cloud fraction is 0;
-! where there is a cloud, define the subcolumn cloud properties,
-! otherwise set these to zero
 
       ngbm = ngb(1) - 1
 !$acc kernels 
@@ -1859,44 +1726,6 @@ use debuggal
          do i = 1, ncol
             do isubcol = 1, nsubcol
 
-! For GSFC icld=4 option, not needed for WRF
-!               if ( inhm >= 1 .and. CDF(i,ilev,isubcol)>=(1.0 - cld(i,ilev))) then
-!                  cld_stoch(i,ilev,isubcol) = 1.0 
-!                  
-!                  if (cld(i,ilev) .gt. 0.99 ) then
-!                    SIGMA_QCW = 0.5
-!                  elseif (cld(i,ilev) .gt. 0.9 ) then
-!                    SIGMA_QCW = 0.71
-!                    else  
-!                    SIGMA_QCW = 1
-!                  endif
-!                  
-!                  RIND1 = CDF3(i,ilev,isubcol) * (N1 - 1) + 1.0
-!                  IND1  = MAX(1, MIN(INT(RIND1), N1-1))
-!                  RIND1 = RIND1 - IND1
-!                  RIND2 = 40.0 * SIGMA_QCW    - 3.0
-!                  IND2  = MAX(1, MIN(INT(RIND2), N2-1))
-!                  RIND2 = RIND2 - IND2
-!
-!                   ZCW = (1.0-RIND1) * (1.0-RIND2) * XCW(IND1,IND2) &
-!                       + (1.0-RIND1) * RIND2       * XCW(IND1,IND2+1) &
-!                       + RIND1 * (1.0-RIND2)       * XCW(IND1+1,IND2) &
-!                       + RIND1 * RIND2             * XCW(IND1+1,IND2+1)
-!                   
-!                 
-!                  clwp_stoch(i,ilev,isubcol) = clwp(i,ilev) * ZCW
-!                  ciwp_stoch(i,ilev,isubcol) = ciwp(i,ilev) * ZCW
-!                  cswp_stoch(i,ilev,isubcol) = cswp(i,ilev) * ZCW
-!                  n = ngb(isubcol) - ngbm
-!                  tauc_stoch(i,ilev,isubcol) = tauc(i,ilev,n)
-!                  ssac_stoch(i,ilev,isubcol) = ssac(i,ilev,n)
-!                  asmc_stoch(i,ilev,isubcol) = asmc(i,ilev,n)
-!                  fsfc_stoch(i,ilev,isubcol) = fsfc(i,ilev,n)
-!                
-!                
-!               elseif ( CDF(i,ilev,isubcol)>=(1.0 - cld(i,ilev)) ) then
-
-if(deb)write(0,"('gen iscloudy ',2i4,L,2e25.12)")isubcol,ilev,CDF(1,ilev,isubcol)>=(1.0 - cld(1,ilev)),cld(1,ilev),CDF(1,ilev,isubcol)
                if ( CDF(i,ilev,isubcol)>=(1.0 - cld(i,ilev)) ) then
                   cld_stoch(i,ilev,isubcol) = 1.0 
                   clwp_stoch(i,ilev,isubcol) = clwp(i,ilev)
@@ -2046,8 +1875,6 @@ use debuggal
          !$acc loop private(fdelta,extcoice,gice,ssacoice,forwice,extcoliq,gliq,ssacoliq,forwliq,gsno,forwsno,scatsno)
          do ig = 1, ngptsw 
             cwp = ciwpmc(iplon,lay,ig) + clwpmc(iplon,lay,ig) + cswpmc(iplon,lay,ig)  
-
-!if(deb.and.iplon.eq.IDEBUG.and.ig.eq.1)write(0,*)'test in cldprmmc ',lay,cldfmc(iplon,lay,ig)   .ge. cldmin .and.  (cwp .ge. cldmin .or. taucmc(iplon,lay,ig)   .ge. cldmin)
 
             if (cldfmc(iplon,lay,ig)   .ge. cldmin .and. &
                (cwp .ge. cldmin .or. taucmc(iplon,lay,ig)   .ge. cldmin)) then
@@ -2250,8 +2077,6 @@ use debuggal
 !
                   endif
    
-if(deb)write(0,*)'asdfasdf ',iplon,ig
-if(deb.and.ig.eq.1.and.iplon.eq.IDEBUG)write(0,*)'in cldprmc_sw iceflag ',iceflag
                   if (iceflag .lt. 5) then
                      tauliqorig = clwpmc(iplon,lay,ig)   * extcoliq
                      tauiceorig = ciwpmc(iplon,lay,ig)   * extcoice
@@ -2287,16 +2112,6 @@ if(deb.and.ig.eq.1.and.iplon.eq.IDEBUG)write(0,*)'in cldprmc_sw iceflag ',icefla
                      scatice = ssaice * tauice
                      scatsno = ssasno * tausno
                      taucmc(iplon,lay,ig)   = tauliq + tauice + tausno
-if(deb.and.ig.eq.1.and.iplon.eq.IDEBUG)write(0,*)'in cldprmc_sw tauliq',tauliq
-if(deb.and.ig.eq.1.and.iplon.eq.IDEBUG)write(0,*)'in cldprmc_sw tauice',tauice
-if(deb.and.ig.eq.1.and.iplon.eq.IDEBUG)write(0,*)'in cldprmc_sw tausno',tausno
-if(deb.and.ig.eq.1.and.iplon.eq.IDEBUG)write(0,*)'in cldprmc_sw clwpmc',clwpmc(IDEBUG,ig,lay)
-if(deb.and.ig.eq.1.and.iplon.eq.IDEBUG)write(0,*)'in cldprmc_sw ciwpmc',ciwpmc(IDEBUG,ig,lay)
-if(deb.and.ig.eq.1.and.iplon.eq.IDEBUG)write(0,*)'in cldprmc_sw cswpmc',cswpmc(IDEBUG,ig,lay)
-if(deb.and.ig.eq.1.and.iplon.eq.IDEBUG)write(0,*)'in cldprmc_sw extcoliq',extcoliq
-if(deb.and.ig.eq.1.and.iplon.eq.IDEBUG)write(0,*)'in cldprmc_sw extcoice',extcoice
-if(deb.and.ig.eq.1.and.iplon.eq.IDEBUG)write(0,*)'in cldprmc_sw extcosno',extcosno
-
                   endif
 
 ! Ensure non-zero taucmc and scatice
@@ -2948,9 +2763,6 @@ use debuggal
 ! temperature, and appropriate species.  Below LAYTROP, the water
 ! vapor self-continuum is interpolated (in temperature) separately.  
 
-if(deb)write(0,*)'in taumol16 laytrop ',laytrop(iplon)
-if(deb)write(0,*)'in taumol16 nspa ',lay,nspa(16)
-if(deb)write(0,*)'in taumol16 nspb ',lay,nspb(16)
 ! Lower atmosphere loop
       do lay = 1, nlayers
          if (lay <= laytrop(iplon)) then 
@@ -2974,35 +2786,6 @@ if(deb)write(0,*)'in taumol16 nspb ',lay,nspb(16)
          indf = indfor(iplon,lay) 
          tauray = colmol(iplon,lay)  * rayl
 
-if(deb)write(0,*)'in taumol16 speccomb ',lay,speccomb
-if(deb)write(0,*)'in taumol16 specparm ',lay,specparm
-if(deb)write(0,*)'in taumol16 specmult ',lay,specmult
-if(deb)write(0,*)'in taumol16 js ',lay,js
-if(deb)write(0,*)'in taumol16 fs ',lay,fs
-if(deb)write(0,*)'in taumol16 jp ',lay,jp(iplon,lay)
-if(deb)write(0,*)'in taumol16 jt ',lay,jt(iplon,lay)
-if(deb)write(0,*)'in taumol16 jt1 ',lay,jt1(iplon,lay)
-if(deb)write(0,*)'in taumol16 fac000 ',lay,fac000
-if(deb)write(0,*)'in taumol16 fac010 ',lay,fac010
-if(deb)write(0,*)'in taumol16 fac100 ',lay,fac100
-if(deb)write(0,*)'in taumol16 fac110 ',lay,fac110
-if(deb)write(0,*)'in taumol16 fac001 ',lay,fac001
-if(deb)write(0,*)'in taumol16 fac011 ',lay,fac011
-if(deb)write(0,*)'in taumol16 fac101 ',lay,fac101
-if(deb)write(0,*)'in taumol16 fac111 ',lay,fac111
-if(deb)write(0,*)'in taumol16 ind0 ',lay,ind0
-if(deb)write(0,*)'in taumol16 ind1 ',lay,ind1
-if(deb)write(0,*)'in taumol16 inds ',lay,inds
-if(deb)write(0,*)'in taumol16 indf ',lay,indf
-if(deb)write(0,*)'in taumol16 tauray ',lay,tauray
-if(deb)write(0,*)'in taumol16 colh2o ',lay,colh2o(iplon,lay)
-if(deb)write(0,*)'in taumol16 selffac ',lay,selffac(iplon,lay)
-if(deb)write(0,*)'in taumol16 selffrac ',lay,selffrac(iplon,lay)
-if(deb)write(0,*)'in taumol16 forfac ',lay,forfac(iplon,lay)
-if(deb)write(0,*)'in taumol16 forfrac ',lay,forfrac(iplon,lay)
-
-
-    
          do ig = 1, ng16
             taug(iplon,lay,ig)  = speccomb * &
                 (fac000 * absa(ind0   ,ig) + &
@@ -3020,13 +2803,6 @@ if(deb)write(0,*)'in taumol16 forfrac ',lay,forfrac(iplon,lay)
                  forfac(iplon,lay)  * (forref(indf,ig) + &
                  forfrac(iplon,lay)  * &
                  (forref(indf+1,ig) - forref(indf,ig)))) 
-
-if(deb)write(0,*)'in taumol16 selfref ',lay,selfref(inds,ig),ig
-if(deb)write(0,*)'in taumol16 selfref+1 ',lay,selfref(inds+1,ig),ig
-if(deb)write(0,*)'in taumol16 forref ',lay,forref(indf,ig),ig
-if(deb)write(0,*)'in taumol16 forref+1 ',lay,forref(indf+1,ig),ig
-if(deb)write(0,*)'in taumol16 taug ',lay,taug(iplon,lay,ig),ig
-
 !            ssa(lay,ig) = tauray/taug(lay,ig)
             taur(iplon,lay,ig)  = tauray
          enddo
@@ -3050,17 +2826,6 @@ if(deb)write(0,*)'in taumol16 taug ',lay,taug(iplon,lay,ig),ig
          ind0 = ((jp(iplon,lay) -13)*5+(jt(iplon,lay) -1))*nspb(16) + 1
          ind1 = ((jp(iplon,lay) -12)*5+(jt1(iplon,lay) -1))*nspb(16) + 1
          tauray = colmol(iplon,lay)  * rayl
-
-if(deb)write(0,*)'in taumol16 ind0 ',lay,ind0
-if(deb)write(0,*)'in taumol16 ind1 ',lay,ind1
-if(deb)write(0,*)'in taumol16 inds ',lay,inds
-if(deb)write(0,*)'in taumol16 fac00 ',lay,fac00(iplon,lay)
-if(deb)write(0,*)'in taumol16 fac10 ',lay,fac10(iplon,lay)
-if(deb)write(0,*)'in taumol16 fac01 ',lay,fac01(iplon,lay)
-if(deb)write(0,*)'in taumol16 fac11 ',lay,fac11(iplon,lay)
-if(deb)write(0,*)'in taumol16 colch4 ',lay,colch4(iplon,lay)
-
-
 
          do ig = 1, ng16
             taug(iplon,lay,ig)  = colch4(iplon,lay)  * &
@@ -8726,9 +8491,6 @@ real gpu_device  :: zcd(tncol,ngptsw,nlayers+1)  , zcu(tncol,ngptsw,nlayers+1)
 !print *, pomga(1, :, :)
 !print *, ptaua(1, :, :)
 
-if(deb)write(0,*)'palbd ',palbd(1,:)
-
-
 !$acc kernels     
          pbbcd =0. 
          pbbcu =0. 
@@ -8789,7 +8551,6 @@ if(deb)write(0,*)'palbd ',palbd(1,:)
           ztrao(iplon,iw,klev+1)   =0.0 
           ztrado(iplon,iw,klev+1)  =0.0 
           zrefo(iplon,iw,klev+1)   =palbp(iplon,ibm) 
-if(deb)write(0,*)'assigning zrefo ',iw,ibm,klev+1,zrefo(iplon,iw,klev+1)
           zrefdo(iplon,iw,klev+1)  =palbd(iplon,ibm) 
            
 ! Total sky    
@@ -8822,12 +8583,6 @@ if(deb)write(0,*)'assigning zrefo ',iw,ibm,klev+1,zrefo(iplon,iw,klev+1)
                jb = ngb(iw)
                ibm = jb-15
 
-if(deb)write(0,*)'before clearsky reftra_sw ztaur ',ikl,iw,ztaur(1,ikl,iw)
-if(deb)write(0,*)'before clearsky reftra_sw ztaug ',ikl,iw,ztaug(1,ikl,iw)
-if(deb)write(0,*)'before clearsky reftra_sw ptaua ',ikl,iw,ptaua(1,ikl,ibm)
-if(deb)write(0,*)'before clearsky reftra_sw pomga ',ikl,iw,pomga(1,ikl,ibm)
-if(deb)write(0,*)'before clearsky reftra_sw pasya ',ikl,iw,pasya(1,ikl,ibm)
-
                ! Clear-sky optical parameters including aerosols
                ztauo(iplon,iw,jk)   = ztaur(iplon,ikl,iw)  + ztaug(iplon,ikl,iw) + ptaua(iplon,ikl,ibm)      
 
@@ -8847,9 +8602,7 @@ if(deb)write(0,*)'before clearsky reftra_sw pasya ',ikl,iw,pasya(1,ikl,ibm)
                endif
 
                zdbtc_nodel(iplon,iw,jk) = zdbtmc
-if(deb)write(0,*)'computing ztdbtc_nodel zdbtmc',jk,iw,zdbtmc
                ztdbtc_nodel(iplon,iw,jk+1) = zdbtc_nodel(iplon,iw,jk) * ztdbtc_nodel(iplon,iw,jk)
-if(deb)write(0,*)'computing ztdbtc_nodel ztdbtc_nodel',jk,iw,ztdbtc_nodel(iplon,iw,jk)
 
                tauorig = ztauo(iplon,iw,jk) + ptaormc(iplon,ikl,iw)    ! ztauo corresponds to ztauc at this point in _sw.F version
                ze1 = tauorig / prmu0(iplon)
@@ -8862,12 +8615,7 @@ if(deb)write(0,*)'computing ztdbtc_nodel ztdbtc_nodel',jk,iw,ztdbtc_nodel(iplon,
                endif
 
                zdbt_nodel(iplon,iw,jk) = zclear*zdbtmc + zcloud*zdbtmo
-if(deb)write(0,*)'computing ztdbtc_nodel zdbtmc',jk,iw,zdbtmc
-if(deb)write(0,*)'computing ztdbtc_nodel zclear',jk,iw,zclear
-if(deb)write(0,*)'computing ztdbtc_nodel zcloud',jk,iw,zcloud
-if(deb)write(0,*)'computing ztdbtc_nodel zdbtmo',jk,iw,zdbtmo
                ztdbt_nodel(iplon,iw,jk+1) = zdbt_nodel(iplon,iw,jk) * ztdbt_nodel(iplon,iw,jk)
-if(deb)write(0,*)'computing ztdbtc_nodel ztdbt_nodel',jk,iw,ztdbt_nodel(iplon,iw,jk)
 
 #endif
 
@@ -8888,23 +8636,6 @@ if(deb)write(0,*)'computing ztdbtc_nodel ztdbt_nodel',jk,iw,ztdbt_nodel(iplon,iw
       end do
 !$acc end kernels               
 
-do iw = 1, 112
-do ikl =1,klev
-if(deb)write(0,*)'before clearsky reftra_sw lrtchkclr ',ikl,iw,pcldfmc(1,ikl,iw)<=repclc
-if(deb)write(0,*)'before clearsky reftra_sw pcldfmc ',ikl,iw,pcldfmc(1,ikl,iw)
-if(deb)write(0,*)'before clearsky reftra_sw zgcc ',ikl,iw,zgco(1,iw,ikl)
-if(deb)write(0,*)'before clearsky reftra_sw prmu0 ',ikl,iw,prmu0(1)
-if(deb)write(0,*)'before clearsky reftra_sw ztauc ',ikl,iw,ztauo(1,iw,ikl)
-if(deb)write(0,*)'before clearsky reftra_sw zomcc ',ikl,iw,zomco(1,iw,ikl)
-!if(deb)write(0,*)'before clearsky reftra_sw ztaur ',ikl,iw,ztaur(1,iw,ikl)
-!if(deb)write(0,*)'before clearsky reftra_sw ztaug ',ikl,iw,ztaug(1,iw,ikl)
-!if(deb)write(0,*)'before clearsky reftra_sw ptaua ',ikl,iw,ptaua(1,iw,ikl)
-!if(deb)write(0,*)'before clearsky reftra_sw pomga ',ikl,iw,pomga(1,iw,ikl)
-enddo
-enddo
-
-
-    
 ! Clear sky reflectivities
       call reftra_sw (ncol, nlayers, &
                       pcldfmc, zgco, prmu0, ztauo, zomco, &
@@ -8969,37 +8700,10 @@ enddo
       end do
 !$acc end kernels  
 
-
-do iw = 1, 112
-do ikl =1,klev+1
-!iw = 1
-if(deb)write(0,*)'before clearsky vrtqdr_sw zrefc ',ikl,iw,zrefo(1,iw,ikl)
-if(deb)write(0,*)'before clearsky vrtqdr_sw zrefdc ',ikl,iw,zrefdo(1,iw,ikl)
-if(deb)write(0,*)'before clearsky vrtqdr_sw ztrac ',ikl,iw,ztrao(1,iw,ikl)
-if(deb)write(0,*)'before clearsky vrtqdr_sw ztradc ',ikl,iw,ztrado(1,iw,ikl)
-if(deb)write(0,*)'before clearsky vrtqdr_sw zdbtc ',ikl,iw,zdbt(1,iw,ikl)
-!if(deb)write(0,*)'before clearsky vrtqdr_sw zrdnd ',ikl,iw,zrdnd(1,iw,ikl)
-if(deb.and.ikl.eq.klev+1)write(0,*)'before clearsky vrtqdr_sw zrupc ',ikl,iw,zgco(1,iw,ikl)
-if(deb.and.ikl.eq.klev+1)write(0,*)'before clearsky vrtqdr_sw zrupdc ',ikl,iw,zomco(1,iw,ikl)
-if(deb)write(0,*)'before clearsky vrtqdr_sw ztdbtc ',ikl,iw,ztdbt(1,iw,ikl)
-enddo
-enddo
-
             call vrtqdr_sw(ncol, klev, &
                            zrefo  , zrefdo  , ztrao  , ztrado  , &
                            zdbt , zrdnd  , zgco, zomco, ztdbt  , &
                            zcd , zcu  , ztra)
-
-do iw = 1, 112
-do ikl =1,klev+1
-!if(deb)write(0,*)'after clearsky vrtqdr_sw zfd ',ikl,iw,zfd(1,iw,klev+2-KDEBUG)
-!if(deb)write(0,*)'after clearsky vrtqdr_sw zfu ',ikl,iw,zfu(1,iw,klev+2-KDEBUG)
-if(deb)write(0,*)'after clearsky vrtqdr_sw zcd ',ikl,iw,zcd(1,iw,ikl)
-if(deb)write(0,*)'after clearsky vrtqdr_sw zcu ',ikl,iw,zcu(1,iw,ikl)
-if(deb)write(0,*)'after clearsky vrtqdr_sw zrdnd ',ikl,iw,zrdnd(1,iw,ikl)
-if(deb)write(0,*)'after clearsky b4 accum pbbcu ',ikl,iw,pbbcu(1,ikl)
-enddo
-enddo
             
 ! perform band integration for clear cases      
 !$acc kernels loop
@@ -9088,23 +8792,6 @@ enddo
         end do
 !$acc end kernels
 
-do iw = 1, 112
-do ikl =1,klev+1
-if(deb)write(0,*)'before cloudy reftra_sw ptaua ',ikl,iw,ptaua(1,ikl,ibm)
-if(deb)write(0,*)'before cloudy reftra_sw pomga ',ikl,iw,pomga(1,ikl,ibm)
-if(deb)write(0,*)'before cloudy reftra_sw pasya ',ikl,iw,pasya(1,ikl,ibm)
-if(deb)write(0,*)'before cloudy reftra_sw ptaucmc ',ikl,iw,ptaucmc(1,ikl,iw)
-if(deb)write(0,*)'before cloudy reftra_sw pomgcmc ',ikl,iw,pomgcmc(1,ikl,iw)
-if(deb)write(0,*)'before cloudy reftra_sw pasycmc ',ikl,iw,pasycmc(1,ikl,iw)
-if(deb)write(0,*)'before cloudy reftra_sw lrtchkcld ',ikl,iw,pcldfmc(1,ikl,iw)>repclc
-if(deb)write(0,*)'before cloudy reftra_sw pcldfmc ',ikl,iw,pcldfmc(1,ikl,iw)
-if(deb)write(0,*)'before cloudy reftra_sw zgco ',ikl,iw,zgco(1,iw,ikl)
-if(deb)write(0,*)'before cloudy reftra_sw prmu0 ',ikl,iw,prmu0(1)
-if(deb)write(0,*)'before cloudy reftra_sw ztauo ',ikl,iw,ztauo(1,iw,ikl)
-if(deb)write(0,*)'before cloudy reftra_sw zomco ',ikl,iw,zomco(1,iw,ikl)
-enddo
-enddo
-            
 ! Total sky reflectivities      
         call reftra_sw (ncol, nlayers, &
                         pcldfmc, zgco, prmu0, ztauo, zomco, &
@@ -9197,33 +8884,10 @@ enddo
 ! Vertical quadrature for cloudy fluxes
 
 
-do iw = 1, 112
-do ikl =1,klev+1
-!iw = 1
-if(deb)write(0,*)'before cloudy vrtqdr_sw zref ',ikl,iw,zref(1,iw,ikl)
-if(deb)write(0,*)'before cloudy vrtqdr_sw zrefd ',ikl,iw,zrefd(1,iw,ikl)
-if(deb)write(0,*)'before cloudy vrtqdr_sw ztra ',ikl,iw,ztra(1,iw,ikl)
-if(deb)write(0,*)'before cloudy vrtqdr_sw ztrad ',ikl,iw,ztrad(1,iw,ikl)
-if(deb)write(0,*)'before cloudy vrtqdr_sw zdbt ',ikl,iw,zdbt(1,iw,ikl)
-!if(deb)write(0,*)'before cloudy vrtqdr_sw zrdnd ',ikl,iw,zrdnd(1,iw,ikl)
-if(deb.and.ikl.eq.klev+1)write(0,*)'before cloudy vrtqdr_sw zrup ',ikl,iw,zgco(1,iw,ikl)
-if(deb.and.ikl.eq.klev+1)write(0,*)'before cloudy vrtqdr_sw zrupd ',ikl,iw,zomco(1,iw,ikl)
-if(deb)write(0,*)'before cloudy vrtqdr_sw ztdbt ',ikl,iw,ztdbt(1,iw,ikl)
-enddo
-enddo
         call vrtqdr_sw(ncol, klev, &
                        zref  , zrefd  , ztra  , ztrad , &
                        zdbt , zrdnd  , zgco, zomco , ztdbt  , &
                        zfd , zfu  ,  ztrao)
-do iw = 1, 112
-do ikl =1,klev+1
-!if(deb)write(0,*)'after cloudy vrtqdr_sw zfd ',ikl,iw,zfd(1,iw,klev+2-KDEBUG)
-!if(deb)write(0,*)'after cloudy vrtqdr_sw zfu ',ikl,iw,zfu(1,iw,klev+2-KDEBUG)
-if(deb)write(0,*)'after cloudy vrtqdr_sw zfd ',ikl,iw,zfd(1,iw,ikl)
-if(deb)write(0,*)'after cloudy vrtqdr_sw zfu ',ikl,iw,zfu(1,iw,ikl)
-if(deb)write(0,*)'after cloudy vrtqdr_sw zrdnd ',ikl,iw,zrdnd(1,iw,ikl)
-enddo
-enddo
 
 ! Upwelling and downwelling fluxes at levels
 !   Two-stream calculations go from top to bottom; 
@@ -9248,10 +8912,7 @@ enddo
 ! Accumulate spectral fluxes over whole spectrum  
                pbbfu(iplon,ikl)  = pbbfu(iplon,ikl)  + zincflx*zfu(iplon,iw,jk)  
                pbbfd(iplon,ikl)  = pbbfd(iplon,ikl)  + zincflx*zfd(iplon,iw,jk)              
-if(deb)write(0,"('after cloudy in accum pbbfd',2i4,3e25.12)")ikl,iw,pbbfd(1,ikl),zfd(iplon,iw,jk),zcd(iplon,iw,jk)
                pbbfddir(iplon,ikl)  = pbbfddir(iplon,ikl)  + zincflx*ztdbt_nodel(iplon,iw,jk)  
-if(deb)write(0,"('after cloudy in accum pbbfddir',2i4,3e25.12)")ikl,iw,pbbfddir(1,ikl),zincflx,ztdbt_nodel(iplon,iw,jk)
-if(deb)write(0,"('after cloudy in accum ztdbt',2i4,1e25.12)")ikl,iw,ztdbt_nodel(iplon,iw,jk)
 
 ! Accumulate direct fluxes for UV/visible bands
                if (ibm >= 10 .and. ibm <= 13) then
@@ -9319,15 +8980,6 @@ if(deb)write(0,"('after cloudy in accum ztdbt',2i4,1e25.12)")ikl,iw,ztdbt_nodel(
 !$acc end kernels
 
 !!$acc end data
-
-do jk=1,klev+1
-ikl=klev+2-jk
-if(deb)write(0,*)'end of spcvmc_sw pbbfu',ikl,pbbfu(1,ikl)
-if(deb)write(0,*)'end of spcvmc_sw pbbfd',ikl,pbbfd(1,ikl)
-if(deb)write(0,*)'end of spcvmc_sw pbbcu',ikl,pbbcu(1,ikl)
-if(deb)write(0,*)'end of spcvmc_sw pbbcd',ikl,pbbcd(1,ikl)
-enddo
-
 
       end subroutine spcvmc_sw
              
@@ -10045,7 +9697,7 @@ use debuggal
 #else
       pncol = 2
       pncol = 4
-      pncol = 8
+!jm      pncol = CHNK  redundant, since this is passed in
       
 #endif    
           
@@ -10055,8 +9707,6 @@ use debuggal
 
       call cpu_time(t1)
                                                       
-write(0,*)'zap calling rrtmg_sw_sub pncol, ncol ',pncol,ncol
-write(0,*)'before call to rrtmg_sw_sub shape play ',shape(play)
       call rrtmg_sw_sub &
             (pncol   ,ncol    ,nlay    ,icld    ,iaer   , &
              play    ,plev    ,tlay    ,tlev    ,tsfc   , &
@@ -10496,10 +10146,6 @@ integer ii
       integer :: ipart, cols, cole, colr, ncolc, ncolb
       integer :: irng, cc, ncolst
 
-!write(0,*)'zap in rrtmg_sw_sub ncol, gncol ',ncol    ,gncol
-
-write(0,*)'in call to rrtmg_sw_sub shape play ',shape(play)
-write(0,*)'in call to rrtmg_sw_sub shape gplay ',shape(gplay)
 ! Initializations
       
       zepsec = 1.e-06 
@@ -10547,7 +10193,6 @@ write(0,*)'in call to rrtmg_sw_sub shape gplay ',shape(gplay)
             cols=cols+1
             profic(cols) = iplon
         end if
-!write(0,'("iplon cldflag cole cols ",4i6)')iplon,cldflag(iplon),cole,cols
       end do
     
 ! icld=4 option inactive for WRF
@@ -10678,11 +10323,11 @@ write(0,*)'in call to rrtmg_sw_sub shape gplay ',shape(gplay)
         end if
      
         do ipart = 0,npart-1
-call unsetdebug
-if (ipart.eq.IDEBUG-1) then
-write(0,*)'setting setdebug ipart = ',ipart+1,' npart ',npart
-call setdebug
-endif
+!jm call unsetdebug
+!jm if (ipart.eq.IDEBUG-1) then
+!jm write(0,*)'setting setdebug ipart = ',ipart+1,' npart ',npart
+!jm call setdebug
+!jm endif
           cols = ipart * ncol + 1
           cole = (ipart + 1) * ncol
           if (cole>ncolst) cole=ncolst
@@ -10725,7 +10370,6 @@ endif
              do iplon = 1, colr
                piplon = profic(iplon + cols - 1)
                play(iplon,:) = gplay(piplon, 1:nlay)
-write(0,*)'c1 iplon,piplon,cols',iplon,piplon,play(iplon,1)
                plev(iplon,:) = gplev(piplon, 1:nlay+1)
                tlay(iplon,:) = gtlay(piplon, 1:nlay)
                tlev(iplon,:) = gtlev(piplon, 1:nlay+1)
@@ -10788,7 +10432,6 @@ write(0,*)'c1 iplon,piplon,cols',iplon,piplon,play(iplon,1)
             do iplon = 1, colr
               piplon = profi(iplon + cols - 1)
               play(iplon,:) = gplay(piplon, 1:nlay)
-if(deb)write(0,*)'c2 iplon,piplon,cols',iplon,piplon,play(iplon,1)
               plev(iplon,:) = gplev(piplon, 1:nlay+1)
               tlay(iplon,:) = gtlay(piplon, 1:nlay)
               tlev(iplon,:) = gtlev(piplon, 1:nlay+1)
@@ -10872,11 +10515,6 @@ if(deb)write(0,*)'c2 iplon,piplon,cols',iplon,piplon,play(iplon,1)
           end do
 !$acc end kernels
 
-!do l =1,nlay+1
-!iw = 1
-!if(deb)write(0,*)'before mcica_sw cld ',l,iw,cld(IDEBUG,l)
-!enddo
-
           if (cc==2) then   ! call mcica for cloudy cases
             call mcica_sw(colr, nlay, 112, icld, irng, play, &
                           cld, ciwp, clwp, cswp, tauc, ssac, asmc, fsfc, &
@@ -10888,60 +10526,11 @@ if(deb)write(0,*)'c2 iplon,piplon,cols',iplon,piplon,play(iplon,1)
 !                          dyofyr, rdl, adl)
           end if   
 
-if(deb)write(0,*)'iceflag ',iceflgsw
-if(deb)write(0,*)'inflag ',inflgsw
-if(deb)write(0,*)'liqflag ',liqflgsw
-
-do ii=1,ngptsw
-do l =1,nlay+1
-if(deb)write(0,*)'before cldprmc_sw cldfmc ',l,ii,cldfmcl(IDEBUG,l,ii)
-if(deb)write(0,*)'before cldprmc_sw taucmc ',l,ii,taucmc(IDEBUG,l,ii)
-enddo
-enddo
-
           if (cc==2) then   ! call cldprmc for cloudy cases
             call cldprmc_sw(colr, nlay, inflgsw, iceflgsw, liqflgsw,  &
                             cldfmcl, ciwpmcl, clwpmcl, cswpmcl, rei, rel, res, &
                             taormc, taucmc, ssacmc, asmcmc, fsfcmc)
           end if
-
-do l =1,nlay+1
-if(deb)write(0,*)'before setcoef_sw taucmc ',l,1,taucmc(1,l,1)
-if(deb)write(0,*)'before setcoef_sw cldfmc ',l,1,cldfmcl(1,l,1)
-if(deb.and.l<=nlay)write(0,*)'before setcoef_sw play  ',l,1,play (1,l)
-if(deb.and.l<=nlay)write(0,*)'before setcoef_sw tlay  ',l,1,tlay (1,l)
-if(deb)write(0,*)'before setcoef_sw plev  ',l,1,plev (1,l)
-if(deb)write(0,*)'before setcoef_sw tlev  ',l,1,tlev (1,l)
-if(deb)write(0,*)'before setcoef_sw tsfc  ',l,1,tsfc (1)
-if(deb.and.l<=nlay)write(0,*)'before setcoef_sw coldry  ',l,1,coldry (1,l)
-do imol = 1, nmol
-if(deb.and.l<=nlay)write(0,*)'before setcoef_sw wkl  ',l,imol,wkl (1,imol,l)
-enddo
-!if(deb)write(0,*)'before setcoef_sw laytrop  ',l,1,laytrop (1)
-!if(deb)write(0,*)'before setcoef_sw layswtch  ',l,1,layswtch (1)
-!if(deb)write(0,*)'before setcoef_sw laylow  ',l,1,laylow (1)
-!if(deb)write(0,*)'before setcoef_sw jp  ',l,1,jp (IDEBUG,l)
-!if(deb)write(0,*)'before setcoef_sw jt  ',l,1,jt (IDEBUG,l)
-!if(deb)write(0,*)'before setcoef_sw jt1  ',l,1,jt1 (IDEBUG,l)
-!if(deb)write(0,*)'before setcoef_sw co2mult  ',l,1,co2mult (IDEBUG,l)
-!if(deb)write(0,*)'before setcoef_sw colch4  ',l,1,colch4 (IDEBUG,l)
-!if(deb)write(0,*)'before setcoef_sw colco2  ',l,1,colco2 (IDEBUG,l)
-!if(deb)write(0,*)'before setcoef_sw colh2o  ',l,1,colh2o (IDEBUG,l)
-!if(deb)write(0,*)'before setcoef_sw colmol  ',l,1,colmol (IDEBUG,l)
-!if(deb)write(0,*)'before setcoef_sw coln2o  ',l,1,coln2o (IDEBUG,l)
-!if(deb)write(0,*)'before setcoef_sw colo2  ',l,1,colo2 (IDEBUG,l)
-!if(deb)write(0,*)'before setcoef_sw colo3  ',l,1,colo3 (IDEBUG,l)
-!if(deb)write(0,*)'before setcoef_sw fac00  ',l,1,fac00 (IDEBUG,l)
-!if(deb)write(0,*)'before setcoef_sw fac01  ',l,1,fac01 (IDEBUG,l)
-!if(deb)write(0,*)'before setcoef_sw fac10  ',l,1,fac10 (IDEBUG,l)
-!if(deb)write(0,*)'before setcoef_sw fac11  ',l,1,fac11 (IDEBUG,l)
-!if(deb)write(0,*)'before setcoef_sw selffac  ',l,1,selffac (IDEBUG,l)
-!if(deb)write(0,*)'before setcoef_sw selffrac  ',l,1,selffrac (IDEBUG,l)
-!if(deb)write(0,*)'before setcoef_sw indself  ',l,1,indself (IDEBUG,l)
-!if(deb)write(0,*)'before setcoef_sw forfac  ',l,1,forfac (IDEBUG,l)
-!if(deb)write(0,*)'before setcoef_sw forfrac  ',l,1,forfrac (IDEBUG,l)
-!if(deb)write(0,*)'before setcoef_sw indfor  ',l,1,indfor (IDEBUG,l)
-enddo
 
           call setcoef_sw(colr, nlay, play , tlay , plev , tlev , tsfc , &
                           coldry , wkl , &
@@ -10949,36 +10538,6 @@ enddo
                           co2mult , colch4 , colco2 , colh2o , colmol , coln2o , &
                           colo2 , colo3 , fac00 , fac01 , fac10 , fac11 , &
                           selffac , selffrac , indself , forfac , forfrac , indfor )
-
-if(deb)write(0,*)'after setcoef_sw laytrop  ',laytrop (1)
-if(deb)write(0,*)'after setcoef_sw layswtch  ',layswtch (1)
-if(deb)write(0,*)'after setcoef_sw laylow  ',laylow (1)
-
-if(deb)write(0,*)'setting aldir ',galdir(cols)
-if(deb)write(0,*)'setting aldif ',galdif(cols)
-if(deb)write(0,*)'setting asdir ',gasdir(cols)
-if(deb)write(0,*)'setting asdif ',gasdif(cols)
-
-
-
-
-do l =1,nlay+1
-if(deb)write(0,*)'before spcvmc_sw cldfmc ',l,1,cldfmcl(1,l,1)
-if(deb)write(0,*)'before spcvmc_sw taucmc ',l,1,taucmc(1,l,1)
-enddo
-
-do ib=1,9
-if(deb)write(0,*)'abdif ',ib,albdif(1,ib)
-if(deb)write(0,*)'abdir ',ib,albdir(1,ib)
-enddo
-if(deb)write(0,*)'abdif ',nbndsw,albdif(1,nbndsw)
-if(deb)write(0,*)'abdir ',nbndsw,albdir(1,nbndsw)
-do ib=10,13
-if(deb)write(0,*)'abdif ',ib,albdif(1,ib)
-if(deb)write(0,*)'abdir ',ib,albdir(1,ib)
-enddo
-
-
 
           call spcvmc_sw(cc, ncol, colr, nlay, istart, iend, icpr, idelm, iout, &
                          play, tlay, plev, tlev, &
@@ -11607,9 +11166,7 @@ enddo
 #ifdef _CUDA
       rpart = 0
 #else
-      rpart = 2
-write(0,*)'warning rpart = 1'
-      rpart = 1
+      rpart = CHNK
 #endif
 
 
@@ -12126,17 +11683,6 @@ write(0,*)'warning rpart = 1'
       endif
 
 
-#if 0
-      if (i==80.and.j==30) then
-#if defined( DM_PARALLEL ) && ! defined( STUBMPI) 
-      if( PRESENT( progn ) ) write(0,*) 'aerosol indirect',progn
-      write(0,*)'sw water eff radius',reliq(icol,10),reliq(icol,20),reliq(icol,25)
-      write(0,*)'sw ice eff radius',reice(icol,10),reice(icol,20),reice(icol,25)
-#endif
-      endif
-#endif
-
-
 ! Limit upper bound of reice for Fu ice parameterization and convert
 ! from effective radius to generalized effective size (*1.0315; Fu, 1996)
             if (iceflgsw .eq. 3) then
@@ -12389,62 +11935,6 @@ write(0,*)'warning rpart = 1'
       if (icnt .eq. 0) dorrsw = .false.
       if (dorrsw) then
 
-!write(0,*)'zap b4 rrtmg_sw ncol ',ncol
-write(0,*)'zap b4 rrtmg_sw nlay ',nlay
-write(0,*)'zap b4 rrtmg_sw icld ',icld
-write(0,*)'zap b4 rrtmg_sw play ',play(IDEBUG,:)
-write(0,*)'zap b4 rrtmg_sw plev ',plev(IDEBUG,:)
-write(0,*)'zap b4 rrtmg_sw tlay ',tlay(IDEBUG,:)
-write(0,*)'zap b4 rrtmg_sw tsfc ',tsfc(IDEBUG)
-write(0,*)'zap b4 rrtmg_sw h2ovmr ',h2ovmr(IDEBUG,:)
-write(0,*)'zap b4 rrtmg_sw o3vmr ',o3vmr(IDEBUG,:)
-write(0,*)'zap b4 rrtmg_sw co2vmr ',co2vmr(IDEBUG,:)
-write(0,*)'zap b4 rrtmg_sw ch4vmr ',ch4vmr(IDEBUG,:)
-write(0,*)'zap b4 rrtmg_sw n2ovmr ',n2ovmr(IDEBUG,:)
-write(0,*)'zap b4 rrtmg_sw o2vmr ',o2vmr(IDEBUG,:)
-write(0,*)'zap b4 rrtmg_sw asdir ',asdir(IDEBUG)
-write(0,*)'zap b4 rrtmg_sw asdif ',asdif(IDEBUG)
-write(0,*)'zap b4 rrtmg_sw aldir ',aldir(IDEBUG)
-write(0,*)'zap b4 rrtmg_sw aldif ',aldif(IDEBUG)
-write(0,*)'zap b4 rrtmg_sw coszen ',coszen(IDEBUG)
-write(0,*)'zap b4 rrtmg_sw adjes ',adjes
-write(0,*)'zap b4 rrtmg_sw dyofyr ',dyofyr
-write(0,*)'zap b4 rrtmg_sw scon ',scon
-write(0,*)'zap b4 rrtmg_sw inflgsw ',inflgsw
-write(0,*)'zap b4 rrtmg_sw iceflgsw ',iceflgsw
-write(0,*)'zap b4 rrtmg_sw liqflgsw ',liqflgsw
-!write(0,*)'zap b4 rrtmg_sw cldfmcl ',cldfmcl(IDEBUG,:)
-!write(0,*)'zap b4 rrtmg_sw taucmcl ',taucmcl(IDEBUG,:)
-!write(0,*)'zap b4 rrtmg_sw ssacmcl ',ssacmcl(IDEBUG,:)
-!write(0,*)'zap b4 rrtmg_sw asmcmcl ',asmcmcl(IDEBUG,:)
-!write(0,*)'zap b4 rrtmg_sw fsfcmcl ',fsfcmcl(IDEBUG,:)
-!write(0,*)'zap b4 rrtmg_sw ciwpmcl ',ciwpmcl(IDEBUG,:)
-!write(0,*)'zap b4 rrtmg_sw clwpmcl ',clwpmcl(IDEBUG,:)
-!write(0,*)'zap b4 rrtmg_sw cswpmcl ',cswpmcl(IDEBUG,:)
-!write(0,*)'zap b4 rrtmg_sw reicmcl ',reicmcl(IDEBUG,:)
-!write(0,*)'zap b4 rrtmg_sw relqmcl ',relqmcl(IDEBUG,:)
-!write(0,*)'zap b4 rrtmg_sw resnmcl ',resnmcl(IDEBUG,:)
-write(0,*)'zap b4 rrtmg_sw tauaer ',tauaer(IDEBUG,:,:)
-write(0,*)'zap b4 rrtmg_sw ssaaer ',ssaaer(IDEBUG,:,:)
-write(0,*)'zap b4 rrtmg_sw asmaer ',asmaer(IDEBUG,:,:)
-write(0,*)'zap b4 rrtmg_sw ecaer ',ecaer(IDEBUG,:,:)
-!write(0,*)'zap b4 rrtmg_sw swuflx ',swuflx(IDEBUG,:)
-!write(0,*)'zap b4 rrtmg_sw swdflx ',swdflx(IDEBUG,:)
-!write(0,*)'zap b4 rrtmg_sw swhr ',swhr(IDEBUG,:)
-!write(0,*)'zap b4 rrtmg_sw swuflxc ',swuflxc(IDEBUG,:)
-!write(0,*)'zap b4 rrtmg_sw swdflxc ',swdflxc(IDEBUG,:)
-!write(0,*)'zap b4 rrtmg_sw swhrc ',swhrc(IDEBUG,:)
-write(0,*)'zap b4 rrtmg_sw aer_opt ',aer_opt
-!write(0,*)'zap b4 rrtmg_sw sibvisdir ',sibvisdir(IDEBUG,:)
-!write(0,*)'zap b4 rrtmg_sw sibvisdif ',sibvisdif(IDEBUG,:)
-!write(0,*)'zap b4 rrtmg_sw sibnirdir ',sibnirdir(IDEBUG,:)
-!write(0,*)'zap b4 rrtmg_sw sibnirdif ',sibnirdif(IDEBUG,:)
-!write(0,*)'zap b4 rrtmg_sw swdkdir ',swdkdir(IDEBUG,:)
-!write(0,*)'zap b4 rrtmg_sw swdkdif ',swdkdif(IDEBUG,:)
-
-
-write(0,*)'calling rrtmg_sw rpart   ncol  inflgsw   iceflgsw  liqflgsw'
-write(0,*)'calling rrtmg_sw ',rpart,ncol,inflgsw ,iceflgsw,liqflgsw
          call rrtmg_sw &
             (rpart   ,ncol    ,nlay    ,icld    ,iaer   , &
              play    ,plev    ,tlay    ,tlev    ,tsfc   , &
@@ -12466,62 +11956,6 @@ write(0,*)'calling rrtmg_sw ',rpart,ncol,inflgsw ,iceflgsw,liqflgsw
 
       endif
 
-write(0,*)'zap aft rrtmg_sw ncol ',ncol
-write(0,*)'zap aft rrtmg_sw nlay ',nlay
-write(0,*)'zap aft rrtmg_sw icld ',icld
-write(0,*)'zap aft rrtmg_sw play ',play(IDEBUG,:)
-write(0,*)'zap aft rrtmg_sw plev ',plev(IDEBUG,:)
-write(0,*)'zap aft rrtmg_sw tlay ',tlay(IDEBUG,:)
-write(0,*)'zap aft rrtmg_sw tsfc ',tsfc(IDEBUG)
-write(0,*)'zap aft rrtmg_sw h2ovmr ',h2ovmr(IDEBUG,:)
-write(0,*)'zap aft rrtmg_sw o3vmr ',o3vmr(IDEBUG,:)
-write(0,*)'zap aft rrtmg_sw co2vmr ',co2vmr(IDEBUG,:)
-write(0,*)'zap aft rrtmg_sw ch4vmr ',ch4vmr(IDEBUG,:)
-write(0,*)'zap aft rrtmg_sw n2ovmr ',n2ovmr(IDEBUG,:)
-write(0,*)'zap aft rrtmg_sw o2vmr ',o2vmr(IDEBUG,:)
-write(0,*)'zap aft rrtmg_sw asdir ',asdir(IDEBUG)
-write(0,*)'zap aft rrtmg_sw asdif ',asdif(IDEBUG)
-write(0,*)'zap aft rrtmg_sw aldir ',aldir(IDEBUG)
-write(0,*)'zap aft rrtmg_sw aldif ',aldif(IDEBUG)
-write(0,*)'zap aft rrtmg_sw coszen ',coszen(IDEBUG)
-write(0,*)'zap aft rrtmg_sw adjes ',adjes
-write(0,*)'zap aft rrtmg_sw dyofyr ',dyofyr
-write(0,*)'zap aft rrtmg_sw scon ',scon
-write(0,*)'zap aft rrtmg_sw inflgsw ',inflgsw
-write(0,*)'zap aft rrtmg_sw iceflgsw ',iceflgsw
-write(0,*)'zap aft rrtmg_sw liqflgsw ',liqflgsw
-!write(0,*)'zap aft rrtmg_sw cldfmcl ',cldfmcl(IDEBUG,:)
-!write(0,*)'zap aft rrtmg_sw taucmcl ',taucmcl(IDEBUG,:)
-!write(0,*)'zap aft rrtmg_sw ssacmcl ',ssacmcl(IDEBUG,:)
-!write(0,*)'zap aft rrtmg_sw asmcmcl ',asmcmcl(IDEBUG,:)
-!write(0,*)'zap aft rrtmg_sw fsfcmcl ',fsfcmcl(IDEBUG,:)
-!write(0,*)'zap aft rrtmg_sw ciwpmcl ',ciwpmcl(IDEBUG,:)
-!write(0,*)'zap aft rrtmg_sw clwpmcl ',clwpmcl(IDEBUG,:)
-!write(0,*)'zap aft rrtmg_sw cswpmcl ',cswpmcl(IDEBUG,:)
-!write(0,*)'zap aft rrtmg_sw reicmcl ',reicmcl(IDEBUG,:)
-!write(0,*)'zap aft rrtmg_sw relqmcl ',relqmcl(IDEBUG,:)
-!write(0,*)'zap aft rrtmg_sw resnmcl ',resnmcl(IDEBUG,:)
-write(0,*)'zap aft rrtmg_sw tauaer ',tauaer(IDEBUG,:,:)
-write(0,*)'zap aft rrtmg_sw ssaaer ',ssaaer(IDEBUG,:,:)
-write(0,*)'zap aft rrtmg_sw asmaer ',asmaer(IDEBUG,:,:)
-write(0,*)'zap aft rrtmg_sw ecaer ',ecaer(IDEBUG,:,:)
-do k =kts,kte
-write(0,*)'zap aft rrtmg_sw swuflx ',k,swuflx(IDEBUG,k)
-write(0,*)'zap aft rrtmg_sw swdflx ',k,swdflx(IDEBUG,k)
-write(0,*)'zap aft rrtmg_sw swhr ',k,swhr(IDEBUG,k)
-write(0,*)'zap aft rrtmg_sw swuflxc ',k,swuflxc(IDEBUG,k)
-write(0,*)'zap aft rrtmg_sw swdflxc ',k,swdflxc(IDEBUG,k)
-write(0,*)'zap aft rrtmg_sw swhrc ',k,swhrc(IDEBUG,k)
-enddo
-write(0,*)'zap aft rrtmg_sw aer_opt ',aer_opt
-write(0,*)'zap aft rrtmg_sw sibvisdir ',sibvisdir(IDEBUG,:)
-write(0,*)'zap aft rrtmg_sw sibvisdif ',sibvisdif(IDEBUG,:)
-write(0,*)'zap aft rrtmg_sw sibnirdir ',sibnirdir(IDEBUG,:)
-write(0,*)'zap aft rrtmg_sw sibnirdif ',sibnirdif(IDEBUG,:)
-do k =kts,kte
-write(0,*)'zap aft rrtmg_sw swdkdir ',swdkdir(IDEBUG,k)
-enddo
-write(0,*)'zap aft rrtmg_sw swdkdif ',swdkdif(IDEBUG,:)
 
 ! Output net absorbed shortwave surface flux and shortwave cloud forcing
 ! at the top of atmosphere (W/m2)
@@ -12574,8 +12008,6 @@ write(0,*)'zap aft rrtmg_sw swdkdif ',swdkdif(IDEBUG,:)
          endif
             swddir(i,j)    = swdkdir(icol,1)       ! jararias 2013/08/10
             swddni(i,j)    = swddir(i,j) / coszrs  ! jararias 2013/08/10
-if(i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)write(0,*)'swddni sun up ',swddni(i,j)
-if(i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)write(0,*)'swddir sun up ',swddir(i,j)
             swddif(i,j)    = swdkdif(icol,1)          ! jararias 2013/08/10
 
 ! Output up and down layer fluxes for total and clear sky.
@@ -12616,8 +12048,6 @@ if(i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)write(0,*)'swddir sun up ',swddir(i,j)
             swddir(i,j)    = 0.  ! jararias 2013/08/10
             swddni(i,j)    = 0.  ! jararias 2013/08/10
             swddif(i,j)    = 0.  ! jararias 2013/08/10
-if(i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)write(0,*)'swddni sun down ',swddni(i,j)
-if(i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)write(0,*)'swddir sun down ',swddir(i,j)
 
       endif
 
