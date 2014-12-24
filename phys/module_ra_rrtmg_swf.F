@@ -8524,14 +8524,26 @@ real gpu_device  :: zcd(tncol,ngptsw,nlayers+1)  , zcu(tncol,ngptsw,nlayers+1)
       
       repclc = 1.e-12 
 
+# define ILOOP_S_GPU
+# define ILOOP_E_GPU
+# define ILOOP_S_CPU do iplon = 1, ncol
+# define ILOOP_E_CPU enddo
+# define WLOOP_S_GPU
+# define WLOOP_E_GPU
+# define WLOOP_S_CPU do iw = 1, 112
+# define WLOOP_E_CPU enddo
+
    
 !$acc kernels 
 
-      do iplon = 1, ncol
+      ILOOP_S_GPU
+      WLOOP_S_CPU
+
+        WLOOP_S_GPU
+        ILOOP_S_CPU
 
 ! Top of shortwave spectral band loop, jb = 16 -> 29; ibm = 1 -> 14
 
-        do iw = 1, 112
           jb = ngb(iw)
           ibm = jb-15
           
@@ -8560,23 +8572,25 @@ real gpu_device  :: zcd(tncol,ngptsw,nlayers+1)  , zcu(tncol,ngptsw,nlayers+1)
           zref(iplon,iw,klev+1)   =palbp(iplon,ibm) 
           zrefd(iplon,iw,klev+1)  =palbd(iplon,ibm) 
     
-        end do
-      end do
+        enddo
+      enddo
+
 !$acc end kernels     
 
 
 !$acc kernels loop 
 
-       do iplon = 1, ncol
+       ILOOP_S_GPU
 !$acc loop private(zf, zwf, ibm, ikl, jb)
-         do iw = 1, 112
+         WLOOP_S_GPU
             !$acc loop seq
             do jk=1,klev
 
                ikl=klev+1-jk
+       WLOOP_S_CPU
                jb = ngb(iw)
                ibm = jb-15
-
+         ILOOP_S_CPU
                ! Clear-sky optical parameters including aerosols
                ztauo(iplon,iw,jk)   = ztaur(iplon,ikl,iw)  + ztaug(iplon,ikl,iw) + ptaua(iplon,ikl,ibm)      
 
@@ -8630,6 +8644,7 @@ real gpu_device  :: zcd(tncol,ngptsw,nlayers+1)  , zcu(tncol,ngptsw,nlayers+1)
       end do
 !$acc end kernels               
 
+
 ! Clear sky reflectivities
       call reftra_sw (ncol, nlayers, &
                       pcldfmc, zgco, prmu0, ztauo, zomco, &
@@ -8637,16 +8652,18 @@ real gpu_device  :: zcd(tncol,ngptsw,nlayers+1)  , zcu(tncol,ngptsw,nlayers+1)
                         
 
 !$acc kernels loop    
-      do iplon = 1, ncol
+       ILOOP_S_GPU
 
 ! Combine clear and cloudy reflectivies and optical depths     
 
 !$acc loop
-        do iw = 1, 112
+       WLOOP_S_GPU
             
 !$acc loop seq
             do jk=1,klev
 
+       WLOOP_S_CPU
+       ILOOP_S_CPU
 ! Combine clear and cloudy contributions for total sky
                !ikl = klev+1-jk 
 
@@ -8679,13 +8696,15 @@ real gpu_device  :: zcd(tncol,ngptsw,nlayers+1)  , zcu(tncol,ngptsw,nlayers+1)
 ! Vertical quadrature for clear-sky fluxes
 
 !$acc kernels 
-      do iplon = 1, ncol
+       ILOOP_S_GPU
+        WLOOP_S_GPU
+       WLOOP_S_CPU
+          jb = ngb(iw)
+          ibm = jb-15
+        ILOOP_S_CPU
 
 ! Top of shortwave spectral band loop, jb = 16 -> 29; ibm = 1 -> 14
 
-        do iw = 1, 112
-          jb = ngb(iw)
-          ibm = jb-15
 
           zgco(iplon,iw,klev+1)   =palbp(iplon,ibm) 
           zomco(iplon,iw,klev+1)  =palbd(iplon,ibm) 
@@ -8694,6 +8713,7 @@ real gpu_device  :: zcd(tncol,ngptsw,nlayers+1)  , zcu(tncol,ngptsw,nlayers+1)
       end do
 !$acc end kernels  
 
+
             call vrtqdr_sw(ncol, klev, &
                            zrefo  , zrefdo  , ztrao  , ztrado  , &
                            zdbt , zrdnd  , zgco, zomco, ztdbt  , &
@@ -8701,7 +8721,7 @@ real gpu_device  :: zcd(tncol,ngptsw,nlayers+1)  , zcu(tncol,ngptsw,nlayers+1)
             
 ! perform band integration for clear cases      
 !$acc kernels loop
-      do iplon = 1, ncol
+       ILOOP_S_GPU
     
 !$acc loop    
         do ikl=1,klev+1
@@ -8712,6 +8732,7 @@ real gpu_device  :: zcd(tncol,ngptsw,nlayers+1)  , zcu(tncol,ngptsw,nlayers+1)
       
              jk=klev+2-ikl
              ibm = jb-15
+          ILOOP_S_CPU
              zincflx = adjflux(jb)  * zsflxzen(iplon,iw)   * prmu0(iplon)           
 
 ! Accumulate spectral fluxes over whole spectrum  
@@ -8742,22 +8763,20 @@ real gpu_device  :: zcd(tncol,ngptsw,nlayers+1)  , zcu(tncol,ngptsw,nlayers+1)
       enddo               
 !$acc end kernels
 
-         
-! !!!!!!!!!!!!!!!!!!!!!
-!  END CLEAR  !!!!!!!!!
-! !!!!!!!!!!!!!!!!!!!!!
 
 
       if (cc==2) then
 
 !$acc kernels 
-        do iplon = 1, ncol
-          do iw = 1, 112
+        ILOOP_S_GPU
+          WLOOP_S_GPU
             do jk=1,klev
 
                ikl=klev+1-jk
+          WLOOP_S_CPU
                jb = ngb(iw)
                ibm = jb-15
+           ILOOP_S_CPU
                ! since the cloudy cases are now computed in a separate partition from the clear cases, we must
                ! recompute the needed clear sky prerequisites.
                ze1 = ztaur(iplon,ikl,iw) + ptaua(iplon,ikl,ibm) * pomga(iplon, ikl, ibm) 
@@ -8786,6 +8805,7 @@ real gpu_device  :: zcd(tncol,ngptsw,nlayers+1)  , zcu(tncol,ngptsw,nlayers+1)
         end do
 !$acc end kernels
 
+
 ! Total sky reflectivities      
         call reftra_sw (ncol, nlayers, &
                         pcldfmc, zgco, prmu0, ztauo, zomco, &
@@ -8796,16 +8816,18 @@ real gpu_device  :: zcd(tncol,ngptsw,nlayers+1)  , zcu(tncol,ngptsw,nlayers+1)
 
 
 !$acc kernels loop    
-        do iplon = 1, ncol
+        ILOOP_S_GPU
 
 !$acc loop
-          do iw = 1, 112
+          WLOOP_S_GPU
             
 !$acc loop seq
             do jk=1,klev
 
 ! Combine clear and cloudy contributions for total sky
                ikl = klev+1-jk 
+          WLOOP_S_CPU
+            ILOOP_S_CPU
                zclear = 1.0  - pcldfmc(iplon,ikl,iw) 
                zcloud = pcldfmc(iplon,ikl,iw) 
 
@@ -8859,13 +8881,15 @@ real gpu_device  :: zcd(tncol,ngptsw,nlayers+1)  , zcu(tncol,ngptsw,nlayers+1)
 
 
 !$acc kernels 
-        do iplon = 1, ncol
+        ILOOP_S_GPU
+          WLOOP_S_GPU
 
 ! Top of shortwave spectral band loop, jb = 16 -> 29; ibm = 1 -> 14
 
-          do iw = 1, 112
+        WLOOP_S_CPU
             jb = ngb(iw)
             ibm = jb-15
+          ILOOP_S_CPU
 
             zgco(iplon,iw,klev+1)   =palbp(iplon,ibm) 
             zomco(iplon,iw,klev+1)  =palbd(iplon,ibm) 
@@ -8891,16 +8915,18 @@ real gpu_device  :: zcd(tncol,ngptsw,nlayers+1)  , zcu(tncol,ngptsw,nlayers+1)
         repclc = 1.e-12 
 
 !$acc kernels loop
-        do iplon = 1, ncol
+        ILOOP_S_GPU
     
 !$acc loop    
           do ikl=1,klev+1
+            ILOOP_S_GPU
             
 !$acc loop seq
-            do iw = 1, 112
+          WLOOP_S_CPU
                jb = ngb(iw)
                jk=klev+2-ikl
                ibm = jb-15
+            ILOOP_S_CPU
                zincflx = adjflux(jb)  * zsflxzen(iplon,iw)   * prmu0(iplon)           
 
 ! Accumulate spectral fluxes over whole spectrum  
@@ -8947,11 +8973,12 @@ real gpu_device  :: zcd(tncol,ngptsw,nlayers+1)  , zcu(tncol,ngptsw,nlayers+1)
 
 
 !$acc kernels
-      do iplon = 1, ncol
-    
-         do iw = 1, 112
+      ILOOP_S_GPU
+         WLOOP_S_GPU
+      WLOOP_S_CPU
             jb = ngb(iw)
             ibm = jb - 15
+         ILOOP_S_CPU
             zincflx = adjflux(jb)  * zsflxzen(iplon,iw)   * prmu0(iplon)    
             
 ! For GSFC, not needed for WRF
@@ -8974,6 +9001,18 @@ real gpu_device  :: zcd(tncol,ngptsw,nlayers+1)  , zcu(tncol,ngptsw,nlayers+1)
 !$acc end kernels
 
 !!$acc end data
+# undef ILOOP_S_GPU
+# undef ILOOP_E_GPU
+# undef ILOOP_S_CPU
+# undef ILOOP_E_CPU
+# undef WLOOP_S_GPU
+# undef WLOOP_E_GPU
+# undef WLOOP_S_CPU
+# undef WLOOP_E_CPU
+         
+! !!!!!!!!!!!!!!!!!!!!!
+!  END CLEAR  !!!!!!!!!
+! !!!!!!!!!!!!!!!!!!!!!
 
       end subroutine spcvmc_sw
              
@@ -9271,7 +9310,27 @@ use debuggal
 
       integer  :: ikp, ikx, jk, iplon, iw
 
+#ifdef _CUDA
+
       real  :: zreflect, zreflectj
+
+#else
+
+!      real, dimension(CHNK)  :: zreflect, zreflectj
+      real  :: zreflect, zreflectj
+
+# define ILOOP_S_GPU 
+# define ILOOP_E_GPU 
+# define ILOOP_S_CPU do iplon = 1, ncol
+# define ILOOP_E_CPU enddo
+# define WLOOP_S_GPU 
+# define WLOOP_E_GPU 
+# define WLOOP_S_CPU do iw = 1, 112
+# define WLOOP_E_CPU enddo
+!# define zreflect ZREFLECT(iplon)
+!# define zreflectj ZREFLECTJ(iplon)
+
+#endif
      
 ! Definitions
 !
@@ -9290,99 +9349,128 @@ use debuggal
 
 
 !$acc kernels loop
-      do iplon = 1, ncol
+      ILOOP_S_GPU
 
 !$acc loop private(zreflect)
-         do iw = 1, 112
-      
+        WLOOP_S_GPU
+         WLOOP_S_CPU
+
+           ILOOP_S_CPU
             zreflect = 1.  / (1.  - prefd(iplon,iw,klev+1)   * prefd(iplon,iw,klev)  )
             prup(iplon,iw,klev)   = pref(iplon,iw,klev)   + (ptrad(iplon,iw,klev)   * &
                  ((ptra(iplon,iw,klev)   - pdbt(iplon,iw,klev)  ) * prefd(iplon,iw,klev+1)   + &
                    pdbt(iplon,iw,klev)   * pref(iplon,iw,klev+1)  )) * zreflect
             prupd(iplon,iw,klev)   = prefd(iplon,iw,klev)   + ptrad(iplon,iw,klev)   * ptrad(iplon,iw,klev)   * &
                     prefd(iplon,iw,klev+1)   * zreflect
-
-         end do
-      end do
+           ILOOP_E_CPU
+         WLOOP_E_GPU
+        WLOOP_E_CPU
+      ILOOP_E_GPU
 !$acc end kernels
       
 ! Pass from bottom to top 
 !$acc kernels loop
-      do iplon = 1, ncol
+      ILOOP_S_GPU
 
 !$acc loop    
-         do iw = 1, 112
+       WLOOP_S_GPU
 
 !$acc loop seq 
             do jk = 1,klev-1
                ikp = klev+1-jk                       
                ikx = ikp-1
+         WLOOP_S_CPU
+           ILOOP_S_CPU
                zreflectj = 1.  / (1.  -prupd(iplon,iw,ikp)   * prefd(iplon,iw,ikx)  )
                prup(iplon,iw,ikx)   = pref(iplon,iw,ikx)   + (ptrad(iplon,iw,ikx)   * &
                    ((ptra(iplon,iw,ikx)   - pdbt(iplon,iw,ikx)  ) * prupd(iplon,iw,ikp)   + &
                      pdbt(iplon,iw,ikx)   * prup(iplon,iw,ikp)  )) * zreflectj
                prupd(iplon,iw,ikx)   = prefd(iplon,iw,ikx)   + ptrad(iplon,iw,ikx)   * ptrad(iplon,iw,ikx)   * &
                       prupd(iplon,iw,ikp)   * zreflectj
+           ILOOP_E_CPU
+         WLOOP_E_CPU
             end do
-         end do
-      end do
+       WLOOP_E_GPU
+      ILOOP_E_GPU
 !$acc end kernels
 
 !$acc kernels loop
-      do iplon = 1, ncol
+      ILOOP_S_GPU
 !$acc loop
-         do iw = 1, 112
+        WLOOP_S_GPU
+         WLOOP_S_CPU
 
 ! Upper boundary conditions
+           ILOOP_S_CPU
             ztdn(iplon, iw, 1) = 1. 
             prdnd(iplon,iw,1)   = 0. 
             ztdn(iplon, iw, 2) = ptra(iplon,iw,1)  
             prdnd(iplon,iw,2)   = prefd(iplon,iw,1)  
-         end do
-      end do
+           ILOOP_E_CPU
+         WLOOP_E_GPU
+        WLOOP_E_CPU
+      ILOOP_E_GPU
 !$acc end kernels      
       
 !$acc kernels loop
-      do iplon = 1, ncol
+      ILOOP_S_GPU
 !$acc loop
-         do iw = 1, 112
+       WLOOP_S_GPU
 
 ! Pass from top to bottom
 !$acc loop seq
             do jk = 2,klev
                ikp = jk+1
+         WLOOP_S_CPU
+           ILOOP_S_CPU
                zreflect = 1.  / (1.  - prefd(iplon,iw,jk)   * prdnd(iplon,iw,jk)  )
                ztdn(iplon, iw, ikp) = ptdbt(iplon,iw,jk)   * ptra(iplon,iw,jk)   + &
                     (ptrad(iplon,iw,jk)   * ((ztdn(iplon, iw, jk) - ptdbt(iplon,iw,jk)  ) + &
                      ptdbt(iplon,iw,jk)   * pref(iplon,iw,jk)   * prdnd(iplon,iw,jk)  )) * zreflect
                prdnd(iplon,iw,ikp)   = prefd(iplon,iw,jk)   + ptrad(iplon,iw,jk)   * ptrad(iplon,iw,jk)   * &
                       prdnd(iplon,iw,jk)   * zreflect
+           ILOOP_E_CPU
+         WLOOP_E_CPU
             end do
-         end do
-      end do
+       WLOOP_E_GPU
+      ILOOP_E_GPU
 !$acc end kernels
     
 ! Up and down-welling fluxes at levels
 
 !$acc kernels loop
-      do iplon = 1, ncol
+      ILOOP_S_GPU
 !$acc loop
-         do iw = 1, 112
+       WLOOP_S_GPU
 !$acc loop 
             do jk = 1,klev+1
+         WLOOP_S_CPU
+           ILOOP_S_CPU
                zreflect = 1.  / (1.  - prdnd(iplon,iw,jk)   * prupd(iplon,iw,jk)  )
                pfu(iplon,iw,jk)   = (ptdbt(iplon,iw,jk)   * prup(iplon,iw,jk)   + &
                       (ztdn(iplon, iw, jk) - ptdbt(iplon,iw,jk)  ) * prupd(iplon,iw,jk)  ) * zreflect
                pfd(iplon,iw,jk)   = ptdbt(iplon,iw,jk)   + (ztdn(iplon, iw, jk) - ptdbt(iplon,iw,jk)  + &
                       ptdbt(iplon,iw,jk)   * prup(iplon,iw,jk)   * prdnd(iplon,iw,jk)  ) * zreflect
+           ILOOP_E_CPU
+         WLOOP_E_CPU
             end do
-         end do
-      end do
+       WLOOP_E_GPU
+      ILOOP_E_GPU
 !$acc end kernels
       
       end subroutine vrtqdr_sw
 
       end module rrtmg_sw_spcvmc_f
+# undef ILOOP_S_GPU 
+# undef ILOOP_E_GPU 
+# undef ILOOP_S_CPU
+# undef ILOOP_E_CPU
+# undef WLOOP_S_GPU 
+# undef WLOOP_E_GPU 
+# undef WLOOP_S_CPU
+# undef WLOOP_E_CPU
+# undef zreflect
+# undef zreflectj
 
       module rrtmg_sw_rad_f
 !

@@ -11837,10 +11837,10 @@ use debuggal
 ! longitude loop
      i_loop: do i = its,ite
 
-call unsetdebug
-if (i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)then
-  call setdebug
-endif
+!jm call unsetdebug
+!jm if (i.eq.IDEBUG_BASE.and.j.eq.JDEBUG_BASE)then
+!jm   call setdebug
+!jm endif
 
          do k=kts,kte+1
             Pw1D(K) = p8w(I,K,J)/100.

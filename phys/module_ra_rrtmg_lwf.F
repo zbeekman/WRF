@@ -3958,9 +3958,9 @@ use debuggal
 !      real , parameter :: qmin   = 1.0e-10    ! min cloud water and cloud ice (not used)
 
 ! Variables related to random number and seed 
-      real  :: CDF(mxlay), CDF2(mxlay)      ! random numbers
-      integer  :: seed1, seed2, seed3, seed4 ! seed to create random number (kissvec)
-      real  :: rand_num      ! random number (kissvec)
+      real  :: CDF(ncol,mxlay), CDF2(mxlay)      ! random numbers
+      integer,dimension(ncol)  :: seed1, seed2, seed3, seed4 ! seed to create random number (kissvec)
+      real ,dimension(ncol) :: rand_num      ! random number (kissvec)
       integer  :: iseed                       ! seed to create random number (Mersenne Teister)
       real  :: rand_num_mt                    ! random number (Mersenne Twister)
 
@@ -3971,6 +3971,9 @@ use debuggal
       integer  :: ilev, isubcol, i, n         ! indices
       
       integer :: iplon, gp
+      integer  :: m, k, n1, kiss
+
+      m(k, n1) = ieor (k, ishft (k, n1) )
 #ifdef _CUDA
       iplon = (blockidx%x-1) * blockdim%x + threadidx%x
       gp = (blockidx%y-1) * blockdim%y + threadidx%y
@@ -3979,7 +3982,7 @@ use debuggal
      !   print *, "ppp ", iplon, gp
       if (iplon <= ncol .and. gp <= nsubcol) then
 #else
-      do iplon = 1, ncol
+!      do iplon = 1, ncol
 #endif
 
 
@@ -3998,13 +4001,23 @@ use debuggal
            seed4 = seed3 - gp 
 #else
 ! Have it agree with the original _lw.F version, jm 20141222
-       seed1 = (pmidd(iplon,1) - int(pmidd(iplon,1)))  * 1000000000
-       seed2 = (pmidd(iplon,2) - int(pmidd(iplon,2)))  * 1000000000
-       seed3 = (pmidd(iplon,3) - int(pmidd(iplon,3)))  * 1000000000
-       seed4 = (pmidd(iplon,4) - int(pmidd(iplon,4)))  * 1000000000
+    do iplon = 1, ncol
+       seed1(iplon) = (pmidd(iplon,1) - int(pmidd(iplon,1)))  * 1000000000
+       seed2(iplon) = (pmidd(iplon,2) - int(pmidd(iplon,2)))  * 1000000000
+       seed3(iplon) = (pmidd(iplon,3) - int(pmidd(iplon,3)))  * 1000000000
+       seed4(iplon) = (pmidd(iplon,4) - int(pmidd(iplon,4)))  * 1000000000
        do i=1,changeSeed
-          call kissvec(seed1, seed2, seed3, seed4, rand_num)
+!          call kissvec(seed1(iplon), seed2(iplon), seed3(iplon), seed4(iplon), rand_num(iplon))
+
+          seed1(iplon) = 69069 * seed1(iplon) + 1327217885
+          seed2(iplon) = m (m (m (seed2(iplon), 13), - 17), 5)
+          seed3(iplon) = 18000 * iand (seed3(iplon), 65535) + ishft (seed3(iplon), - 16)
+          seed4(iplon) = 30903 * iand (seed4(iplon), 65535) + ishft (seed4(iplon), - 16)
+          kiss = seed1(iplon) + seed2(iplon) + ishft (seed3(iplon), 16) + seed4(iplon)
+          rand_num(iplon) = kiss*2.328306e-10  + 0.5
+
        enddo
+    enddo
 
      do gp = 1, nsubcol
 
@@ -4020,96 +4033,69 @@ use debuggal
 ! Random overlap
        case(1) 
 
+#if 0
            do ilev = 1,nlay
              call kissvec(seed1, seed2, seed3, seed4, rand_num)
-             CDF(ilev) = rand_num
+             CDF(iplon,ilev) = rand_num
            end do
+#else
+   CALL wrf_error_fatal("icld == 1 not supported: module_ra_rrtmg_lwf.F")
+#endif
         
 
 ! Maximum-Random overlap
        case(2)
 
            do ilev = 1,nlay
-             call kissvec(seed1, seed2, seed3, seed4, rand_num)
-             CDF(ilev) = rand_num
+    do iplon = 1, ncol
+!             call kissvec(seed1(iplon), seed2(iplon), seed3(iplon), seed4(iplon), rand_num(iplon))
+             seed1(iplon) = 69069 * seed1(iplon) + 1327217885
+             seed2(iplon) = m (m (m (seed2(iplon), 13), - 17), 5)
+             seed3(iplon) = 18000 * iand (seed3(iplon), 65535) + ishft (seed3(iplon), - 16)
+             seed4(iplon) = 30903 * iand (seed4(iplon), 65535) + ishft (seed4(iplon), - 16)
+             kiss = seed1(iplon) + seed2(iplon) + ishft (seed3(iplon), 16) + seed4(iplon)
+             CDF(iplon,ilev) = kiss*2.328306e-10  + 0.5
+    enddo
            end do
           
 
            do ilev = 2,nlay
-             if (CDF(ilev-1) > 1.  - cldfracd(iplon, ilev-1)) then 
-                CDF(ilev) = CDF(ilev-1)
+    do iplon = 1, ncol
+             if (CDF(iplon,ilev-1) > 1.  - cldfracd(iplon, ilev-1)) then 
+                CDF(iplon,ilev) = CDF(iplon,ilev-1)
              else
-                 CDF(ilev) = CDF(ilev) * (1. - cldfracd(iplon, ilev-1))
+                 CDF(iplon,ilev) = CDF(iplon,ilev) * (1. - cldfracd(iplon, ilev-1))
              end if
+    enddo
            end do
             
 ! Maximum overlap
        case(3)
 
-           call kissvec(seed1, seed2, seed3, seed4, rand_num)
+    do iplon = 1, ncol
+!           call kissvec(seed1(iplon), seed2(iplon), seed3(iplon), seed4(iplon), rand_num(iplon))
+          seed1(iplon) = 69069 * seed1(iplon) + 1327217885
+          seed2(iplon) = m (m (m (seed2(iplon), 13), - 17), 5)
+          seed3(iplon) = 18000 * iand (seed3(iplon), 65535) + ishft (seed3(iplon), - 16)
+          seed4(iplon) = 30903 * iand (seed4(iplon), 65535) + ishft (seed4(iplon), - 16)
+          kiss = seed1(iplon) + seed2(iplon) + ishft (seed3(iplon), 16) + seed4(iplon)
+          rand_num(iplon) = kiss*2.328306e-10  + 0.5
+    enddo
            do ilev = 1,nlay
-            CDF(ilev) = rand_num
+    do iplon = 1, ncol
+            CDF(iplon,ilev) = rand_num(iplon)
+    enddo
            end do
-
-
-! For GSFC, not needed for WRF
-! Exponential overlap: weighting between maximum and random overlap increases with the distance. 
-!       case(4)
-!
-!           do ilev = 1,nlay
-!              call kissvec(seed1, seed2, seed3, seed4, rand_num)
-!              CDF(ilev) = rand_num
-!              call kissvec(seed1, seed2, seed3, seed4, rand_num)
-!              CDF2(ilev) = rand_num
-!              call kissvec(seed1, seed2, seed3, seed4, rand_num)
-!              CDF3(ilev) = rand_num 
-!           end do
-!
-!           do ilev = 2,nlay
-!
-!              if (CDF2(ilev) < alphad(iplon,ilev)) then
-!                CDF(ilev) = CDF(ilev-1)
-!              end if
-!           
-!           end do
 
        end select 
 
-!       if (ih > 0) then
-!
-!          do ilev = 1,nlay
-!             call kissvec(seed1, seed2, seed3, seed4, rand_num)
-!             CDF2(ilev) = rand_num
-!             call kissvec(seed1, seed2, seed3, seed4, rand_num)
-!             CDF3(ilev) = rand_num 
-!          end do
-!
-!
-!          do ilev = 2,nlay
-!             if (CDF2(ilev) < rcorrd (iplon,ilev)) then
-!                 CDF3(ilev) = CDF3(ilev-1) 
-!             end if
-!          end do
-!
-!       end if
-   
-      
-         
-! -- generate subcolumns for homogeneous clouds -----
-     ! do ilev = 1,nlay
-     !    iscloudy(ilev) = (CDF(ilev) >= 1.  - cldfracd(iplon,ilev))
-     ! enddo
-
-! where the subcolumn is cloudy, the subcolumn cloud fraction is 1;
-! where the subcolumn is not cloudy, the subcolumn cloud fraction is 0;
-! where there is a cloud, define the subcolumn cloud properties, 
-! otherwise set these to zero
       n = ngbd(gp)
 
       do ilev = 1,nlay
+    do iplon = 1, ncol
         cfs = cldfracd(iplon, ilev)
          !  do gp = 1, nsubcol
-               if (CDF(ilev) >=1.  - cfs) then
+               if (CDF(iplon,ilev) >=1.  - cfs) then
                   cld_stoch(iplon,gp,ilev) = 1. 
                   clwp_stoch(iplon,gp,ilev) = clwpd(iplon,ilev)
                   ciwp_stoch(iplon,gp,ilev) = ciwpd(iplon,ilev)
@@ -4117,46 +4103,6 @@ use debuggal
                 
                   tauc_stoch(iplon,gp,ilev) = taucd(iplon,n,ilev)
                   
-! For GSFC, not needed for WRF
-!                   if (ih > 0) then  
-!                     ! Cloud fraction ~ inhomogeneity
-!                     if (cfs .gt. 0.99 ) then
-!                        SIGMA_QCW = 0.5
-!                     elseif (cfs .gt. 0.9 ) then
-!                        SIGMA_QCW = 0.71
-!                     else  
-!                        SIGMA_QCW = 1
-!                     endif
-!
-!                     cld_stoch(iplon,gp,ilev) = 1. 
-!
-!                     ! Horizontally variable clouds:
-!                     ! Determine ZCW = ratio of cloud condensate mixing ratio QC for this cell to
-!                     ! its mean value for all cloudy cells in this layer.
-!                     ! Use bilinear interpolation of ZCW tabulated in array XCW as a function of
-!                     !    * cumulative probability Y (= CDF3)
-!                     !    * relative standard deviation SIGMA
-!                     ! Take care that the definition of RIND2 is consistent with subroutine
-!                     ! TABULATE_XCW
-!                     RIND1 = CDF3(ilev) * (N1 - 1) + 1.0
-!                     IND1  = MAX(1, MIN(INT(RIND1), N1-1))
-!                     RIND1 = RIND1 - IND1
-!                     RIND2 = 40.0 * SIGMA_QCW    - 3.0
-!                     IND2  = MAX(1, MIN(INT(RIND2), N2-1))
-!                     RIND2 = RIND2 - IND2
-!
-!                     ZCW = (1.0-RIND1) * (1.0-RIND2) * XCWD(IND1,IND2) &
-!                          + (1.0-RIND1) * RIND2       * XCWD(IND1,IND2+1) &
-!                          + RIND1 * (1.0-RIND2)       * XCWD(IND1+1,IND2) &
-!                          + RIND1 * RIND2             * XCWD(IND1+1,IND2+1)
-!
-!                     clwp_stoch(iplon,gp,ilev) = clwpd(iplon,ilev) * ZCW
-!                     ciwp_stoch(iplon,gp,ilev) = ciwpd(iplon,ilev) * ZCW
-!                     cswp_stoch(iplon,gp,ilev) = cswpd(iplon,ilev) * ZCW
-!                     tauc_stoch(iplon,gp,ilev) = taucd(iplon,n,ilev)
-!!                  ssac_stoch(isubcol,i,ilev) = ssac(n,i,ilev)
-!!                  asmc_stoch(isubcol,i,ilev) = asmc(n,i,ilev)
-!                   end if
                else
                   cld_stoch(iplon,gp,ilev) = 0. 
                   clwp_stoch(iplon,gp,ilev) = 0. 
@@ -4167,13 +4113,12 @@ use debuggal
 !                  asmc_stoch(isubcol,i,ilev) = 1. 
                endif
            
-       !end do
+   enddo
       enddo
 
 #ifdef _CUDA
       endif
 #else
-      end do
       end do
 #endif
 
@@ -14372,11 +14317,11 @@ cn = CHNK
 
       do  i = 1, ns 
 
-if ( i .eq. IDEBUG_BASE ) then
-call setdebug
-else 
-call unsetdebug
-endif
+!jm if ( i .eq. IDEBUG_BASE ) then
+!jm call setdebug
+!jm else 
+!jm call unsetdebug
+!jm endif
 
 
 
