@@ -1,5 +1,6 @@
 !MODULE module_ra_rrtmg_lwf
 #define CHNK 8
+!#define CHNK 2
 !#define CHNK 1849
 !#define CHNK 43
 !#define CHNK 1

@@ -158,16 +158,16 @@ CFLAGS_LOCAL    =       -w -O3 -ip #-xHost -fp-model fast=2 -no-prec-div -no-pre
 LDFLAGS_LOCAL   =       -ip #-xHost -fp-model fast=2 -no-prec-div -no-prec-sqrt -ftz -align all -fno-alias -fno-common
 CPLUSPLUSLIB    =       
 ESMF_LDFLAG     =       $(CPLUSPLUSLIB)
-FCOPTIM         =       #-O3
+FCOPTIM         =       -O3 -xAVX
 FCREDUCEDOPT	=       $(FCOPTIM)
 FCNOOPT		=       -O0 -fno-inline -fno-ip
-FCDEBUG         =       -O0  -g -traceback #$(FCNOOPT) -traceback # -fpe0 -check all -ftrapuv -unroll0 -u
+FCDEBUG         =       -g #$(FCNOOPT) -traceback # -fpe0 -check all -ftrapuv -unroll0 -u
 FORMAT_FIXED    =       -FI
 FORMAT_FREE     =       -FR
 FCSUFFIX        =
 BYTESWAPIO      =       -convert big_endian
-FCBASEOPTS_NO_G =       -ip -fp-model precise -w -ftz -align all -fno-alias $(FORMAT_FREE) $(BYTESWAPIO) #-xHost -fp-model fast=2 -no-heap-arrays -no-prec-div -no-prec-sqrt -fno-common
-FCBASEOPTS      =       $(FCBASEOPTS_NO_G) $(FCDEBUG)
+FCBASEOPTS_NO_G =       -ip -fp-model precise -w -ftz -align all -align array64byte -fno-alias $(FORMAT_FREE) $(BYTESWAPIO) #-xHost -fp-model fast=2 -no-heap-arrays -no-prec-div -no-prec-sqrt -fno-common
+FCBASEOPTS      =       $(FCBASEOPTS_NO_G) $(FCDEBUG) -vec-report3
 MODULE_SRCH_FLAG =     
 TRADFLAG        =      -traditional
 CPP             =      /lib/cpp -P
@@ -190,11 +190,6 @@ ARCHFLAGS       =    $(COREDEFS) -DIWORDSIZE=$(IWORDSIZE) -DDWORDSIZE=$(DWORDSIZ
                        \
                       -DNETCDF \
                        \
--DIDEBUG=35 \
--DIDEBUG_BASE=35 \
--DJDEBUG_BASE=1 \
--DKDEBUG_BASE=1 \
--DKDEBUG=1 \
                        \
                        \
                        \
@@ -363,7 +358,7 @@ wrfio_esmf :
 .F.o:
 	$(RM) $@
 	$(CPP) -I$(WRF_SRC_ROOT_DIR)/inc $(CPPFLAGS) $(OMPCPP) $*.F  > $*.bb
-	$(SED_FTN) $*.bb | $(CPP) $(TRADFLAG) > $*.f90
+	$(SED_FTN) $*.bb | $(CPP) $(TRADFLAG) | sed '/^ *$$/d' > $*.f90
 	$(RM) $*.b $*.bb
 	@ if echo $(ARCHFLAGS) | $(FGREP) 'DVAR4D'; then \
           echo COMPILING $*.F for 4DVAR ; \

@@ -1,6 +1,5 @@
 !!MODULE module_ra_rrtmg_swf
 #define CHNK 8
-#define CHNK 4
 !#define CHNK 1849
 !#define CHNK 43
 !#define CHNK 1
@@ -2711,6 +2710,19 @@ use debuggal
                                                          !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
+#ifdef _CUDA
+# define IKLOOP1_S do iplon=1,ncol;do lay=1,nlayers
+# define IKLOOP1_E enddo;enddo
+# define IKLOOP2_S do iplon=1,ncol;laysolfr=nlayers;do lay=laytrop(iplon)+1,nlayers;if(jp(iplon,lay-1).lt.layreffr.and.jp(iplon,lay).ge.layreffr)laysolfr=lay
+# define IKLOOP2_E
+#else
+# define ncol CHNK
+# define IKLOOP1_S do lay = 1, nlayers ; do iplon = 1, ncol
+# define IKLOOP1_E enddo;enddo
+# define IKLOOP2_S do lay=2,nlayers;do iplon=1,ncol;if(lay>laytrop(iplon))then;laysolfr=nlayers
+# define IKLOOP2_E endif;enddo;enddo
+#endif
+
 
       integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
       real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
@@ -2724,34 +2736,27 @@ use debuggal
       integer :: iplon
 !      strrat1 = 252.131 
 !      layreffr = 18
-       
-!$acc kernels 
-      do iplon=1,ncol
-! Compute the optical depth by interpolating in ln(pressure), 
-! temperature, and appropriate species.  Below LAYTROP, the water
-! vapor self-continuum is interpolated (in temperature) separately.  
 
-! Lower atmosphere loop
-      do lay = 1, nlayers
-         if (lay <= laytrop(iplon)) then 
-         speccomb = colh2o(iplon,lay)  + strrat1*colch4(iplon,lay) 
-         specparm = colh2o(iplon,lay) /speccomb 
+IKLOOP1_S
+         if (lay <= laytrop(iplon)) then
+         speccomb = colh2o(iplon,lay)  + strrat1*colch4(iplon,lay)
+         specparm = colh2o(iplon,lay) /speccomb
          if (specparm .ge. oneminus) specparm = oneminus
          specmult = 8. *(specparm)
          js = 1 + int(specmult)
          fs = mod(specmult, 1.  )
-         fac000 = (1.  - fs) * fac00(iplon,lay) 
-         fac010 = (1.  - fs) * fac10(iplon,lay) 
-         fac100 = fs * fac00(iplon,lay) 
-         fac110 = fs * fac10(iplon,lay) 
-         fac001 = (1.  - fs) * fac01(iplon,lay) 
-         fac011 = (1.  - fs) * fac11(iplon,lay) 
-         fac101 = fs * fac01(iplon,lay) 
-         fac111 = fs * fac11(iplon,lay) 
+         fac000 = (1.  - fs) * fac00(iplon,lay)
+         fac010 = (1.  - fs) * fac10(iplon,lay)
+         fac100 = fs * fac00(iplon,lay)
+         fac110 = fs * fac10(iplon,lay)
+         fac001 = (1.  - fs) * fac01(iplon,lay)
+         fac011 = (1.  - fs) * fac11(iplon,lay)
+         fac101 = fs * fac01(iplon,lay)
+         fac111 = fs * fac11(iplon,lay)
          ind0 = ((jp(iplon,lay) -1)*5+(jt(iplon,lay) -1))*nspa(16) + js
          ind1 = (jp(iplon,lay) *5+(jt1(iplon,lay) -1))*nspa(16) + js
-         inds = indself(iplon,lay) 
-         indf = indfor(iplon,lay) 
+         inds = indself(iplon,lay)
+         indf = indfor(iplon,lay)
          tauray = colmol(iplon,lay)  * rayl
 
          do ig = 1, ng16
@@ -2775,22 +2780,29 @@ use debuggal
             taur(iplon,lay,ig)  = tauray
          enddo
          end if
-      enddo
-     
-      end do
+IKLOOP1_E
 !$acc end kernels
 
 ! Upper atmosphere loop
 !$acc kernels 
-      do iplon=1,ncol
-        laysolfr = nlayers
-! mji - fix for out of bounds issue on absb - added to pass bounds checking; FINAL
-      do lay = laytrop(iplon)+1, nlayers
+IKLOOP2_S
+!#ifdef _CUDA
+!      do iplon=1,ncol
+!        laysolfr = nlayers
+!! mji - fix for out of bounds issue on absb - added to pass bounds checking; FINAL
+!      do lay = laytrop(iplon)+1, nlayers
+!!        if (lay > laytrop(iplon)) then
+!!          !do lay = laytrop(iplon) +1, nlayers
+!         if (jp(iplon,lay-1)  .lt. layreffr .and. jp(iplon,lay)  .ge. layreffr) then
+!            laysolfr = lay
+!         end if
+!#else
+!      do lay = minval(laytrop(1:ncol)),nlayers
+!       do iplon=1,ncol
 !        if (lay > laytrop(iplon)) then
-!          !do lay = laytrop(iplon) +1, nlayers
-         if (jp(iplon,lay-1)  .lt. layreffr .and. jp(iplon,lay)  .ge. layreffr) then
-            laysolfr = lay
-         end if
+!         laysolfr = nlayers
+!
+!#endif
          ind0 = ((jp(iplon,lay) -13)*5+(jt(iplon,lay) -1))*nspb(16) + 1
          ind1 = ((jp(iplon,lay) -12)*5+(jt1(iplon,lay) -1))*nspb(16) + 1
          tauray = colmol(iplon,lay)  * rayl
@@ -2805,12 +2817,9 @@ use debuggal
             if (laysolfr == lay) sfluxzen(iplon,ig)  = sfluxref(ig) 
             taur(iplon,lay,ig)  = tauray  
          enddo
-!        end if
-
-      enddo
-      enddo
-      
+IKLOOP2_E
 !$acc end kernels
+# undef ncol
  end subroutine taumol16
 
 !----------------------------------------------------------------------------
@@ -2874,6 +2883,9 @@ use debuggal
                                                          !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
+#ifndef _CUDA
+# define ncol CHNK
+#endif
 
       integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
       real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
@@ -2889,6 +2901,7 @@ use debuggal
 !      layreffr = 30
 !      strrat = 0.364641 
     
+#ifdef _CUDA
 !$acc kernels loop
       do iplon=1,ncol
 ! Compute the optical depth by interpolating in ln(pressure), 
@@ -2898,6 +2911,9 @@ use debuggal
 ! Lower atmosphere loop
 !$acc loop private(js, fs)
       do lay = 1, nlayers 
+#else
+IKLOOP1_S
+#endif
         if (lay <= laytrop(iplon)) then
           !do lay = 1, laytrop(iplon) 
          speccomb = colh2o(iplon,lay)  + strrat*colco2(iplon,lay) 
@@ -2987,11 +3003,7 @@ use debuggal
         
 
 !$acc kernels
-      do iplon = 1, ncol      
-! Upper atmosphere loop
-        laysolfr = nlayers 
-      do lay = 2, nlayers
-        if (lay > laytrop(iplon)) then 
+IKLOOP2_S
           
         if ((jp(iplon,lay-1)  .lt. layreffr) .and. (jp(iplon,lay)  .ge. layreffr)) then
             laysolfr = lay
@@ -3010,10 +3022,9 @@ use debuggal
                + fs * (sfluxref(ig,js+1) - sfluxref(ig,js))
           end do
           end if
-        end if
-      enddo
-      enddo   
+IKLOOP2_E
 !$acc end kernels      
+# undef ncol
       end subroutine taumol17
 
 !----------------------------------------------------------------------------
@@ -3077,8 +3088,15 @@ use debuggal
                                                          !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
+#ifndef _CUDA
+# define ncol CHNK
+#endif
 
+#ifdef _CUDA
       integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+#else
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr(ncol)
+#endif
       real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
                        fac110, fac111, fs, speccomb, specmult, specparm, &
                        tauray
@@ -3093,9 +3111,18 @@ use debuggal
 !      strrat = 38.9589 
 !      layreffr = 6
 !$acc kernels      
+
+#ifdef _CUDA
       do iplon = 1, ncol
           laysolfr = laytrop(iplon)
           do lay = 1, laytrop(iplon)
+#else
+      laysolfr = laytrop
+#define laysolfr LAYSOLFR(iplon)
+      do lay = 1, nlayers
+        do iplon = 1, ncol
+          if (lay <= laytrop(iplon)) then
+#endif
               speccomb = colh2o(iplon,lay)  + strrat*colch4(iplon,lay) 
               specparm = colh2o(iplon,lay) /speccomb 
               if (specparm .ge. oneminus) specparm = oneminus
@@ -3108,14 +3135,17 @@ use debuggal
                 if (lay .eq. laysolfr) sfluxzen(iplon,ngs17+ig)  = sfluxref(ig,js) &
                   + fs * (sfluxref(ig,js+1) - sfluxref(ig,js))
               end do
+#ifdef _CUDA
+#else
+# undef laysolfr
+         endif
+#endif
           end do
       end do
 !$acc end kernels
       
 !$acc kernels 
-      do iplon = 1, ncol
-
-      do lay = 1, nlayers
+IKLOOP1_S
         if (lay <= laytrop(iplon)) then
           !do lay = 1, laytrop(iplon) 
        
@@ -3180,11 +3210,10 @@ use debuggal
            taur(iplon,lay,ngs17+ig)  = tauray
          enddo
         end if
-       
-      enddo
-      enddo
+IKLOOP1_E       
 
 !$acc end kernels
+# undef ncol
       end subroutine taumol18
 
 !----------------------------------------------------------------------------
@@ -3248,8 +3277,16 @@ use debuggal
                                                          !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
+#ifdef _CUDA
+#else
+# define ncol CHNK
+#endif
 
+#ifdef _CUDA
       integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+#else
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr(ncol)
+#endif
       real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
                   fac110, fac111, fs, speccomb, specmult, specparm, &
                   tauray
@@ -3264,6 +3301,7 @@ use debuggal
       strrat = 5.49281 
       layreffr = 3      
       
+#ifdef _CUDA
 !$acc kernels 
       do iplon=1,ncol
 
@@ -3274,6 +3312,13 @@ use debuggal
   
 ! Lower atmosphere loop      
       do lay = 1, laytrop(iplon) 
+#else
+      laysolfr = laytrop
+# define laysolfr LAYSOLFR(iplon)
+      do lay = 1, nlayers
+        do iplon = 1, ncol
+          if (lay <= laytrop(iplon)) then
+#endif
             
         if (jp(iplon,lay)  .lt. layreffr .and. jp(iplon,lay+1)  .ge. layreffr) &
             laysolfr = min(lay+1,laytrop(iplon) )
@@ -3290,21 +3335,26 @@ use debuggal
             sfluxzen(iplon,ngs18+ig)  = sfluxref(ig,js) &
                + fs * (sfluxref(ig,js+1) - sfluxref(ig,js))
          end do
-         end if
+         endif
+#ifdef _CUDA
+#else
+# undef laysolfr
+         endif
+#endif
+
       end do
       end do
 !$acc end kernels
       
       
 !$acc kernels 
-      do iplon=1,ncol
+IKLOOP1_S
 
 ! Compute the optical depth by interpolating in ln(pressure), 
 ! temperature, and appropriate species.  Below LAYTROP, the water
 ! vapor self-continuum is interpolated (in temperature) separately.  
 
 ! Lower atmosphere loop      
-      do lay = 1, nlayers
          if (lay <= laytrop(iplon)) then
        
          speccomb = colh2o(iplon,lay)  + strrat*colco2(iplon,lay) 
@@ -3365,10 +3415,9 @@ use debuggal
             taur(iplon,lay,ngs18+ig)  = tauray   
          enddo
         end if
-      enddo
-      enddo
-      
+IKLOOP1_E       
 !$acc end kernels
+# undef ncol
       end subroutine taumol19
 
 !----------------------------------------------------------------------------
@@ -3434,8 +3483,13 @@ use debuggal
                                                          !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
-
+#ifdef _CUDA
       integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+#else
+# define ncol CHNK
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr(ncol)
+#endif
+
 !      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr, &
 !                  layreffr
       real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
@@ -3444,10 +3498,20 @@ use debuggal
       integer :: iplon
 
 !      layreffr = 3        
+
+#ifdef _CUDA
 !$acc kernels loop independent private(laysolfr)
       do iplon = 1, ncol
       laysolfr = laytrop(iplon)
       do lay = 1, laytrop(iplon)
+#else
+      laysolfr = laytrop
+# define laysolfr LAYSOLFR(iplon)
+      do lay = 1, nlayers
+        do iplon = 1, ncol
+          if (lay <= laytrop(iplon)) then
+#endif
+
          if (jp(iplon,lay)  .lt. layreffr .and. jp(iplon,lay+1)  .ge. layreffr) &
             laysolfr = min(lay+1,laytrop(iplon) )
          if (lay .eq. laysolfr) then 
@@ -3455,14 +3519,17 @@ use debuggal
                  sfluxzen(iplon,ngs19+ig)  = sfluxref(ig) 
              end do
          end if
+#ifdef _CUDA
+#else
+# undef laysolfr
+         endif
+#endif
       end do
       end do
 !$acc end kernels
        
 !$acc kernels 
-      do iplon=1,ncol
-
-      do lay = 1, nlayers 
+IKLOOP1_S
          if (lay <= laytrop(iplon)) then
          
          ind0 = ((jp(iplon,lay) -1)*5+(jt(iplon,lay) -1))*nspa(20) + 1
@@ -3511,10 +3578,10 @@ use debuggal
             taur(iplon,lay,ngs19+ig)  = tauray 
          enddo
          end if
-      enddo
-      enddo
+IKLOOP1_E
 
 !$acc end kernels
+# undef ncol
       end subroutine taumol20
 
 !----------------------------------------------------------------------------
@@ -3578,8 +3645,13 @@ use debuggal
                                                          !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
-
+#ifdef _CUDA
       integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+#else
+# define ncol CHNK
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr(ncol)
+#endif
+
       real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
                   fac110, fac111, fs, speccomb, specmult, specparm, &
                   tauray
@@ -3593,11 +3665,19 @@ use debuggal
 !      strrat = 0.0045321 
 !      layreffr = 8
      
+#ifdef _CUDA
 !$acc kernels loop independent private(laysolfr)
-      do iplon=1,ncol
-      laysolfr = laytrop(iplon)        
-!$acc loop seq
-      do lay=1,laytrop(iplon)
+      do iplon = 1, ncol
+      laysolfr = laytrop(iplon)
+      do lay = 1, laytrop(iplon)
+#else
+      laysolfr = laytrop
+# define laysolfr LAYSOLFR(iplon)
+      do lay = 1, nlayers
+        do iplon = 1, ncol
+          if (lay <= laytrop(iplon)) then
+#endif
+
          if (jp(iplon,lay)  .lt. layreffr .and. jp(iplon,lay+1)  .ge. layreffr) &
             laysolfr = min(lay+1,laytrop(iplon) )
          if (lay .eq. laysolfr) then 
@@ -3612,21 +3692,25 @@ use debuggal
                + fs * (sfluxref(ig,js+1) - sfluxref(ig,js))
                end do
           end if
+
+#ifdef _CUDA
+#else
+# undef laysolfr
+         endif
+#endif
       end do
       end do        
 !$acc end kernels
 
-!$acc kernels 
-      do iplon=1,ncol  
 ! Compute the optical depth by interpolating in ln(pressure), 
 ! temperature, and appropriate species.  Below LAYTROP, the water
 ! vapor self-continuum is interpolated (in temperature) separately.  
-
       
 ! Lower atmosphere loop
-      do lay = 1, nlayers 
-        if (lay <= laytrop(iplon)) then 
         
+!$acc kernels 
+IKLOOP1_S
+         if (lay <= laytrop(iplon)) then
          speccomb = colh2o(iplon,lay)  + strrat*colco2(iplon,lay) 
          specparm = colh2o(iplon,lay) /speccomb 
          if (specparm .ge. oneminus) specparm = oneminus
@@ -3709,10 +3793,10 @@ use debuggal
             taur(iplon,lay,ngs20+ig)  = tauray
          enddo
         end if
-      enddo
-      enddo
+IKLOOP1_E
       
 !$acc end kernels
+# undef ncol
       end subroutine taumol21
 
 !----------------------------------------------------------------------------
@@ -3776,8 +3860,13 @@ use debuggal
                                                          !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
-
+#ifdef _CUDA
       integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+#else
+# define ncol CHNK
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr(ncol)
+#endif
+
       real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
                   fac110, fac111, fs, speccomb, specmult, specparm, &
                   tauray, o2adj, o2cont
@@ -3800,6 +3889,7 @@ use debuggal
 !      strrat = 0.022708 
 !      layreffr = 2
       
+#ifdef CUDA_
 !$acc kernels loop independent private(laysolfr)
       do iplon=1,ncol
 
@@ -3808,6 +3898,14 @@ use debuggal
 ! Lower atmosphere loop
 !$acc loop seq
          do lay = 1, laytrop(iplon) 
+#else
+      laysolfr = laytrop
+# define laysolfr LAYSOLFR(iplon)
+      do lay = 1, nlayers
+        do iplon = 1, ncol
+          if (lay <= laytrop(iplon)) then
+#endif
+
             if (jp(iplon,lay)  .lt. layreffr .and. jp(iplon,lay+1)  .ge. layreffr) &
             laysolfr = min(lay+1,laytrop(iplon) )
                  
@@ -3825,17 +3923,19 @@ use debuggal
                 + fs * (sfluxref(ig,js+1) - sfluxref(ig,js))
             end do
             end if
+#ifdef _CUDA
+#else
+# undef laysolfr
+         endif
+#endif
          end do
       end do
  !$acc end kernels
  
-!$acc kernels 
-      do iplon=1,ncol
-
-      laysolfr = laytrop(iplon) 
-
 ! Lower atmosphere loop
-         do lay = 1, nlayers 
+!$acc kernels 
+IKLOOP1_S
+
          if (lay<=laytrop(iplon)) then
   
          o2cont = 4.35e-4 *colo2(iplon,lay) /(350.0 *2.0 )
@@ -3903,10 +4003,10 @@ use debuggal
             taur(iplon,lay,ngs21+ig)  = tauray
          enddo
          end if
-      enddo
-      enddo
+IKLOOP1_E
       
 !$acc end kernels
+# undef ncol
       end subroutine taumol22
 
 !----------------------------------------------------------------------------
@@ -3970,8 +4070,13 @@ use debuggal
                                                          !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
-
+#ifdef _CUDA
       integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+#else
+# define ncol CHNK
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr(ncol)
+#endif
+
       real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
                   fac110, fac111, fs, speccomb, specmult, specparm, &
                   tauray
@@ -3992,6 +4097,7 @@ use debuggal
 
 !      layreffr = 6    
       
+#ifdef _CUDA
 !$acc kernels loop independent private(laysolfr)
       do iplon=1,ncol
 
@@ -4000,6 +4106,14 @@ use debuggal
 ! Lower atmosphere loop
 !$acc loop seq
       do lay = 1, laytrop(iplon) 
+#else
+      laysolfr = laytrop
+# define laysolfr LAYSOLFR(iplon)
+      do lay = 1, nlayers
+        do iplon = 1, ncol
+          if (lay <= laytrop(iplon)) then
+#endif
+
           if (jp(iplon,lay)  .lt. layreffr .and. jp(iplon,lay+1)  .ge. layreffr) &
             laysolfr = min(lay+1,laytrop(iplon) )
          
@@ -4008,15 +4122,19 @@ use debuggal
               sfluxzen(iplon,ngs22+ig)  = sfluxref(ig) 
             end do
           end if
+#ifdef _CUDA
+#else
+# undef laysolfr
+         endif
+#endif
       end do
       end do      
 !$acc end kernels   
       
-!$acc kernels 
-      do iplon=1,ncol
 
 ! Lower atmosphere loop
-      do lay = 1, nlayers 
+!$acc kernels 
+IKLOOP1_S
          if (lay <= laytrop(iplon)) then
          if (jp(iplon,lay)  .lt. layreffr .and. jp(iplon,lay+1)  .ge. layreffr) &
             laysolfr = min(lay+1,laytrop(iplon) )
@@ -4055,10 +4173,10 @@ use debuggal
          enddo
          end if
 
-      enddo
-      enddo
+IKLOOP1_E
       
 !$acc end kernels
+# undef ncol
       end subroutine taumol23
 
 !----------------------------------------------------------------------------
@@ -4123,8 +4241,13 @@ use debuggal
                                                          !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
-
+#ifdef _CUDA
       integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+#else
+# define ncol CHNK
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr(ncol)
+#endif
+
       real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
                   fac110, fac111, fs, speccomb, specmult, specparm, &
                   tauray
@@ -4138,6 +4261,7 @@ use debuggal
 !      strrat = 0.124692 
 !      layreffr = 1   
         
+#ifdef _CUDA
 !$acc kernels loop independent private(laysolfr)
       do iplon=1,ncol
 ! Compute the optical depth by interpolating in ln(pressure), 
@@ -4149,6 +4273,14 @@ use debuggal
 ! Lower atmosphere loop
 !$acc loop independent
       do lay = 1, laytrop(iplon) 
+#else
+      laysolfr = laytrop
+# define laysolfr LAYSOLFR(iplon)
+      do lay = 1, nlayers
+        do iplon = 1, ncol
+          if (lay <= laytrop(iplon)) then
+#endif
+
           if (jp(iplon,lay)  .lt. layreffr .and. jp(iplon,lay+1)  .ge. layreffr) &
             laysolfr = min(lay+1,laytrop(iplon) )
           if (lay .eq. laysolfr) then
@@ -4163,18 +4295,22 @@ use debuggal
                + fs * (sfluxref(ig,js+1) - sfluxref(ig,js))
           end do
           end if
+#ifdef _CUDA
+#else
+# undef laysolfr
+         endif
+#endif
       end do
       end do
 !$acc end kernels
         
 !$acc kernels 
-      do iplon=1,ncol
+IKLOOP1_S
 ! Compute the optical depth by interpolating in ln(pressure), 
 ! temperature, and appropriate species.  Below LAYTROP, the water
 ! vapor self-continuum is interpolated (in temperature) separately.  
 
 ! Lower atmosphere loop
-      do lay = 1, nlayers 
          if (lay <= laytrop(iplon)) then
 
          speccomb = colh2o(iplon,lay)  + strrat*colo2(iplon,lay) 
@@ -4241,10 +4377,10 @@ use debuggal
          enddo
          endif
 
-      enddo
-      enddo
+IKLOOP1_E
       
 !$acc end kernels
+# undef ncol
       end subroutine taumol24
 
 !----------------------------------------------------------------------------
@@ -4308,8 +4444,14 @@ use debuggal
                                                          !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
-
+#ifdef _CUDA
       integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+#else
+# define ncol CHNK
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr(ncol)
+#endif
+
+
 !      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr, &
 !                  layreffr
       real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
@@ -4317,6 +4459,7 @@ use debuggal
                   tauray
       integer :: iplon
 
+#ifdef _CUDA
 !$acc kernels 
       do iplon=1,ncol
 ! Compute the optical depth by interpolating in ln(pressure), 
@@ -4328,6 +4471,13 @@ use debuggal
 
 ! Lower atmosphere loop
       do lay = 1, laytrop(iplon) 
+#else
+      laysolfr = laytrop
+# define laysolfr LAYSOLFR(iplon)
+      do lay = 1, nlayers
+        do iplon = 1, ncol
+          if (lay <= laytrop(iplon)) then
+#endif
          if (jp(iplon,lay)  .lt. layreffr .and. jp(iplon,lay+1)  .ge. layreffr) &
             laysolfr = min(lay+1,laytrop(iplon) )
          ind0 = ((jp(iplon,lay) -1)*5+(jt(iplon,lay) -1))*nspa(25) + 1
@@ -4345,20 +4495,30 @@ use debuggal
             if (lay .eq. laysolfr) sfluxzen(iplon,ngs24+ig)  = sfluxref(ig) 
             taur(iplon,lay,ngs24+ig)  = tauray
          enddo
+#ifdef _CUDA
       enddo
-
 ! Upper atmosphere loop
       do lay = laytrop(iplon) +1, nlayers
+#else
+      else 
+#endif
+
          do ig = 1, ng25
             tauray = colmol(iplon,lay)  * rayl(ig)
             taug(iplon,lay,ngs24+ig)  = colo3(iplon,lay)  * abso3b(ig) 
 !            ssa(lay,ngs24+ig) = tauray/taug(lay,ngs24+ig)
             taur(iplon,lay,ngs24+ig)  = tauray
          enddo
+#ifdef _CUDA
+#else
+# undef laysolfr
+      endif
+#endif
       enddo
       enddo
       
 !$acc end kernels
+# undef ncol
       end subroutine taumol25
 
 !----------------------------------------------------------------------------
@@ -4419,13 +4579,19 @@ use debuggal
                                                          !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
-
+#ifdef _CUDA
       integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+#else
+# define ncol CHNK
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr(ncol)
+#endif
+
       real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
                   fac110, fac111, fs, speccomb, specmult, specparm, &
                   tauray
       integer :: iplon
 
+#ifdef _CUDA
 !$acc kernels 
       do iplon=1,ncol
 ! Compute the optical depth by interpolating in ln(pressure), 
@@ -4436,6 +4602,13 @@ use debuggal
 
 ! Lower atmosphere loop
       do lay = 1, laytrop(iplon) 
+#else
+      laysolfr = laytrop
+# define laysolfr LAYSOLFR(iplon)
+      do lay = 1, nlayers
+        do iplon = 1, ncol
+          if (lay <= laytrop(iplon)) then
+#endif
          do ig = 1, ng26 
 !            taug(lay,ngs25+ig) = colmol(lay) * rayl(ig)
 !            ssa(lay,ngs25+ig) = 1.0 
@@ -4443,20 +4616,30 @@ use debuggal
             taug(iplon,lay,ngs25+ig)  = 0. 
             taur(iplon,lay,ngs25+ig)  = colmol(iplon,lay)  * rayl(ig) 
          enddo
+#ifdef _CUDA
       enddo
+      do lay = laytrop(iplon) +1, nlayers
+#else
+      else
+#endif
 
 ! Upper atmosphere loop
-      do lay = laytrop(iplon) +1, nlayers
          do ig = 1, ng26
 !            taug(lay,ngs25+ig) = colmol(lay) * rayl(ig)
 !            ssa(lay,ngs25+ig) = 1.0 
             taug(iplon,lay,ngs25+ig)  = 0. 
             taur(iplon,lay,ngs25+ig)  = colmol(iplon,lay)  * rayl(ig) 
          enddo
+#ifdef _CUDA
+#else
+# undef laysolfr
+      endif
+#endif
       enddo
       enddo
       
 !$acc end kernels
+# undef ncol
       end subroutine taumol26
 
 !----------------------------------------------------------------------------
@@ -4519,8 +4702,13 @@ use debuggal
                                                          !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
-
+#ifdef _CUDA
       integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+#else
+# define ncol CHNK
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr(ncol)
+#endif
+
       real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
                   fac110, fac111, fs, speccomb, specmult, specparm, &
                   tauray
@@ -4531,6 +4719,7 @@ use debuggal
 !                  tauray, scalekur
       integer :: iplon
        
+#ifdef _CUDA
 !$acc kernels 
       do iplon=1,ncol
 ! Kurucz solar source function
@@ -4550,6 +4739,13 @@ use debuggal
 
 ! Lower atmosphere loop
       do lay = 1, laytrop(iplon) 
+#else
+      laysolfr = nlayers
+# define laysolfr LAYSOLFR(iplon)
+      do lay = 1, nlayers
+        do iplon = 1, ncol
+          if (lay <= laytrop(iplon)) then
+#endif
          ind0 = ((jp(iplon,lay) -1)*5+(jt(iplon,lay) -1))*nspa(27) + 1
          ind1 = (jp(iplon,lay) *5+(jt1(iplon,lay) -1))*nspa(27) + 1
 
@@ -4563,12 +4759,16 @@ use debuggal
 !            ssa(lay,ngs26+ig) = tauray/taug(lay,ngs26+ig)
             taur(iplon,lay,ngs26+ig)  = tauray
          enddo
+#ifdef _CUDA
       enddo
 
       laysolfr = nlayers
 
 ! Upper atmosphere loop
       do lay = laytrop(iplon) +1, nlayers
+#else
+      else
+#endif
          if (jp(iplon,lay-1)  .lt. layreffr .and. jp(iplon,lay)  .ge. layreffr) &
             laysolfr = lay
          ind0 = ((jp(iplon,lay) -13)*5+(jt(iplon,lay) -1))*nspb(27) + 1
@@ -4585,10 +4785,16 @@ use debuggal
             if (lay.eq.laysolfr) sfluxzen(iplon,ngs26+ig)  = scalekur * sfluxref(ig) 
             taur(iplon,lay,ngs26+ig)  = tauray
          enddo
+#ifdef _CUDA
+#else
+# undef laysolfr
+      endif
+#endif
       enddo
       enddo
       
 !$acc end kernels
+# undef ncol
       end subroutine taumol27
 
 !----------------------------------------------------------------------------
@@ -4651,8 +4857,13 @@ use debuggal
                                                          !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
-
+#ifdef _CUDA
       integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+#else
+# define ncol CHNK
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr(ncol)
+#endif
+
       real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
                   fac110, fac111, fs, speccomb, specmult, specparm, &
                   tauray
@@ -4663,6 +4874,7 @@ use debuggal
 !                  tauray, strrat
       integer :: iplon
 
+#ifdef _CUDA
 !$acc kernels 
       do iplon=1,ncol
 ! Compute the optical depth by interpolating in ln(pressure), 
@@ -4674,6 +4886,13 @@ use debuggal
 
 ! Lower atmosphere loop
       do lay = 1, laytrop(iplon) 
+#else
+      laysolfr = nlayers
+# define laysolfr LAYSOLFR(iplon)
+      do lay = 1, nlayers
+        do iplon = 1, ncol
+          if (lay <= laytrop(iplon)) then
+#endif
          speccomb = colo3(iplon,lay)  + strrat*colo2(iplon,lay) 
          specparm = colo3(iplon,lay) /speccomb 
          if (specparm .ge. oneminus) specparm = oneminus
@@ -4705,12 +4924,16 @@ use debuggal
 !            ssa(lay,ngs27+ig) = tauray/taug(lay,ngs27+ig)
             taur(iplon,lay,ngs27+ig)  = tauray
          enddo
+#ifdef _CUDA
       enddo
 
       laysolfr = nlayers
 
 ! Upper atmosphere loop
       do lay = laytrop(iplon) +1, nlayers
+#else
+      else
+#endif
          if (jp(iplon,lay-1)  .lt. layreffr .and. jp(iplon,lay)  .ge. layreffr) &
             laysolfr = lay
          speccomb = colo3(iplon,lay)  + strrat*colo2(iplon,lay) 
@@ -4746,10 +4969,16 @@ use debuggal
                + fs * (sfluxref(ig,js+1) - sfluxref(ig,js))
             taur(iplon,lay,ngs27+ig)  = tauray
          enddo
+#ifdef _CUDA
+#else
+# undef laysolfr
+      endif
+#endif
       enddo
       enddo
       
 !$acc end kernels
+# undef ncol
       end subroutine taumol28
 
 !----------------------------------------------------------------------------
@@ -4813,8 +5042,13 @@ use debuggal
                                                          !   Dimensions: (ncol,nlayers,ngptsw)
 
 ! Local
-
+#ifdef _CUDA
       integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr
+#else
+# define ncol CHNK
+      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr(ncol)
+#endif
+
 !      integer  :: ig, ind0, ind1, inds, indf, js, lay, laysolfr, &
 !                  layreffr
       real  :: fac000, fac001, fac010, fac011, fac100, fac101, &
@@ -4824,12 +5058,20 @@ use debuggal
 
 !      layreffr = 49  
         
+#ifdef _CUDA
 !$acc kernels loop independent private (laysolfr)
       do iplon=1,ncol
         
         laysolfr = nlayers
 !$acc loop seq
         do lay = laytrop(iplon) +1, nlayers
+#else
+      laysolfr = nlayers
+# define laysolfr LAYSOLFR(iplon)
+      do lay = 1, nlayers
+        do iplon = 1, ncol
+          if (lay > laytrop(iplon)) then
+#endif
          if (jp(iplon,lay-1)  .lt. layreffr .and. jp(iplon,lay)  .ge. layreffr) &
             laysolfr = lay
 
@@ -4838,10 +5080,16 @@ use debuggal
                 sfluxzen(iplon,ngs28+ig)  = sfluxref(ig) 
                 end do
             end if
+#ifdef _CUDA
+#else
+# undef laysolfr
+         endif
+#endif
         end do
       end do
 !$acc end kernels
        
+#ifdef _CUDA
 !$acc kernels 
       do iplon=1,ncol
 ! Compute the optical depth by interpolating in ln(pressure), 
@@ -4850,6 +5098,10 @@ use debuggal
 
 ! Lower atmosphere loop
       do lay = 1, nlayers 
+#else
+    do lay = 1, nlayers 
+      do iplon=1,ncol
+#endif
          if (lay <= laytrop(iplon)) then
          ind0 = ((jp(iplon,lay) -1)*5+(jt(iplon,lay) -1))*nspa(29) + 1
          ind1 = (jp(iplon,lay) *5+(jt1(iplon,lay) -1))*nspa(29) + 1
@@ -4898,7 +5150,13 @@ use debuggal
       enddo
       
 !$acc end kernels
+# undef ncol
       end subroutine taumol29
+
+# undef IKLOOP1_S
+# undef IKLOOP1_E
+# undef IKLOOP2_S 
+# undef IKLOOP2_E
 
       end module rrtmg_sw_taumol_f
 
