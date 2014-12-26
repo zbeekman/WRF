@@ -8968,6 +8968,7 @@ real gpu_device  :: zcd(tncol,ngptsw,nlayers+1)  , zcu(tncol,ngptsw,nlayers+1)
       
              jk=klev+2-ikl
              ibm = jb-15
+!DIR$ SIMD
           ILOOP_S_CPU
              zincflx = adjflux(jb)  * zsflxzen(iplon,iw)   * prmu0(iplon)           
 
@@ -9012,6 +9013,7 @@ real gpu_device  :: zcd(tncol,ngptsw,nlayers+1)  , zcu(tncol,ngptsw,nlayers+1)
           WLOOP_S_CPU
                jb = ngb(iw)
                ibm = jb-15
+!DIR$SIMD
            ILOOP_S_CPU
                ! since the cloudy cases are now computed in a separate partition from the clear cases, we must
                ! recompute the needed clear sky prerequisites.
