@@ -14,6 +14,82 @@
 ! |                                                                          |
 !  --------------------------------------------------------------------------
 
+#ifndef _CUDA
+! this set of macros reverses the storage order of some of the array variables
+! defined in rrtmg_sw_sub and used in various sections of the code.  Here is a 
+! correspondencet table for the variables as they are known in rrtmg_sw_sub and
+! in the subroutines that rrtmg_sw_sub calls:
+
+!jm     rrtmg_sw_sub    
+!jm      |        mcica_sw        
+!jm      |         |            cldprmc_sw      
+!jm      |         |                |     spcvmc_sw       
+!jm      |         |                |       |       reftra_sw
+!jm     tauc      tauc              |       |         |   
+!jm     ssac      ssac              |       |         |   
+!jm     asmc      asmc              |       |         |   
+!jm     fsfc      fsfc              |       |         |   
+!jm     taucmc    tauc_stoch        |     ptaucmc     |
+!jm     taormc     |                |     ptaormc     |
+!jm     ssacmc    ssac_stoch        |     pomgcmc     |
+!jm     asmcmc    asmc_stoch        |     pasycmc     |
+!jm     fsfcmc    fsfc_stoch        |       |         |           
+!jm     cldfmcl   cld_stoch       cldmfc  pcldfmc   pcldfmc
+!jm     ciwpmcl   ciwp_stoch      ciwpmc    |     
+!jm     clwpmcl   clwp_stoch      clwpmc    |     
+!jm     cswpmcl   cswp_stoch      cswpmc    |     
+!jm     ztauc                               |
+!jm     ztaucorig                           |     
+!jm     zasyc                               |
+!jm     zomgc                               |
+!jm     taua                              ptaua   
+!jm     asya                              pasya   
+!jm     omga                              pomga   
+
+#define tauc(A,B,C)  TAUC(A,C,B)
+#define ssac(A,B,C)  SSAC(A,C,B)
+#define asmc(A,B,C)  ASMC(A,C,B)
+#define fsfc(A,B,C)  FSFC(A,C,B)
+#define taucmc(A,B,C)   TAUCMC(A,C,B)
+#define tauc_stoch(A,B,C) TAUC_STOCH(A,C,B)
+#define ptaucmc(A,B,C)  pTAUCMC(A,C,B)
+#define taormc(A,B,C)   TAORMC(A,C,B)
+#define ptaormc(A,B,C)  pTAORMC(A,C,B)
+#define ssacmc(A,B,C)   SSACMC(A,C,B)
+#define ssac_stoch(A,B,C)   SSAC_STOCH(A,C,B)
+#define pomgcmc(A,B,C)  pOMGCMC(A,C,B)
+#define asmcmc(A,B,C)   ASMCMC(A,C,B)
+#define asmc_stoch(A,B,C)   ASMC_STOCH(A,C,B)
+#define pasycmc(A,B,C)  pASYCMC(A,C,B)
+#define fsfcmc(A,B,C)   FSFCMC(A,C,B)
+#define fsfc_stoch(A,B,C)   FSFC_STOCH(A,C,B)
+
+#define cldfmcl(A,B,C)   CLDFMCL(A,C,B)
+#define cld_stoch(A,B,C) CLD_STOCH(A,C,B)
+#define cldfmc(A,B,C)    CLDFMC(A,C,B)
+#define pcldfmc(A,B,C)   pCLDFMC(A,C,B)
+
+#define ciwpmcl(A,B,C)    CIWPMCL(A,C,B)
+#define ciwp_stoch(A,B,C) CIWP_STOCH(A,C,B)
+#define ciwpmc(A,B,C)     CIWPMC(A,C,B)
+
+#define clwpmcl(A,B,C)    CLWPMCL(A,C,B)
+#define clwp_stoch(A,B,C) CLWP_STOCH(A,C,B)
+#define clwpmc(A,B,C)     CLWPMC(A,C,B)
+
+#define cswpmcl(A,B,C)    CSWPMCL(A,C,B)
+#define cswp_stoch(A,B,C) CSWP_STOCH(A,C,B)
+#define cswpmc(A,B,C)     CSWPMC(A,C,B)
+
+#define taua(A,B,C)  TAUA(A,C,B)
+#define asya(A,B,C)  ASYA(A,C,B)
+#define omga(A,B,C)  OMGA(A,C,B)
+#define ptaua(A,B,C) pTAUA(A,C,B)
+#define pasya(A,B,C) pASYA(A,C,B)
+#define pomga(A,B,C) pOMGA(A,C,B)
+
+#endif
+
 ! Uncomment to use GPU, or comment to use CPU
 !#define _CUDA
 
@@ -10446,6 +10522,7 @@ use debuggal
 ! For GSFC, not needed for WRF                                                      
 !      real, dimension(ncol) :: znirr,znirf,zparr,zparf,zuvrr,zuvrf
       
+
       real  :: taucmc(ncol,nlay+1,ngptsw)     ! in-cloud optical depth [mcica]
       real  :: taormc(ncol,nlay+1,ngptsw)     ! unscaled in-cloud optical depth [mcica]
       real  :: ssacmc(ncol,nlay+1,ngptsw)     ! in-cloud single scattering albedo [mcica]
@@ -10525,7 +10602,7 @@ use debuggal
       real , parameter :: amdo2 = 0.905140  ! Molecular weight of dry air / oxygen
 
       real , parameter :: sbc = 5.67e-08    ! Stefan-Boltzmann constant (W/m2K4)
-      integer ii,jj,kk
+      integer ii,jj,kk,iw
       integer  :: isp, l, ix, n, imol  ! Loop indices
       real  :: amm, summol                      ! 
       real  :: adjflx                           ! flux adjustment for Earth/Sun distance
@@ -10768,11 +10845,15 @@ use debuggal
 
              if (iaer==10) then
 !$acc kernels
+               do iw=1,nbndsw
+               do kk=1,nlay
                do iplon = 1, colr
                  piplon = profic(iplon + cols - 1)
-                 taua(iplon, 1:nlay, :) = gtauaer(piplon, 1:nlay, :)
-                 asya(iplon, 1:nlay, :) = gasmaer(piplon, 1:nlay, :)
-                 omga(iplon, 1:nlay, :) = gssaaer(piplon, 1:nlay, :)
+                 taua(iplon, kk, iw) = gtauaer(piplon, kk, iw)
+                 asya(iplon, kk, iw) = gasmaer(piplon, kk, iw)
+                 omga(iplon, kk, iw) = gssaaer(piplon, kk, iw)
+               end do
+               end do
                end do
 !$acc end kernels
              end if
@@ -10841,11 +10922,15 @@ use debuggal
             if (iaer==10) then
 
 !$acc kernels    
+              do iw=1,nbndsw
+              do kk=1,nlay
               do iplon = 1, colr
                 piplon = profi(iplon + cols - 1)
-                taua(iplon, 1:nlay, :) = gtauaer(piplon, 1:nlay, :)
-                asya(iplon, 1:nlay, :) = gasmaer(piplon, 1:nlay, :)
-                omga(iplon, 1:nlay, :) = gssaaer(piplon, 1:nlay, :)
+                taua(iplon, kk, iw) = gtauaer(piplon, kk, iw)
+                asya(iplon, kk, iw) = gasmaer(piplon, kk, iw)
+                omga(iplon, kk, iw) = gssaaer(piplon, kk, iw)
+              end do
+              end do
               end do
 !$acc end kernels
             end if
@@ -10856,12 +10941,16 @@ use debuggal
 ! We are on the CPU here
 
 !$acc kernels 
+            do iw=1,nbndsw
+            do kk=1,nlay
             do iplon = 1, colr
               piplon = profi(iplon + cols - 1)
-              tauc(iplon, 1:nlay, :) = gtauc(piplon, 1:nlay, :)
-              ssac(iplon, 1:nlay, :) = gssac(piplon, 1:nlay, :)
-              asmc(iplon, 1:nlay, :) = gasmc(piplon, 1:nlay, :)
-              fsfc(iplon, 1:nlay, :) = gfsfc(piplon, 1:nlay, :)
+              tauc(iplon, kk, iw) = gtauc(piplon, kk, iw)
+              ssac(iplon, kk, iw) = gssac(piplon, kk, iw)
+              asmc(iplon, kk, iw) = gasmc(piplon, kk, iw)
+              fsfc(iplon, kk, iw) = gfsfc(piplon, kk, iw)
+            end do
+            end do
             end do
 !$acc end kernels
 
