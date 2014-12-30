@@ -11706,7 +11706,7 @@ use debuggal
 ! longitude loop
       i_loop: do i = its,ite
 !
-         icol = i + (j-jts)*(ite-its+1)
+         icol = i-its+1 + (j-jts)*(ite-its+1)
 
 ! Do shortwave by default, deactivate below if sun below horizon
          dorrsw = .true.
@@ -12495,7 +12495,7 @@ use debuggal
          endif
 
 
-         icol = i + (j-jts)*(ite-its+1)
+         icol = i-its+1 + (j-jts)*(ite-its+1)
 
          gsw(i,j) = swdflx(icol,1) - swuflx(icol,1)
          swcf(i,j) = (swdflx(icol,kte+2) - swuflx(icol,kte+2)) - (swdflxc(icol,kte+2) - swuflxc(icol,kte+2))
