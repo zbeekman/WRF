@@ -696,7 +696,6 @@ CONTAINS
 integer e1,s1
 integer e2,s2
 integer,external :: rsl_internal_microclock
-logical, external :: wrf_dm_on_monitor
 #ifdef _OPENMP
 integer,external :: omp_get_thread_num
 #endif
