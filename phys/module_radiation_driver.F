@@ -696,6 +696,7 @@ CONTAINS
 integer e1,s1
 integer e2,s2
 integer,external :: rsl_internal_microclock
+logical, external :: wrf_dm_on_monitor
 #ifdef _OPENMP
 integer,external :: omp_get_thread_num
 #endif
@@ -878,10 +879,10 @@ s1 = rsl_internal_microclock()
                       julian,xtime+radt*0.5,gmt, &
                       declin,degrad,xlong,xlat,coszen,hrang)
    ENDDO
-e1 = rsl_internal_microclock()
-write(0,*)__FILE__,__LINE__,e1-s1
-
-s1 = rsl_internal_microclock()
+!e1 = rsl_internal_microclock()
+!write(0,*)__FILE__,__LINE__,e1-s1
+!
+!s1 = rsl_internal_microclock()
    !$OMP PARALLEL DO   &
    !$OMP PRIVATE ( ij ,i,j,k,its,ite,jts,jte)
 
@@ -1564,6 +1565,7 @@ endif
              CALL wrf_error_fatal ( wrf_err_message )
            
      END SELECT lwrad_select    
+if (wrf_dm_on_monitor()) then
 #ifdef _OPENMP
 if(omp_get_thread_num().eq.0)then
 #endif
@@ -1572,6 +1574,7 @@ if(omp_get_thread_num().eq.0)then
 #ifdef _OPENMP
 endif
 #endif
+endif
 
      IF (lw_physics .gt. 0 .and. .not.gfdl_lw) THEN
         DO j=jts,jte
@@ -2035,6 +2038,7 @@ s2=rsl_internal_microclock()
              CALL wrf_error_fatal ( wrf_err_message )
 
      END SELECT swrad_select    
+if (wrf_dm_on_monitor()) then
 #ifdef _OPENMP
 if(omp_get_thread_num().eq.0)then
 #endif
@@ -2043,6 +2047,7 @@ if(omp_get_thread_num().eq.0)then
 #ifdef _OPENMP
 endif
 #endif
+endif
 
      IF (sw_physics .eq. goddardswscheme) THEN
           IF ( PRESENT (tswdn) ) THEN
@@ -2151,8 +2156,8 @@ endif
 
    ENDDO
    !$OMP END PARALLEL DO
-e1 = rsl_internal_microclock()
-write(0,*)__FILE__,__LINE__,e1-s1
+!e1 = rsl_internal_microclock()
+!write(0,*)__FILE__,__LINE__,e1-s1
 
    IF ( allocated(tauaer_sw) ) deallocate(tauaer_sw)
    IF ( allocated(ssaaer_sw) ) deallocate(ssaaer_sw)
