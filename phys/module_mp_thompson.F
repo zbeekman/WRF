@@ -1,4 +1,5 @@
 #define READ_THOMPSON_TABLES
+#define HARDCODE_VERTICAL 50
 !+---+-----------------------------------------------------------------+
 !.. This subroutine computes the moisture tendencies of water vapor,
 !.. cloud droplets, rain, cloud ice (pristine), snow, and graupel.
@@ -1020,10 +1021,15 @@
 
       implicit none
 
+
 !..Subroutine arguments
       INTEGER, INTENT(IN):: ids,ide, jds,jde, kds,kde, &
                             ims,ime, jms,jme, kms,kme, &
                             its,ite, jts,jte, kts,kte
+#ifdef HARDCODE_VERTICAL
+# define kts 1
+# define kte HARDCODE_VERTICAL
+#endif
       REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(INOUT):: &
                           qv, qc, qr, qi, qs, qg, ni, nr, th
       REAL, DIMENSION(ims:ime, kms:kme, jms:jme), OPTIONAL, INTENT(INOUT):: &
@@ -1354,6 +1360,11 @@
          mp_debug(i:i) = char(0)
       enddo
 
+#ifdef HARDCODE_VERTICAL
+# undef kts
+# undef kte
+#endif
+
       END SUBROUTINE mp_gt_driver
 
 !+---+-----------------------------------------------------------------+
@@ -1377,8 +1388,13 @@
 
       implicit none
 
+
 !..Sub arguments
       INTEGER, INTENT(IN):: kts, kte, ii, jj
+#ifdef HARDCODE_VERTICAL
+# define kts 1
+# define kte HARDCODE_VERTICAL
+#endif
       REAL, DIMENSION(kts:kte), INTENT(INOUT):: &
                           qv1d, qc1d, qi1d, qr1d, qs1d, qg1d, ni1d, &
                           nr1d, nc1d, nwfa1d, nifa1d, t1d
@@ -1484,6 +1500,7 @@
         write(mp_debug, *) 'DEBUG INFO, mp_thompson at (i,j) ', ii, ', ', jj
         CALL wrf_debug(550, mp_debug)
       endif
+
 
       no_micro = .true.
       dtsave = dt
@@ -3535,6 +3552,12 @@
          qg1d(k) = qg1d(k) + qgten(k)*DT
          if (qg1d(k) .le. R1) qg1d(k) = 0.0
       enddo
+
+#ifdef HARDCODE_VERTICAL
+# undef kts
+# undef kte
+#endif
+
 
       end subroutine mp_thompson
 !+---+-----------------------------------------------------------------+
