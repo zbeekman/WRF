@@ -204,7 +204,7 @@ RSL_LITE_TO_CHILD_INFO ( msize_p,                        /* number of tasks in m
   int i, j, ni, nj ;
   int coords[2] ;
   int ierr ;
-  int alltasks, offset ;
+  static int alltasks, offset ;
 
   if ( Plist == NULL ) {
     s_ntasks_par_x = *ntasks_par_x_p ;
@@ -213,6 +213,12 @@ RSL_LITE_TO_CHILD_INFO ( msize_p,                        /* number of tasks in m
     s_ntasks_nest_y = *ntasks_nest_y_p ;
     offset = s_ntasks_par_x*s_ntasks_par_y ;
     alltasks = s_ntasks_nest_x*s_ntasks_nest_y + offset ;
+
+fprintf(stderr,"s_ntasks_par_x %d\n",s_ntasks_par_x)  ;
+fprintf(stderr,"s_ntasks_par_y %d\n",s_ntasks_par_y)  ;
+fprintf(stderr,"s_ntasks_nest_x %d\n",s_ntasks_par_x)  ;
+fprintf(stderr,"s_ntasks_nest_y %d\n",s_ntasks_par_y)  ;
+fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
 
     /* construct Plist */
     Sendbufsize = 0 ;
@@ -225,6 +231,7 @@ RSL_LITE_TO_CHILD_INFO ( msize_p,                        /* number of tasks in m
        Ssizes[j] = 0 ;
     }
     ierr = 0 ;
+fprintf(stderr,"%s %d\n",__FILE__,__LINE__ ) ;
     for ( j = *cjps_p ; j <= *cjpe_p ; j++ )
     {
       for ( i = *cips_p ; i <= *cipe_p ; i++ )
@@ -255,6 +262,7 @@ RSL_LITE_TO_CHILD_INFO ( msize_p,                        /* number of tasks in m
         }
       }
     }
+fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
     if ( ierr != 0 ) {
       fprintf(stderr,"rsl_to_child_info: ") ;
       TASK_FOR_POINT_MESSAGE () ;
@@ -266,16 +274,19 @@ RSL_LITE_TO_CHILD_INFO ( msize_p,                        /* number of tasks in m
     Pptr = NULL ;
   }
 
+fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
   if ( Pptr != NULL ) {
     Pptr = Pptr->next ;
   } 
 
+fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
   if ( Recsizeindex >= 0 ) {
           r = (int *) &(Sendbuf[Recsizeindex]) ;
           *r = Sendbufcurs - Recsizeindex + 2 * sizeof(int) ;
           Ssizes[Pcurs] += *r ;
   }
 
+fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
   while ( Pptr == NULL ) {
       Pcurs++ ;
       while ( Pcurs < alltasks && Plist[Pcurs] == NULL  ) Pcurs++ ;
@@ -283,15 +294,18 @@ RSL_LITE_TO_CHILD_INFO ( msize_p,                        /* number of tasks in m
         Sdisplacements[Pcurs] = Sendbufcurs ;
         Ssizes[Pcurs] = 0 ;
         Pptr = Plist[Pcurs] ;
+fprintf(stderr,"%s %d Pptr %x Pcurs %d alltasks %d\n",__FILE__,__LINE__,Pptr, Pcurs, alltasks ) ;
       } else {
         *retval_p = 0 ;
         return ;  /* done */
       }
   }
 
+fprintf(stderr,"%s %d Pptr %x\n",__FILE__,__LINE__,Pptr ) ;
   *ig_p = Pptr->info1 ;
   *jg_p = Pptr->info2 ;
 
+fprintf(stderr,"%s %d ig %d jg %d \n",__FILE__,__LINE__,*ig_p,*jg_p ) ;
   r = (int *) &(Sendbuf[Sendbufcurs]) ;
   *r++ = Pptr->info1 ; Sendbufcurs += sizeof(int) ;  /* ig to buffer */
   *r++ = Pptr->info2 ; Sendbufcurs += sizeof(int) ;  /* jg to buffer */
@@ -299,6 +313,7 @@ RSL_LITE_TO_CHILD_INFO ( msize_p,                        /* number of tasks in m
   *r++ =           0 ; Sendbufcurs += sizeof(int) ;  /* store start for size */
   *retval_p = 1 ;
 
+fprintf(stderr,"%s %d\n",__FILE__,__LINE__ ) ;
   return ;
 }
 

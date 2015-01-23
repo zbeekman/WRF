@@ -563,7 +563,6 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
      nest%imask_ystag = 1
      nest%imask_xystag = 1
      nest%press_adj = .TRUE.
-     CALL start_domain ( nest , .TRUE. )
      IF ( nest%active_this_task) CALL start_domain ( nest , .TRUE. )
 
 IF ( parent%active_this_task ) THEN
