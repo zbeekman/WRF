@@ -538,7 +538,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
 #if (DA_CORE != 1)
        ! For nests without an input file, we still need to read time series locations
        !   from the tslist file
-       CALL wrf_tsin( nest , ierr )
+       IF ( nest%active_this_task) CALL wrf_tsin( nest , ierr )
 #endif
      END IF
 
@@ -564,6 +564,9 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
      nest%imask_xystag = 1
      nest%press_adj = .TRUE.
      CALL start_domain ( nest , .TRUE. )
+     IF ( nest%active_this_task) CALL start_domain ( nest , .TRUE. )
+
+IF ( parent%active_this_task ) THEN
 ! kludge: 20040604
      CALL get_ijk_from_grid (  parent ,                   &
                                ids, ide, jds, jde, kds, kde,    &
@@ -613,9 +616,12 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
      DEALLOCATE( save_sfcrunoff )
      DEALLOCATE( save_udrunoff )
 ! end of kludge: 20040604
+ENDIF
 
 
   ELSE  ! restart
+
+!TODO -- have to look at restarts yet
 
      IF ( wrf_dm_on_monitor() ) CALL start_timing
 
@@ -1159,6 +1165,7 @@ SUBROUTINE med_nest_feedback ( parent , nest , config_flags )
     IF ( config_flags%feedback .NE. 0 ) THEN
       CALL med_feedback_domain( parent, nest )
 #ifdef MOVE_NESTS
+      IF ( parent%active_this_task) THEN
       CALL get_ijk_from_grid (  parent ,                         &
                                 ids, ide, jds, jde, kds, kde,    &
                                 ims, ime, jms, jme, kms, kme,    &
@@ -1177,6 +1184,7 @@ SUBROUTINE med_nest_feedback ( parent , nest , config_flags )
       ENDDO
       ENDDO
 #endif
+      ENDIF
 #endif
     END IF
 
@@ -1586,6 +1594,7 @@ SUBROUTINE med_hist_out ( grid , stream, config_flags )
    USE module_timing
    USE module_io_domain
    USE module_configure	, ONLY : grid_config_rec_type
+   USE module_dm, ONLY : intercomm_active
 !   USE module_bc_time_utilities
    USE module_utility
 
@@ -1599,6 +1608,8 @@ SUBROUTINE med_hist_out ( grid , stream, config_flags )
    CHARACTER*80                           :: fname, n2
    CHARACTER (LEN=256)                    :: message
    INTEGER                                :: ierr
+
+   IF ( .NOT. intercomm_active(grid%id) ) RETURN
 
    IF ( wrf_dm_on_monitor() ) THEN
      CALL start_timing
@@ -1818,7 +1829,7 @@ integer myproc,i,j,k
    IF ( (grid%dfi_opt .EQ. DFI_DDFI .OR. grid%dfi_opt .EQ. DFI_TDFI) .AND. grid%dfi_stage .EQ. DFI_FWD ) RETURN
 ! #endif
 
-   IF ( grid%id .EQ. 1 .AND. config_flags%specified .AND. config_flags%io_form_boundary .GT. 0 ) THEN
+   IF ( grid%active_this_task .AND. grid%id .EQ. 1 .AND. config_flags%specified .AND. config_flags%io_form_boundary .GT. 0 ) THEN
 
      CALL domain_clock_get( grid, current_time=currentTime, &
                                   start_time=startTime,     &

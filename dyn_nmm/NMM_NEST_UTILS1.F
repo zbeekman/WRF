@@ -2986,6 +2986,8 @@ SUBROUTINE med_init_domain_constants_nmm ( parent, nest)   !, config_flags)
    USE module_domain
    USE module_configure
    USE module_timing
+   USE module_dm, ONLY : intercomm_active
+
    IMPLICIT NONE
    TYPE(domain) , POINTER                     :: parent, nest, grid
 !
@@ -3014,11 +3016,13 @@ SUBROUTINE med_init_domain_constants_nmm ( parent, nest)   !, config_flags)
 
    grid => nest
 
-   CALL med_initialize_nest_nmm( grid &   
+   IF ( intercomm_active( grid%id ) ) THEN
+     CALL med_initialize_nest_nmm( grid &   
 !
 # include <actual_new_args.inc>
 !
                        )
+   ENDIF
 
 END SUBROUTINE med_init_domain_constants_nmm
 

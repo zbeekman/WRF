@@ -2049,13 +2049,17 @@ gen_nest_pack ( char * dirname )
                 d3_mp,fourd_names_mp,d2_mp);
 #endif
 
-        fprintf(fp,"CALL %s( local_communicator, msize*RWORDSIZE                               &\n",info_name ) ;
+//        fprintf(fp,"CALL %s( local_communicator, msize*RWORDSIZE                               &\n",info_name ) ;
+        fprintf(fp,"CALL %s( msize*RWORDSIZE                               &\n",info_name ) ;
         fprintf(fp,"                        ,cips,cipe,cjps,cjpe                               &\n") ;
 if (sw) fprintf(fp,"                        ,iids,iide,ijds,ijde                               &\n") ;
         fprintf(fp,"                        ,nids,nide,njds,njde                               &\n") ;
 if (sw) fprintf(fp,"                        ,pgr , sw                                          &\n") ;
-        fprintf(fp,"                        ,ntasks_x,ntasks_y                                 &\n") ; 
-        fprintf(fp,"                        ,thisdomain_max_halo_width                                  &\n") ;
+        fprintf(fp,"                        ,nest_pes_x(grid%%id)                              &\n") ;
+        fprintf(fp,"                        ,nest_pes_y(grid%%id)                              &\n") ; 
+        fprintf(fp,"                        ,nest_pes_x(intermediate_grid%%id)                 &\n") ;
+        fprintf(fp,"                        ,nest_pes_y(intermediate_grid%%id)                 &\n") ; 
+        fprintf(fp,"                        ,thisdomain_max_halo_width                         &\n") ;
         fprintf(fp,"                        ,icoord,jcoord                                     &\n") ;
         fprintf(fp,"                        ,idim_cd,jdim_cd                                   &\n") ;
         fprintf(fp,"                        ,pig,pjg,retval )\n") ;
@@ -2064,12 +2068,16 @@ if (sw) fprintf(fp,"                        ,pgr , sw                           
   
         gen_nest_packunpack ( fp , Domain.fields, PACKIT, down_path[ipath] ) ;
 
-        fprintf(fp,"CALL %s( local_communicator, msize*RWORDSIZE                               &\n",info_name ) ;
+//        fprintf(fp,"CALL %s( local_communicator, msize*RWORDSIZE                               &\n",info_name ) ;
+        fprintf(fp,"CALL %s( msize*RWORDSIZE                               &\n",info_name ) ;
         fprintf(fp,"                        ,cips,cipe,cjps,cjpe                               &\n") ;
 if (sw) fprintf(fp,"                        ,iids,iide,ijds,ijde                               &\n") ;
         fprintf(fp,"                        ,nids,nide,njds,njde                               &\n") ;
 if (sw) fprintf(fp,"                        ,pgr , sw                                          &\n") ;
-        fprintf(fp,"                        ,ntasks_x,ntasks_y                                 &\n") ; 
+        fprintf(fp,"                        ,nest_pes_x(grid%%id)                              &\n") ;
+        fprintf(fp,"                        ,nest_pes_y(grid%%id)                              &\n") ; 
+        fprintf(fp,"                        ,nest_pes_x(intermediate_grid%%id)                 &\n") ;
+        fprintf(fp,"                        ,nest_pes_y(intermediate_grid%%id)                 &\n") ; 
         fprintf(fp,"                        ,thisdomain_max_halo_width                                  &\n") ;
         fprintf(fp,"                        ,icoord,jcoord                                     &\n") ;
         fprintf(fp,"                        ,idim_cd,jdim_cd                                   &\n") ;

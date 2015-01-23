@@ -517,7 +517,7 @@ CONTAINS
    RETURN
    END SUBROUTINE wrf_patch_domain
 !
-   SUBROUTINE alloc_and_configure_domain ( domain_id , grid , parent, kid )
+   SUBROUTINE alloc_and_configure_domain ( domain_id , active_this_task, grid , parent, kid )
 
 !<DESCRIPTION>
 ! This subroutine is used to allocate a domain data structure of
@@ -563,10 +563,11 @@ CONTAINS
 
       !  Input data.
 
-      INTEGER , INTENT(IN)                           :: domain_id
-      TYPE( domain ) , POINTER                       :: grid
-      TYPE( domain ) , POINTER                       :: parent
-      INTEGER , INTENT(IN)                           :: kid    ! which kid of parent am I?
+      INTEGER , INTENT(IN)            :: domain_id
+      LOGICAL , OPTIONAL, INTENT(IN)  :: active_this_task ! false if domain is being handled by other MPI tasks
+      TYPE( domain ) , POINTER        :: grid
+      TYPE( domain ) , POINTER        :: parent
+      INTEGER , INTENT(IN)            :: kid    ! which kid of parent am I?
 
       !  Local data.
       INTEGER                     :: sd1 , ed1 , sp1 , ep1 , sm1 , em1
@@ -586,7 +587,13 @@ CONTAINS
       INTEGER                     :: parent_id , parent_domdesc , new_domdesc
       INTEGER                     :: bdyzone_x , bdyzone_y
       INTEGER                     :: nx, ny
+      LOGICAL :: active
 
+! 
+      active = .TRUE.
+      IF ( PRESENT( active_this_task ) ) THEN
+         active = active_this_task
+      ENDIF
 
 ! This next step uses information that is listed in the registry as namelist_derived
 ! to properly size the domain and the patches; this in turn is stored in the new_grid
@@ -758,15 +765,21 @@ CONTAINS
       new_grid%last_step_updated = -1
 #endif
 
-      CALL alloc_space_field ( new_grid, domain_id , 3 , 3 , .FALSE. ,      &
-                               sd1, ed1, sd2, ed2, sd3, ed3,       &
-                               sm1,  em1,  sm2,  em2,  sm3,  em3,  &
-                               sp1,  ep1,  sp2,  ep2,  sp3,  ep3,  &
-                               sp1x, ep1x, sp2x, ep2x, sp3x, ep3x, &
-                               sp1y, ep1y, sp2y, ep2y, sp3y, ep3y, &
-                               sm1x, em1x, sm2x, em2x, sm3x, em3x, &   ! x-xpose
-                               sm1y, em1y, sm2y, em2y, sm3y, em3y  &   ! y-xpose
-      )
+      IF (active) THEN
+        ! only allocate state if this set of tasks actually computes that domain, jm 20140822
+        CALL alloc_space_field ( new_grid, domain_id , 3 , 3 , .FALSE. ,      &
+                                 sd1, ed1, sd2, ed2, sd3, ed3,       &
+                                 sm1,  em1,  sm2,  em2,  sm3,  em3,  &
+                                 sp1,  ep1,  sp2,  ep2,  sp3,  ep3,  &
+                                 sp1x, ep1x, sp2x, ep2x, sp3x, ep3x, &
+                                 sp1y, ep1y, sp2y, ep2y, sp3y, ep3y, &
+                                 sm1x, em1x, sm2x, em2x, sm3x, em3x, &   ! x-xpose
+                                 sm1y, em1y, sm2y, em2y, sm3y, em3y  &   ! y-xpose
+        )
+      ELSE
+        WRITE (wrf_err_message,*)"Not allocating storage for domain ",domain_id," on this set of tasks"
+        CALL wrf_message(TRIM(wrf_err_message))
+      ENDIF
 #if MOVE_NESTS
 !set these here, after alloc_space_field, which initializes vc_i, vc_j to zero
       new_grid%xi = -1.0
@@ -913,36 +926,41 @@ CONTAINS
 ! properly assigned to the new_grid record
 
       grid => new_grid
-
+      grid%active_this_task = active_this_task
+ 
+      IF ( grid%active_this_task ) THEN
 ! Allocate storage for time series metadata
-      ALLOCATE( grid%lattsloc( grid%max_ts_locs ) )
-      ALLOCATE( grid%lontsloc( grid%max_ts_locs ) )
-      ALLOCATE( grid%nametsloc( grid%max_ts_locs ) )
-      ALLOCATE( grid%desctsloc( grid%max_ts_locs ) )
-      ALLOCATE( grid%itsloc( grid%max_ts_locs ) )
-      ALLOCATE( grid%jtsloc( grid%max_ts_locs ) )
-      ALLOCATE( grid%id_tsloc( grid%max_ts_locs ) )
-      ALLOCATE( grid%ts_filename( grid%max_ts_locs ) )
-      grid%ntsloc        = 0
-      grid%ntsloc_domain = 0
+        ALLOCATE( grid%lattsloc( grid%max_ts_locs ) )
+        ALLOCATE( grid%lontsloc( grid%max_ts_locs ) )
+        ALLOCATE( grid%nametsloc( grid%max_ts_locs ) )
+        ALLOCATE( grid%desctsloc( grid%max_ts_locs ) )
+        ALLOCATE( grid%itsloc( grid%max_ts_locs ) )
+        ALLOCATE( grid%jtsloc( grid%max_ts_locs ) )
+        ALLOCATE( grid%id_tsloc( grid%max_ts_locs ) )
+        ALLOCATE( grid%ts_filename( grid%max_ts_locs ) )
+        grid%ntsloc        = 0
+        grid%ntsloc_domain = 0
 
 #if (EM_CORE == 1)
 ! Allocate storage for track metadata
-      ALLOCATE( grid%track_time_in( grid%track_loc_in ) )
-      ALLOCATE( grid%track_lat_in( grid%track_loc_in ) )
-      ALLOCATE( grid%track_lon_in( grid%track_loc_in ) )
-
-      ALLOCATE( grid%track_time_domain( grid%track_loc_in ) )
-      ALLOCATE( grid%track_lat_domain( grid%track_loc_in ) )
-      ALLOCATE( grid%track_lon_domain( grid%track_loc_in ) )
-      ALLOCATE( grid%track_i( grid%track_loc_in ) )
-      ALLOCATE( grid%track_j( grid%track_loc_in ) )
-
+        ALLOCATE( grid%track_time_in( grid%track_loc_in ) )
+        ALLOCATE( grid%track_lat_in( grid%track_loc_in ) )
+        ALLOCATE( grid%track_lon_in( grid%track_loc_in ) )
+  
+        ALLOCATE( grid%track_time_domain( grid%track_loc_in ) )
+        ALLOCATE( grid%track_lat_domain( grid%track_loc_in ) )
+        ALLOCATE( grid%track_lon_domain( grid%track_loc_in ) )
+        ALLOCATE( grid%track_i( grid%track_loc_in ) )
+        ALLOCATE( grid%track_j( grid%track_loc_in ) )
       grid%track_loc        = 0
       grid%track_loc_domain = 0
       grid%track_have_calculated = .FALSE.
       grid%track_have_input      = .FALSE.
 #endif
+      ELSE
+        WRITE (wrf_err_message,*)"Not allocating time series storage for domain ",domain_id," on this set of tasks"
+        CALL wrf_message(TRIM(wrf_err_message))
+      ENDIF
 #ifdef DM_PARALLEL
       CALL wrf_get_dm_communicator ( grid%communicator )
       CALL wrf_dm_define_comms( grid )

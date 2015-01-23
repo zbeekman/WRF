@@ -800,7 +800,8 @@ integer myproc
    CALL nl_get_iswater(id,iswater)
    CALL nl_get_isice(id,isice)
    CALL nl_get_isurban(id,isurban)
-   CALL nl_get_mminlu( 1, mminlu_loc )
+!jm   CALL nl_get_mminlu( 1, mminlu_loc )
+   CALL nl_get_mminlu( id, mminlu_loc )
    CALL wrf_debug(100,'after nl_get_iswater, nl_get_isice, nl_get_mminlu_loc')
 !-- temporary fix by ww
    landuse_ISICE = isice

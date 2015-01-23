@@ -5,6 +5,8 @@ SUBROUTINE med_interp_domain ( parent_grid , nested_grid )
    USE module_domain
    USE module_configure
    USE module_timing
+   USE module_dm, ONLY : intercomm_active
+
    IMPLICIT NONE
    TYPE(domain), POINTER :: parent_grid , nested_grid
    TYPE(domain), POINTER :: grid
@@ -117,11 +119,15 @@ SUBROUTINE med_interp_domain ( parent_grid , nested_grid )
 !    from the external communications package (e.g. RSL)
 ! ----------------------------------------------------------
 #if (EM_CORE == 1 && defined( DM_PARALLEL ))
+
+  CALL wrf_dm_nestexchange_init
+
   CALL model_to_grid_config_rec ( nested_grid%id , model_config_rec , config_flags )
   grid => nested_grid%intermediate_grid
 #  if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
 
-  CALL alloc_space_field ( grid, grid%id , 1 , 2 , .TRUE. ,   &
+  IF (intercomm_active( grid%id )) THEN
+    CALL alloc_space_field ( grid, grid%id , 1 , 2 , .TRUE. ,   &
                            grid%sd31, grid%ed31, grid%sd32, grid%ed32, grid%sd33, grid%ed33, &
                            grid%sm31,  grid%em31,  grid%sm32,  grid%em32,  grid%sm33,  grid%em33, &
                            grid%sp31,  grid%ep31,  grid%sp32,  grid%ep32,  grid%sp33,  grid%ep33, &
@@ -130,6 +136,7 @@ SUBROUTINE med_interp_domain ( parent_grid , nested_grid )
                            grid%sm31x, grid%em31x, grid%sm32x, grid%em32x, grid%sm33x, grid%em33x, &   ! x-xpose
                            grid%sm31y, grid%em31y, grid%sm32y, grid%em32y, grid%sm33y, grid%em33y  &   ! y-xpose
     )
+  ENDIF
 # endif
 
   grid => parent_grid
@@ -140,6 +147,7 @@ SUBROUTINE med_interp_domain ( parent_grid , nested_grid )
 #     include "actual_new_args.inc"
 !
                                 )
+  IF ( nested_grid%active_this_task ) THEN
   grid => nested_grid%intermediate_grid
   CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
   
@@ -148,11 +156,14 @@ SUBROUTINE med_interp_domain ( parent_grid , nested_grid )
 #     include "actual_new_args.inc"
 !
                                 )
+  ENDIF
 
   grid => nested_grid%intermediate_grid
+  IF (intercomm_active( grid%id )) THEN
   CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
 #  if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
   CALL dealloc_space_field ( grid )
+  ENDIF
 # endif
 #endif
 ! ------------------------------------------------------
@@ -238,6 +249,7 @@ SUBROUTINE med_interp_domain_small ( parent_grid , nested_grid )
    USE module_domain
    USE module_configure
    USE module_timing
+   USE module_dm, ONLY : intercomm_active
    IMPLICIT NONE
    TYPE(domain), POINTER :: parent_grid , nested_grid
    TYPE(domain), POINTER :: grid
@@ -287,6 +299,7 @@ SUBROUTINE med_interp_domain_small ( parent_grid , nested_grid )
   grid => nested_grid%intermediate_grid
 #  if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
 
+  IF ( intercomm_active( grid%id ) ) THEN
   CALL alloc_space_field ( grid, grid%id , 1 , 2 , .TRUE. ,   &
                            grid%sd31, grid%ed31, grid%sd32, grid%ed32, grid%sd33, grid%ed33, &
                            grid%sm31,  grid%em31,  grid%sm32,  grid%em32,  grid%sm33,  grid%em33, &
@@ -296,6 +309,7 @@ SUBROUTINE med_interp_domain_small ( parent_grid , nested_grid )
                            grid%sm31x, grid%em31x, grid%sm32x, grid%em32x, grid%sm33x, grid%em33x, &   ! x-xpose
                            grid%sm31y, grid%em31y, grid%sm32y, grid%em32y, grid%sm33y, grid%em33y  &   ! y-xpose
     )
+  ENDIF
 # endif
 
   grid => parent_grid
@@ -317,7 +331,9 @@ SUBROUTINE med_interp_domain_small ( parent_grid , nested_grid )
   grid => nested_grid%intermediate_grid
   CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
 #  if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
+  IF ( intercomm_active( grid%id ) ) THEN
   CALL dealloc_space_field ( grid )
+  ENDIF
 # endif
 #endif
 ! ------------------------------------------------------

@@ -21,7 +21,7 @@ MODULE module_wrf_top
    USE module_nesting
 
 #ifdef DM_PARALLEL
-   USE module_dm, ONLY : wrf_dm_initialize
+   USE module_dm, ONLY : wrf_dm_initialize, intercomm_active
 #endif
 
    USE module_cpl, ONLY : coupler_on, cpl_finalize, cpl_defdomain
@@ -112,6 +112,7 @@ CONTAINS
      INTEGER i, myproc, nproc, hostid, loccomm, ierr, buddcounter, mydevice
      INTEGER, ALLOCATABLE :: hostids(:), budds(:)
      CHARACTER*512 hostname
+CHARACTER*512 mminlu_loc
 #ifdef _ACCEL
      integer :: it, nt, in, devnum
 #endif
@@ -316,6 +317,9 @@ CONTAINS
    CALL       wrf_message ( program_name )
    CALL       wrf_debug ( 100 , 'wrf: calling alloc_and_configure_domain ' )
    CALL alloc_and_configure_domain ( domain_id  = 1 ,                  &
+#ifdef DM_PARALLEL
+                               active_this_task = intercomm_active(1), &
+#endif
                                      grid       = head_grid ,          &
                                      parent     = null_domain ,        &
                                      kid        = -1                   )
@@ -363,6 +367,7 @@ CONTAINS
 ! 
 !</DESCRIPTION>
 
+ IF ( intercomm_active(1) ) THEN
    CALL med_initialdata_input( head_grid , config_flags )
 
    IF ( config_flags%write_restart_at_0h ) THEN
@@ -377,11 +382,13 @@ CONTAINS
       CALL wrf_finalize( )
 #endif
    END IF
+  ENDIF  ! intercomm_active
 
    ! set default values for subtimes
    head_grid%start_subtime = domain_get_start_time ( head_grid )
    head_grid%stop_subtime = domain_get_stop_time ( head_grid )
 
+ IF ( intercomm_active(1) ) THEN
    !  For EM (but not DA), if this is a DFI run, we can allocate some space.  We are
    !  not allowing anyting tricky for nested DFI.  If there are any nested domains,
    !  they all need to start at the same time.  Otherwise, why even do the DFI?  If
@@ -395,6 +402,7 @@ CONTAINS
 #endif
 
    IF (coupler_on) CALL cpl_defdomain( head_grid ) 
+  ENDIF  ! intercomm_active
 
    END SUBROUTINE wrf_init
 

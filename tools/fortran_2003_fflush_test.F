@@ -9,6 +9,6 @@
       i = 1
     
       WRITE (6,*) x,i
-      CALL FFLUSH ( 6 )
+      FFLUSH ( 6 )
 
       END PROGRAM fortran_2003_test         

@@ -137,7 +137,7 @@ fftpack :
 atm_ocn :
 	( cd $(WRF_SRC_ROOT_DIR)/external/atm_ocn ; \
           make $(J) CC="$(SCC)" CFLAGS="$(CFLAGS) " RM="$(RM)" RANLIB="$(RANLIB)" \
-          CPP="$(CPP)" CPPFLAGS="$(CPPFLAGS)" \
+          CPP="$(CPP)" \
           FC="$(DM_FC) $(PROMOTION) -I. $(FCDEBUG) $(FCBASEOPTS) $(FCSUFFIX)" TRADFLAG="-traditional" AR="$(AR)" ARFLAGS="$(ARFLAGS)" \
           FIXED="$(FORMAT_FIXED)" )
 
@@ -177,7 +177,7 @@ wrfio_esmf :
 .F.o:
 	$(RM) $@
 	$(CPP) -I$(WRF_SRC_ROOT_DIR)/inc $(CPPFLAGS) $(OMPCPP) $*.F  > $*.bb
-	$(SED_FTN) $*.bb | $(CPP) $(TRADFLAG) > $*.f90
+	$(SED_FTN) $*.bb | $(CPP) $(TRADFLAG) | sed '/^ *$$/d' > $*.f90
 	$(RM) $*.b $*.bb
 	@ if echo $(ARCHFLAGS) | $(FGREP) 'DVAR4D'; then \
           echo COMPILING $*.F for 4DVAR ; \

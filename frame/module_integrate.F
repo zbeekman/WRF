@@ -16,6 +16,14 @@ RECURSIVE SUBROUTINE integrate ( grid )
    USE module_timing
    USE module_utility
    USE module_cpl, ONLY : coupler_on, cpl_snd, cpl_defdomain
+#ifdef DM_PARALLEL
+! better if this did not need to be used here. Problem is that the definition of 
+! intercomm_active comes from module_dm, and the routine it's being passed to (alloc_and_configure_domain)
+! is defined in module_domain, which uses module_dm.  If that weren't the case, we could have the
+! alloc_and_configure_domain routine get this form the module_dm module itself, but as it stands there
+! would be a circular use association.  jm 20140828
+   USE module_dm, ONLY:  intercomm_active
+#endif
 
    IMPLICIT NONE
 
@@ -288,6 +296,10 @@ RECURSIVE SUBROUTINE integrate ( grid )
                a_nest_was_opened = .true.
                CALL med_pre_nest_initial ( grid , nestid , config_flags )
                CALL alloc_and_configure_domain ( domain_id  = nestid ,   &
+! better if this were not ifdef'd here, try moving into module_dm? see comment above. jm 20140828
+#ifdef DM_PARALLEL
+                                           active_this_task = intercomm_active( nestid ), &
+#endif
                                                  grid       = new_nest , &
                                                  parent     = grid ,     &
                                                  kid        = kid        )
@@ -302,15 +314,19 @@ RECURSIVE SUBROUTINE integrate ( grid )
                CALL set_overlaps ( grid )   ! find overlapping and set pointers
             END IF
 
+            IF ( grid%active_this_task ) THEN
             ! Accumulation calculation for DFI
-            CALL dfi_accumulate ( grid )
+              CALL dfi_accumulate ( grid )
 
-            CALL med_before_solve_io ( grid , config_flags )
+              CALL med_before_solve_io ( grid , config_flags )
+            ENDIF
             grid_ptr => grid
             DO WHILE ( ASSOCIATED( grid_ptr ) )
-               CALL set_current_grid_ptr( grid_ptr )
-               CALL wrf_debug( 100 , 'module_integrate: calling solve interface ' )
-               CALL solve_interface ( grid_ptr ) 
+               IF ( grid_ptr%active_this_task ) THEN
+                  CALL set_current_grid_ptr( grid_ptr )
+                  CALL wrf_debug( 100 , 'module_integrate: calling solve interface ' )
+                  CALL solve_interface ( grid_ptr ) 
+               ENDIF
                CALL domain_clockadvance ( grid_ptr )
                CALL wrf_debug( 100 , 'module_integrate: back from solve interface ' )
                ! print lots of time-related information for testing
@@ -320,7 +336,9 @@ RECURSIVE SUBROUTINE integrate ( grid )
             END DO
             CALL set_current_grid_ptr( grid )
             CALL med_calc_model_time ( grid , config_flags )
-            CALL med_after_solve_io ( grid , config_flags )
+            IF ( grid%active_this_task ) THEN
+              CALL med_after_solve_io ( grid , config_flags )
+            ENDIF
             grid_ptr => grid
             DO WHILE ( ASSOCIATED( grid_ptr ) )
                DO kid = 1, max_nests
@@ -334,8 +352,11 @@ RECURSIVE SUBROUTINE integrate ( grid )
                      domain_get_current_time(grid) - domain_get_time_step(grid)
                    grid_ptr%nests(kid)%ptr%stop_subtime = &
                      domain_get_current_time(grid)
+                   WRITE(message,*)grid%id,' module_integrate: recursive call to integrate '
+                   CALL wrf_debug( 100 , message )
                    CALL integrate ( grid_ptr%nests(kid)%ptr ) 
-                   CALL wrf_debug( 100 , 'module_integrate: back from recursive call to integrate ' )
+                   WRITE(message,*)grid%id,' module_integrate: back from recursive call to integrate '
+                   CALL wrf_debug( 100 , message )
                    IF ( .NOT. ( domain_clockisstoptime(head_grid              ) .OR. &
                                 domain_clockisstoptime(grid                   ) .OR. &
                                 domain_clockisstoptime(grid_ptr%nests(kid)%ptr) ) )  THEN
@@ -355,7 +376,7 @@ RECURSIVE SUBROUTINE integrate ( grid )
             END DO
             CALL set_current_grid_ptr( grid )
             !  Report on the timing for a single time step.
-            IF ( wrf_dm_on_monitor() ) THEN
+            IF ( wrf_dm_on_monitor() .AND. grid%active_this_task ) THEN
                CALL domain_clock_get ( grid, current_timestr=message2 )
 #if (EM_CORE == 1)
                if (config_flags%use_adaptive_time_step) then

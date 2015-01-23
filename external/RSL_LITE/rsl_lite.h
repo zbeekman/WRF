@@ -35,6 +35,7 @@
 #      define F_UNPACK_LINT f_unpack_lint
 #      define F_UNPACK_INT f_unpack_int
 #      define RSL_LITE_GET_HOSTNAME rsl_lite_get_hostname
+#      define RSL_LITE_NESTING_RESET rsl_lite_nesting_reset
 # else
 #   ifdef F2CSTYLE
 #      define RSL_LITE_ERROR_DUP1 rsl_error_dup1__
@@ -72,6 +73,7 @@
 #      define F_UNPACK_LINT f_unpack_lint__
 #      define F_UNPACK_INT f_unpack_int__
 #      define RSL_LITE_GET_HOSTNAME rsl_lite_get_hostname__
+#      define RSL_LITE_NESTING_RESET rsl_lite_nesting_reset__
 #   else
 #      define RSL_LITE_ERROR_DUP1 rsl_error_dup1_
 #      define BYTE_BCAST byte_bcast_
@@ -108,6 +110,7 @@
 #      define F_UNPACK_LINT f_unpack_lint_
 #      define F_UNPACK_INT f_unpack_int_
 #      define RSL_LITE_GET_HOSTNAME rsl_lite_get_hostname_
+#      define RSL_LITE_NESTING_RESET rsl_lite_nesting_reset_
 #   endif
 # endif
 #endif
@@ -128,7 +131,7 @@
 
 
 #define RSL_MALLOC(T,N)  (T *)rsl_malloc(__FILE__,__LINE__,(sizeof(T))*(N))
-#define RSL_FREE(P)      rsl_free(P)
+#define RSL_FREE(P)      rsl_free(&(P))
 
 char * buffer_for_proc ( int P, int size, int code ) ;
 void * rsl_malloc( char * f, int l, int s ) ;

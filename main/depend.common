@@ -78,6 +78,7 @@ module_integrate.o: \
 		module_nesting.o \
 		module_configure.o \
 		module_cpl.o \
+                module_dm.o \
 		$(ESMF_MOD_DEPENDENCE)
 
 module_intermediate_nmm.o: \

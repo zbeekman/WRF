@@ -71,7 +71,9 @@ nl_get_0_routines.o : nl_get_0_routines.F
 nl_get_1_routines.o : nl_get_1_routines.F
 nl_set_0_routines.o : nl_set_0_routines.F
 nl_set_1_routines.o : nl_set_1_routines.F
+module_sf_clm.o: module_sf_clm.F
 
+module_sf_clm.o \
 mediation_integrate.o \
 track_driver.o \
 convert_nmm.o \
@@ -175,7 +177,7 @@ module_comm_nesting_dm.o \
 module_configure.o :
 	$(RM) $@
 	$(CPP) -I$(WRF_SRC_ROOT_DIR)/inc $(CPPFLAGS) $(OMPCPP) $*.F  > $*.bb
-	$(SED_FTN) $*.bb | $(CPP) $(TRADFLAG) > $*.f90
+	$(SED_FTN) $*.bb | $(CPP) $(TRADFLAG) | sed '/^ *$$/d' > $*.f90
 	@ if echo $(ARCHFLAGS) | $(FGREP) 'DVAR4D'; then \
           echo COMPILING $*.F for 4DVAR ; \
           $(WRF_SRC_ROOT_DIR)/var/build/da_name_space.pl $*.f90 > $*.f90.tmp ; \
