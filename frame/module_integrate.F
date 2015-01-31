@@ -22,7 +22,7 @@ RECURSIVE SUBROUTINE integrate ( grid )
 ! is defined in module_domain, which uses module_dm.  If that weren't the case, we could have the
 ! alloc_and_configure_domain routine get this form the module_dm module itself, but as it stands there
 ! would be a circular use association.  jm 20140828
-   USE module_dm, ONLY:  intercomm_active
+   USE module_dm, ONLY:  intercomm_active, push_communicators_for_domain, pop_communicators_for_domain
 #endif
 
    IMPLICIT NONE
@@ -278,6 +278,7 @@ RECURSIVE SUBROUTINE integrate ( grid )
    ! This allows us to reference the current grid from anywhere beneath 
    ! this point for debugging purposes.  
    CALL set_current_grid_ptr( grid )
+   CALL push_communicators_for_domain( grid%id )
 
    IF ( .NOT. domain_clockisstoptime( grid ) ) THEN
       CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
@@ -417,6 +418,7 @@ RECURSIVE SUBROUTINE integrate ( grid )
          ENDIF
       ENDIF
    END IF
+   CALL pop_communicators_for_domain
    
 END SUBROUTINE integrate
 
