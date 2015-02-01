@@ -147,6 +147,10 @@ CONTAINS
       ntasks_x       = ntasks_x_store( id )
       mytask_x       = mytask_x_store( id )
       mytask_y       = mytask_y_store( id )
+write(0,*)'instate: id                 ',id
+write(0,*)'instate: local_communicator ',local_communicator
+write(0,*)'instate: ntasks             ',ntasks
+write(0,*)'instate: mytask             ',mytask
    END SUBROUTINE instate_communicators_for_domain
 
    SUBROUTINE store_communicators_for_domain( id )
@@ -1811,13 +1815,13 @@ CONTAINS
 !
 
       NAMELIST /namelist_split/ tasks_per_split, comm_start, comm_pes_x, comm_pes_y, comm_domain
-      INTEGER ndoms
+      INTEGER ndoms,dims(3)
 ! for parallel nesting, 201408, jm
       INTEGER :: intercomm 
       INTEGER :: domain_id,par_id,nest_id,kid_id
       INTEGER :: mytask_me_and_mom, ntasks_me_and_mom, remote_leader
       LOGICAL :: inthisone
-      LOGICAL :: mytask_is_nest, mytask_is_par
+      LOGICAL :: mytask_is_nest, mytask_is_par,isperiodic(3)
 
 !!!!! needed to sneak-peak the registry to get parent_id 
 ! define as temporaries
@@ -1827,6 +1831,7 @@ CONTAINS
 #include <namelist_statements.inc>
 
       CALL MPI_INITIALIZED( mpi_inited, ierr )
+write(0,*)'mpi_inited ',mpi_inited
       IF ( .NOT. mpi_inited ) THEN
 #  if defined(_OPENMP) && defined(MPI2_THREAD_SUPPORT)
         thread_support_requested = MPI_THREAD_FUNNELED
@@ -1857,6 +1862,9 @@ CONTAINS
 
       CALL MPI_Comm_rank ( mpi_comm_here, mytask, ierr ) ;
       CALL MPI_Comm_size ( mpi_comm_here, ntasks, ierr ) ;
+write(0,*)'mytask ',mytask
+write(0,*)'ntasks ',ntasks
+write(0,*)__LINE__,mpi_comm_here
 
       IF ( mytask .EQ. 0 ) THEN
         OPEN ( unit=27, file="namelist.input", form="formatted", status="old" )
@@ -1874,7 +1882,9 @@ CONTAINS
         READ ( UNIT = 27 , NML = domains , IOSTAT=io_status )
         CLOSE ( 27 )
       ENDIF
+write(0,*)'before mpi_bcast'
       CALL mpi_bcast( io_status, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+write(0,*)'after mpi_bcast',io_status
       IF ( io_status .NE. 0 ) THEN
           RETURN ! just ignore and return, everybody's on the same communicator
       ENDIF
@@ -1887,16 +1897,35 @@ CONTAINS
       CALL mpi_bcast( max_dom, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       ndoms = 1
       nkids = 1
+      which_kid = 0
+write(0,*)__LINE__,mpi_comm_here
       DO i = 2, max_dom
         IF ( 1 .le. parent_id(i) .AND. parent_id(i) .LE. max_domains ) THEN
           which_kid(i) = nkids(parent_id(i))
-          nkids(parent_id(i)) = nkids(parent_id(i))
+write(0,*)'which_kid i,parent_id(i),nkids(parent_id(i))',i,parent_id(i),nkids(parent_id(i))
+          nkids(parent_id(i)) = nkids(parent_id(i)) + 1
         ELSE
           WRITE(wrf_err_message,*)'invalid parent id for domain ',i
           CALL wrf_error_fatal(TRIM(wrf_err_message))
         ENDIF 
         IF ( comm_domain(i) .gt. 0 ) ndoms = ndoms + 1
       ENDDO
+write(0,*)'which_kid ',which_kid(2:max_dom)
+
+      DO nest_id = 1,ndoms
+        nest_pes_x(nest_id) = comm_pes_x(comm_domain(nest_id))
+        nest_pes_y(nest_id) = comm_pes_y(comm_domain(nest_id))
+        IF ( nest_id .EQ. 1 ) THEN
+          nest_task_offsets(nest_id) = comm_start(comm_domain(nest_id))
+        ELSE
+          nest_task_offsets(nest_id) = comm_start(comm_domain(nest_id))-comm_start(comm_domain(parent_id(nest_id)))
+        ENDIF
+write(0,'(" nest_task_offsets(",i3,") = ", i3)')nest_id,nest_task_offsets(nest_id)
+      ENDDO
+
+write(0,*)'ndoms ',ndoms
+write(0,*)'MPI_UNDEFINED ',MPI_UNDEFINED
+write(0,*)__LINE__,mpi_comm_here
 
       IF ( ndoms .GT. 1 ) THEN
 !jm Additional code here to set up communicator for this domain and tables
@@ -1916,6 +1945,7 @@ CONTAINS
         ALLOCATE( icolor(ntasks) )
         ALLOCATE( icolor2(ntasks) )
         ALLOCATE( idomain(ntasks) )
+write(0,*)__LINE__,mpi_comm_here
         k = 0
         nest_task_offsets = -1  ! initialize invalid
         domain_id = ndoms
@@ -1925,25 +1955,49 @@ CONTAINS
         ncomms = 0
         DO i = 1, ndoms
            IF ( comm_start(i) .GE. 0 ) THEN
+write(0,*)'comm_start ',i,comm_start(i)
              ncomms = ncomms + 1
            ENDIF
         ENDDO
+write(0,*)'ncomms ',ncomms
+write(0,*)__LINE__,mpi_comm_here
 
 ! construct list of local communicators my task is in
         comms_i_am_in = MPI_UNDEFINED
         DO i = 1, ncomms
+write(0,*)'i = ',i
           inthisone = .FALSE.
           icolor = 0
-          DO j = comm_start(i), comm_start(i)+comm_pes_x(i)*comm_pes_y(i)
-            icolor(j) = 1
+          DO j = comm_start(i), comm_start(i)+comm_pes_x(i)*comm_pes_y(i)-1
+write(0,*)'setting icolor ',j+1
+            IF ( j+1 .GT. ntasks ) THEN
+              WRITE(wrf_err_message,*)"check comm_start, comm_pes_x, comm_pes_y settings in namelist for comm ",i
+              CALL wrf_error_fatal(wrf_err_message)
+            ENDIF
+            icolor(j+1) = 1
           ENDDO
+write(0,*)icolor(1:ntasks)
           IF ( icolor(mytask+1) .EQ. 1 ) inthisone = .TRUE.
+write(0,*)__LINE__,mpi_comm_here
           CALL MPI_Comm_dup(mpi_comm_here,comdup,ierr)
+write(0,*)'called MPI_Comm_dup ierr ', ierr
           CALL MPI_Comm_split(comdup,icolor(mytask+1),mytask,mpi_comm_local,ierr)
+write(0,*)'called MPI_Comm_split ierr ', ierr
           IF ( inthisone ) THEN
-            comms_i_am_in(i) = mpi_comm_local
+            dims(1) = comm_pes_y(i) ! rows
+            dims(2) = comm_pes_x(i)  ! columns
+            isperiodic(1) = .false.
+            isperiodic(2) = .false.
+            CALL mpi_cart_create( mpi_comm_local, 2, dims, isperiodic, .false., comms_i_am_in(i), ierr )
+
+!            dims(1) = comm_pes_y(i) ! rows
+!            dims(2) = comm_pes_x(i)  ! columns
+!            isperiodic(1) = .true.
+!            isperiodic(2) = .true.
+!            CALL mpi_cart_create( mpi_comm_local, 2, dims, isperiodic, .false., local_comm_per, ierr )
           ENDIF
         ENDDO
+write(0,*)'comms_i_am_in ',comms_i_am_in(1:ncomms)
 
 !  Namelist Split Settings (for 3 comms, 4 domains)
 !   (comm_id)       1    2    3    ...
@@ -1961,6 +2015,7 @@ CONTAINS
         local_communicator = MPI_UNDEFINED
         DO i = 1, ndoms
           local_communicator_store(i) = comms_i_am_in(comm_domain(i))
+write(0,*)i,'local_communicator_store ',local_communicator_store(i)
         ENDDO
 
         intercomm_active  = .FALSE.
@@ -1970,7 +2025,9 @@ CONTAINS
         ! if a task is in both (ie. the communicators overlap) set the offset at the start of the first nest task
         ! in this way, we will handle cases where the parent and nest are decomposed over the same set of tasks
         ! (in that case, the offset would be the first task of the parent-nest communicator and that communicator)
+
         DO nest_id = 2, ndoms
+write(0,*)'nest_id = ',nest_id
            par_id  = parent_id(nest_id)
            icolor2 = 0
            DO j = 1,ntasks !iterate over all the tasks in the "big" communicator
@@ -1980,7 +2037,11 @@ CONTAINS
            icolor2 = 0
            mytask_is_nest = .FALSE.
            mytask_is_par = .FALSE.
+write(0,*)'comm_start(comm_domain(nest_id)) ',nest_id,comm_start(comm_domain(nest_id))
+write(0,*)'nest_pes_x(nest_id) ',nest_pes_x(nest_id)
+write(0,*)'nest_pes_y(nest_id) ',nest_pes_y(nest_id)
            DO j = 1,ntasks
+write(0,*)'nest, par ',j-1,comm_start(comm_domain(nest_id)) .LE. j-1 .AND. j-1 .LT. comm_start(comm_domain(nest_id)) + nest_pes_x(nest_id)*nest_pes_y(nest_id), comm_start(comm_domain(par_id)) .LE. j-1 .AND. j-1 .LT. comm_start(comm_domain(par_id)) + nest_pes_x(par_id)*nest_pes_y(par_id)
              IF ( comm_start(comm_domain(nest_id)) .LE. j-1 .AND. j-1 .LT. comm_start(comm_domain(nest_id)) + nest_pes_x(nest_id)*nest_pes_y(nest_id) )  THEN
                icolor2(j)=1
                mytask_is_nest=.TRUE.
@@ -1990,20 +2051,25 @@ CONTAINS
                mytask_is_par=.TRUE.
              ENDIF
            ENDDO
-           nest_task_offsets(nest_id) = comm_start(comm_domain(nest_id))-comm_start(comm_domain(par_id ))
-write(0,'(" nest_task_offsets(",i3,") = ", i3)')nest_id,nest_task_offsets(nest_id)
 
            i = icolor2(mytask+1)
            CALL MPI_Comm_dup(mpi_comm_here,comdup,ierr)
+write(0,*)'calling MPI_Comm_split comdup       ',comdup
+write(0,*)'calling MPI_Comm_split i            ',i
+write(0,*)'calling MPI_Comm_split origmytask   ',origmytask
            CALL MPI_Comm_split(comdup,i,origmytask,mpi_comm_me_and_mom,ierr)
+write(0,*)'calling MPI_Comm_split mpi_comm_me_and_mom ',mpi_comm_me_and_mom
+write(0,*)'calling MPI_Comm_split ierr         ',ierr
 
            IF ( mytask_is_par  ) THEN
               intercomm_active(par_id)  = .TRUE.
               mpi_comm_to_mom(par_id)   =  mpi_comm_me_and_mom
+write(0,*)'setting mpi_comm_to_mom par_id ',par_id,mpi_comm_me_and_mom
            ENDIF
            IF ( mytask_is_nest ) THEN
               intercomm_active(nest_id)              = .TRUE.
-              mpi_comm_to_kid(which_kid(i),nest_id)  =  mpi_comm_me_and_mom
+              mpi_comm_to_kid(which_kid(nest_id),par_id)  =  mpi_comm_me_and_mom
+write(0,*)'setting mpi_comm_to_kid which_kid(nest_id),nest_id ',which_kid(nest_id),par_id,mpi_comm_me_and_mom
            ENDIF
         ENDDO
 
@@ -4029,7 +4095,8 @@ ENDIF
       USE module_domain, ONLY : domain, get_ijk_from_grid
       USE module_configure, ONLY : grid_config_rec_type
       USE module_dm, ONLY : ntasks, ntasks_x, ntasks_y, itrace, local_communicator, &
-                            mytask, get_dm_max_halo_width
+                            mytask, get_dm_max_halo_width,                          &
+                            push_communicators_for_domain,pop_communicators_for_domain
       USE module_comm_nesting_dm, ONLY : halo_interp_down_sub
       IMPLICIT NONE
 !
@@ -4080,6 +4147,8 @@ IF ( ngrid%active_this_task ) THEN
       CALL get_dm_max_halo_width ( ngrid%id , thisdomain_max_halo_width )
 
 write(0,*)__FILE__,__LINE__,' before  nest_interpdown_unpack.inc '
+write(0,*)__FILE__,__LINE__,' local_communicator ',local_communicator
+
       
 #include "nest_interpdown_unpack.inc"
 
@@ -4088,8 +4157,11 @@ write(0,*)__FILE__,__LINE__,' before  nest_interpdown_unpack.inc '
                                 ims, ime, jms, jme, kms, kme,    &
                                 ips, ipe, jps, jpe, kps, kpe    )
 
+      CALL push_communicators_for_domain( ngrid%id )
 
 #include "HALO_INTERP_DOWN.inc"
+
+      CALL pop_communicators_for_domain
 
 #  include "nest_interpdown_interp.inc"
 

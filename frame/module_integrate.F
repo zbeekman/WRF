@@ -289,13 +289,16 @@ RECURSIVE SUBROUTINE integrate ( grid )
                CALL start_timing
             END IF
             CALL med_setup_step ( grid , config_flags )
+write(0,*)__FILE__,__LINE__
             a_nest_was_opened = .false.
             ! for each nest whose time has come...
             DO WHILE ( nests_to_open( grid , nestid , kid ) )
+write(0,*)__FILE__,__LINE__
                ! nestid is index into model_config_rec (module_configure) of the grid
                ! to be opened; kid is index into an open slot in grid's list of children
                a_nest_was_opened = .true.
                CALL med_pre_nest_initial ( grid , nestid , config_flags )
+write(0,*)__FILE__,__LINE__
                CALL alloc_and_configure_domain ( domain_id  = nestid ,   &
 ! better if this were not ifdef'd here, try moving into module_dm? see comment above. jm 20140828
 #ifdef DM_PARALLEL
@@ -304,13 +307,18 @@ RECURSIVE SUBROUTINE integrate ( grid )
                                                  grid       = new_nest , &
                                                  parent     = grid ,     &
                                                  kid        = kid        )
+write(0,*)__FILE__,__LINE__
                CALL Setup_Timekeeping (new_nest)
+write(0,*)__FILE__,__LINE__
                CALL med_nest_initial ( grid , new_nest , config_flags )
+write(0,*)__FILE__,__LINE__
                IF ( grid%dfi_stage == DFI_STARTFWD ) THEN
                   CALL wrf_dfi_startfwd_init(new_nest)
                ENDIF
+write(0,*)__FILE__,__LINE__
                IF (coupler_on) CALL cpl_defdomain( new_nest ) 
             END DO
+write(0,*)__FILE__,__LINE__
             IF ( a_nest_was_opened ) THEN
                CALL set_overlaps ( grid )   ! find overlapping and set pointers
             END IF
@@ -326,7 +334,9 @@ RECURSIVE SUBROUTINE integrate ( grid )
                IF ( grid_ptr%active_this_task ) THEN
                   CALL set_current_grid_ptr( grid_ptr )
                   CALL wrf_debug( 100 , 'module_integrate: calling solve interface ' )
+write(0,*)__FILE__,__LINE__
                   CALL solve_interface ( grid_ptr ) 
+write(0,*)__FILE__,__LINE__
                ENDIF
                CALL domain_clockadvance ( grid_ptr )
                CALL wrf_debug( 100 , 'module_integrate: back from solve interface ' )
@@ -355,7 +365,9 @@ RECURSIVE SUBROUTINE integrate ( grid )
                      domain_get_current_time(grid)
                    WRITE(message,*)grid%id,' module_integrate: recursive call to integrate '
                    CALL wrf_debug( 100 , message )
+write(0,*)__FILE__,__LINE__
                    CALL integrate ( grid_ptr%nests(kid)%ptr ) 
+write(0,*)__FILE__,__LINE__
                    WRITE(message,*)grid%id,' module_integrate: back from recursive call to integrate '
                    CALL wrf_debug( 100 , message )
                    IF ( .NOT. ( domain_clockisstoptime(head_grid              ) .OR. &

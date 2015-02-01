@@ -214,11 +214,11 @@ RSL_LITE_TO_CHILD_INFO ( msize_p,                        /* number of tasks in m
     offset = s_ntasks_par_x*s_ntasks_par_y ;
     alltasks = s_ntasks_nest_x*s_ntasks_nest_y + offset ;
 
-fprintf(stderr,"s_ntasks_par_x %d\n",s_ntasks_par_x)  ;
-fprintf(stderr,"s_ntasks_par_y %d\n",s_ntasks_par_y)  ;
-fprintf(stderr,"s_ntasks_nest_x %d\n",s_ntasks_par_x)  ;
-fprintf(stderr,"s_ntasks_nest_y %d\n",s_ntasks_par_y)  ;
-fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
+//fprintf(stderr,"s_ntasks_par_x %d\n",s_ntasks_par_x)  ;
+//fprintf(stderr,"s_ntasks_par_y %d\n",s_ntasks_par_y)  ;
+//fprintf(stderr,"s_ntasks_nest_x %d\n",s_ntasks_par_x)  ;
+//fprintf(stderr,"s_ntasks_nest_y %d\n",s_ntasks_par_y)  ;
+//fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
 
     /* construct Plist */
     Sendbufsize = 0 ;
@@ -231,7 +231,7 @@ fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
        Ssizes[j] = 0 ;
     }
     ierr = 0 ;
-fprintf(stderr,"%s %d\n",__FILE__,__LINE__ ) ;
+//fprintf(stderr,"%s %d\n",__FILE__,__LINE__ ) ;
     for ( j = *cjps_p ; j <= *cjpe_p ; j++ )
     {
       for ( i = *cips_p ; i <= *cipe_p ; i++ )
@@ -262,7 +262,7 @@ fprintf(stderr,"%s %d\n",__FILE__,__LINE__ ) ;
         }
       }
     }
-fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
+//fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
     if ( ierr != 0 ) {
       fprintf(stderr,"rsl_to_child_info: ") ;
       TASK_FOR_POINT_MESSAGE () ;
@@ -274,19 +274,19 @@ fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
     Pptr = NULL ;
   }
 
-fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
+//fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
   if ( Pptr != NULL ) {
     Pptr = Pptr->next ;
   } 
 
-fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
+//fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
   if ( Recsizeindex >= 0 ) {
           r = (int *) &(Sendbuf[Recsizeindex]) ;
           *r = Sendbufcurs - Recsizeindex + 2 * sizeof(int) ;
           Ssizes[Pcurs] += *r ;
   }
 
-fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
+//fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
   while ( Pptr == NULL ) {
       Pcurs++ ;
       while ( Pcurs < alltasks && Plist[Pcurs] == NULL  ) Pcurs++ ;
@@ -294,18 +294,18 @@ fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
         Sdisplacements[Pcurs] = Sendbufcurs ;
         Ssizes[Pcurs] = 0 ;
         Pptr = Plist[Pcurs] ;
-fprintf(stderr,"%s %d Pptr %x Pcurs %d alltasks %d\n",__FILE__,__LINE__,Pptr, Pcurs, alltasks ) ;
+//fprintf(stderr,"%s %d Pptr %x Pcurs %d alltasks %d\n",__FILE__,__LINE__,Pptr, Pcurs, alltasks ) ;
       } else {
         *retval_p = 0 ;
         return ;  /* done */
       }
   }
 
-fprintf(stderr,"%s %d Pptr %x\n",__FILE__,__LINE__,Pptr ) ;
+//fprintf(stderr,"%s %d Pptr %x\n",__FILE__,__LINE__,Pptr ) ;
   *ig_p = Pptr->info1 ;
   *jg_p = Pptr->info2 ;
 
-fprintf(stderr,"%s %d ig %d jg %d \n",__FILE__,__LINE__,*ig_p,*jg_p ) ;
+//fprintf(stderr,"%s %d ig %d jg %d \n",__FILE__,__LINE__,*ig_p,*jg_p ) ;
   r = (int *) &(Sendbuf[Sendbufcurs]) ;
   *r++ = Pptr->info1 ; Sendbufcurs += sizeof(int) ;  /* ig to buffer */
   *r++ = Pptr->info2 ; Sendbufcurs += sizeof(int) ;  /* jg to buffer */
@@ -313,7 +313,7 @@ fprintf(stderr,"%s %d ig %d jg %d \n",__FILE__,__LINE__,*ig_p,*jg_p ) ;
   *r++ =           0 ; Sendbufcurs += sizeof(int) ;  /* store start for size */
   *retval_p = 1 ;
 
-fprintf(stderr,"%s %d\n",__FILE__,__LINE__ ) ;
+//fprintf(stderr,"%s %d\n",__FILE__,__LINE__ ) ;
   return ;
 }
 
@@ -678,36 +678,36 @@ fprintf(stderr,"before MPI_Alltoallv Rdisplacements %d %d %d %d %d %d \n",Rdispl
   Sendbuf = Recvbuf ;
   Recvbuf = work ;
 #endif
-fprintf(stderr,"%s %d after MPI_Alltoallv\n",__FILE__,__LINE__) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv\n",__FILE__,__LINE__) ;
 
 /* add sentinel to the end of Recvbuf */
 
   r = (int *)&(Recvbuf[Rbufsize + 2 * sizeof(int)]) ;
-fprintf(stderr,"%s %d after MPI_Alltoallv\n",__FILE__,__LINE__) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv\n",__FILE__,__LINE__) ;
   *r = RSL_INVALID ;
-fprintf(stderr,"%s %d after MPI_Alltoallv Sendbuf %x\n",__FILE__,__LINE__, Sendbuf) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv Sendbuf %x\n",__FILE__,__LINE__, Sendbuf) ;
 
   if ( Sendbuf != NULL ) RSL_FREE( Sendbuf ) ; 
-fprintf(stderr,"%s %d after MPI_Alltoallv Sendbuf %x (should be NULL) \n",__FILE__,__LINE__,Sendbuf) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv Sendbuf %x (should be NULL) \n",__FILE__,__LINE__,Sendbuf) ;
   if ( Psize_all != NULL ) RSL_FREE( Psize_all ) ;
-fprintf(stderr,"%s %d after MPI_Alltoallv\n",__FILE__,__LINE__) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv\n",__FILE__,__LINE__) ;
 
-fprintf(stderr,"%s %d after MPI_Alltoallv Plist=%x\n",__FILE__,__LINE__,Plist) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv Plist=%x\n",__FILE__,__LINE__,Plist) ;
   if ( Plist != NULL ) {
     for ( j = 0 ; j < Plist_length ; j++ ) { 
-fprintf(stderr,"%s %d after MPI_Alltoallv j=%d \n",__FILE__,__LINE__,j) ;
-fprintf(stderr,"%s %d after MPI_Alltoallv Plist=%x\n",__FILE__,__LINE__,&(Plist[j])) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv j=%d \n",__FILE__,__LINE__,j) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv Plist=%x\n",__FILE__,__LINE__,&(Plist[j])) ;
       destroy_list ( &(Plist[j]), NULL ) ;
-fprintf(stderr,"%s %d after MPI_Alltoallv \n",__FILE__,__LINE__) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv \n",__FILE__,__LINE__) ;
     }
-fprintf(stderr,"%s %d after MPI_Alltoallv\n",__FILE__,__LINE__) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv\n",__FILE__,__LINE__) ;
     RSL_FREE( Plist ) ;
-fprintf(stderr,"%s %d after MPI_Alltoallv\n",__FILE__,__LINE__) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv\n",__FILE__,__LINE__) ;
     Plist = NULL ;
     Plist_length = 0 ;
   }
 
-fprintf(stderr,"%s %d returning rsl_lite_allgather_msgs\n",__FILE__,__LINE__) ;
+//fprintf(stderr,"%s %d returning rsl_lite_allgather_msgs\n",__FILE__,__LINE__) ;
 }
 
 /********************************************/

@@ -11,13 +11,16 @@ SUBROUTINE init_domain_constants_em ( parent , nest )
    CHARACTER (LEN=256) :: char_junk
    INTEGER :: comzilla
 
-
+write(0,*)__FILE__,__LINE__,'patt ',parent%active_this_task
+write(0,*)__FILE__,__LINE__,'natt ',nest%active_this_task
    IF ( parent%active_this_task .OR. nest%active_this_task ) THEN
      IF ( parent%active_this_task ) THEN
        comzilla = mpi_comm_to_kid( which_kid( nest%id ) , parent%id )
+write(0,*)__FILE__,__LINE__,'Patt: mpi_comm_to_kid ',comzilla,which_kid( nest%id ) ,nest%id, parent%id
        grid => parent
      ELSE
        comzilla = mpi_comm_to_mom( nest%id )
+write(0,*)__FILE__,__LINE__,'Natt: mpi_comm_to_mom ',comzilla,nest%id 
        grid => nest
      ENDIF
 
