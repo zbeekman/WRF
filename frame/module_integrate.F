@@ -18,11 +18,11 @@ RECURSIVE SUBROUTINE integrate ( grid )
    USE module_cpl, ONLY : coupler_on, cpl_snd, cpl_defdomain
 #ifdef DM_PARALLEL
 ! better if this did not need to be used here. Problem is that the definition of 
-! intercomm_active comes from module_dm, and the routine it's being passed to (alloc_and_configure_domain)
+! domain_active_this_task comes from module_dm, and the routine it's being passed to (alloc_and_configure_domain)
 ! is defined in module_domain, which uses module_dm.  If that weren't the case, we could have the
 ! alloc_and_configure_domain routine get this form the module_dm module itself, but as it stands there
 ! would be a circular use association.  jm 20140828
-   USE module_dm, ONLY:  intercomm_active, push_communicators_for_domain, pop_communicators_for_domain
+   USE module_dm, ONLY:  domain_active_this_task, push_communicators_for_domain, pop_communicators_for_domain
 #endif
 
    IMPLICIT NONE
@@ -302,7 +302,7 @@ write(0,*)__FILE__,__LINE__
                CALL alloc_and_configure_domain ( domain_id  = nestid ,   &
 ! better if this were not ifdef'd here, try moving into module_dm? see comment above. jm 20140828
 #ifdef DM_PARALLEL
-                                           active_this_task = intercomm_active( nestid ), &
+                                           active_this_task = domain_active_this_task( nestid ), &
 #endif
                                                  grid       = new_nest , &
                                                  parent     = grid ,     &

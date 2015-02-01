@@ -54,6 +54,7 @@ MODULE module_dm
    INTEGER which_kid(max_domains), nkids(max_domains)
    INTEGER nest_task_offsets(max_domains)
    LOGICAL intercomm_active( max_domains )
+   LOGICAL domain_active_this_task( max_domains )
 ! see comments below (search for "Communicator definition")
    INTEGER comm_start(max_domains)   ! set in namelist_split
    INTEGER comm_pes  (max_domains)   ! either this may be set in namelist_split
@@ -2015,6 +2016,7 @@ write(0,*)'comms_i_am_in ',comms_i_am_in(1:ncomms)
         local_communicator = MPI_UNDEFINED
         DO i = 1, ndoms
           local_communicator_store(i) = comms_i_am_in(comm_domain(i))
+          domain_active_this_task(i) = ( local_communicator_store(i) .NE. MPI_UNDEFINED )
 write(0,*)i,'local_communicator_store ',local_communicator_store(i)
         ENDDO
 
@@ -4132,6 +4134,7 @@ ENDIF
       REAL, DIMENSION(ngrid%s_vert:ngrid%e_vert+1) :: alt_u_n 
 
 
+write(0,*)__FILE__,__LINE__,'ngrid%active_this_task ',ngrid%active_this_task
 IF ( ngrid%active_this_task ) THEN
       CALL get_ijk_from_grid (  grid ,                   &
                                 cids, cide, cjds, cjde, ckds, ckde,    &
