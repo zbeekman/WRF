@@ -190,7 +190,7 @@ SUBROUTINE chem_driver_ad(grid, config_flags &
   run_interval = grid%stop_subtime - grid%start_subtime
   CALL WRFU_TimeIntervalGet( run_interval, S=runad, rc=rc )
   runad = abs(runad)
-  curr_secs = REAL( runad, 8 ) + curr_secs !- REAL(grid%dt, 8)
+  curr_secs = REAL( runad, 8 ) + curr_secs - REAL(grid%dt, 8)
   write(msg,*)'curr_secs = ',curr_secs
   CALL wrf_debug(16,TRIM(msg))
 

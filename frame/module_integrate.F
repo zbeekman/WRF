@@ -354,13 +354,13 @@ RECURSIVE SUBROUTINE integrate ( grid )
             CALL med_before_solve_io ( grid , config_flags )
 
 #if ( WRFPLUS == 1 )
-#ifdef WRF_CHEM
 
             IF ( config_flags%dyn_opt .EQ. dyn_em_ad .AND. should_add_forcing) THEN
               CALL add_forcing_to_ad ( grid )
             ENDIF
 
-            IF ( config_flags%chem_ad_forcing) THEN
+#if ( WRF_CHEM == 1 )
+            IF ( config_flags%chem_obs_cost) THEN
                IF ( config_flags%dyn_opt .EQ. dyn_em_ad ) THEN
                  CALL add_forcing_to_ad_chem ( grid, config_flags )
                ELSEIF ( config_flags%dyn_opt .EQ. dyn_em .AND. &

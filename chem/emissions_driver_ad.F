@@ -357,7 +357,7 @@ CONTAINS
 &                               , ktau,ibb
        CALL wrf_error_fatal( trim(message) )
     ENDIF
-    WRITE(message, *) 'chem_driver_ad, iant,ibb,curr_secs,ktau = ',iant,ibb,curr_secs,ktau
+    WRITE(message, *) 'emissions_driver_ad, iant,ibb,curr_secs,ktauc = ',iant,ibb,curr_secs,ktau
     CALL wrf_debug( 16, TRIM(message) )
     IF (do_plumerisefire) THEN
       CALL WRF_DEBUG(15, 'fire emissions: calling plumerise')

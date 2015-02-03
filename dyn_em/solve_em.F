@@ -266,17 +266,12 @@ SUBROUTINE solve_em ( grid , config_flags  &
    curr_secs  = real_time(tmpTimeInterval)
    curr_secs2 = real_time(tmpTimeInterval2)
 #if ( WRFPLUS == 1 )
-  if(grid%checkpoint_interval .gt. 0) then
-     write(message,*)'itimestep,check_count,checkpoint_interval,curr_secs = ',grid%itimestep,grid%check_count,grid%checkpoint_interval,curr_secs
-     CALL wrf_debug(50,TRIM(message))
-
-!     curr_secs = curr_secs - REAL( 3600*(grid%check_count-1)*grid%checkpoint_interval, 8 )
-
-     if (config_flags%dyn_opt .eq. dyn_em_ad) then
-        curr_secs = curr_secs + REAL( 3600*grid%check_count*grid%checkpoint_interval, 8 )
-     endif
-
+  if(grid%checkpoint_interval .gt. 0 .and. config_flags%dyn_opt .eq. dyn_em_ad) then
+     curr_secs = curr_secs - REAL(grid%dt, 8) + REAL( 3600*grid%check_count*grid%checkpoint_interval, 8 )
   endif
+  write(message,*)'solve_em,itimestep,check_count,checkpoint_interval,curr_secs = ',grid%itimestep,grid%check_count,grid%checkpoint_interval,curr_secs
+  CALL wrf_debug(50,TRIM(message))
+
 #endif
 
    old_dt = grid%dt   ! store old time step for flux averaging code at end of RK loop

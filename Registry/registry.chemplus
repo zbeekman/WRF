@@ -7,14 +7,10 @@
 dimspec ant      2                 namelist=num_ant_steps    z   anthro_emiss_scale_size
 dimspec bb       2                 namelist=num_bb_steps     z   burn_emiss_scale_size
 dimspec nsurf    -                 namelist=num_surf_obs     c   num_surf_obs
-dimspec nacft  -                 namelist=num_acft_obs   c   num_acft_obs
+dimspec nacft    -                 namelist=num_acft_obs     c   num_acft_obs
 dimspec ntim     -                 namelist=num_ts           c   num_ts
-dimspec nst      -                 namelist=num_surf_hx     c   num_surf_hx
-dimspec nat      -                 namelist=num_acft_hx     c   num_acft_hx
-
-#dimspec ni       -                 namelist=num_intrp        c   num_intrp
-#dimspec nj       -                 namelist=num_jntrp        c   num_jntrp
-
+dimspec nst      -                 namelist=num_surf_hx      c   num_surf_hx
+dimspec nat      -                 namelist=num_acft_hx      c   num_acft_hx
 
 rconfig integer  num_ant_steps     namelist,chem     1           1   rh  "num_scale_ant"   ""   ""
 rconfig integer  num_bb_steps      namelist,chem     1           1   rh  "num_scale_bb"   ""   ""
@@ -22,12 +18,8 @@ rconfig integer  num_bb_steps      namelist,chem     1           1   rh  "num_sc
 rconfig integer  num_surf_obs      namelist,chem     1           0   rh  "num_surf_obs"   ""   ""
 rconfig integer  num_acft_obs      namelist,chem     1           0   rh  "num_acft_obs"   ""   ""
 rconfig integer  num_ts            namelist,chem     1           0   rh  "num_ts"   ""   ""
-rconfig integer  num_surf_hx       namelist,chem     1           1   rh  "num_ts"   ""   ""
-rconfig integer  num_acft_hx       namelist,chem     1           6   rh  "num_ts"   ""   ""
-
-#rconfig integer  num_intrp         namelist,chem     1           1   rh  "num_intrp"   ""   ""
-#rconfig integer  num_jntrp         namelist,chem     1           1   rh  "num_jntrp"   ""   ""
-
+rconfig integer  num_surf_hx       namelist,chem     1           3   rh  "num_surf_hx"   ""   ""
+rconfig integer  num_acft_hx       namelist,chem     1           8   rh  "num_acft_hx"   ""   ""
 
 rconfig integer  scaleant_frq      namelist,chem     max_domains 0   rh  "scale_ant_frq"    ""    ""
 rconfig integer  scalebb_frq       namelist,chem     max_domains 0   rh  "scale_bb_frq"    ""    ""
@@ -35,15 +27,17 @@ rconfig integer  scale_emiss_opt   namelist,chem     max_domains 3   rh  "scale_
 rconfig integer  scale_burn_opt    namelist,chem     max_domains 1   rh  "scale_emiss_opt"   ""   ""
 rconfig integer  nta_chem_opt      namelist,chem     max_domains 0   rh  "nta_chem_opt"      ""   ""
 
-state   integer  STEPSCALEANT            -            misc         1   -   r   "STEPSCALEEM" "NUMBER OF FUNDAMENTAL TIMESTEPS BETWEEN SCALING ANTHROPOGENIC EMISSIONS"
-state   integer  STEPSCALEBB             -            misc         1   -   r   "STEPSCALEEM" "NUMBER OF FUNDAMENTAL TIMESTEPS BETWEEN SCALING BIOMASS BURNING EMISSIONS"
+state   integer  STEPSCALEANT            -            misc         1   -   r   "STEPSCALEANT" "NUMBER OF FUNDAMENTAL TIMESTEPS BETWEEN SCALING ANTHROPOGENIC EMISSIONS"
+state   integer  STEPSCALEBB             -            misc         1   -   r   "STEPSCALEBB" "NUMBER OF FUNDAMENTAL TIMESTEPS BETWEEN SCALING BIOMASS BURNING EMISSIONS"
 
 rconfig   logical check_chem       namelist,perturbation         1   .true.  r    "AD/TL check CHEM"        ""      ""
 rconfig   logical check_scaleant   namelist,perturbation         1   .true.  r    "AD/TL check SCALEANT"        ""      ""
 rconfig   logical check_scalebb    namelist,perturbation         1   .true.  r    "AD/TL check SCALEBB"        ""      ""
-rconfig   logical chem_ad_forcing  namelist,perturbation         1   .false. r    "CHEM AD FORCING"        ""      ""
+rconfig   logical chem_obs_cost    namelist,perturbation         1   .false. r    "CHEM AD FORCING"        ""      ""
 rconfig   integer chem_obs_type    namelist,perturbation         1   1       r    "CHEM FORCING TYPE"        ""      ""
+rconfig   integer pinterp_option   namelist,perturbation         1   1       -    "pinterp_option"          ""  ""
 
+rconfig   integer force_pbl        namelist,perturbation         1   0  r    "force_pbl"        ""      ""
 
 # chem observation arrays
 state    real  i_surf  {nsurf}  misc           1         -      h{17}      "i_surf"        "surf_obs grid location"             ""
@@ -52,31 +46,45 @@ state    real  k_surf  {nsurf}  misc           1         -      h{17}      "k_su
 state    real  ti_surf {nsurf}  misc           1         -      h{17}      "ti_surf"        "surf_obs start itime"             ""
 state    real  tf_surf {nsurf}  misc           1         -      h{17}      "tf_surf"        "surf_obs end itime"             ""
 state    real  BC_surf {nsurf}  misc           1         -      h{17}      "BC_surf"        "surf_obs black carbon"             "ug/m^3"
+state    real  var_BC_surf {nsurf}  misc       1         -      h{17}      "var_BC_surf"        "surf_obs black carbon variance"             "ug^2/m^6"
+state    real  weight_BC_surf {nsurf}  misc       1         -      h{17}      "weight_BC_surf"        "surf_obs black carbon adj. forcing weight"             ""
 
 
-state    real    surf_hx    {nsurf}{nst}  misc       1         -     h{17}       "surf_hx" "surf_hx" "multiple"
-rconfig  integer p_surf_bc  namelist,chem            1         1     -       "p_surf_bc" "index for surface_hx black carbon" "ug/m^3"
+state    real    surf_hx        {nsurf}{nst}  misc       1         -     h{17}       "surf_hx" "surf_hx" "multiple"
+state    real    g_surf_hx      {nsurf}{nst}  misc       1         -     -       "g_surf_hx" "a_surf_hx" "multiple"
+state    real    a_surf_hx      {nsurf}{nst}  misc       1         -     -       "a_surf_hx" "a_surf_hx" "multiple"
+#state    real    surf_var       {nsurf}{nst}  misc       1         -     h{17}       "surf_var" "surf_var" "multiple"
+rconfig  integer p_surf_bc      namelist,chem            1         2     -       "p_surf_bc" "index for surface black carbon" "ug/m^3"
+rconfig  integer p_surf_pblh    namelist,chem            1         3     -       "p_surf_pblh" "index for PBLH at surface site"                    "m"
 
 
-state    real     i_acft_avg     {ntim}  misc           1         -      h{17}      "i_acft_avg"        "acft_obs grid location"             ""
-state    real     j_acft_avg     {ntim}  misc           1         -      h{17}      "j_acft_avg"        "acft_obs grid location"             ""
-state    real     k_acft_avg     {ntim}  misc           1         -      h{17}      "k_acft_avg"        "acft_obs grid location"             ""
-state    integer  acft_obs_count {ntim}  misc           1         -      h{17}      "acft_obs_count" "acft_obs count"             ""
-state    real     BC_acft_avg    {ntim}  misc           1         -      h{17}      "BC_acft_avg"        "acft_obs black carbon"             "ug/m^3"
+
+state    real     i_acft_avg         {ntim}  misc           1         -      h{17}      "i_acft_avg"        "acft_obs grid location"             ""
+state    real     j_acft_avg         {ntim}  misc           1         -      h{17}      "j_acft_avg"        "acft_obs grid location"             ""
+state    real     k_acft_avg         {ntim}  misc           1         -      h{17}      "k_acft_avg"        "acft_obs grid location"             ""
+state    real     p_acft_avg         {ntim}  misc           1         -      h{17}      "p_acft_avg"        "acft_obs pressure"             "hPa"
+state    integer  acft_obs_count     {ntim}  misc           1         -      h{17}      "acft_obs_count" "acft_obs count"             ""
+state    real     BC_acft_avg        {ntim}  misc           1         -      h{17}      "BC_acft_avg"        "acft_obs black carbon"             "ug/m^3"
+state    real     var_BC_acft_avg    {ntim}  misc           1         -      h{17}      "var_BC_acft_avg"        "acft_obs black carbon variance"             "ug^2/m^6"
+state    real     weight_BC_acft_avg    {ntim}  misc           1         -  h{17}      "weight_BC_acft_avg"        "acft_obs black carbon adj. forcing weight"             ""
 
 
 state    real    acft_hx    {ntim}{nat}  misc       1         -     h{17}       "acft_hx" "aircraft_hx" "multiple"
-rconfig  integer p_acft_bc    namelist,chem           1         1     -       "p_acft_bc" "index for aircraft_hx black carbon"              "ug/m^3"
-rconfig  integer p_acft_sulf  namelist,chem           1         2     -       "p_acft_sulf" "index for aircraft_hx sulfate"                 "ppmv"
-rconfig  integer p_acft_pblh  namelist,chem           1         3     -       "p_acft_pblh" "index for aircraft_hx PBLH"                    "m"
-rconfig  integer p_acft_t_phy namelist,chem           1         4     -       "p_acft_t_phy" "index for aircraft_hx Temperature"            "K"
-rconfig  integer p_acft_wspd  namelist,chem           1         5     -       "p_acft_wspd" "index for aircraft_hx Windspeed"               "m/s"
-rconfig  integer p_acft_qv    namelist,chem           1         6     -       "p_acft_qv" "index for aircraft_hx Water vapor mixing ratio"  "kg kg^-1"
+state    real    g_acft_hx    {ntim}{nat}  misc       1         -     -       "g_acft_hx" "g_acft_hx" "multiple"
+state    real    a_acft_hx    {ntim}{nat}  misc       1         -     -       "a_acft_hx" "a_acft_hx" "multiple"
+rconfig  integer p_acft_bc    namelist,chem           1         2     -       "p_acft_bc" "index for aircraft_hx black carbon"              "ug/m^3"
+rconfig  integer p_acft_sulf  namelist,chem           1         3     -       "p_acft_sulf" "index for aircraft_hx sulfate"                 "ppmv"
+rconfig  integer p_acft_pblh  namelist,chem           1         4     -       "p_acft_pblh" "index for aircraft_hx PBLH"                    "m"
+rconfig  integer p_acft_hgt   namelist,chem           1         5     -       "p_acft_hgt" "index for aircraft_hx HGT"                    "m"
+rconfig  integer p_acft_t_phy namelist,chem           1         6     -       "p_acft_t_phy" "index for aircraft_hx Temperature"            "K"
+rconfig  integer p_acft_wspd  namelist,chem           1         7     -       "p_acft_wspd" "index for aircraft_hx Windspeed"               "m/s"
+rconfig  integer p_acft_qv    namelist,chem           1         8     -       "p_acft_qv" "index for aircraft_hx Water vapor mixing ratio"  "kg kg^-1"
 
 
 state    real  i_acft  {nacft}  misc           1         -      h{17}      "i_acft"        "acft_obs grid location"             ""
 state    real  j_acft  {nacft}  misc           1         -      h{17}      "j_acft"        "acft_obs grid location"             ""
 state    real  k_acft  {nacft}  misc           1         -      h{17}      "k_acft"        "acft_obs grid location"             ""
+state    real  p_acft  {nacft}  misc           1         -      h{17}      "p_acft"        "acft_obs pressure"             "hPa"
 state    real  ti_acft {nacft}  misc           1         -      h{17}      "ti_acft"        "acft_obs start itime"             ""
 state    real  tf_acft {nacft}  misc           1         -      h{17}      "tf_acft"        "acft_obs end itime"             ""
 state    real  BC_acft {nacft}  misc           1         -      h{17}      "BC_acft"        "acft_obs black carbon"             "ug/m^3"

@@ -871,8 +871,8 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
    CALL allocate_grid ( )
 
 #ifdef WRF_CHEM
-   !Need to remove this once scaleant and scalebb are added to wrfinput or another stream
-   ! This step is necessary to do 4DVAR -JJG 9-23-2014
+   !Need to remove this once scaleant and scalebb are added to wrfinput or another stream,
+   ! which is necessary to do 4DVAR -JJG 9-23-2014
    head_grid%scaleant = 1.0D0
    head_grid%scalebb = 1.0D0
 #endif
@@ -1231,8 +1231,8 @@ IF ( config_flags%check_TL .or. config_flags%check_AD .or. config_flags%check_NL
 
                      CALL med_initialdata_input( head_grid , config_flags )
 #ifdef WRF_CHEM
-                     !Need to remove this once scaleant and scalebb are added to wrfinput or another stream
-                     ! This step is necessary to do 4DVAR -JJG 9-23-2014
+                     !Need to remove this once scaleant and scalebb are added to wrfinput or another stream,
+                     ! which is necessary to do 4DVAR -JJG 9-23-2014
                      head_grid%scaleant = 1.0D0
                      head_grid%scalebb = 1.0D0
 #endif
@@ -1534,7 +1534,7 @@ ENDIF
 
    CHARACTER*256 :: timestr
    INTEGER       :: rc
-   INTEGER       :: io_auxh7
+   INTEGER       :: io_auxh17
    CHARACTER (LEN=80)      :: bdyname
    INTEGER                 :: open_status
 
@@ -1597,8 +1597,8 @@ ENDIF
    ENDIF
 
    IF ( .NOT. config_flags%trajectory_io ) THEN
-      CALL nl_get_io_form_auxhist7( head_grid%id, io_auxh7 )
-      CALL nl_set_io_form_auxhist7( head_grid%id, 0 )
+      CALL nl_get_io_form_auxhist17( head_grid%id, io_auxh17 )
+      CALL nl_set_io_form_auxhist17( head_grid%id, 0 )
    ENDIF
 
    head_grid%itimestep = 0
@@ -1608,7 +1608,7 @@ ENDIF
    CALL integrate ( head_grid )
 
    IF ( .NOT. config_flags%trajectory_io ) THEN
-      CALL nl_set_io_form_auxhist7( head_grid%id, io_auxh7 )
+      CALL nl_set_io_form_auxhist17( head_grid%id, io_auxh17 )
    ENDIF
 
    ! Close boundary file, as it will be read again from start
@@ -1641,7 +1641,7 @@ ENDIF
 
    CHARACTER*256 :: timestr
    INTEGER       :: rc
-   INTEGER       :: io_auxh7
+   INTEGER       :: io_auxh17
    CHARACTER (LEN=80)      :: bdyname
    INTEGER                 :: open_status
 
@@ -1696,8 +1696,8 @@ ENDIF
    ENDIF
 
    IF ( .NOT. config_flags%trajectory_io ) THEN
-      CALL nl_get_io_form_auxhist7( head_grid%id, io_auxh7 )
-      CALL nl_set_io_form_auxhist7( head_grid%id, 0 )
+      CALL nl_get_io_form_auxhist17( head_grid%id, io_auxh17 )
+      CALL nl_set_io_form_auxhist17( head_grid%id, 0 )
    ENDIF
 
    CALL nl_get_time_step ( head_grid%id, timestep)  
@@ -1710,6 +1710,13 @@ ENDIF
       if(head_grid%checkpoint_interval > 3) then
          CALL wrf_message("WARNING: large checkpoint_interval may overload memory.  If program crashes, consider reducing checkpoint_interval and/or number of processors.")
       end if
+
+      IF (.not. head_grid%boundary_io ) xtraj_boundary_form=0
+      IF ( model_config_rec%interval_seconds .ne. 3600*head_grid%checkpoint_interval) THEN
+         ! Force to turn off boundary input for trajectory calculation
+         xtraj_boundary_form = 0
+         CALL wrf_message ("WARNING: interval_seconds must equal 3600*checkpoint_interval to use boundary updating in a tangent linear or adjoint simulation. Turning off boundary updating.")
+      ENDIF
 
       start_year = model_config_rec%start_year(head_grid%id)
       start_month = model_config_rec%start_month(head_grid%id)
@@ -1802,11 +1809,15 @@ ENDIF
 
          CALL med_initialdata_input( head_grid , config_flags )
          model_config_rec%io_form_restart = 0
+         head_grid%itimestep = 0
 #ifdef WRF_CHEM
-         !Need to remove this once scaleant and scalebb are added to wrfinput or another stream
-         ! This step is necessary to do 4DVAR -JJG 9-23-2014
-         head_grid%scaleant = 1.0D0
-         head_grid%scalebb = 1.0D0
+         head_grid%ktauc = head_grid%itimestep
+         !Need to remove this once scaleant and scalebb are added to wrfinput or another stream,
+         ! which is necessary to do 4DVAR -JJG 9-23-2014
+         IF(.not.model_config_rec%var4d_run) then
+            head_grid%scaleant = 1.0D0
+            head_grid%scalebb = 1.0D0
+         ENDIF
 #endif
 
          ! Set time keeping variables to checkpoint values
@@ -1934,10 +1945,12 @@ ENDIF
 
             CALL med_initialdata_input( head_grid , config_flags )
 #ifdef WRF_CHEM
-            !Need to remove this once scaleant and scalebb are added to wrfinput or another stream
-            ! This step is necessary to do 4DVAR -JJG 9-23-2014
-            head_grid%scaleant = 1.0D0
-            head_grid%scalebb = 1.0D0
+            !Need to remove this once scaleant and scalebb are added to wrfinput or another stream,
+            ! which is necessary to do 4DVAR -JJG 9-23-2014
+            IF(.not.model_config_rec%var4d_run) then
+               head_grid%scaleant = 1.0D0
+               head_grid%scalebb = 1.0D0
+            ENDIF
 #endif
 !!!         else
 !!!            model_config_rec%restart = .true.
@@ -2086,7 +2099,7 @@ ENDIF
    CALL nl_set_auxinput16_interval_s (head_grid%id, 0 )
 
    IF ( .NOT. config_flags%trajectory_io ) THEN
-      CALL nl_set_io_form_auxhist7( head_grid%id, io_auxh7 )
+      CALL nl_set_io_form_auxhist17( head_grid%id, io_auxh17 )
    ENDIF
 
    IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
@@ -2291,7 +2304,7 @@ ENDIF
    INTEGER :: rc, runad
    REAL    :: timestep
    TYPE(WRFU_TimeInterval) :: run_interval
-   INTEGER       :: io_auxh8
+   INTEGER       :: io_auxh18
    CHARACTER (LEN=80)      :: bdyname
    INTEGER                 :: open_status
 
@@ -2379,14 +2392,14 @@ ENDIF
    ENDIF
 
    IF ( .NOT. config_flags%trajectory_io ) THEN
-      CALL nl_get_io_form_auxhist8( head_grid%id, io_auxh8 )
-      CALL nl_set_io_form_auxhist8( head_grid%id, 0 )
+      CALL nl_get_io_form_auxhist18( head_grid%id, io_auxh18 )
+      CALL nl_set_io_form_auxhist18( head_grid%id, 0 )
    ENDIF
 
    CALL integrate ( head_grid )
 
    IF ( .NOT. config_flags%trajectory_io ) THEN
-      CALL nl_set_io_form_auxhist8( head_grid%id, io_auxh8 )
+      CALL nl_set_io_form_auxhist18( head_grid%id, io_auxh18 )
    ENDIF
 
    CALL start_domain ( head_grid , .TRUE. )
@@ -2475,7 +2488,7 @@ ENDIF
    INTEGER :: rc, runad
    INTEGER    :: timestep
    TYPE(WRFU_TimeInterval) :: run_interval
-   INTEGER       :: io_auxh8
+   INTEGER       :: io_auxh18
    CHARACTER (LEN=80)      :: bdyname
    INTEGER                 :: open_status
 
@@ -2510,7 +2523,7 @@ ENDIF
    end_second = model_config_rec%end_second(head_grid%id)
 
    IF ( .NOT. config_flags%trajectory_io ) THEN
-      CALL nl_get_io_form_auxhist8( head_grid%id, io_auxh8 )
+      CALL nl_get_io_form_auxhist8( head_grid%id, io_auxh18 )
       CALL nl_set_io_form_auxhist8( head_grid%id, 0 )
    ENDIF
 
@@ -2524,6 +2537,13 @@ ENDIF
       if(head_grid%checkpoint_interval > 3) then
          CALL wrf_message("WARNING: large checkpoint_interval may overload memory.  If program crashes, consider reducing checkpoint_interval and/or number of processors.")
       end if
+
+      IF (.not. head_grid%boundary_io ) xtraj_boundary_form=0
+      IF ( model_config_rec%interval_seconds .ne. 3600*head_grid%checkpoint_interval) THEN
+         ! Force to turn off boundary input for trajectory calculation
+         xtraj_boundary_form = 0
+         CALL wrf_message ("WARNING: interval_seconds must equal 3600*checkpoint_interval to use boundary updating in a tangent linear or adjoint simulation. Turning off boundary updating.")
+      ENDIF
 
       ! Store original time keeping variables
       CALL nl_get_run_days  (grid%id,run_days)
@@ -2597,11 +2617,15 @@ ENDIF
 
          CALL med_initialdata_input( head_grid , config_flags )
          model_config_rec%io_form_restart = 0
+         head_grid%itimestep = 0
 #ifdef WRF_CHEM
-         !Need to remove this once scaleant and scalebb are added to wrfinput or another stream
-         ! This step is necessary to do 4DVAR -JJG 9-23-2014
-         head_grid%scaleant = 1.0D0
-         head_grid%scalebb = 1.0D0
+         head_grid%ktauc = head_grid%itimestep
+         !Need to remove this once scaleant and scalebb are added to wrfinput or another stream,
+         ! which is necessary to do 4DVAR -JJG 9-23-2014
+         IF(.not.model_config_rec%var4d_run) then
+            head_grid%scaleant = 1.0D0
+            head_grid%scalebb = 1.0D0
+         ENDIF
 #endif
 
          ! Set time keeping variables to checkpoint values
@@ -2708,11 +2732,11 @@ ENDIF
 !NOW THE ADM
          CALL wrf_message( "wrf: running ADM" )
 
-! Need to add this subroutine to calculate the forcing for 
+! Need to add a subroutine to calculate the forcing for 
 ! each checkpoint window.  This will be necessary when the forcing
 ! depends on the trajectory (nonlinear cost function), and the forcing
-! isn't calculated online (during each time step).  Currently, that
-! is the case for WRF-4DVar forcing.
+! is binned for each 4DVAR window (e.g. hourly), and not calculated online (during each time step).  
+! That is the case for standard (non chemical) WRFDA-4DVar forcing.
          !CALL calculate_ad_forcing( head_grid, model_config_rec ) !(Doesn't exist yet.)
 
          ! Reverse timing variables
@@ -2737,6 +2761,13 @@ ENDIF
          CALL nl_set_auxinput16_interval_s (head_grid%id, timestep )
          CALL nl_set_io_form_auxinput16 ( head_grid%id, 2 )
          CALL nl_set_frames_per_auxinput16 ( head_grid%id, 1 )
+
+         !NEED THIS ONCE FORCINGS ARE DEFINED IN 4DVAR BINS (WINDOWS)
+         !! Set the file names and interval for reading adjoint forcing.
+         !model_config_rec%auxinput17_inname = "af_d<domain>_<date>"
+         !call nl_set_auxinput17_interval_s ( head_grid%id, var4d_bin )
+         !call nl_set_io_form_auxinput17 ( head_grid%id, 2 )
+         !call nl_set_frames_per_auxinput17 ( head_grid%id, 1 )
 
          IF ( ASSOCIATED( head_grid%domain_clock ) ) THEN
            IF ( head_grid%domain_clock_created ) THEN
@@ -2791,6 +2822,17 @@ ENDIF
          CALL integrate ( head_grid )
 
          CALL nl_set_auxinput16_interval_s (head_grid%id, 0 )
+
+         IF ( icheck .LT. ncheck .AND. ( .NOT. config_flags%trajectory_io .OR. gradient_out ) ) THEN
+            config_flags%auxhist17_outname = "adj_sens_d<domain>_<date>"
+            config_flags%io_form_auxhist17 = 2
+            CALL nl_set_io_form_auxhist17 ( head_grid%id, 2 )
+            config_flags%frames_per_auxhist17 = 1
+            CALL  med_hist_out ( head_grid , AUXHIST17_ALARM , config_flags )
+            config_flags%io_form_auxhist17 = 0
+            CALL nl_set_io_form_auxhist17 ( head_grid%id, 0 )
+            CALL  wrf_debug ( 0 , 'Output gradient in WRFPLUS' )
+         ENDIF
 
          model_config_rec%run_days = -1 * model_config_rec%run_days
          model_config_rec%run_hours = -1 * model_config_rec%run_hours
@@ -2927,17 +2969,19 @@ ENDIF
    head_grid%itimestep = 0
    CALL start_domain ( head_grid , .TRUE. )
 
-   IF ( .NOT. config_flags%trajectory_io .OR. gradient_out ) THEN
-      config_flags%auxhist17_outname = "gradient_wrfplus_d<domain>_<date>"
+   IF ( .NOT. config_flags%trajectory_io .OR. gradient_out .OR. head_grid%checkpoint_interval.GT.0) THEN
+      config_flags%auxhist17_outname = "adj_sens_d<domain>_<date>"
+      !config_flags%auxhist17_outname = "gradient_wrfplus_d<domain>_<date>"
       config_flags%io_form_auxhist17 = 2
       CALL nl_set_io_form_auxhist17 ( head_grid%id, 2 )
+      config_flags%frames_per_auxhist17 = 1
       CALL  med_hist_out ( head_grid , AUXHIST17_ALARM , config_flags )
       CALL nl_set_io_form_auxhist17 ( head_grid%id, 0 )
       CALL  wrf_debug ( 0 , 'Output gradient in WRFPLUS (not including LBC gradient)' )
    ENDIF
 
    IF ( .NOT. config_flags%trajectory_io ) THEN
-      CALL nl_set_io_form_auxhist8( head_grid%id, io_auxh8 )
+      CALL nl_set_io_form_auxhist18( head_grid%id, io_auxh18 )
    ENDIF
 
    CALL nl_set_auxinput16_interval_s (head_grid%id, 0 )
@@ -3108,8 +3152,8 @@ ENDIF
    head_grid%g_pm2_5_dry_ec = 0.0D0
    head_grid%g_pm10 = 0.0D0
 
-   !Need to remove this once scaleant and scalebb are added to wrfinput or another stream
-   ! This step is necessary to do 4DVAR -JJG 9-23-2014
+   !Need to remove this once scaleant and scalebb are added to wrfinput or another stream,
+   ! which is necessary to do 4DVAR -JJG 9-23-2014
    head_grid%scaleant = 1.0D0
    head_grid%scalebb = 1.0D0
 #endif
@@ -3150,7 +3194,7 @@ ENDIF
 !</DESCRIPTION>
 
 #if (WRFPLUS == 1)
-   integer :: io_auxh7, io_auxh8
+   integer :: io_auxh17, io_auxh18
    CHARACTER (LEN=80)      :: bdyname
    INTEGER                 :: open_status
 #endif
@@ -3171,9 +3215,9 @@ ENDIF
 #if (WRFPLUS == 1)
 
 #ifdef WRF_CHEM
-   !Need to remove this once scaleant and scalebb are added to wrfinput or another stream
-   ! This step is necessary to do 4DVAR -JJG 9-23-2014
-   IF(model_config_rec%dyn_opt .ne. dyn_em_check) then
+   !Need to remove this once scaleant and scalebb are added to wrfinput or another stream,
+   ! which is necessary to do 4DVAR -JJG 9-23-2014
+   IF(model_config_rec%dyn_opt .ne. dyn_em_check .and. .not.model_config_rec%var4d_run) then
       head_grid%scaleant = 1.0D0
       head_grid%scalebb = 1.0D0
    ENDIF
@@ -3210,10 +3254,10 @@ ENDIF
       head_grid%raincv = 0.0D0
    ENDIF
 
-   CALL nl_get_io_form_auxhist7( head_grid%id, io_auxh7 )
-   CALL nl_get_io_form_auxhist8( head_grid%id, io_auxh8 )
-   CALL nl_set_io_form_auxhist7( head_grid%id, 0 )
-   CALL nl_set_io_form_auxhist8( head_grid%id, 0 )
+   CALL nl_get_io_form_auxhist17( head_grid%id, io_auxh17 )
+   CALL nl_get_io_form_auxhist18( head_grid%id, io_auxh18 )
+   CALL nl_set_io_form_auxhist17( head_grid%id, 0 )
+   CALL nl_set_io_form_auxhist18( head_grid%id, 0 )
 
    head_grid%itimestep = 0
 #ifdef WRF_CHEM
@@ -3221,15 +3265,13 @@ ENDIF
 #endif
 
 
-   !!IF ( head_grid%check_count .EQ. 1 ) THEN
-      CALL start_domain ( head_grid , .TRUE. )
-   !!ENDIF
+   CALL start_domain ( head_grid , .TRUE. )
 #endif
    CALL integrate ( head_grid )
 
 #if (WRFPLUS == 1)
-   CALL nl_set_io_form_auxhist7( head_grid%id, io_auxh7 )
-   CALL nl_set_io_form_auxhist8( head_grid%id, io_auxh8 )
+   CALL nl_set_io_form_auxhist17( head_grid%id, io_auxh17 )
+   CALL nl_set_io_form_auxhist18( head_grid%id, io_auxh18 )
 
    ! Close boundary file, as it will be read again from start
    CALL construct_filename2a ( bdyname , config_flags%bdy_inname , head_grid%id , 2 , 'dummydate' )

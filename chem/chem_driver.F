@@ -25,11 +25,11 @@
   USE module_phot_mad
   USE module_ftuv_driver, only : ftuv_timestep_init
   USE module_data_soa_vbs, only: ldrog_vbs
+  USE module_aer_opt_out,only: aer_opt_out
 #if ( WRFPLUS !=1 )
   USE module_dep_simple
   USE module_aerosols_sorgam
   USE module_gocart_so2so4
-  USE module_aer_opt_out,only: aer_opt_out
   USE module_ctrans_grell
   USE module_wetscav_driver, only: wetscav_driver
   USE module_wetdep_ls, only:wetdep_ls
@@ -795,7 +795,7 @@
 #endif 
      endif
 
-#if ( WRFPLUS != 1 )
+!#if ( WRFPLUS != 1 )
 !
 ! calculate aerosol optical properities
 !
@@ -832,7 +832,7 @@
               ims,ime, jms,jme, kms,kme,                                              &
               its,ite, jts,jte, kts,kte)
       endif
-#endif
+!#endif
 
 #if ( WRFPLUS != 1 )
 !
@@ -1447,7 +1447,7 @@ end if !Chemistry time step check
       enddo
       call wrf_debug(15,'done tileloop in chem_driver')
 
-#if ( WRFPLUS != 1 )
+!#if ( WRFPLUS != 1 )
    if( grid%OPT_PARS_OUT == 1) then
       call wrf_debug(15,'calculate optical output stuff')
       call aer_opt_out(TAUAER300=grid%tauaer1, TAUAER400=grid%tauaer2                            & 
@@ -1463,6 +1463,8 @@ end if !Chemistry time step check
 
 
    endif
+
+#if ( WRFPLUS != 1 )
    tracer2: SELECT CASE(config_flags%tracer_opt)
     CASE (TRACER_TEST1, TRACER_TEST2, TRACER_TEST3)
        CALL wrf_debug(15,'tracer mode: reset some tracers')
@@ -1492,6 +1494,9 @@ end if !Chemistry time step check
 
    END DO chem_tile_loop_1
 !$OMP END PARALLEL DO
+
+#if ( WRFPLUS != 1 )
+
 !-- Work around for dgnum and dgnumwet not being written to restart files.
    
    grid%dgnum_a1(its:ite, kts:kte, jts:jte) = grid%dgnum4d(its:ite, kts:kte, jts:jte, 1)
@@ -1501,7 +1506,7 @@ end if !Chemistry time step check
    grid%dgnumwet_a1(its:ite, kts:kte, jts:jte) = grid%dgnumwet4d(its:ite, kts:kte, jts:jte, 1)
    grid%dgnumwet_a2(its:ite, kts:kte, jts:jte) = grid%dgnumwet4d(its:ite, kts:kte, jts:jte, 2)
    grid%dgnumwet_a3(its:ite, kts:kte, jts:jte) = grid%dgnumwet4d(its:ite, kts:kte, jts:jte, 3)
-
+#endif
 
     END subroutine chem_driver
 

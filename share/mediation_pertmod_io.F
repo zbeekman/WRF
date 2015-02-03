@@ -1272,11 +1272,11 @@ SUBROUTINE add_forcing_to_ad_chem ( grid, config_flags )
 
    INTEGER :: iobs, itime, iloc, jloc, kloc, ij
    INTEGER :: its, ite, jts, jte
-   REAL :: YCHEM, ALT, H_BC, FORCING
+   REAL :: YCHEM, ALT !, H_BC, FORCING
 
    INTEGER       :: ids , ide , jds , jde , kds , kde , &
                     ims , ime , jms , jme , kms , kme , &
-                    ips , ipe , jps , jpe , kps , kpe
+                    ips , ipe , jps , jpe , kps , kpe, kend
 
    CHARACTER*256   :: message
 
@@ -1285,6 +1285,8 @@ SUBROUTINE add_forcing_to_ad_chem ( grid, config_flags )
                              ims, ime, jms, jme, kms, kme,    &
                              ips, ipe, jps, jpe, kps, kpe )
    itime = grid%itimestep + (grid%check_count-1)*grid%checkpoint_interval*3600/grid%dt
+
+   kend = min( kpe, kde-1 )
 
    IF(itime .LE. 0) then
       WRITE(message,&
@@ -1297,11 +1299,14 @@ SUBROUTINE add_forcing_to_ad_chem ( grid, config_flags )
       DO iobs = 1,config_flags%num_surf_obs
          IF (REAL(itime,8) .GE. grid%ti_surf(iobs) .AND. REAL(itime,8) .LE. grid%tf_surf(iobs) .AND. grid%ti_surf(iobs) .GE. 1 .AND. grid%tf_surf(iobs) .LE. config_flags%num_ts) THEN
             CALL wrf_debug( 1 ,'SURFACE_OBS' )
+            WRITE(message, *) &
+               'SURF,iobs,itime,ti,tf,num_ts',iobs,itime,grid%ti_surf(iobs),grid%tf_surf(iobs),config_flags%num_ts
+            CALL wrf_debug ( 15 , TRIM(message) )
+!            H_BC = 0.D0
+!            FORCING = 0.D0
             ALT = 0.D0
-            H_BC = 0.D0
-            FORCING = 0.D0
             !$OMP PARALLEL DO   &
-            !$OMP PRIVATE ( ij, iobs, its, ite, jts, jte, iloc, jloc, kloc, ALT, H_BC, FORCING )
+            !$OMP PRIVATE ( ij, iobs, its, ite, jts, jte, iloc, jloc, kloc, ALT )!!, H_BC, FORCING )
             surf_tile_loop: DO ij = 1 , grid%num_tiles
                its = max(grid%i_start(ij),ids)
                ite = min(grid%i_end(ij),ide-1)
@@ -1320,18 +1325,16 @@ SUBROUTINE add_forcing_to_ad_chem ( grid, config_flags )
 
                   ALT    = grid%alt(iloc,kloc,jloc)
                   IF ( grid%num_surf_hx .GE. config_flags%p_surf_bc ) THEN
-                     H_BC   = grid%surf_hx(itime,config_flags%p_surf_bc)
-                     FORCING = ( H_BC - grid%BC_surf(iobs) ) / ALT /&
-                               ( grid%tf_surf(iobs) - grid%ti_surf(iobs) + 1.0D0)
-                  ENDIF
-!                 DO ic=PARAM_FIRST_SCALAR,num_chem
                      grid%a_chem(iloc,kloc,jloc,p_bc1) = &
-                          grid%a_chem(iloc,kloc,jloc,p_bc1) + FORCING
+                          grid%a_chem(iloc,kloc,jloc,p_bc1) + &
+                          grid%a_surf_hx(iobs,config_flags%p_surf_bc) / ALT / &
+                          (24.D0 * 3600.D0 / grid%dt)
 
                      grid%a_chem(iloc,kloc,jloc,p_bc2) = &
-                          grid%a_chem(iloc,kloc,jloc,p_bc2) + FORCING
-!                 END DO
-
+                          grid%a_chem(iloc,kloc,jloc,p_bc2) + &
+                          grid%a_surf_hx(iobs,config_flags%p_surf_bc) / ALT / &
+                          (24.D0 * 3600.D0 / grid%dt)
+                  ENDIF
                ENDIF
             ENDDO surf_tile_loop
             !$OMP END PARALLEL DO 
@@ -1339,18 +1342,22 @@ SUBROUTINE add_forcing_to_ad_chem ( grid, config_flags )
       END DO
    ENDIF
 
-
    IF(config_flags%num_acft_obs .GT. 0) THEN
-      H_BC = 0.D0
-      FORCING = 0.D0
+!      H_BC = 0.D0
+!      FORCING = 0.D0
       ALT = 0.D0
       IF( grid%acft_obs_count(itime) .GE. 1 ) THEN
-         CALL wrf_debug( 1 ,'AIRCRAFT_OBS' )
          iloc = INT(grid%i_acft_avg(itime) + 0.5D0)
          jloc = INT(grid%j_acft_avg(itime) + 0.5D0)
          kloc = INT(grid%k_acft_avg(itime) + 0.5D0)
+         CALL wrf_debug( 1 ,'AIRCRAFT_OBS' )
+
+         WRITE(message, *) &
+            'ACFT,itime,iloc,jloc,kloc',itime,iloc,jloc,kloc
+         CALL wrf_debug ( 15 , TRIM(message) )
+
          !$OMP PARALLEL DO   &
-         !$OMP PRIVATE ( ij, its, ite, jts, jte, ALT, H_BC, FORCING )
+         !$OMP PRIVATE ( ij, its, ite, jts, jte, ALT )!!, H_BC, FORCING )
          acft_tile_loop: DO ij = 1 , grid%num_tiles
             its = max(grid%i_start(ij),ids)
             ite = min(grid%i_end(ij),ide-1)
@@ -1364,18 +1371,13 @@ SUBROUTINE add_forcing_to_ad_chem ( grid, config_flags )
 ! In the future will need to replace these 3 ijk roundings with calculation of interpolation coefficients for 8 surrounding grid cells (only 4 for surface obs).  These will be the coefficients of the observation operator vector.
                ALT    = grid%alt(iloc,kloc,jloc)
                IF ( grid%num_acft_hx .GE. config_flags%p_acft_bc ) THEN
-                  H_BC   = grid%acft_hx(itime,config_flags%p_acft_bc)
-
-      IF(config_flags%chem_obs_type .EQ. 1) then
-                  FORCING = ( H_BC - grid%BC_acft_avg(itime) ) / ALT
-      ELSEIF(config_flags%chem_obs_type .EQ. 2) then
-                  FORCING = 1.D0 / ALT
-      ENDIF
+                  grid%a_chem(iloc,kloc,jloc,p_bc1) = &
+                       grid%a_chem(iloc,kloc,jloc,p_bc1) + &
+                       grid%a_acft_hx(itime,config_flags%p_acft_bc) / ALT
+                  grid%a_chem(iloc,kloc,jloc,p_bc2) = &
+                       grid%a_chem(iloc,kloc,jloc,p_bc2) + &
+                       grid%a_acft_hx(itime,config_flags%p_acft_bc) / ALT
                ENDIF
-               grid%a_chem(iloc,kloc,jloc,p_bc1) = &
-                    grid%a_chem(iloc,kloc,jloc,p_bc1) + FORCING
-               grid%a_chem(iloc,kloc,jloc,p_bc2) = &
-                    grid%a_chem(iloc,kloc,jloc,p_bc2) + FORCING
             ENDIF
          ENDDO acft_tile_loop
          !$OMP END PARALLEL DO
@@ -1390,24 +1392,30 @@ SUBROUTINE calc_chem_hx ( grid, config_flags )
    USE module_domain, ONLY : domain , get_ijk_from_grid
    USE module_configure, ONLY : grid_config_rec_type
    USE module_state_description
- 
+   USE module_model_constants
+
    IMPLICIT NONE
 
    TYPE(domain), INTENT(INOUT)             :: grid
    TYPE (grid_config_rec_type), INTENT(IN) :: config_flags
 
    INTEGER :: iobs, itime, iloc, jloc, kloc, ij
-   INTEGER :: its, ite, jts, jte
-   REAL :: YCHEM, ALT
+   INTEGER :: its, ite, jts, jte, k
+   REAL :: YCHEM, ALT, Pmeas, pfrac
+   REAL, ALLOCATABLE, DIMENSION(:) :: Pij
 
    INTEGER       :: ids , ide , jds , jde , kds , kde , &
                     ims , ime , jms , jme , kms , kme , &
-                    ips , ipe , jps , jpe , kps , kpe
+                    ips , ipe , jps , jpe , kps , kpe, kend
+
+   CHARACTER*256   :: message
 
    CALL get_ijk_from_grid (  grid ,                   &
                              ids, ide, jds, jde, kds, kde,    &
                              ims, ime, jms, jme, kms, kme,    &
                              ips, ipe, jps, jpe, kps, kpe )
+
+   kend = min( kpe, kde-1 )
 
    !!grid%itimestep is accurate because this subroutine is only 
    !! called during forward pass (not checkpoints)
@@ -1418,6 +1426,9 @@ SUBROUTINE calc_chem_hx ( grid, config_flags )
    IF( config_flags%num_surf_obs .GT. 0 ) THEN
       DO iobs = 1,config_flags%num_surf_obs
          IF (REAL(itime,8) .GE. grid%ti_surf(iobs) .AND. REAL(itime,8) .LE. grid%tf_surf(iobs) .AND. grid%ti_surf(iobs) .GE. 1 .AND. grid%tf_surf(iobs) .LE. config_flags%num_ts) THEN
+            WRITE(message, *) &
+               'SURF,iobs,itime,ti,tf,num_ts',iobs,itime,grid%ti_surf(iobs),grid%tf_surf(iobs),config_flags%num_ts
+            CALL wrf_debug ( 15 , TRIM(message) )
             ALT = 0.D0
             !$OMP PARALLEL DO   &
             !$OMP PRIVATE ( ij, iobs, its, ite, jts, jte, iloc, jloc, kloc, ALT )
@@ -1429,8 +1440,7 @@ SUBROUTINE calc_chem_hx ( grid, config_flags )
 ! In the future will need to replace these 3 ijk roundings with calculation of interpolation coefficients for 8 surrounding grid cells (only 4 for surface obs).  These will be the coefficients of the observation operator vector.
                iloc = INT(grid%i_surf(iobs) + 0.5D0)
                jloc = INT(grid%j_surf(iobs) + 0.5D0)
-               kloc = INT(grid%k_surf(iobs) + 0.5D0)
-   
+               kloc = INT(grid%k_surf(iobs) + 0.5D0) 
                IF(iloc .GE. its .AND. &
                   iloc .LE. ite .AND. &
                   jloc .GE. jts .AND. &
@@ -1440,8 +1450,13 @@ SUBROUTINE calc_chem_hx ( grid, config_flags )
                   IF ( grid%num_surf_hx .GE. config_flags%p_surf_bc ) &
                     grid%surf_hx(iobs,config_flags%p_surf_bc) = &
                            grid%surf_hx(iobs,config_flags%p_surf_bc) + &
-                           (grid%chem(iloc,kloc,jloc,p_bc1) + &
-                           grid%chem(iloc,kloc,jloc,p_bc2)) / ALT / &
+                           ( grid%chem(iloc,kloc,jloc,p_bc1) + &
+                           grid%chem(iloc,kloc,jloc,p_bc2) ) / ALT / &
+                           (24.D0 * 3600.D0 / grid%dt)
+                  IF ( grid%num_surf_hx .GE. config_flags%p_surf_pblh ) &
+                    grid%surf_hx(iobs,config_flags%p_surf_pblh) = &
+                           grid%surf_hx(iobs,config_flags%p_surf_pblh) + &
+                           grid%PBLH(iloc,jloc) / &
                            (24.D0 * 3600.D0 / grid%dt)
 
                ENDIF
@@ -1456,9 +1471,14 @@ SUBROUTINE calc_chem_hx ( grid, config_flags )
    IF(config_flags%num_acft_obs .GT. 0 .AND. itime .LE. config_flags%num_ts) THEN
       ALT = 0.D0
       IF( grid%acft_obs_count(itime) .GE. 1 ) THEN
+         ALLOCATE(Pij(1:kend))
+! In the future will need to replace these 3 ijk roundings with calculation of interpolation coefficients for 8 surrounding grid cells (only 4 for surface obs).  These will be the coefficients of the observation operator vector.
          iloc = INT(grid%i_acft_avg(itime) + 0.5D0)
          jloc = INT(grid%j_acft_avg(itime) + 0.5D0)
-         kloc = INT(grid%k_acft_avg(itime) + 0.5D0)
+         WRITE(message, *) &
+            'ACFT,itime,iloc,jloc,kloc',itime,iloc,jloc,kloc
+         CALL wrf_debug ( 15 , TRIM(message) )
+
          !$OMP PARALLEL DO   &
          !$OMP PRIVATE ( ij, its, ite, jts, jte, ALT )
          acft_tile_loop: DO ij = 1 , grid%num_tiles
@@ -1471,7 +1491,23 @@ SUBROUTINE calc_chem_hx ( grid, config_flags )
                jloc .GE. jts .AND. &
                jloc .LE. jte &
                ) THEN
-! In the future will need to replace these 3 ijk roundings with calculation of interpolation coefficients for 8 surrounding grid cells (only 4 for surface obs).  These will be the coefficients of the observation operator vector.
+               IF( config_flags%pinterp_option .NE. 0 ) THEN
+                  Pij = ( grid%p(iloc,:,jloc) + grid%pb(iloc,:,jloc) ) / 100.D0
+                  Pmeas = grid%p_acft_avg(itime)
+                  pinterp_loop: DO k=1,kend
+                    IF ( Pij(k) .LE. Pmeas ) THEN
+                       IF (k.gt.1) THEN
+                          pfrac = ( Pmeas - Pij(k-1) ) / ( Pij(k) - Pij(k-1) )
+                          grid%k_acft_avg(itime) = REAL(k,8)+pfrac
+                       ELSE   
+                          grid%k_acft_avg(itime) = 1.0D0
+                       ENDIF
+                       exit pinterp_loop
+                    ENDIF
+                  ENDDO pinterp_loop
+               ENDIF
+               kloc = INT(grid%k_acft_avg(itime) + 0.5D0)
+
                ALT    = grid%alt(iloc,kloc,jloc)
                IF ( grid%num_acft_hx .GE. config_flags%p_acft_bc ) &
                grid%acft_hx(itime,config_flags%p_acft_bc)    = (grid%chem(iloc,kloc,jloc,p_bc1) + grid%chem(iloc,kloc,jloc,p_bc2)) / ALT 
@@ -1481,6 +1517,17 @@ SUBROUTINE calc_chem_hx ( grid, config_flags )
 
                IF ( grid%num_acft_hx .GE. config_flags%p_acft_pblh ) &
                grid%acft_hx(itime,config_flags%p_acft_pblh)  = grid%PBLH(iloc,jloc)
+
+               IF ( grid%num_acft_hx .GE. config_flags%p_acft_hgt ) THEN
+                  IF (kloc .LT. kend) THEN
+                     grid%acft_hx(itime,config_flags%p_acft_hgt)  = &
+                                 0.5D0 * ( grid%phb(iloc,kloc,jloc) + grid%ph_2(iloc,kloc,jloc) + &
+                                 grid%phb(iloc,kloc+1,jloc) + grid%ph_2(iloc,kloc+1,jloc) ) / g
+                  ELSE
+                      grid%acft_hx(itime,config_flags%p_acft_hgt)  = &
+                         (grid%phb(iloc,kloc,jloc) + grid%ph_2(iloc,kloc,jloc)) / g
+                  ENDIF
+               ENDIF
 
                IF ( grid%num_acft_hx .GE. config_flags%p_acft_t_phy ) &
                grid%acft_hx(itime,config_flags%p_acft_t_phy) = grid%t_phy(iloc,kloc,jloc)
@@ -1496,6 +1543,7 @@ SUBROUTINE calc_chem_hx ( grid, config_flags )
          !$OMP END PARALLEL DO
          CALL wrf_debug( 2 , &
                 ' calc_ARCTAS_hx: Interpolate BC modeled observation' )
+         DEALLOCATE(Pij)
       ENDIF
    ENDIF
 

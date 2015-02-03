@@ -305,10 +305,10 @@ SUBROUTINE solve_em_ad ( grid , config_flags  &
    run_interval = grid%stop_subtime - grid%start_subtime
    CALL WRFU_TimeIntervalGet( run_interval, S=runad, rc=rc )
    runad = abs(runad)
-   curr_secs = REAL( runad, 8 ) + curr_secs !- REAL(grid%dt, 8)
+   curr_secs = REAL( runad, 8 ) + curr_secs - REAL(grid%dt, 8)
    curr_secs = curr_secs + REAL( 3600*(grid%check_count-1)*grid%checkpoint_interval, 8 )
 !   write(message,*)'curr_secs = ',curr_secs
-   write(message,*)'itimestep,check_count,runad,curr_secs = ',grid%itimestep,grid%check_count,runad,curr_secs
+   write(message,*)'solve_em_ad,itimestep,check_count,runad,curr_secs = ',grid%itimestep,grid%check_count,runad,curr_secs
 
    CALL wrf_debug(50,TRIM(message))
 

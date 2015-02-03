@@ -699,7 +699,7 @@ CONTAINS
 
 
       ENDIF
-      WRITE(message, *) 'chem_driver_ad, iant,ibb,curr_secs,ktauc = ',iant,ibb,curr_secs,ktau
+      WRITE(message, *) 'emissions_driver, iant,ibb,curr_secs,ktauc = ',iant,ibb,curr_secs,ktau
       CALL wrf_debug( 16, TRIM(message) )
 #endif
 !

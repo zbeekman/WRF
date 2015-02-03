@@ -11,6 +11,7 @@
 # Perturbation model control
 rconfig   logical trajectory_io         namelist,perturbation          1      .true. -    "false: disk IO; true: memory IO"  ""      ""
 rconfig   logical boundary_io           namelist,perturbation          1      .true. -    "choice for boundary I/O during checkpointed AD/TL"  ""      ""
+rconfig   logical var4d_run             namelist,perturbation          1      .false.  -  "true: enable some special settings in AD/TL"   ""  ""
 rconfig   logical check_u               namelist,perturbation          1      .true. -    "AD/TL check U"             ""      ""
 rconfig   logical check_v               namelist,perturbation          1      .true. -    "AD/TL check V"             ""      ""
 rconfig   logical check_w               namelist,perturbation          1      .true. -    "AD/TL check W"             ""      ""
@@ -240,6 +241,7 @@ state    real   g_z              ikj     dyn_em      1         -     -         "
 state    real   g_z_at_w         ikj     dyn_em      1         Z
 
 state    real   J                ikj     misc        1         -     h0{17}{18}      "J_COST" "Cost Function" ""
+state    real   dJ               ijk     misc        1         -     h0{17}{18}      "ADJ_FORC" "Adjoint Forcing" ""
 
 state   real  g_defor11          ikj      misc        1         -     -         "g_defor11"               "DEFORMATION 11"              "s-1"      
 state   real  g_defor22          ikj      misc        1         -     -         "g_defor22"               "DEFORMATION 22"              "s-1"      

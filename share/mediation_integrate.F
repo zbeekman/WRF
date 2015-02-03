@@ -151,7 +151,7 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
             CALL med_hist_out ( grid , ialarm, config_flags )
          ENDIF
        ELSE
-         IF ( ialarm .EQ. auxhist8_only ) THEN ! TL perturbation only
+         IF ( ialarm .EQ. auxhist18_only ) THEN ! TL perturbation only
             CALL domain_clock_get ( grid, current_timestr=message )
             IF ( config_flags%dyn_opt .EQ. dyn_em_tl .and. .not. config_flags%tl_standalone ) THEN
                CALL save_tl_pert  ( message )
