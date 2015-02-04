@@ -118,8 +118,7 @@ CONTAINS
       ENDIF
    END SUBROUTINE push_communicators_for_domain
 
-   SUBROUTINE pop_communicators_for_domain( id )
-      INTEGER, OPTIONAL, INTENT(OUT) :: id   ! if specified, return the domain id that's been popped and instated
+   SUBROUTINE pop_communicators_for_domain
       IF ( communicator_stack_cursor .LT. 1 ) CALL wrf_error_fatal("pop_communicators_for_domain on empty stack") 
       current_id = id_stack(communicator_stack_cursor)
       local_communicator = local_communicator_stack( communicator_stack_cursor )
@@ -133,7 +132,6 @@ CONTAINS
       mytask = mytask_stack( communicator_stack_cursor )
       mytask_x = mytask_x_stack( communicator_stack_cursor )
       mytask_y = mytask_y_stack( communicator_stack_cursor )
-      IF ( PRESENT(id) ) id = current_id
       communicator_stack_cursor = communicator_stack_cursor - 1
    END SUBROUTINE pop_communicators_for_domain
 
@@ -4692,17 +4690,22 @@ ENDIF
                                 ims, ime, jms, jme, kms, kme,    &
                                 ips, ipe, jps, jpe, kps, kpe    )
 
+    IF ( grid%active_this_task ) THEN
       CALL push_communicators_for_domain( grid%id )
 
 #ifdef DM_PARALLEL
 #include "HALO_INTERP_UP.inc"
 #endif
+
       CALL pop_communicators_for_domain
+    ENDIF
 
    END SUBROUTINE feedback_nest_prep
 
 !------------------------------------------------------------------
 
+!                                 nested_grid%intermediate_grid%id
+!                                         |
    SUBROUTINE feedback_domain_em_part1 ( grid, ngrid, config_flags    &
 !
 #include "dummy_new_args.inc"

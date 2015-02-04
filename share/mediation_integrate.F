@@ -467,7 +467,9 @@ write(0,*)'dummy C1 bcast 4',i
 CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
 
 ! fill in entire fine grid domain with interpolated coarse grid data
+write(0,*)__FILE__,__LINE__,'calling med_interp_domain ',parent%id, nest%id
      CALL med_interp_domain( parent, nest )
+write(0,*)__FILE__,__LINE__,'back from med_interp_domain ',parent%id, nest%id
 
 write(0,*)'dummy C2 bcast 1',local_communicator
 i = 5
@@ -478,6 +480,8 @@ write(0,*)'dummy C2 bcast 3',i
 CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
 write(0,*)'dummy C2 bcast 4',i
 CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+
+write(0,*)__FILE__,__LINE__,'nest%id ',nest%id
 
 !  De-reference dimension information stored in the grid data structure.
      CALL get_ijk_from_grid (  nest ,                   &
@@ -578,16 +582,18 @@ CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
 write(0,*)'dummy C3 bcast 4',i
 CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
 
+write(0,*)__FILE__,__LINE__,'nest%id ',nest%id
 #if (DA_CORE != 1)
        ! For nests without an input file, we still need to read time series locations
        !   from the tslist file
        IF ( nest%active_this_task) THEN
           CALL push_communicators_for_domain( nest%id )
           CALL wrf_tsin( nest , ierr )
-          CALL pop_communicators_for_domain( nest%id )
+          CALL pop_communicators_for_domain
        ENDIF
 #endif
      END IF
+write(0,*)__FILE__,__LINE__,'nest%id ',nest%id
 
 write(0,*)'dummy B bcast 1',local_communicator
 i = 5
@@ -603,7 +609,9 @@ CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
 ! feedback, mostly for this new terrain, but it is the safe thing to do
      parent%ht_coarse = parent%ht
 
+write(0,*)__FILE__,__LINE__,'call med_nest_feedback parent%id,nest%id',parent%id,nest%id
      CALL med_nest_feedback ( parent , nest , config_flags )
+write(0,*)__FILE__,__LINE__,'nest%id ',nest%id
 
 ! This is the new interpolation for specific 3d arrays that are sensitive to the
 ! topography diffs betwixt the CG and the FG.
@@ -1255,6 +1263,7 @@ SUBROUTINE med_nest_feedback ( parent , nest , config_flags )
 
 ! feedback nest to the parent
     IF ( config_flags%feedback .NE. 0 ) THEN
+write(0,*)'calling med_feedback_domain parent%id,nest%id ',parent%id,nest%id
       CALL med_feedback_domain( parent, nest )
 #ifdef MOVE_NESTS
       IF ( parent%active_this_task) THEN

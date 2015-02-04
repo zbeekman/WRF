@@ -309,7 +309,7 @@ write(0,*)__FILE__,__LINE__
                                                  kid        = kid        )
 write(0,*)__FILE__,__LINE__
                CALL Setup_Timekeeping (new_nest)
-write(0,*)__FILE__,__LINE__
+write(0,*)__FILE__,__LINE__,"calling med_nest_initial ",grid%id, new_nest%id 
                CALL med_nest_initial ( grid , new_nest , config_flags )
 write(0,*)__FILE__,__LINE__
                IF ( grid%dfi_stage == DFI_STARTFWD ) THEN
@@ -374,6 +374,7 @@ write(0,*)__FILE__,__LINE__
                                 domain_clockisstoptime(grid                   ) .OR. &
                                 domain_clockisstoptime(grid_ptr%nests(kid)%ptr) ) )  THEN
                      CALL wrf_debug( 100 , 'module_integrate: calling med_nest_feedback ' )
+write(0,*)"calling med_nest_feedback kid,grid_ptr%id,grid_ptr%nests(kid)%ptr ",kid,grid_ptr%id, grid_ptr%nests(kid)%ptr
                      CALL med_nest_feedback ( grid_ptr , grid_ptr%nests(kid)%ptr , config_flags )
                      CALL wrf_debug( 100 , 'module_integrate: back from med_nest_feedback ' )
                    END IF
