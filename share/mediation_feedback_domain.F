@@ -160,20 +160,24 @@ SUBROUTINE med_feedback_domain ( parent_grid , nested_grid )
    CALL wrf_dm_nestexchange_init
   IF ( nested_grid%active_this_task ) THEN
    grid => nested_grid%intermediate_grid
+write(0,*)"calling feedback_domain_em_part1"
    CALL feedback_domain_em_part1 ( grid, nested_grid, config_flags   &
 !
 #      include "actual_new_args.inc"
 !
                                    )
+write(0,*)"back from feedback_domain_em_part1"
   ENDIF
    grid => parent_grid
 
    grid%nest_mask = 0.
+write(0,*)"calling from feedback_domain_em_part2"
    CALL feedback_domain_em_part2 ( grid , nested_grid%intermediate_grid, nested_grid , config_flags   &
 !
 #      include "actual_new_args.inc"
 
                                    )
+write(0,*)"back from feedback_domain_em_part2"
    WHERE   ( grid%nest_pos .NE. 9021000.  ) grid%ht = grid%ht_coarse
    CALL update_after_feedback_em ( grid  &
 !

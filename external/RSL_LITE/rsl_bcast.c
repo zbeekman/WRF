@@ -55,6 +55,8 @@
 
 ***************************************************************************/
 
+#define MAX(a,b) (((a)>(b))?a:b)
+
 #define MOD_9707
 
 #ifndef MS_SUA
@@ -118,6 +120,7 @@ static char *s_parent_msgs ;
 static int s_parent_msgs_curs ;
 static int s_remaining ;  /* number of bytes left in a parent message before
                            the next point descriptor */
+static int alltasks, offset ;
 
 /* add a field to a message outgoing for the specified child domain cell */
 /* relies on rsl_ready_bcast having been called already */
@@ -171,6 +174,7 @@ RSL_LITE_TO_CHILD_INFO ( msize_p,                        /* number of tasks in m
                          iids_p, iide_p, ijds_p, ijde_p, /* domain dims of INTERMEDIATE DOMAIN */
                          nids_p, nide_p, njds_p, njde_p, /* domain dims of CHILD DOMAIN */
                          pgr_p,  shw_p ,                 /* nest ratio and stencil half width */
+                         offset_p,                         /* first task of the nest in me_and_mom communicator */
                          ntasks_par_x_p , ntasks_par_y_p ,       /* proc counts in x and y */
                          ntasks_nest_x_p , ntasks_nest_y_p ,       /* proc counts in x and y */
                          min_subdomain ,                 /* minimum width allowed for a subdomain in a dim ON PARENT */
@@ -184,6 +188,7 @@ RSL_LITE_TO_CHILD_INFO ( msize_p,                        /* number of tasks in m
     ,iids_p, iide_p, ijds_p, ijde_p   /* (i) n.n. global dims -- in WRF this will be intermediate domain */
     ,nids_p, nide_p, njds_p, njde_p   /* (i) n.n. global dims */
     ,pgr_p                            /* nesting ratio */
+    ,offset_p                         /* first task of the nest in me_and_mom communicator */
     ,ntasks_nest_x_p , ntasks_nest_y_p          /* proc counts in x and y */
     ,ntasks_par_x_p , ntasks_par_y_p          /* proc counts in x and y */
     ,min_subdomain
@@ -204,21 +209,22 @@ RSL_LITE_TO_CHILD_INFO ( msize_p,                        /* number of tasks in m
   int i, j, ni, nj ;
   int coords[2] ;
   int ierr ;
-  static int alltasks, offset ;
 
   if ( Plist == NULL ) {
     s_ntasks_par_x = *ntasks_par_x_p ;
     s_ntasks_par_y = *ntasks_par_y_p ;
     s_ntasks_nest_x = *ntasks_nest_x_p ;
     s_ntasks_nest_y = *ntasks_nest_y_p ;
-    offset = s_ntasks_par_x*s_ntasks_par_y ;
-    alltasks = s_ntasks_nest_x*s_ntasks_nest_y + offset ;
+    offset = *offset_p ;
+    alltasks = MAX( s_ntasks_nest_x*s_ntasks_nest_y + offset, s_ntasks_par_x*s_ntasks_par_y ) ;
 
-//fprintf(stderr,"s_ntasks_par_x %d\n",s_ntasks_par_x)  ;
-//fprintf(stderr,"s_ntasks_par_y %d\n",s_ntasks_par_y)  ;
-//fprintf(stderr,"s_ntasks_nest_x %d\n",s_ntasks_par_x)  ;
-//fprintf(stderr,"s_ntasks_nest_y %d\n",s_ntasks_par_y)  ;
-//fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
+fprintf(stderr,"s_ntasks_par_x %d\n",s_ntasks_par_x)  ;
+fprintf(stderr,"s_ntasks_par_y %d\n",s_ntasks_par_y)  ;
+fprintf(stderr,"s_ntasks_nest_x %d\n",s_ntasks_nest_x)  ;
+fprintf(stderr,"s_ntasks_nest_y %d\n",s_ntasks_nest_y)  ;
+fprintf(stderr,"%s %d offset %d\n",__FILE__,__LINE__,offset)  ;
+fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
+fprintf(stderr,"%s %d a %d b %d\n",__FILE__,__LINE__,s_ntasks_nest_x*s_ntasks_nest_y+offset,s_ntasks_par_x*s_ntasks_par_y)  ;
 
     /* construct Plist */
     Sendbufsize = 0 ;
@@ -284,6 +290,7 @@ RSL_LITE_TO_CHILD_INFO ( msize_p,                        /* number of tasks in m
           r = (int *) &(Sendbuf[Recsizeindex]) ;
           *r = Sendbufcurs - Recsizeindex + 2 * sizeof(int) ;
           Ssizes[Pcurs] += *r ;
+//fprintf(stderr,"%s %d Ssizes[%d]=%d\n",__FILE__,__LINE__,Pcurs,Ssizes[Pcurs]) ;
   }
 
 //fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
@@ -294,7 +301,7 @@ RSL_LITE_TO_CHILD_INFO ( msize_p,                        /* number of tasks in m
         Sdisplacements[Pcurs] = Sendbufcurs ;
         Ssizes[Pcurs] = 0 ;
         Pptr = Plist[Pcurs] ;
-//fprintf(stderr,"%s %d Pptr %x Pcurs %d alltasks %d\n",__FILE__,__LINE__,Pptr, Pcurs, alltasks ) ;
+fprintf(stderr,"%s %d Pptr %x Pcurs %d alltasks %d\n",__FILE__,__LINE__,Pptr, Pcurs, alltasks ) ;
       } else {
         *retval_p = 0 ;
         return ;  /* done */
@@ -323,6 +330,7 @@ RSL_LITE_TO_CHILD_INFO ( msize_p,                        /* number of tasks in m
 RSL_LITE_TO_PARENT_INFO ( msize_p, 
                           nips_p, nipe_p, njps_p, njpe_p, /* patch dims of SOURCE DOMAIN (CHILD) */
                           cids_p, cide_p, cjds_p, cjde_p, /* domain dims of TARGET DOMAIN (PARENT) */
+                          offset_p, 
                           ntasks_par_x_p , ntasks_par_y_p ,       /* proc counts in x and y */
                           ntasks_nest_x_p , ntasks_nest_y_p ,       /* proc counts in x and y */
                           min_subdomain ,
@@ -333,6 +341,7 @@ RSL_LITE_TO_PARENT_INFO ( msize_p,
   int_p
      nips_p, nipe_p, njps_p, njpe_p   /* (i) n.d. patch dims */
     ,cids_p, cide_p, cjds_p, cjde_p   /* (i) n.n. global dims */
+    ,offset_p
     ,ntasks_nest_x_p , ntasks_nest_y_p          /* proc counts in x and y */
     ,ntasks_par_x_p , ntasks_par_y_p          /* proc counts in x and y */
     ,min_subdomain
@@ -351,16 +360,15 @@ RSL_LITE_TO_PARENT_INFO ( msize_p,
   int i, j ;
   int coords[2] ;
   int ierr ;
-  int alltasks, offset ;
 
-//fprintf(stderr,"RSL_LITE_TO_PARENT_INFO Plist = %x\n",Plist ) ;
+fprintf(stderr,"RSL_LITE_TO_PARENT_INFO Plist = %x\n",Plist ) ;
   if ( Plist == NULL ) {
     s_ntasks_nest_x = *ntasks_nest_x_p ;
     s_ntasks_nest_y = *ntasks_nest_y_p ;
     s_ntasks_par_x = *ntasks_par_x_p ;
     s_ntasks_par_y = *ntasks_par_y_p ;
-    offset = s_ntasks_par_x*s_ntasks_par_y ;
-    alltasks = s_ntasks_nest_x*s_ntasks_nest_y + offset ;
+    offset = *offset_p ;
+    alltasks = MAX( s_ntasks_nest_x*s_ntasks_nest_y + offset, s_ntasks_par_x*s_ntasks_par_y ) ;
 
     /* construct Plist */
     Sendbufsize = 0 ;
@@ -415,7 +423,7 @@ fprintf(stderr,"setting Ssizes[%d] to zero\n",j) ;
           *r = Sendbufcurs - Recsizeindex + 2 * sizeof(int) ;
           Ssizes[Pcurs] += *r ;
 
-//fprintf(stderr,"Ssizes[%d]=%d\n",Pcurs,Ssizes[Pcurs]) ;
+fprintf(stderr,"Ssizes[%d]=%d\n",Pcurs,Ssizes[Pcurs]) ;
 
   }
 
@@ -524,8 +532,8 @@ rsl_lite_to_peerpoint_msg ( nbuf_p, buf )
 //  nest if it's parent->nest and the parent if it's nest->parent (we'll see)
 
 /* parent->nest */
-RSL_LITE_BCAST_MSGS ( mytask_p, ntasks_p, offset_p, Fcomm )
-  int_p mytask_p, ntasks_p, offset_p, Fcomm ;  /* offset is the id of the first task in the nest set */
+RSL_LITE_BCAST_MSGS ( mytask_p, ntasks_par_p, ntasks_nest_p, offset_p, Fcomm )
+  int_p mytask_p, ntasks_par_p, ntasks_nest_p, offset_p, Fcomm ;  /* offset is the id of the first task in the nest set */
 {
 #ifndef STUBMPI
   MPI_Comm comm ;
@@ -534,12 +542,14 @@ RSL_LITE_BCAST_MSGS ( mytask_p, ntasks_p, offset_p, Fcomm )
 #else
   int comm ;
 #endif
-  rsl_lite_allgather_msgs ( mytask_p, ntasks_p, offset_p, comm, 0 ) ;
+fprintf(stderr,"RSL_LITE_BCAST_MSGS calling rsl_lite_allgather_msgs\n") ;
+  rsl_lite_allgather_msgs ( mytask_p, ntasks_par_p, ntasks_nest_p, offset_p, comm, 0 ) ;
+fprintf(stderr,"RSL_LITE_BCAST_MSGS back from rsl_lite_allgather_msgs\n") ;
 }
 
 /* nest->parent */
-RSL_LITE_MERGE_MSGS ( mytask_p, ntasks_p, offset_p, Fcomm )
-  int_p mytask_p, ntasks_p, offset_p, Fcomm ;  /* offset is the id of the first task in the nest set */
+RSL_LITE_MERGE_MSGS ( mytask_p, ntasks_par_p, ntasks_nest_p, offset_p, Fcomm )
+  int_p mytask_p, ntasks_par_p, ntasks_nest_p, offset_p, Fcomm ;  /* offset is the id of the first task in the nest set */
 {
 #ifndef STUBMPI
   MPI_Comm comm ;
@@ -548,13 +558,14 @@ RSL_LITE_MERGE_MSGS ( mytask_p, ntasks_p, offset_p, Fcomm )
 #else
   int comm ;
 #endif
-fprintf(stderr,"calling rsl_lite_allgather_msgs (merge) %d %d %d\n",*mytask_p,*ntasks_p,*offset_p) ;
-  rsl_lite_allgather_msgs ( mytask_p, ntasks_p, offset_p, comm, 1 ) ;
+fprintf(stderr,"RSL_LITE_MERGE_MSGS calling rsl_lite_allgather_msgs\n") ;
+  rsl_lite_allgather_msgs ( mytask_p, ntasks_par_p, ntasks_nest_p, offset_p, comm, 1 ) ;
+fprintf(stderr,"RSL_LITE_MERGE_MSGS back from rsl_lite_allgather_msgs\n") ;
 }
 
 /* common code */
-rsl_lite_allgather_msgs ( mytask_p, ntasks_p, offset_p, comm, dir )
-  int_p mytask_p, ntasks_p, offset_p ;
+rsl_lite_allgather_msgs ( mytask_p, ntasks_par_p, ntasks_nest_p, offset_p, comm, dir )
+  int_p mytask_p, ntasks_par_p, ntasks_nest_p, offset_p ;
   int dir ;  /* 0 = parent to nest, otherwist nest to parent */
 #ifndef STUBMPI
   MPI_Comm comm ;
@@ -568,7 +579,7 @@ rsl_lite_allgather_msgs ( mytask_p, ntasks_p, offset_p, comm, dir )
   bcast_point_desc_t pdesc ;
   int curs ;
   int msglen, mdest, mtag ;
-  int ntasks, mytask ;
+  int ntasks_par, ntasks_nest, ntasks, mytask ;
   int  mytask_on_comm ;
   int ii, i, j ;
   int ig, jg ;
@@ -577,7 +588,8 @@ rsl_lite_allgather_msgs ( mytask_p, ntasks_p, offset_p, comm, dir )
   int rc ;
 
 #ifndef STUBMPI
-  ntasks = *ntasks_p ;
+  ntasks_par = *ntasks_par_p ;
+  ntasks_nest = *ntasks_nest_p ;
   mytask = *mytask_p ;
   MPI_Comm_rank( comm, &mytask_on_comm ) ;
 #else
@@ -585,17 +597,19 @@ rsl_lite_allgather_msgs ( mytask_p, ntasks_p, offset_p, comm, dir )
   mytask = 0 ;
   mytask_on_comm = 0 ;
 #endif
-fprintf(stderr,"inside rsl_lite_allgather_msgs  %d %d %d %d\n",mytask,ntasks,*offset_p, mytask_on_comm) ;
+fprintf(stderr,"inside rsl_lite_allgather_msgs  %d %d %d %d %d\n",mytask,ntasks_par,ntasks_nest,*offset_p, mytask_on_comm) ;
 
 fprintf(stderr,"%s %d : %d %d %d \n",__FILE__,__LINE__,mytask_on_comm,dir,*offset_p ) ;
-  if ( ( mytask_on_comm <  *offset_p  && dir == 0 )   /* parent in parent->child */
-    || ( mytask_on_comm >= *offset_p) && dir == 1 ) { /* child  in child->parent */
+  if ( ( mytask_on_comm <  ntasks_par  && dir == 0 )   /* parent in parent->child */
+    || ( mytask_on_comm >= *offset_p && 
+         mytask_on_comm < *offset_p + ntasks_nest && dir == 1 )) { /* child  in child->parent */
     RSL_TEST_ERR( Plist == NULL,
-      "RSL_BCAST_MSGS: rsl_to_child_info not called first" ) ;
+      "rsl_lite_allgather_msgs: rsl_to_child_info or rsl_to_parent_info not called first" ) ;
   }
 
-  RSL_TEST_ERR( ntasks == RSL_MAXPROC ,
-    "RSL_BCAST_MSGS: raise the compile time value of MAXPROC" ) ;
+  ntasks = MAX(ntasks_par,ntasks_nest) ;
+  RSL_TEST_ERR( ntasks >= RSL_MAXPROC ,
+    "rsl_lite_allgather_msgs: raise the compile time value of MAXPROC" ) ;
   
   Psize_all = RSL_MALLOC( int, ntasks * ntasks ) ;  // why is this ntasks^2? -- because everyone will have
  						    // everyone's list (not exactly scalable)
@@ -629,7 +643,7 @@ fprintf(stderr,"mytask_on_comm %d , ntasks %d \n",mytask_on_comm, ntasks ) ;
 for ( j = 0 ; j < ntasks ; j++ ) 
 {
 int jj ;
-fprintf(stderr,"%4d. ",j) ;
+fprintf(stderr,"zap %4d. ",j) ;
 for ( jj = 0 ; jj < ntasks ; jj++ ) {
 fprintf(stderr,"%9d",Psize_all[INDEX_2(j,jj,ntasks)])  ;
 }
@@ -791,7 +805,6 @@ rsl_lite_from_peerpoint_msg ( len_p, buf )
   char *c, *d ;
   int i ;
 
-fprintf(stderr,"%s %d *len_p %d\n", __FILE__,__LINE__,*len_p ) ;
   if ( *len_p % sizeof(int) == 0 ) {
     for ( p = (int *)&(Recvbuf[Rbufcurs+Rpointcurs]), q = buf , i = 0 ; i < *len_p ; i += sizeof(int) ) 
     {

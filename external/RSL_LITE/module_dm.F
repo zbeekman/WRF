@@ -17,6 +17,7 @@ MODULE module_dm
 #endif
 
    IMPLICIT NONE
+   INCLUDE 'mpif.h'
 
 #if ( NMM_CORE == 1 ) || ( WRF_CHEM == 1 ) 
    INTEGER, PARAMETER :: max_halo_width = 6
@@ -45,8 +46,11 @@ MODULE module_dm
                                      ,local_iocommunicator_store                                  &
                                      ,local_communicator_x_store, local_communicator_y_store
 
-   INTEGER local_communicator, local_communicator_periodic, local_iocommunicator
-   INTEGER local_communicator_x, local_communicator_y ! subcommunicators for rows and cols of mesh
+   INTEGER :: local_communicator          = MPI_UNDEFINED
+   INTEGER :: local_communicator_periodic = MPI_UNDEFINED
+   INTEGER :: local_iocommunicator        = MPI_UNDEFINED
+   INTEGER :: local_communicator_x        = MPI_UNDEFINED
+   INTEGER :: local_communicator_y        = MPI_UNDEFINED ! subcommunicators for rows and cols of mesh
    LOGICAL :: dm_debug_flag = .FALSE.
 ! for parallel nesting, 201408, jm
    INTEGER intercomm_to_mom( max_domains ), intercomm_to_kid( max_nests, max_domains )
@@ -144,14 +148,17 @@ CONTAINS
       local_communicator_y        = local_communicator_y_store( id )
       ntasks         = ntasks_store( id )
       mytask         = mytask_store( id )
-      ntasks_y       = ntasks_y_store( id )
       ntasks_x       = ntasks_x_store( id )
+      ntasks_y       = ntasks_y_store( id )
       mytask_x       = mytask_x_store( id )
       mytask_y       = mytask_y_store( id )
 write(0,*)'instate: id                 ',id
 write(0,*)'instate: local_communicator ',local_communicator
 write(0,*)'instate: ntasks             ',ntasks
-write(0,*)'instate: mytask             ',mytask
+write(0,*)'instate: ntasks_x           ',ntasks_x
+write(0,*)'instate: ntasks_y           ',ntasks_y
+write(0,*)'instate: mytask_x           ',mytask_x
+write(0,*)'instate: mytask_y           ',mytask_y
    END SUBROUTINE instate_communicators_for_domain
 
    SUBROUTINE store_communicators_for_domain( id )
@@ -163,8 +170,8 @@ write(0,*)'instate: mytask             ',mytask
       local_communicator_x_store( id )  =    local_communicator_x
       local_communicator_y_store( id )  =    local_communicator_y
       ntasks_store( id )        =    ntasks
-      ntasks_y_store( id )      =    ntasks_y
       ntasks_x_store( id )      =    ntasks_x
+      ntasks_y_store( id )      =    ntasks_y
       mytask_store( id )        =    mytask
       mytask_x_store( id )      =    mytask_x
       mytask_y_store( id )      =    mytask_y
@@ -249,6 +256,7 @@ write(0,*)'instate: mytask             ',mytask
        CALL mpaspect ( ntasks, ntasks_x, ntasks_y, 1, 1 )
      ENDIF
      ntasks_store(1) = ntasks
+write(0,*)'in compute_mesh ntasks_x_store(1) ', ntasks_x_store(1)
      ntasks_x_store(1) = ntasks_x
      ntasks_y_store(1) = ntasks_y
    END SUBROUTINE compute_mesh
@@ -265,6 +273,9 @@ write(0,*)'instate: mytask             ',mytask
       LOGICAL :: reorder_mesh
 
       CALL wrf_get_dm_communicator ( local_comm )
+write(0,*)'wrf_dm_initialize dims before local_comm ',local_comm
+IF ( local_comm .EQ. MPI_UNDEFINED ) THEN
+!IF ( .TRUE. ) THEN
       CALL mpi_comm_size( local_comm, ntasks, ierr )
       CALL nl_get_reorder_mesh( 1, reorder_mesh )
       CALL compute_mesh( ntasks, ntasks_x, ntasks_y )
@@ -297,6 +308,7 @@ write(0,*)'instate: mytask             ',mytask
       dims(2) = ntasks_x  ! columns
       isperiodic(1) = .true.
       isperiodic(2) = .true.
+write(0,*)'wrf_dm_initialize dims before mpi_cart_coords ',dims(1:2)
       CALL mpi_cart_create( new_local_comm, 2, dims, isperiodic, .false., local_comm_per, ierr )
 ! debug
       CALL mpi_comm_rank( local_comm_per, mytask, ierr )
@@ -307,6 +319,10 @@ write(0,*)'instate: mytask             ',mytask
       CALL mpi_comm_size( local_comm, itmp, ierr )
       CALL mpi_cart_coords( local_comm, mytask, 2, coords, ierr )
 !        write(0,*)'non periodic coords ',mytask, coords
+write(0,*)'wrf_dm_initialize ntasks_y ',ntasks_y
+write(0,*)'wrf_dm_initialize ntasks_x ',ntasks_x
+write(0,*)'wrf_dm_initialize coords after mpi_cart_coords ',coords(1:2)
+
       mytask_x = coords(2)   ! col task (x)
       mytask_y = coords(1)   ! row task (y)
       CALL nl_set_nproc_x ( 1, ntasks_x )
@@ -317,14 +333,21 @@ write(0,*)'instate: mytask             ',mytask
 ! in other words, local_comm_x has all the processes with the same rank in Y
       CALL MPI_Comm_dup( new_local_comm, comdup, ierr )
       IF ( ierr .NE. 0 ) CALL wrf_error_fatal('MPI_Comm_dup fails in 20061228 mod')
+
       CALL MPI_Comm_split(comdup,mytask_y,mytask,local_comm_x,ierr)
       IF ( ierr .NE. 0 ) CALL wrf_error_fatal('MPI_Comm_split fails for x in 20061228 mod')
+
       CALL MPI_Comm_split(comdup,mytask_x,mytask,local_comm_y,ierr)
       IF ( ierr .NE. 0 ) CALL wrf_error_fatal('MPI_Comm_split fails for y in 20061228 mod')
+
 ! end 20061228
       CALL wrf_set_dm_communicator ( local_comm )
       local_communicator_x_store(1) = local_comm_x
       local_communicator_y_store(1) = local_comm_y
+ELSE
+      CALL wrf_message("wrf_dm_initialize: skipping.  Local comm already init'd")
+      CALL instate_communicators_for_domain(1)
+ENDIF
 #else
       ntasks = 1
       ntasks_x = 1
@@ -333,7 +356,8 @@ write(0,*)'instate: mytask             ',mytask
       mytask_x = 0
       mytask_y = 0
 #endif
-
+      CALL nl_set_nproc_x ( 1, ntasks_x )
+      CALL nl_set_nproc_y ( 1, ntasks_y )
       RETURN
    END SUBROUTINE wrf_dm_initialize
 
@@ -1083,6 +1107,8 @@ write(0,*)'instate: mytask             ',mytask
        ipe = -1
        ips = 0
     ENDIF
+
+write(0,'("compute_memory_dims_rsl_lite mytask_y ",11i5)')mytask_y 
     jps = -1
     i = ids
     ierr = 0
@@ -1090,6 +1116,7 @@ write(0,*)'instate: mytask             ',mytask
 !       CALL task_for_point ( i, j, ids, ide, jds, jde, ntasks_x, ntasks_y, Px, Py, &
        CALL task_for_point ( i, j, ids, ide, jds, jde, nest_pes_x(id), nest_pes_y(id), Px, Py, &
                              minx, miny, ierr )
+write(0,'("compute_memory_dims_rsl_lite tfp ",11i5)') id, i, j, ids, ide, jds, jde, nest_pes_x(id), nest_pes_y(id), Px, Py
        IF ( ierr .NE. 0 ) CALL wrf_error_fatal('error code returned by task_for_point in module_dm.F (d)')
        IF ( Py .EQ. mytask_y ) THEN
           jpe = j
@@ -1775,13 +1802,15 @@ write(0,*)'instate: mytask             ',mytask
       IMPLICIT NONE
       INCLUDE 'mpif.h'
       LOGICAL mpi_inited
-      INTEGER mpi_comm_here, mpi_comm_local, comdup, origmytask,  mytask, ntasks, ierr, io_status
+      INTEGER mpi_comm_here, mpi_comm_local, comdup, comdup2, origmytask,  mytask, ntasks, ierr, io_status
       INTEGER mpi_comm_me_and_mom
+      INTEGER coords(3)
       INTEGER mype_local,ntasks_local
 #  if defined(_OPENMP) && defined(MPI2_THREAD_SUPPORT)
       INTEGER thread_support_provided, thread_support_requested
 #endif
       INTEGER i, j, k, x, y
+      INTEGER iii
       INTEGER, ALLOCATABLE :: icolor(:),icolor2(:),idomain(:)
       INTEGER tasks_per_split
       INTEGER comm_id
@@ -1916,6 +1945,7 @@ write(0,*)'which_kid ',which_kid(2:max_dom)
       DO nest_id = 1,ndoms
         nest_pes_x(nest_id) = comm_pes_x(comm_domain(nest_id))
         nest_pes_y(nest_id) = comm_pes_y(comm_domain(nest_id))
+        nest_task_offsets(nest_id) = comm_start(comm_domain(nest_id))
         IF ( nest_id .EQ. 1 ) THEN
           nest_task_offsets(nest_id) = comm_start(comm_domain(nest_id))
         ELSE
@@ -1948,7 +1978,6 @@ write(0,*)__LINE__,mpi_comm_here
         ALLOCATE( idomain(ntasks) )
 write(0,*)__LINE__,mpi_comm_here
         k = 0
-        nest_task_offsets = -1  ! initialize invalid
         domain_id = ndoms
 ! split off the separate local communicators
 ! we don't know yet how many local communicators there are so iterate over ndoms which is always >= number of communicators
@@ -1990,6 +2019,7 @@ write(0,*)'called MPI_Comm_split ierr ', ierr
             isperiodic(1) = .false.
             isperiodic(2) = .false.
             CALL mpi_cart_create( mpi_comm_local, 2, dims, isperiodic, .false., comms_i_am_in(i), ierr )
+write(0,*)' CALL mpi_cart_create comm ', i, dims(1:2), comms_i_am_in(i)
 
 !            dims(1) = comm_pes_y(i) ! rows
 !            dims(2) = comm_pes_x(i)  ! columns
@@ -2018,6 +2048,34 @@ write(0,*)'comms_i_am_in ',comms_i_am_in(1:ncomms)
           local_communicator_store(i) = comms_i_am_in(comm_domain(i))
           domain_active_this_task(i) = ( local_communicator_store(i) .NE. MPI_UNDEFINED )
 write(0,*)i,'local_communicator_store ',local_communicator_store(i)
+          IF ( local_communicator_store(i) .NE. MPI_UNDEFINED ) THEN
+             CALL MPI_Comm_size( local_communicator_store(i), ntasks_store(i), ierr )
+write(0,*)'ntasks_store ',i,ntasks_store(i)
+             CALL MPI_Comm_rank( local_communicator_store(i), mytask_store(i), ierr )
+write(0,*)'mytask_store ',i,mytask_store(i)
+             CALL mpi_cart_coords( local_communicator_store(i), mytask_store(i), 2, coords, ierr )
+             IF ( ierr .NE. 0 ) CALL wrf_error_fatal('MPI_cart_coords fails ')
+             mytask_y_store(i) = coords(1)   ! col task (1)
+             mytask_x_store(i) = coords(2)   ! col task (x)
+write(0,*)'mytask_x_store ',i,mytask_x_store(i)
+write(0,*)'mytask_y_store ',i,mytask_y_store(i)
+             CALL MPI_Comm_dup( local_communicator_store(i), comdup2, ierr )
+             IF ( ierr .NE. 0 ) CALL wrf_error_fatal('MPI_Comm_dup fails ')
+
+             CALL MPI_Comm_split(comdup2,mytask_y_store(i),mytask_store(i),local_communicator_x_store(i),ierr)
+             IF ( ierr .NE. 0 ) CALL wrf_error_fatal('MPI_Comm_split fails for y ')
+write(0,*)i,'local_communicator_y_store ',local_communicator_y_store(i)
+
+             CALL MPI_Comm_split(comdup2,mytask_x_store(i),mytask_store(i),local_communicator_y_store(i),ierr)
+             IF ( ierr .NE. 0 ) CALL wrf_error_fatal('MPI_Comm_split fails for x ')
+write(0,*)i,'local_communicator_x_store ',local_communicator_x_store(i)
+
+             CALL MPI_Comm_size( local_communicator_x_store(i), ntasks_x_store(i), ierr )
+write(0,*)i,'local_communicator_x_store ',local_communicator_x_store(i),ntasks_x_store(i)
+             CALL MPI_Comm_rank( local_communicator_x_store(i), mytask_x_store(i), ierr )
+             CALL MPI_Comm_size( local_communicator_y_store(i), ntasks_y_store(i), ierr )
+             CALL MPI_Comm_rank( local_communicator_y_store(i), mytask_y_store(i), ierr )
+          ENDIF
         ENDDO
 
         intercomm_active  = .FALSE.
@@ -2028,6 +2086,7 @@ write(0,*)i,'local_communicator_store ',local_communicator_store(i)
         ! in this way, we will handle cases where the parent and nest are decomposed over the same set of tasks
         ! (in that case, the offset would be the first task of the parent-nest communicator and that communicator)
 
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         DO nest_id = 2, ndoms
 write(0,*)'nest_id = ',nest_id
            par_id  = parent_id(nest_id)
@@ -2043,7 +2102,9 @@ write(0,*)'comm_start(comm_domain(nest_id)) ',nest_id,comm_start(comm_domain(nes
 write(0,*)'nest_pes_x(nest_id) ',nest_pes_x(nest_id)
 write(0,*)'nest_pes_y(nest_id) ',nest_pes_y(nest_id)
            DO j = 1,ntasks
+
 write(0,*)'nest, par ',j-1,comm_start(comm_domain(nest_id)) .LE. j-1 .AND. j-1 .LT. comm_start(comm_domain(nest_id)) + nest_pes_x(nest_id)*nest_pes_y(nest_id), comm_start(comm_domain(par_id)) .LE. j-1 .AND. j-1 .LT. comm_start(comm_domain(par_id)) + nest_pes_x(par_id)*nest_pes_y(par_id)
+
              IF ( comm_start(comm_domain(nest_id)) .LE. j-1 .AND. j-1 .LT. comm_start(comm_domain(nest_id)) + nest_pes_x(nest_id)*nest_pes_y(nest_id) )  THEN
                icolor2(j)=1
                mytask_is_nest=.TRUE.
@@ -2062,6 +2123,8 @@ write(0,*)'calling MPI_Comm_split origmytask   ',origmytask
            CALL MPI_Comm_split(comdup,i,origmytask,mpi_comm_me_and_mom,ierr)
 write(0,*)'calling MPI_Comm_split mpi_comm_me_and_mom ',mpi_comm_me_and_mom
 write(0,*)'calling MPI_Comm_split ierr         ',ierr
+CALL MPI_Comm_size(mpi_comm_me_and_mom,iii,ierr) ; write(0,*)nest_id,'mpi_comm_me_and_mom sz',iii
+CALL MPI_Comm_rank(mpi_comm_me_and_mom,iii,ierr) ; write(0,*)nest_id,'mpi_comm_me_and_mom rk',iii
 
            IF ( mytask_is_par  ) THEN
               intercomm_active(par_id)  = .TRUE.
@@ -2472,7 +2535,7 @@ SUBROUTINE wrf_dm_patch_domain ( id  , domdesc , parent_id , parent_domdesc , &
                                       sp3y , ep3y , sm3y , em3y , &
                           bdx , bdy )
    USE module_domain, ONLY : domain, head_grid, find_grid_by_id
-   USE module_dm, ONLY : patch_domain_rsl_lite
+   USE module_dm, ONLY : patch_domain_rsl_lite, push_communicators_for_domain, pop_communicators_for_domain
    IMPLICIT NONE
 
    INTEGER, INTENT(IN)   :: sd1 , ed1 , sd2 , ed2 , sd3 , ed3 , bdx , bdy
@@ -2496,6 +2559,8 @@ SUBROUTINE wrf_dm_patch_domain ( id  , domdesc , parent_id , parent_domdesc , &
    grid_ptr => head_grid
    CALL find_grid_by_id( parent_id , grid_ptr , parent )
 
+   CALL push_communicators_for_domain(id)
+
    CALL patch_domain_rsl_lite ( id  , parent, parent_id , &
                            sd1 , ed1 , sp1 , ep1 , sm1 , em1 , & 
                            sd2 , ed2 , sp2 , ep2 , sm2 , em2 , &
@@ -2507,6 +2572,8 @@ SUBROUTINE wrf_dm_patch_domain ( id  , domdesc , parent_id , parent_domdesc , &
                                       sp2y , ep2y , sm2y , em2y , &
                                       sp3y , ep3y , sm3y , em3y , &
                            bdx , bdy )
+
+   CALL pop_communicators_for_domain
 
    RETURN
 END SUBROUTINE wrf_dm_patch_domain
@@ -2592,13 +2659,17 @@ SUBROUTINE wrf_dm_bcast_string( BUF, N1 )
    n = n1
    ! Root task is required to have the correct value of N1, other tasks 
    ! might not have the correct value.  
+write(0,*)'wrf_dm_bcast_string bcasting n ',n
    CALL wrf_dm_bcast_integer( n , 1 )
+write(0,*)'back from wrf_dm_bcast_string bcasting n ',n
    IF (n .GT. 256) n = 256
    IF (n .GT. 0 ) then
      DO i = 1, n
        ibuf(I) = ichar(buf(I:I))
      ENDDO
+write(0,*)'wrf_dm_bcast_string bcasting ibuf ',n
      CALL wrf_dm_bcast_integer( ibuf, n )
+write(0,*)'back from wrf_dm_bcast_string bcasting ibuf ',n
      buf = ''
      DO i = 1, n
        buf(i:i) = char(ibuf(i))
@@ -2815,6 +2886,18 @@ END
 !      nty = ntasks_y 
       ntx = nest_pes_x(id)
       nty = nest_pes_y(id)
+write(0,*)__FILE__,__LINE__,'id ',id,' xy ',xy,' iter ',iter
+write(0,*)__FILE__,__LINE__,'is_intermediate ',is_intermediate
+write(0,*)__FILE__,__LINE__,'plus_send_start ',plus_send_start
+write(0,*)__FILE__,__LINE__,'plus_recv_start ',plus_recv_start
+write(0,*)__FILE__,__LINE__,'minus_send_start ',minus_send_start
+write(0,*)__FILE__,__LINE__,'minus_recv_start ',minus_recv_start
+write(0,*)__FILE__,__LINE__,'ds ',ds
+write(0,*)__FILE__,__LINE__,'de ',de
+write(0,*)__FILE__,__LINE__,'nds ',nds
+write(0,*)__FILE__,__LINE__,'nde ',nde
+write(0,*)__FILE__,__LINE__,'ps ',ps
+write(0,*)__FILE__,__LINE__,'pe ',pe
       IF ( xy .EQ. 1 ) THEN  ! X/I axis
         nt = ntasks_x
         me = mytask_x
@@ -2833,6 +2916,9 @@ END
         ENDIF
       ENDIF
       iter = iter + 1
+write(0,*)__FILE__,__LINE__,'ntx, nty, me ',ntx,nty,me
+write(0,*)__FILE__,__LINE__,'parent_start ',parent_start
+write(0,*)__FILE__,__LINE__,'parent_grid_ratio ',parent_grid_ratio
 
 #if (DA_CORE == 0)
       went = .FALSE.
@@ -2842,36 +2928,50 @@ END
       IF ( me .GT. 0 ) THEN
         lb = minus_send_start
         sendbeg_m = lb-ps+1
+write(0,*)__FILE__,__LINE__,'me gt 0',lb,ps+shw-1,went
         DO k = lb,ps+shw-1
           went = .TRUE.
           IF ( xy .eq. 1 ) THEN
-          IF ( is_intermediate ) THEN
-            kn =  ( k - parent_start ) * parent_grid_ratio + 1 + 1 ;
+            IF ( is_intermediate ) THEN
+              kn =  ( k - parent_start ) * parent_grid_ratio + 1 + 1 ;
               CALL task_for_point (kn,1,nds,nde,1,dum,ntx,nty,Px,Py,minx,miny,ierr) ! modified to treat x and y separately
               IF ( ierr .NE. 0 ) CALL wrf_error_fatal('error code returned by task_for_point in module_dm.F (h)')
-          ELSE
+            ELSE
               CALL task_for_point (k,1,ds,de,1,dum,ntx,nty,Px,Py,minx,miny,ierr) ! modified to treat x and y separately
               IF ( ierr .NE. 0 ) CALL wrf_error_fatal('error code returned by task_for_point in module_dm.F (i)')
-          ENDIF
-          IF ( Px .NE. me+(iter-1) ) THEN
-            exit
-          ENDIF
+            ENDIF
+            IF ( Px .NE. me+(iter-1) ) THEN
+              exit
+            ENDIF
           ELSE
             IF ( is_intermediate ) THEN
               kn =  ( k - parent_start ) * parent_grid_ratio + 1 + 1 ;
               CALL task_for_point (1,kn,1,dum,nds,nde,ntx,nty,Px,Py,minx,miny,ierr) ! modified to treat x and y separately
+
+write(0,*)__FILE__,__LINE__,'tfp kn ',kn,' nds ',nds
+write(0,*)__FILE__,__LINE__,'tfp kn ',kn,' nde ',nde
+write(0,*)__FILE__,__LINE__,'tfp kn ',kn,' ntx ',ntx
+write(0,*)__FILE__,__LINE__,'tfp kn ',kn,' nty ',nty
+write(0,*)__FILE__,__LINE__,'tfp kn ',kn,' minx ',minx
+write(0,*)__FILE__,__LINE__,'tfp kn ',kn,' miny ',miny
+write(0,*)__FILE__,__LINE__,'tfp kn ',kn,' Px  ',Px
+write(0,*)__FILE__,__LINE__,'tfp kn ',kn,' Py  ',Py
+
               IF ( ierr .NE. 0 ) CALL wrf_error_fatal('error code returned by task_for_point in module_dm.F (h)')
             ELSE
               CALL task_for_point (1,k,1,dum,ds,de,ntx,nty,Px,Py,minx,miny,ierr) ! modified to treat x and y separately
               IF ( ierr .NE. 0 ) CALL wrf_error_fatal('error code returned by task_for_point in module_dm.F (i)')
             ENDIF
+write(0,*)__FILE__,__LINE__,'k ',k,' Py ',Py,me+iter-1
             IF ( Py .NE. me+(iter-1) ) THEN
               exit
             ENDIF
           ENDIF
           minus_send_start = minus_send_start+1
           sendw_m = sendw_m + 1
+write(0,*)__FILE__,__LINE__,'k ',k,' minus_send_start ',minus_send_start
         ENDDO
+write(0,*)__FILE__,__LINE__,'me gt 0',lb,ps+shw-1,went
       ENDIF
       ! recv from minus 
       recvw_m = 0 
@@ -2879,6 +2979,7 @@ END
       IF ( me .GT. 0 ) THEN
         ub = minus_recv_start
         recvbeg_m = ps - ub
+write(0,*)__FILE__,__LINE__,'me gt 0',minus_recv_start,ps-shw,went
         DO k = minus_recv_start,ps-shw,-1
           went = .TRUE.
           IF ( xy .eq. 1 ) THEN
@@ -2909,6 +3010,7 @@ END
           minus_recv_start = minus_recv_start-1
           recvw_m = recvw_m + 1
         ENDDO
+write(0,*)__FILE__,__LINE__,'me gt 0',minus_recv_start,ps-shw,went
       ENDIF
 
       ! send to plus
@@ -2917,6 +3019,8 @@ END
       IF ( ( xy .eq. 1 .and. me .LT. ntx-1 ) .OR. ( xy .eq. 0 .and. me .LT. nty-1 ) ) THEN
         ub = plus_send_start
         sendbeg_p = pe - ub + 1 
+if (xy.eq.1) write(0,*)__FILE__,__LINE__,'me lt ntx-1 0',ub,pe-shw+1,went
+if (xy.eq.0) write(0,*)__FILE__,__LINE__,'me lt nty-1 0',ub,pe-shw+1,went
         DO k = ub,pe-shw+1,-1
           went = .TRUE.
           IF ( xy .eq. 1 ) THEN
@@ -2947,6 +3051,8 @@ END
           plus_send_start = plus_send_start - 1
           sendw_p = sendw_p + 1
         ENDDO
+if (xy.eq.1) write(0,*)__FILE__,__LINE__,'me lt ntx-1 0',ub,pe-shw+1,went
+if (xy.eq.0) write(0,*)__FILE__,__LINE__,'me lt nty-1 0',ub,pe-shw+1,went
       ENDIF
       ! recv from plus
       recvw_p = 0 
@@ -2954,6 +3060,8 @@ END
       IF ( ( xy .eq. 1 .and. me .LT. ntx-1 ) .OR. ( xy .eq. 0 .and. me .LT. nty-1 ) ) THEN
         lb = plus_recv_start
         recvbeg_p = lb - pe
+if (xy.eq.1) write(0,*)__FILE__,__LINE__,'me lt ntx-1 0',lb,pe+shw,went
+if (xy.eq.0) write(0,*)__FILE__,__LINE__,'me lt nty-1 0',lb,pe+shw,went
         DO k = lb,pe+shw
           went = .TRUE.
           IF ( xy .eq. 1 ) THEN
@@ -2986,6 +3094,8 @@ END
           plus_recv_start = plus_recv_start + 1
           recvw_p = recvw_p + 1
         ENDDO
+if (xy.eq.1) write(0,*)__FILE__,__LINE__,'me lt ntx-1 0',lb,pe+shw,went
+if (xy.eq.0) write(0,*)__FILE__,__LINE__,'me lt nty-1 0',lb,pe+shw,went
       ENDIF
 #else
       if ( iter .eq. 1 ) then
@@ -3010,6 +3120,7 @@ END
       !  write(0,*)'sendbeg_m, sendw_m, sendbeg_p, sendw_p, recvbeg_m, recvw_m, recvbeg_p, recvw_p '
       !  write(0,*)sendbeg_m, sendw_m, sendbeg_p, sendw_p, recvbeg_m, recvw_m, recvbeg_p, recvw_p
       !endif
+write(0,*)'rsl_comm_iter returns ',went
       rsl_comm_iter = went
    END FUNCTION rsl_comm_iter
 
@@ -4067,21 +4178,40 @@ ENDIF
 
       IF ( grid%active_this_task ) THEN
 
+write(0,*)'ZAP grid%id ',grid%id
+write(0,*)'ZAP ngrid%id ',ngrid%id
+write(0,*)'ZAP intermediate_grid%id ',intermediate_grid%id
+write(0,*)'ZAP nest_pes_x(grid%id) ',nest_pes_x(grid%id)
+write(0,*)'ZAP nest_pes_y(grid%id) ',nest_pes_y(grid%id)
+write(0,*)'ZAP nest_pes_x(ngrid%id) ',nest_pes_x(ngrid%id)
+write(0,*)'ZAP nest_pes_y(ngrid%id) ',nest_pes_y(ngrid%id)
+write(0,*)'ZAP nest_pes_x(intermediate_grid%id) ',nest_pes_x(intermediate_grid%id)
+write(0,*)'ZAP nest_pes_y(intermediate_grid%id) ',nest_pes_y(intermediate_grid%id)
+
 #include "nest_interpdown_pack.inc"
       ENDIF 
 
+write(0,*)__FILE__,__LINE__,"nest_task_offsets ",nest_task_offsets(1:3)
       ! determine which communicator and offset to use 
       IF ( intercomm_active( grid%id ) ) THEN        ! I am parent
         local_comm = mpi_comm_to_kid( which_kid(ngrid%id), grid%id ) 
         ioffset = nest_task_offsets(ngrid%id)
+write(0,*)__FILE__,__LINE__,"interp_domain_em_part1 ioffset ",ioffset
       ELSE IF ( intercomm_active( ngrid%id ) ) THEN  ! I am nest 
         local_comm = mpi_comm_to_mom( ngrid%id )
         ioffset = nest_task_offsets(ngrid%id)
+write(0,*)__FILE__,__LINE__,"interp_domain_em_part1 ioffset ",ioffset
       ENDIF
       CALL mpi_comm_rank(local_comm,myproc,ierr)
       CALL mpi_comm_size(local_comm,nproc,ierr)
+write(0,*)__FILE__,__LINE__,"interp_domain_em_part1 nproc ",nproc
+write(0,*)__FILE__,__LINE__,"interp_domain_em_part1 myproc ",myproc
 
-      CALL rsl_lite_bcast_msgs( myproc, nproc, ioffset, local_comm )
+      IF ( grid%active_this_task .OR. ngrid%active_this_task ) THEN
+        CALL rsl_lite_bcast_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
+                                          nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       & 
+                                          ioffset, local_comm )
+      ENDIF
 
       RETURN
    END SUBROUTINE interp_domain_em_part1
@@ -4151,6 +4281,7 @@ IF ( ngrid%active_this_task ) THEN
 
 write(0,*)__FILE__,__LINE__,' before  nest_interpdown_unpack.inc '
 write(0,*)__FILE__,__LINE__,' local_communicator ',local_communicator
+write(0,*)__FILE__,__LINE__,' grid%id, ngrid%id ',grid%id, ngrid%id
 
       
 #include "nest_interpdown_unpack.inc"
@@ -4160,13 +4291,17 @@ write(0,*)__FILE__,__LINE__,' local_communicator ',local_communicator
                                 ims, ime, jms, jme, kms, kme,    &
                                 ips, ipe, jps, jpe, kps, kpe    )
 
-      CALL push_communicators_for_domain( ngrid%id )
+      CALL push_communicators_for_domain( grid%id )
 
 #include "HALO_INTERP_DOWN.inc"
 
-      CALL pop_communicators_for_domain
+write(0,*)'back from HALO_INTERP_DOWN '
 
 #  include "nest_interpdown_interp.inc"
+
+      CALL pop_communicators_for_domain
+
+write(0,*)'back from nest_interpdown_interp.inc '
 
 ENDIF
       RETURN
@@ -4348,9 +4483,16 @@ ENDIF
 !call wrf_debug(0,'/external/RSL_LITE/module_dm.F, back from rsl_lite_to_child_info')
       ENDDO
 
+#if 0
 !call wrf_debug(0,'/external/RSL_LITE/module_dm.F, calling rsl_lite_bcast')
-      CALL rsl_lite_bcast_msgs( myproc, nproc, local_comm )
+      CALL rsl_lite_bcast_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
+                                        nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       & 
+                                        ioffset, local_comm )
 !call wrf_debug(0,'/external/RSL_LITE/module_dm.F, back from rsl_lite_bcast')
+#else
+  write(0,*)__FILE__,__LINE__
+  CALL wrf_error_fatal( "TODO" )
+#endif
 
       RETURN
    END SUBROUTINE interp_domain_em_small_part1
@@ -4525,7 +4667,8 @@ ENDIF
       USE module_state_description
       USE module_domain, ONLY : domain, get_ijk_from_grid
       USE module_configure, ONLY : grid_config_rec_type
-      USE module_dm, ONLY : ntasks, ntasks_x, ntasks_y, itrace, local_communicator, mytask
+      USE module_dm, ONLY : ntasks, ntasks_x, ntasks_y, itrace, local_communicator, mytask, &
+                            push_communicators_for_domain, pop_communicators_for_domain
       USE module_comm_nesting_dm, ONLY : halo_interp_up_sub
       IMPLICIT NONE
 !
@@ -4549,9 +4692,12 @@ ENDIF
                                 ims, ime, jms, jme, kms, kme,    &
                                 ips, ipe, jps, jpe, kps, kpe    )
 
+      CALL push_communicators_for_domain( grid%id )
+
 #ifdef DM_PARALLEL
 #include "HALO_INTERP_UP.inc"
 #endif
+      CALL pop_communicators_for_domain
 
    END SUBROUTINE feedback_nest_prep
 
@@ -4678,7 +4824,8 @@ ENDIF
                             ipe_save, jpe_save, ips_save, jps_save, get_dm_max_halo_width,  &
                             nest_pes_x, nest_pes_y,                                         &
                             intercomm_active, nest_task_offsets,                    &
-                            mpi_comm_to_mom, mpi_comm_to_kid, which_kid
+                            mpi_comm_to_mom, mpi_comm_to_kid, which_kid,            &
+                            push_communicators_for_domain, pop_communicators_for_domain
 
       USE module_comm_nesting_dm, ONLY : halo_interp_up_sub
       USE module_utility
@@ -4747,6 +4894,7 @@ ENDIF
 
 IF ( ngrid%active_this_task ) THEN
 !cyl add this for trajectory
+    CALL push_communicators_for_domain( ngrid%id )
 
     do tjk = 1,config_flags%num_traj
      if (ngrid%traj_long(tjk) .eq. -9999.0) then
@@ -4781,8 +4929,10 @@ IF ( ngrid%active_this_task ) THEN
       CALL get_dm_max_halo_width ( grid%id , thisdomain_max_halo_width )
 
 #include "nest_feedbackup_pack.inc"
+    CALL pop_communicators_for_domain
 
 ENDIF
+
 !      CALL wrf_get_dm_communicator ( local_comm )
 !      CALL wrf_get_myproc( myproc )
 !      CALL wrf_get_nproc( nproc )
@@ -4799,9 +4949,14 @@ ENDIF
       CALL mpi_comm_size(local_comm,nproc,ierr)
 
 
-      CALL rsl_lite_merge_msgs( myproc, nproc, ioffset, local_comm )
+      IF ( grid%active_this_task .OR. ngrid%active_this_task ) THEN
+        CALL rsl_lite_merge_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
+                                          nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       & 
+                                          ioffset, local_comm )
+      ENDIF
 
 IF ( grid%active_this_task ) THEN
+    CALL push_communicators_for_domain( grid%id )
 
 
 #define NEST_INFLUENCE(A,B) A = B
@@ -4826,6 +4981,7 @@ IF ( grid%active_this_task ) THEN
 
 #include "nest_feedbackup_smooth.inc"
 
+    CALL pop_communicators_for_domain
 ENDIF
 
       RETURN
@@ -4960,7 +5116,9 @@ ENDIF
       CALL get_dm_max_halo_width ( ngrid%id , thisdomain_max_halo_width )
 #include "nest_interpdown_pack.inc"
 
-      CALL rsl_lite_bcast_msgs( myproc, nproc, local_comm )
+      CALL rsl_lite_bcast_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
+                                        nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       & 
+                                        ioffset, local_comm )
 
 !#define COPY_OUT
 !#include <scalar_derefs.inc>
@@ -5138,7 +5296,9 @@ ENDIF
       CALL get_dm_max_halo_width ( ngrid%id , thisdomain_max_halo_width )
 #include "nest_forcedown_pack.inc"
 
-      CALL rsl_lite_bcast_msgs( myproc, nproc, local_comm )
+      CALL rsl_lite_bcast_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
+                                        nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       & 
+                                        ioffset, local_comm )
 
 !#define COPY_OUT
 !#include <scalar_derefs.inc>

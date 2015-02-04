@@ -296,6 +296,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
    USE module_io_domain
    USE module_configure	, ONLY : grid_config_rec_type
    USE module_utility
+   USE module_dm, ONLY : push_communicators_for_domain, pop_communicators_for_domain, local_communicator
   ! Model layer
 
    IMPLICIT NONE
@@ -416,7 +417,9 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
 
    END INTERFACE
 
+
    CALL interp_init
+
 
    CALL domain_clock_get( parent, start_time=strt_time, current_time=cur_time )
 
@@ -434,17 +437,47 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
      where ( parent%nest_pos .gt. 0. ) parent%nest_pos = parent%nest_pos + 500.  ! make a cliff
 #endif
 
+write(0,*)'dummy C bcast 1',local_communicator
+i = 5
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+write(0,*)'dummy C bcast 2',i
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+write(0,*)'dummy C bcast 3',i
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+write(0,*)'dummy C bcast 4',i
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+
 ! initialize some other constants (and 1d arrays in z)
      CALL init_domain_constants ( parent, nest )
-          
+
+
      if (nest%e_vert /= parent%e_vert) then
          ! set up coordinate variables for nest with vertical grid refinement (1d variables in z are done later in med_interp_domain)
        CALL init_domain_vert_nesting ( parent, nest )
      endif
 
+write(0,*)'dummy C1 bcast 1',local_communicator
+i = 5
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+write(0,*)'dummy C1 bcast 2',i
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+write(0,*)'dummy C1 bcast 3',i
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+write(0,*)'dummy C1 bcast 4',i
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
 
 ! fill in entire fine grid domain with interpolated coarse grid data
      CALL med_interp_domain( parent, nest )
+
+write(0,*)'dummy C2 bcast 1',local_communicator
+i = 5
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+write(0,*)'dummy C2 bcast 2',i
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+write(0,*)'dummy C2 bcast 3',i
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+write(0,*)'dummy C2 bcast 4',i
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
 
 !  De-reference dimension information stored in the grid data structure.
      CALL get_ijk_from_grid (  nest ,                   &
@@ -535,12 +568,36 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
                                      '. ***'
        CALL wrf_debug ( 0 , message )
 
+write(0,*)'dummy C3 bcast 1',local_communicator
+i = 5
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+write(0,*)'dummy C3 bcast 2',i
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+write(0,*)'dummy C3 bcast 3',i
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+write(0,*)'dummy C3 bcast 4',i
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+
 #if (DA_CORE != 1)
        ! For nests without an input file, we still need to read time series locations
        !   from the tslist file
-       IF ( nest%active_this_task) CALL wrf_tsin( nest , ierr )
+       IF ( nest%active_this_task) THEN
+          CALL push_communicators_for_domain( nest%id )
+          CALL wrf_tsin( nest , ierr )
+          CALL pop_communicators_for_domain( nest%id )
+       ENDIF
 #endif
      END IF
+
+write(0,*)'dummy B bcast 1',local_communicator
+i = 5
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+write(0,*)'dummy B bcast 2',i
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+write(0,*)'dummy B bcast 3',i
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+write(0,*)'dummy B bcast 4',i
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
 
 
 ! feedback, mostly for this new terrain, but it is the safe thing to do
@@ -556,6 +613,16 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
        call wrf_debug(1,'mediation_integrate.F, back from med_interp_domain_small')
      END IF
 
+write(0,*)'dummy A bcast 1',local_communicator
+i = 5
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+write(0,*)'dummy A bcast 2',i
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+write(0,*)'dummy A bcast 3',i
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+write(0,*)'dummy A bcast 4',i
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+
 ! set some other initial fields, fill out halos, base fields; re-do parent due
 ! to new terrain elevation from feedback
      nest%imask_nostag = 1
@@ -563,9 +630,33 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
      nest%imask_ystag = 1
      nest%imask_xystag = 1
      nest%press_adj = .TRUE.
-     IF ( nest%active_this_task) CALL start_domain ( nest , .TRUE. )
+     IF ( nest%active_this_task) THEN
+        CALL push_communicators_for_domain( nest%id )
+write(0,*)'calling start_domain for ',nest%id
+        CALL start_domain ( nest , .TRUE. )
+write(0,*)'back from start_domain for ',nest%id
+        CALL pop_communicators_for_domain
+     ENDIF
 
-IF ( parent%active_this_task ) THEN
+     CALL push_communicators_for_domain( parent%id )
+write(0,*)'at MPI_Barrier nest%id, parent%id ',nest%id, parent%id
+     CALL MPI_Barrier( local_communicator, ierr )     
+
+write(0,*)'dummy bcast 1',local_communicator
+i = 5
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+write(0,*)'dummy bcast 2',i
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+write(0,*)'dummy bcast 3',i
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+write(0,*)'dummy bcast 4',i
+CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
+
+write(0,*)'after MPI_Barrier nest%id, parent%id ',nest%id, parent%id
+     CALL pop_communicators_for_domain
+
+     IF ( parent%active_this_task ) THEN
+     CALL push_communicators_for_domain( parent%id )
 ! kludge: 20040604
      CALL get_ijk_from_grid (  parent ,                   &
                                ids, ide, jds, jde, kds, kde,    &
@@ -595,7 +686,9 @@ IF ( parent%active_this_task ) THEN
      parent%imask_xystag = 1
 
      parent%press_adj = .FALSE.
+write(0,*)'calling start_domain for ',parent%id
      CALL start_domain ( parent , .TRUE. )
+write(0,*)'back from start_domain for ',parent%id
 
      parent%acsnow     = save_acsnow
      parent%acsnom     = save_acsnom
@@ -615,8 +708,8 @@ IF ( parent%active_this_task ) THEN
      DEALLOCATE( save_sfcrunoff )
      DEALLOCATE( save_udrunoff )
 ! end of kludge: 20040604
-ENDIF
-
+     CALL pop_communicators_for_domain
+     ENDIF
 
   ELSE  ! restart
 

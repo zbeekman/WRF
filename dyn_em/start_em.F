@@ -871,6 +871,11 @@ if(config_flags%sf_surface_physics.eq.NOAHMPSCHEME.and.config_flags%opt_run.eq.5
 endif
 #endif
 
+write(0,*)__FILE__,__LINE__,'grid%i_start ',grid%i_start
+write(0,*)__FILE__,__LINE__,'grid%i_end ',grid%i_end
+write(0,*)__FILE__,__LINE__,'grid%j_start ',grid%j_start
+write(0,*)__FILE__,__LINE__,'grid%j_end ',grid%j_end
+
    DO ij = 1, grid%num_tiles
 
 !tgs do not need physics initialization for backward DFI integration

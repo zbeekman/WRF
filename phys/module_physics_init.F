@@ -778,6 +778,18 @@ integer myproc
 
    CALL wrf_debug(100,'top of phy_init')
 
+write(0,*)'phy_init: ids ',ids
+write(0,*)'phy_init: ide ',ide
+write(0,*)'phy_init: jds ',jds
+write(0,*)'phy_init: jde ',jde
+write(0,*)'phy_init: kds ',kds
+write(0,*)'phy_init: kde ',kde
+write(0,*)'phy_init: its ',its
+write(0,*)'phy_init: ite ',ite
+write(0,*)'phy_init: jts ',jts
+write(0,*)'phy_init: jte ',jte
+write(0,*)'phy_init: kts ',kts
+write(0,*)'phy_init: kte ',kte
    WRITE(wrf_err_message,*) 'phy_init:  start_of_simulation = ',start_of_simulation
    CALL wrf_debug ( 100, TRIM(wrf_err_message) )
 
@@ -966,7 +978,7 @@ integer myproc
    IF(mminlu_loc .ne. '    ')THEN
 !-- initialize surface properties
 
-     CALL landuse_init(lu_index, snowc, albedo, albbck, snoalb, mavail, emiss, embck, &
+     CALL landuse_init(id,lu_index, snowc, albedo, albbck, snoalb, mavail, emiss, embck, &
                 znt, Z0, thc, xland, xice, xicem, julday, cen_lat, iswater, &
                 TRIM ( mminlu_loc ) ,                               &
                 landuse_ISICE, landuse_LUCATS,                      &
@@ -1321,7 +1333,7 @@ integer myproc
    END SUBROUTINE phy_init
 
 !=====================================================================
-   SUBROUTINE landuse_init(lu_index, snowc, albedo, albbck, snoalb, mavail, emiss, embck, &
+   SUBROUTINE landuse_init(id,lu_index, snowc, albedo, albbck, snoalb, mavail, emiss, embck, &
                 znt,Z0,thc,xland, xice, xicem, julday, cen_lat, iswater, mminlu,  &
                 ISICE, LUCATS, LUSEAS, ISN,                         &
                 fractional_seaice,                                  &
@@ -1332,9 +1344,11 @@ integer myproc
                 its, ite, jts, jte, kts, kte                       )
 
    USE module_wrf_error
+USE module_dm, ONLY : local_communicator
    IMPLICIT NONE
 
 !---------------------------------------------------------------------
+   INTEGER , INTENT(IN)           :: id
    INTEGER , INTENT(IN)           :: ids, ide, jds, jde, kds, kde,   &
                                      ims, ime, jms, jme, kms, kme,   &
                                      its, ite, jts, jte, kts, kte
@@ -1406,13 +1420,16 @@ integer myproc
    FOUND_LU = .TRUE.
    IF ( allowed_to_read ) THEN
       landuse_unit = 29
+write(0,*)'before opening landuse_unit wrf_dm_on_monitor() ',id,wrf_dm_on_monitor()
       IF ( wrf_dm_on_monitor() ) THEN
+write(0,*)'opening landuse_unit '
         OPEN(landuse_unit, FILE='LANDUSE.TBL',FORM='FORMATTED',STATUS='OLD',IOSTAT=ierr)
         IF ( ierr .NE. OPEN_OK ) THEN
           WRITE(message,FMT='(A)') &
           'module_physics_init.F: LANDUSE_INIT: open failure for LANDUSE.TBL'
           CALL wrf_error_fatal ( message )
         END IF
+        REWIND(landuse_unit)
       ENDIF
 
 ! Read info from file LANDUSE.TBL
@@ -1438,7 +1455,9 @@ integer myproc
       end_of_file = .FALSE.
 !!! BEGINNING OF 1999 LOOP
  1999 CONTINUE
+write(0,*)'top of 1999 loop'
       IF ( wrf_dm_on_monitor() ) THEN
+write(0,*)'reading landuse_unit '
         READ (landuse_unit,*,END=2002)LUTYPE
         GOTO 2003
  2002   CONTINUE
@@ -1448,12 +1467,23 @@ integer myproc
         IF ( .NOT. end_of_file ) READ (landuse_unit,*)LUCATS,LUSEAS
         FOUND_LU = LUTYPE.EQ.MMINLU
       ENDIF
+write(0,*)'calling wrf_dm_bcast_bytes end_of_file ',local_communicator,LWORDSIZE
       CALL wrf_dm_bcast_bytes (end_of_file, LWORDSIZE )
+write(0,*)'back from wrf_dm_bcast_bytes end of file',local_communicator,LWORDSIZE,end_of_file
       IF ( .NOT. end_of_file ) THEN
-        CALL wrf_dm_bcast_string(lutype, 256)
+write(0,*)'calling wrf_dm_bcast_bytes dummy bcast of lucats',IWORDSIZE
         CALL wrf_dm_bcast_bytes (lucats,  IWORDSIZE )
+write(0,*)'calling wrf_dm_bcast_bytes back from dummy bcast of lucats',IWORDSIZE
+write(0,*)'calling wrf_dm_bcast_bytes for lutype'
+        CALL wrf_dm_bcast_string(lutype, 256)
+write(0,*)'after calling wrf_dm_bcast_bytes lutype = ', trim(lutype)
+write(0,*)'calling wrf_dm_bcast_bytes lucats',IWORDSIZE
+        CALL wrf_dm_bcast_bytes (lucats,  IWORDSIZE )
+write(0,*)'calling wrf_dm_bcast_bytes luseas',IWORDSIZE
         CALL wrf_dm_bcast_bytes (luseas,  IWORDSIZE )
+write(0,*)'calling wrf_dm_bcast_bytes found_lu',IWORDSIZE
         CALL wrf_dm_bcast_bytes (found_lu,  LWORDSIZE )
+write(0,*)'after wrf_dm_bcast_bytes found_lu'
         IF(FOUND_LU)THEN
           LUN=LUCATS
           NSN=LUSEAS
@@ -1475,7 +1505,9 @@ integer myproc
                 READ (landuse_unit,*)LI,ALBD(LC,LS),SLMO(LC,LS),SFEM(LC,LS),        &
                            SFZ0(LC,LS),THERIN(LC,LS),SCFX(LC),SFHC(LC,LS)
               ENDIF
+write(0,*)'calling wrf_dm_bcast_bytes LI ',local_communicator
               CALL wrf_dm_bcast_bytes (LI,  IWORDSIZE )
+write(0,*)'back from wrf_dm_bcast_bytes LI ',local_communicator
               IF(LC.NE.LI)CALL wrf_error_fatal ( 'module_start: MISSING LANDUSE UNIT ' )
             ELSE
               IF ( wrf_dm_on_monitor() ) THEN
@@ -1487,13 +1519,21 @@ integer myproc
         IF(NSN.EQ.1.AND.FOUND_LU) THEN
            ISN = 1
         END IF
+write(0,*)'calling wrf_dm_bcast_bytes albd ',local_communicator
         CALL wrf_dm_bcast_bytes (albd,   max_cats * max_seas * RWORDSIZE )
+write(0,*)'calling wrf_dm_bcast_bytes slmo ',local_communicator
         CALL wrf_dm_bcast_bytes (slmo,   max_cats * max_seas * RWORDSIZE )
+write(0,*)'calling wrf_dm_bcast_bytes sfem ',local_communicator
         CALL wrf_dm_bcast_bytes (sfem,   max_cats * max_seas * RWORDSIZE )
+write(0,*)'calling wrf_dm_bcast_bytes sfz0 ',local_communicator
         CALL wrf_dm_bcast_bytes (sfz0,   max_cats * max_seas * RWORDSIZE )
+write(0,*)'calling wrf_dm_bcast_bytes therin ',local_communicator
         CALL wrf_dm_bcast_bytes (therin, max_cats * max_seas * RWORDSIZE )
+write(0,*)'calling wrf_dm_bcast_bytes sfhc ',local_communicator
         CALL wrf_dm_bcast_bytes (sfhc,   max_cats * max_seas * RWORDSIZE )
+write(0,*)'calling wrf_dm_bcast_bytes scfx ',local_communicator
         CALL wrf_dm_bcast_bytes (scfx,   max_cats *            RWORDSIZE )
+write(0,*)'after wrf_dm_bcast_bytes scfx ',local_communicator
       ENDIF
 
       IF(.NOT. found_lu .AND. .NOT. end_of_file ) GOTO 1999
@@ -1567,6 +1607,7 @@ integer myproc
       ENDDO
     ENDIF
     if ( wrf_dm_on_monitor() .and. allowed_to_read ) then
+write(0,*)'closing landuse_unit '
       CLOSE (landuse_unit)
     endif
     CALL wrf_debug( 100 , 'returning from of landuse_init' )
@@ -1584,6 +1625,7 @@ integer myproc
         lu_state(curs) = THERIN(cats,seas)        ; curs = curs + 1
       ENDDO
     ENDDO
+   CALL wrf_debug( 100 , 'end of landuse_init' )
 !
 !-- fds (07/2010)
 !-- SSIB's 12-category vegetation parameters are defined in module_ssib_veg

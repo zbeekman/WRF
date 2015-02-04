@@ -488,8 +488,18 @@ CONTAINS
      INTEGER nt
      CHARACTER*80              :: mess
 
+write(0,*)__FILE__,__LINE__,' ims ',ims
+write(0,*)__FILE__,__LINE__,' ime ',ime
+write(0,*)__FILE__,__LINE__,' jms ',jms
+write(0,*)__FILE__,__LINE__,' jme ',jme
+write(0,*)__FILE__,__LINE__,' ips ',ips
+write(0,*)__FILE__,__LINE__,' ipe ',ipe
+write(0,*)__FILE__,__LINE__,' jps ',jps
+write(0,*)__FILE__,__LINE__,' jpe ',jpe
+
      CALL set_tiles_masked ( imask, ims, ime, jms, jme, ips, ipe, jps, jpe, &
                              num_tiles, i_start, i_end, j_start, j_end )
+write(0,*)__FILE__,__LINE__,' num_tiles ',num_tiles
 
      IF ( num_tiles > grid%max_tiles ) THEN
        IF ( ASSOCIATED(grid%i_start) ) THEN ; DEALLOCATE( grid%i_start ) ; NULLIFY( grid%i_start ) ; ENDIF

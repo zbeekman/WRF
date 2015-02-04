@@ -2055,6 +2055,7 @@ gen_nest_pack ( char * dirname )
 if (sw) fprintf(fp,"                        ,iids,iide,ijds,ijde                               &\n") ;
         fprintf(fp,"                        ,nids,nide,njds,njde                               &\n") ;
 if (sw) fprintf(fp,"                        ,pgr , sw                                          &\n") ;
+        fprintf(fp,"                        ,nest_task_offsets(ngrid%%id)                      &\n") ;
         fprintf(fp,"                        ,nest_pes_x(grid%%id)                              &\n") ;
         fprintf(fp,"                        ,nest_pes_y(grid%%id)                              &\n") ; 
         fprintf(fp,"                        ,nest_pes_x(intermediate_grid%%id)                 &\n") ;
@@ -2074,11 +2075,12 @@ if (sw) fprintf(fp,"                        ,pgr , sw                           
 if (sw) fprintf(fp,"                        ,iids,iide,ijds,ijde                               &\n") ;
         fprintf(fp,"                        ,nids,nide,njds,njde                               &\n") ;
 if (sw) fprintf(fp,"                        ,pgr , sw                                          &\n") ;
+        fprintf(fp,"                        ,nest_task_offsets(ngrid%%id)                      &\n") ;
         fprintf(fp,"                        ,nest_pes_x(grid%%id)                              &\n") ;
         fprintf(fp,"                        ,nest_pes_y(grid%%id)                              &\n") ; 
         fprintf(fp,"                        ,nest_pes_x(intermediate_grid%%id)                 &\n") ;
         fprintf(fp,"                        ,nest_pes_y(intermediate_grid%%id)                 &\n") ; 
-        fprintf(fp,"                        ,thisdomain_max_halo_width                                  &\n") ;
+        fprintf(fp,"                        ,thisdomain_max_halo_width                         &\n") ;
         fprintf(fp,"                        ,icoord,jcoord                                     &\n") ;
         fprintf(fp,"                        ,idim_cd,jdim_cd                                   &\n") ;
         fprintf(fp,"                        ,pig,pjg,retval )\n") ;
