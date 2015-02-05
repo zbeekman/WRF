@@ -8,7 +8,7 @@ SUBROUTINE med_force_domain ( parent_grid , nested_grid )
    USE module_domain
    USE module_configure
    USE module_intermediate_nmm
-   USE module_dm, ONLY : intercomm_active
+   USE module_dm, ONLY : intercomm_active,push_communicators_for_domain,pop_communicators_for_domain
    IMPLICIT NONE
    TYPE(domain), POINTER :: parent_grid , nested_grid
    TYPE(domain), POINTER :: grid
@@ -158,7 +158,7 @@ this_time=now_time()
    grid => nested_grid%intermediate_grid
 #  if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
    IF ( intercomm_active(grid%id) ) THEN
-   CALL alloc_space_field ( grid, grid%id , 1 , 2 ,  .TRUE. ,    &
+     CALL alloc_space_field ( grid, grid%id , 1 , 2 ,  .TRUE. ,    &
                             grid%sd31, grid%ed31, grid%sd32, grid%ed32, grid%sd33, grid%ed33, &
                             grid%sm31,  grid%em31,  grid%sm32,  grid%em32,  grid%sm33,  grid%em33, &
                             grid%sp31,  grid%ep31,  grid%sp32,  grid%ep32,  grid%sp33,  grid%ep33, &
@@ -167,26 +167,34 @@ this_time=now_time()
                             grid%sm31x, grid%em31x, grid%sm32x, grid%em32x, grid%sm33x, grid%em33x, &   ! x-xpose
                             grid%sm31y, grid%em31y, grid%sm32y, grid%em32y, grid%sm33y, grid%em33y  &   ! y-xpose
      )
-   ENDIF
+     ENDIF
 #  endif
 
    ! couple parent domain
    grid => parent_grid
+   IF ( grid%active_this_task ) THEN
+     CALL push_communicators_for_domain(grid%id)
    ! swich config_flags to point to parent rconfig info
-   CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
-   CALL couple_or_uncouple_em ( grid , config_flags ,  .true. &
+     CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
+     CALL couple_or_uncouple_em ( grid , config_flags ,  .true. &
 !
 #         include "actual_new_args.inc"
 !
                                 )
+     CALL pop_communicators_for_domain
+   ENDIF
    ! couple nested domain
    grid => nested_grid
-   CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
-   CALL couple_or_uncouple_em ( grid , config_flags ,  .true. &
+   IF ( grid%active_this_task ) THEN
+     CALL push_communicators_for_domain(grid%id)
+     CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
+     CALL couple_or_uncouple_em ( grid , config_flags ,  .true. &
 !
 #         include "actual_new_args.inc"
 !
                                    )
+     CALL pop_communicators_for_domain
+   ENDIF
    ! perform first part: transfer data from parent to intermediate domain
    ! at the same resolution but on the same decomposition as the nest
    ! note that this will involve communication on multiple DM procs
@@ -221,20 +229,28 @@ this_time=now_time()
    ! uncouple the nest
   ENDIF
    grid => nested_grid
-   CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
-   CALL couple_or_uncouple_em ( grid , config_flags ,  .false.  &
+   IF ( grid%active_this_task ) THEN
+     CALL push_communicators_for_domain(grid%id)
+     CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
+     CALL couple_or_uncouple_em ( grid , config_flags ,  .false.  &
 !
 #          include "actual_new_args.inc"
 !
                                    )
+     CALL pop_communicators_for_domain
+   ENDIF
    ! uncouple the parent
    grid => parent_grid
-   CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
-   CALL couple_or_uncouple_em ( grid , config_flags ,  .false.  &
+   IF ( grid%active_this_task ) THEN
+     CALL push_communicators_for_domain(grid%id)
+     CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
+     CALL couple_or_uncouple_em ( grid , config_flags ,  .false.  &
 !
 #          include "actual_new_args.inc"
 !
                                 )
+     CALL pop_communicators_for_domain
+   ENDIF
    IF ( nested_grid%first_force ) THEN
       nested_grid%first_force = .FALSE.
    ENDIF
@@ -243,7 +259,7 @@ this_time=now_time()
    grid => nested_grid%intermediate_grid
 #  if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
    IF ( intercomm_active(grid%id) ) THEN
-   CALL dealloc_space_field ( grid )
+     CALL dealloc_space_field ( grid )
    ENDIF
 #  endif
 # endif

@@ -426,26 +426,18 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
    IF ( .not. ( config_flags%restart .AND. strt_time .EQ. cur_time ) ) THEN
      nest%first_force = .true.
 
+     IF ( nest%active_this_task ) THEN
 ! initialize nest with interpolated data from the parent
-     nest%imask_nostag = 1
-     nest%imask_xstag = 1
-     nest%imask_ystag = 1
-     nest%imask_xystag = 1
+       nest%imask_nostag = 1
+       nest%imask_xstag = 1
+       nest%imask_ystag = 1
+       nest%imask_xystag = 1
+     ENDIF
 
 #ifdef MOVE_NESTS
      parent%nest_pos = parent%ht
      where ( parent%nest_pos .gt. 0. ) parent%nest_pos = parent%nest_pos + 500.  ! make a cliff
 #endif
-
-write(0,*)'dummy C bcast 1',local_communicator
-i = 5
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-write(0,*)'dummy C bcast 2',i
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-write(0,*)'dummy C bcast 3',i
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-write(0,*)'dummy C bcast 4',i
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
 
 ! initialize some other constants (and 1d arrays in z)
      CALL init_domain_constants ( parent, nest )
@@ -456,32 +448,10 @@ CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
        CALL init_domain_vert_nesting ( parent, nest )
      endif
 
-write(0,*)'dummy C1 bcast 1',local_communicator
-i = 5
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-write(0,*)'dummy C1 bcast 2',i
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-write(0,*)'dummy C1 bcast 3',i
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-write(0,*)'dummy C1 bcast 4',i
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-
 ! fill in entire fine grid domain with interpolated coarse grid data
 write(0,*)__FILE__,__LINE__,'calling med_interp_domain ',parent%id, nest%id
      CALL med_interp_domain( parent, nest )
 write(0,*)__FILE__,__LINE__,'back from med_interp_domain ',parent%id, nest%id
-
-write(0,*)'dummy C2 bcast 1',local_communicator
-i = 5
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-write(0,*)'dummy C2 bcast 2',i
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-write(0,*)'dummy C2 bcast 3',i
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-write(0,*)'dummy C2 bcast 4',i
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-
-write(0,*)__FILE__,__LINE__,'nest%id ',nest%id
 
 !  De-reference dimension information stored in the grid data structure.
      CALL get_ijk_from_grid (  nest ,                   &
@@ -572,17 +542,6 @@ write(0,*)__FILE__,__LINE__,'nest%id ',nest%id
                                      '. ***'
        CALL wrf_debug ( 0 , message )
 
-write(0,*)'dummy C3 bcast 1',local_communicator
-i = 5
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-write(0,*)'dummy C3 bcast 2',i
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-write(0,*)'dummy C3 bcast 3',i
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-write(0,*)'dummy C3 bcast 4',i
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-
-write(0,*)__FILE__,__LINE__,'nest%id ',nest%id
 #if (DA_CORE != 1)
        ! For nests without an input file, we still need to read time series locations
        !   from the tslist file
@@ -593,25 +552,13 @@ write(0,*)__FILE__,__LINE__,'nest%id ',nest%id
        ENDIF
 #endif
      END IF
-write(0,*)__FILE__,__LINE__,'nest%id ',nest%id
-
-write(0,*)'dummy B bcast 1',local_communicator
-i = 5
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-write(0,*)'dummy B bcast 2',i
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-write(0,*)'dummy B bcast 3',i
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-write(0,*)'dummy B bcast 4',i
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-
 
 ! feedback, mostly for this new terrain, but it is the safe thing to do
      parent%ht_coarse = parent%ht
 
 write(0,*)__FILE__,__LINE__,'call med_nest_feedback parent%id,nest%id',parent%id,nest%id
      CALL med_nest_feedback ( parent , nest , config_flags )
-write(0,*)__FILE__,__LINE__,'nest%id ',nest%id
+write(0,*)__FILE__,__LINE__,'back from med_nest_feedback nest%id ',nest%id
 
 ! This is the new interpolation for specific 3d arrays that are sensitive to the
 ! topography diffs betwixt the CG and the FG.
@@ -621,45 +568,24 @@ write(0,*)__FILE__,__LINE__,'nest%id ',nest%id
        call wrf_debug(1,'mediation_integrate.F, back from med_interp_domain_small')
      END IF
 
-write(0,*)'dummy A bcast 1',local_communicator
-i = 5
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-write(0,*)'dummy A bcast 2',i
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-write(0,*)'dummy A bcast 3',i
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-write(0,*)'dummy A bcast 4',i
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-
 ! set some other initial fields, fill out halos, base fields; re-do parent due
 ! to new terrain elevation from feedback
-     nest%imask_nostag = 1
-     nest%imask_xstag = 1
-     nest%imask_ystag = 1
-     nest%imask_xystag = 1
-     nest%press_adj = .TRUE.
      IF ( nest%active_this_task) THEN
-        CALL push_communicators_for_domain( nest%id )
-write(0,*)'calling start_domain for ',nest%id
-        CALL start_domain ( nest , .TRUE. )
+       nest%imask_nostag = 1
+       nest%imask_xstag = 1
+       nest%imask_ystag = 1
+       nest%imask_xystag = 1
+       nest%press_adj = .TRUE.
+       CALL push_communicators_for_domain( nest%id )
+write(0,*)'calling start_domain for nest ',nest%id
+       CALL start_domain ( nest , .TRUE. )
 write(0,*)'back from start_domain for ',nest%id
-        CALL pop_communicators_for_domain
+       CALL pop_communicators_for_domain
      ENDIF
 
      CALL push_communicators_for_domain( parent%id )
 write(0,*)'at MPI_Barrier nest%id, parent%id ',nest%id, parent%id
      CALL MPI_Barrier( local_communicator, ierr )     
-
-write(0,*)'dummy bcast 1',local_communicator
-i = 5
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-write(0,*)'dummy bcast 2',i
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-write(0,*)'dummy bcast 3',i
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-write(0,*)'dummy bcast 4',i
-CALL wrf_dm_bcast_bytes (i,  IWORDSIZE )
-
 write(0,*)'after MPI_Barrier nest%id, parent%id ',nest%id, parent%id
      CALL pop_communicators_for_domain
 
@@ -694,7 +620,7 @@ write(0,*)'after MPI_Barrier nest%id, parent%id ',nest%id, parent%id
      parent%imask_xystag = 1
 
      parent%press_adj = .FALSE.
-write(0,*)'calling start_domain for ',parent%id
+write(0,*)'calling start_domain for parent ',parent%id
      CALL start_domain ( parent , .TRUE. )
 write(0,*)'back from start_domain for ',parent%id
 

@@ -1632,12 +1632,14 @@ print *,'column of cg pres = ',cprs
      IF( MOD(nrj,2) .NE. 0) THEN  ! odd refinement ratio
 
         DO cj = MAX(jpos+spec_zone,cjts),MIN(jpos+(njde-njds)/nrj-jstag-spec_zone,cjte)
+write(0,*)'cj ',cj,' jpos ',jpos,' nrj ',nrj,' nj ',nj
            nj = (cj-jpos)*nrj + jstag + 1
            DO ck = ckts, ckte
               nk = ck
               DO ci = MAX(ipos+spec_zone,cits),MIN(ipos+(nide-nids)/nri-istag-spec_zone,cite)
                  ni = (ci-ipos)*nri + istag + 1
                  cfld( ci, ck, cj ) =  nfld( ni  , nk , nj  )
+write(0,'("copy_fcni ci,ck,cj ni,nk,nj cfld(ci,ck,cj) ",7i6)')ci,ck,cj,ni,nk,nj, cfld(ci,ck,cj)
               ENDDO
            ENDDO
         ENDDO

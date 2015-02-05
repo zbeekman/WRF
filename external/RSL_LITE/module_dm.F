@@ -2914,7 +2914,9 @@ write(0,*)__FILE__,__LINE__,'pe ',pe
         ENDIF
       ENDIF
       iter = iter + 1
-write(0,*)__FILE__,__LINE__,'ntx, nty, me ',ntx,nty,me
+write(0,*)__FILE__,__LINE__,'ntasks_x, ntasks_y ',ntasks_x,ntasks_y
+write(0,*)__FILE__,__LINE__,'ntx, nty ',ntx,nty
+write(0,*)__FILE__,__LINE__,'nt, me ',nt,me
 write(0,*)__FILE__,__LINE__,'parent_start ',parent_start
 write(0,*)__FILE__,__LINE__,'parent_grid_ratio ',parent_grid_ratio
 
@@ -3037,6 +3039,16 @@ if (xy.eq.0) write(0,*)__FILE__,__LINE__,'me lt nty-1 0',ub,pe-shw+1,went
             IF ( is_intermediate ) THEN
               kn =  ( k - parent_start ) * parent_grid_ratio + 1 + 1 ;
               CALL task_for_point (1,kn,1,dum,nds,nde,ntx,nty,Px,Py,minx,miny,ierr) ! modified to treat x and y separately
+
+write(0,*)__FILE__,__LINE__,'tfp kn ',kn,' nds ',nds
+write(0,*)__FILE__,__LINE__,'tfp kn ',kn,' nde ',nde
+write(0,*)__FILE__,__LINE__,'tfp kn ',kn,' ntx ',ntx
+write(0,*)__FILE__,__LINE__,'tfp kn ',kn,' nty ',nty
+write(0,*)__FILE__,__LINE__,'tfp kn ',kn,' minx ',minx
+write(0,*)__FILE__,__LINE__,'tfp kn ',kn,' miny ',miny
+write(0,*)__FILE__,__LINE__,'tfp kn ',kn,' Px  ',Px
+write(0,*)__FILE__,__LINE__,'tfp kn ',kn,' Py  ',Py
+
               IF ( ierr .NE. 0 ) CALL wrf_error_fatal('error code returned by task_for_point in module_dm.F (l)')
             ELSE
               CALL task_for_point (1,k,1,dum,ds,de,ntx,nty,Px,Py,minx,miny,ierr) ! modified to treat x and y separately
@@ -4045,7 +4057,8 @@ write(0,*)'rsl_comm_iter returns ',went
       USE module_domain, ONLY : domain, get_ijk_from_grid
       USE module_configure, ONLY : grid_config_rec_type
       USE module_dm, ONLY : ntasks, ntasks_x, ntasks_y, local_communicator, mytask, &
-                            nest_pes_x, nest_pes_y
+                            nest_pes_x, nest_pes_y,                                 &
+                            push_communicators_for_domain,pop_communicators_for_domain
       USE module_comm_nesting_dm, ONLY : halo_force_down_sub
       IMPLICIT NONE
 !
@@ -4088,10 +4101,15 @@ IF ( ngrid%active_this_task ) THEN
                                 ims, ime, jms, jme, kms, kme,    &
                                 ips, ipe, jps, jpe, kps, kpe    )
 
+      CALL push_communicators_for_domain( grid%id )
+
 #include "HALO_FORCE_DOWN.inc"
+
 
       ! code here to interpolate the data into the nested domain
 #  include "nest_forcedown_interp.inc"
+
+      CALL pop_communicators_for_domain
 
 ENDIF
 

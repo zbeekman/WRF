@@ -1587,7 +1587,7 @@ CONTAINS
    END SUBROUTINE lsm
 !------------------------------------------------------
 
-  SUBROUTINE LSMINIT(VEGFRA,SNOW,SNOWC,SNOWH,CANWAT,SMSTAV,    &
+  SUBROUTINE LSMINIT(id,VEGFRA,SNOW,SNOWC,SNOWH,CANWAT,SMSTAV,    &
                      SMSTOT, SFCRUNOFF,UDRUNOFF,ACSNOW,        &
                      ACSNOM,IVGTYP,ISLTYP,TSLB,SMOIS,SH2O,ZS,DZS, &
                      MMINLU,                                   &
@@ -1598,6 +1598,7 @@ CONTAINS
                      ims,ime, jms,jme, kms,kme,                &
                      its,ite, jts,jte, kts,kte                 )
 
+integer,intent(in) :: id
    INTEGER,  INTENT(IN   )   ::     ids,ide, jds,jde, kds,kde,  &
                                     ims,ime, jms,jme, kms,kme,  &
                                     its,ite, jts,jte, kts,kte
@@ -1642,7 +1643,9 @@ CONTAINS
    REAL, PARAMETER           :: BLIM = 5.5, HLICE = 3.335E5,    &
                                 GRAV = 9.81, T0 = 273.15
    INTEGER                   :: errflag
-   CHARACTER(LEN=80)         :: err_message
+   CHARACTER(LEN=256)         :: err_message
+
+integer myproc
 
    character*256 :: MMINSL
         MMINSL='STAS'
@@ -1673,10 +1676,23 @@ CONTAINS
    jtf=min0(jte,jde-1)
 
    errflag = 0
+
+if ( id .eq. 1 ) then
+write(0,*)'writing ISLTYP to hmv file'
+call wrf_get_myproc(myproc)
+write(70+myproc,*)itf-its+1, jtf-jts+1
+DO j = jts,jtf
+DO i = its,itf
+write(70+myproc,*)ISLTYP(i,j)
+ENDDO
+ENDDO
+endif
+
    DO j = jts,jtf
      DO i = its,itf
        IF ( ISLTYP( i,j ) .LT. 1 ) THEN
          errflag = 1
+write(0,*)__FILE__,__LINE__,i,j,ISLTYP( i,j ),id
          WRITE(err_message,*)"module_sf_noahlsm.F: lsminit: out of range ISLTYP ",i,j,ISLTYP( i,j )
          CALL wrf_message(err_message)
        ENDIF
