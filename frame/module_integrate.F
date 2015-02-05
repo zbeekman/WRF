@@ -165,6 +165,8 @@ RECURSIVE SUBROUTINE integrate ( grid )
    INTEGER                                :: idum1 , idum2 , ierr , open_status
    LOGICAL                                :: should_do_last_io
 
+integer myproc,i,j
+
    ! interface
    INTERFACE
        ! mediation-supplied solver
@@ -311,6 +313,25 @@ write(0,*)__FILE__,__LINE__
                CALL Setup_Timekeeping (new_nest)
 write(0,*)__FILE__,__LINE__,"calling med_nest_initial ",grid%id, new_nest%id 
                CALL med_nest_initial ( grid , new_nest , config_flags )
+
+IF ( new_nest%id.eq.2.and.new_nest%active_this_task) THEN
+CALL wrf_get_myproc(myproc)
+
+write(40+myproc,*)new_nest%ep31-new_nest%sp31+1,new_nest%ep33-new_nest%sp33+1,' w_2 '
+DO j=new_nest%sp33,new_nest%ep33
+DO i=new_nest%sp31,new_nest%ep31
+write(40+myproc,*)new_nest%w_2(i,10,j)
+ENDDO
+ENDDO
+write(40+myproc,*)new_nest%ep31-new_nest%sp31+1,new_nest%ep33-new_nest%sp33+1,' t_2 '
+DO j=new_nest%sp33,new_nest%ep33
+DO i=new_nest%sp31,new_nest%ep31
+write(40+myproc,*)new_nest%t_2(i,10,j)
+ENDDO
+ENDDO
+
+ENDIF
+
 write(0,*)__FILE__,__LINE__
                IF ( grid%dfi_stage == DFI_STARTFWD ) THEN
                   CALL wrf_dfi_startfwd_init(new_nest)
@@ -365,16 +386,20 @@ write(0,*)__FILE__,__LINE__
                      domain_get_current_time(grid)
                    WRITE(message,*)grid%id,' module_integrate: recursive call to integrate '
                    CALL wrf_debug( 100 , message )
+                   IF ( grid_ptr%nests(kid)%ptr%active_this_task ) THEN
 write(0,*)__FILE__,__LINE__
-                   CALL integrate ( grid_ptr%nests(kid)%ptr ) 
-write(0,*)__FILE__,__LINE__
+                      CALL integrate ( grid_ptr%nests(kid)%ptr ) 
+write(0,*)__FILE__,__LINE__,'RECURSING TO ACTIVE NEST',grid_ptr%nests(kid)%ptr%id
+                   ELSE
+write(0,*)__FILE__,__LINE__,'SKIPPING RECURSION TO NON-ACTIVE NEST',grid_ptr%nests(kid)%ptr%id
+                   ENDIF
                    WRITE(message,*)grid%id,' module_integrate: back from recursive call to integrate '
                    CALL wrf_debug( 100 , message )
                    IF ( .NOT. ( domain_clockisstoptime(head_grid              ) .OR. &
                                 domain_clockisstoptime(grid                   ) .OR. &
                                 domain_clockisstoptime(grid_ptr%nests(kid)%ptr) ) )  THEN
                      CALL wrf_debug( 100 , 'module_integrate: calling med_nest_feedback ' )
-write(0,*)"calling med_nest_feedback kid,grid_ptr%id,grid_ptr%nests(kid)%ptr ",kid,grid_ptr%id, grid_ptr%nests(kid)%ptr
+write(0,*)"calling med_nest_feedback kid,grid_ptr%id,grid_ptr%nests(kid)%ptr%id ",kid,grid_ptr%id, grid_ptr%nests(kid)%ptr%id
                      CALL med_nest_feedback ( grid_ptr , grid_ptr%nests(kid)%ptr , config_flags )
                      CALL wrf_debug( 100 , 'module_integrate: back from med_nest_feedback ' )
                    END IF

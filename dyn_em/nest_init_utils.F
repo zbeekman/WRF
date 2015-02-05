@@ -13,6 +13,110 @@ SUBROUTINE init_domain_constants_em ( parent , nest )
 
 write(0,*)__FILE__,__LINE__,'patt ',parent%active_this_task
 write(0,*)__FILE__,__LINE__,'natt ',nest%active_this_task
+   IF ( parent%active_this_task .AND. nest%active_this_task ) THEN
+     nest%p_top   = parent%p_top
+     nest%save_topo_from_real   = parent%save_topo_from_real
+     nest%cfn     = parent%cfn
+     nest%cfn1    = parent%cfn1
+     nest%rdx     = 1./nest%dx
+     nest%rdy     = 1./nest%dy
+  !  nest%dts     = nest%dt/float(nest%time_step_sound)
+     nest%dtseps  = parent%dtseps  ! used in height model only?
+     nest%resm    = parent%resm    ! used in height model only?
+     nest%zetatop = parent%zetatop ! used in height model only?
+     nest%cf1     = parent%cf1
+     nest%cf2     = parent%cf2
+     nest%cf3     = parent%cf3
+     nest%gmt     = parent%gmt
+     nest%julyr   = parent%julyr
+     nest%julday  = parent%julday
+     nest%iswater = parent%iswater
+     nest%isice   = parent%isice
+     nest%isurban = parent%isurban
+     nest%islake  = parent%islake
+     nest%isoilwater = parent%isoilwater
+     nest%mminlu  = trim(parent%mminlu)
+     nest%tiso    = parent%tiso
+     nest%tlp     = parent%tlp
+     nest%p00     = parent%p00
+     nest%t00     = parent%t00
+  !cyl: variables for trajectory /float
+     nest%traj_k = parent%traj_k
+     nest%traj_long = parent%traj_long
+     nest%traj_lat = parent%traj_lat
+  
+     nest%this_is_an_ideal_run = parent%this_is_an_ideal_run
+  
+     CALL nl_get_mminlu ( 1, char_junk )
+     CALL nl_get_iswater( 1, iswater )
+     CALL nl_get_islake ( 1, islake )
+     CALL nl_get_isice  ( 1, isice )
+     CALL nl_get_isurban( 1, isurban )
+     CALL nl_get_isoilwater(1, isoilwater )
+     CALL nl_get_truelat1 ( 1 , truelat1 )
+     CALL nl_get_truelat2 ( 1 , truelat2 )
+     CALL nl_get_moad_cen_lat ( 1 , moad_cen_lat )
+     CALL nl_get_stand_lon ( 1 , stand_lon )
+     CALL nl_get_pole_lat ( 1 , pole_lat )
+     CALL nl_get_pole_lon ( 1 , pole_lon )
+     CALL nl_get_map_proj ( 1 , map_proj )
+     CALL nl_get_gmt ( 1 , gmt)
+     CALL nl_get_julyr ( 1 , julyr)
+     CALL nl_get_julday ( 1 , julday)
+     IF ( nest%id .NE. 1 ) THEN
+       CALL nl_set_gmt (nest%id, gmt)
+       CALL nl_set_julyr (nest%id, julyr)
+       CALL nl_set_julday (nest%id, julday)
+       CALL nl_set_iswater ( nest%id, iswater )
+       CALL nl_set_islake  ( nest%id, islake )
+       CALL nl_set_isice   ( nest%id, isice )
+       CALL nl_set_isurban ( nest%id, isurban )
+       CALL nl_set_isoilwater ( nest%id, isoilwater )
+       CALL nl_set_mminlu ( nest%id, char_junk )
+       CALL nl_set_truelat1 ( nest%id , truelat1 )
+       CALL nl_set_truelat2 ( nest%id , truelat2 )
+       CALL nl_set_moad_cen_lat ( nest%id , moad_cen_lat )
+       CALL nl_set_stand_lon ( nest%id , stand_lon )
+       CALL nl_set_pole_lat ( nest%id , pole_lat )
+       CALL nl_set_pole_lon ( nest%id , pole_lon )
+       CALL nl_set_map_proj ( nest%id , map_proj )
+     END IF
+     nest%gmt     = gmt
+     nest%julday  = julday
+     nest%julyr   = julyr
+     nest%iswater = iswater
+     nest%islake  = islake
+     nest%isice   = isice
+     nest%isoilwater = isoilwater
+     nest%mminlu  = trim(char_junk)
+     nest%truelat1= truelat1
+     nest%truelat2= truelat2
+     nest%moad_cen_lat= moad_cen_lat
+     nest%stand_lon= stand_lon
+     nest%pole_lat= pole_lat
+     nest%pole_lon= pole_lon
+     nest%map_proj= map_proj
+  
+     nest%step_number  = parent%step_number
+  
+  ! 1D constants (Z)
+  
+     nest%fnm    = parent%fnm
+     nest%fnp    = parent%fnp
+     nest%rdnw   = parent%rdnw
+     nest%rdn    = parent%rdn
+     nest%dnw    = parent%dnw
+     nest%dn     = parent%dn
+     nest%znu    = parent%znu
+     nest%znw    = parent%znw
+     nest%t_base = parent%t_base
+     nest%u_base    = parent%u_base
+     nest%v_base    = parent%v_base
+     nest%qv_base   = parent%qv_base
+     nest%z_base    = parent%z_base
+     nest%dzs       = parent%dzs
+     nest%zs        = parent%zs
+   ENDIF
    IF ( parent%active_this_task .OR. nest%active_this_task ) THEN
      IF ( parent%active_this_task ) THEN
        comzilla = mpi_comm_to_kid( which_kid( nest%id ) , parent%id )
@@ -127,6 +231,7 @@ write(0,*)__FILE__,__LINE__,'Natt: mpi_comm_to_mom ',comzilla,nest%id
      CALL BYTE_BCAST( grid%dnw,SIZE(grid%dnw)*RWORDSIZE,comzilla) !   nest%dnw    = parent%dnw
      CALL BYTE_BCAST( grid%dn,SIZE(grid%dn)*RWORDSIZE,comzilla) !   nest%dn     = parent%dn
      CALL BYTE_BCAST( grid%znu,SIZE(grid%znu)*RWORDSIZE,comzilla) !   nest%znu    = parent%znu
+write(0,*)'ZNW: ',grid%id,grid%znw
      CALL BYTE_BCAST( grid%znw,SIZE(grid%znw)*RWORDSIZE,comzilla) !   nest%znw    = parent%znw
      CALL BYTE_BCAST( grid%t_base,SIZE(grid%t_base)*RWORDSIZE,comzilla) !   nest%t_base = parent%t_base
      CALL BYTE_BCAST( grid%u_base,SIZE(grid%u_base)*RWORDSIZE,comzilla) !   nest%u_base    = parent%u_base

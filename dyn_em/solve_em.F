@@ -158,6 +158,7 @@ SUBROUTINE solve_em ( grid , config_flags  &
    INTEGER :: ii, jj !kk is above after l,kte
    REAL    :: dclat
    INTEGER :: debug_level
+integer myproc
 
 ! urban related variables
    INTEGER :: NUM_ROOF_LAYERS, NUM_WALL_LAYERS, NUM_ROAD_LAYERS   ! urban
@@ -396,6 +397,17 @@ SUBROUTINE solve_em ( grid , config_flags  &
      grid%max_horiz_cfl = 0
      grid%max_vert_cfl = 0
    ENDIF
+
+!ZAP
+IF ( grid%id.eq.2) THEN
+CALL wrf_get_myproc(myproc)
+write(30+myproc,*)ipe-ips+1,jpe-jps+1
+DO j=jps,jpe
+DO i=ips,ipe
+write(30+myproc,*)grid%w_2(i,1,j)
+ENDDO
+ENDDO
+ENDIF
 
 ! setting bdy tendencies to zero for DFI if constant_bc = true
 

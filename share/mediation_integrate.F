@@ -335,6 +335,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
                                          ,save_sfcevp             &
                                          ,save_sfcrunoff          &
                                          ,save_udrunoff
+integer myproc
 
 
    INTERFACE
@@ -453,6 +454,8 @@ write(0,*)__FILE__,__LINE__,'calling med_interp_domain ',parent%id, nest%id
      CALL med_interp_domain( parent, nest )
 write(0,*)__FILE__,__LINE__,'back from med_interp_domain ',parent%id, nest%id
 
+
+
 !  De-reference dimension information stored in the grid data structure.
      CALL get_ijk_from_grid (  nest ,                   &
                                ids, ide, jds, jde, kds, kde,    &
@@ -556,9 +559,13 @@ write(0,*)__FILE__,__LINE__,'back from med_interp_domain ',parent%id, nest%id
 ! feedback, mostly for this new terrain, but it is the safe thing to do
      parent%ht_coarse = parent%ht
 
+#if 0
 write(0,*)__FILE__,__LINE__,'call med_nest_feedback parent%id,nest%id',parent%id,nest%id
      CALL med_nest_feedback ( parent , nest , config_flags )
 write(0,*)__FILE__,__LINE__,'back from med_nest_feedback nest%id ',nest%id
+#else
+ write(0,*)__FILE__, ' W A R N I N G  -- med_nest_feedback commented out'
+#endif
 
 ! This is the new interpolation for specific 3d arrays that are sensitive to the
 ! topography diffs betwixt the CG and the FG.
@@ -570,6 +577,23 @@ write(0,*)__FILE__,__LINE__,'back from med_nest_feedback nest%id ',nest%id
 
 ! set some other initial fields, fill out halos, base fields; re-do parent due
 ! to new terrain elevation from feedback
+
+IF ( nest%id.eq.2.and.nest%active_this_task) THEN
+CALL wrf_get_myproc(myproc)
+write(50+myproc,*)nest%ep31-nest%sp31+1,nest%ep33-nest%sp33+1,' w_2 '
+DO j=nest%sp33,nest%ep33
+DO i=nest%sp31,nest%ep31
+write(50+myproc,*)nest%w_2(i,10,j)
+ENDDO
+ENDDO
+write(50+myproc,*)nest%ep31-nest%sp31+1,nest%ep33-nest%sp33+1,' t_2 '
+DO j=nest%sp33,nest%ep33
+DO i=nest%sp31,nest%ep31
+write(50+myproc,*)nest%t_2(i,10,j)
+ENDDO
+ENDDO
+ENDIF
+
      IF ( nest%active_this_task) THEN
        nest%imask_nostag = 1
        nest%imask_xstag = 1
@@ -582,6 +606,22 @@ write(0,*)'calling start_domain for nest ',nest%id
 write(0,*)'back from start_domain for ',nest%id
        CALL pop_communicators_for_domain
      ENDIF
+
+IF ( nest%id.eq.2.and.nest%active_this_task) THEN
+CALL wrf_get_myproc(myproc)
+write(50+myproc,*)nest%ep31-nest%sp31+1,nest%ep33-nest%sp33+1,' w_2 '
+DO j=nest%sp33,nest%ep33
+DO i=nest%sp31,nest%ep31
+write(50+myproc,*)nest%w_2(i,10,j)
+ENDDO
+ENDDO
+write(50+myproc,*)nest%ep31-nest%sp31+1,nest%ep33-nest%sp33+1,' t_2 '
+DO j=nest%sp33,nest%ep33
+DO i=nest%sp31,nest%ep31
+write(50+myproc,*)nest%t_2(i,10,j)
+ENDDO
+ENDDO
+ENDIF
 
      CALL push_communicators_for_domain( parent%id )
 write(0,*)'at MPI_Barrier nest%id, parent%id ',nest%id, parent%id

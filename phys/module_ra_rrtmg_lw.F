@@ -4938,22 +4938,39 @@ contains
 
 ! Calculate gaseous optical depth and planck fractions for each spectral band.
 
+!zap write(0,*)__FILE__,__LINE__
       call taugb1
+!zap write(0,*)__FILE__,__LINE__
       call taugb2
+!zap write(0,*)__FILE__,__LINE__
       call taugb3
+!zap write(0,*)__FILE__,__LINE__
       call taugb4
+!zap write(0,*)__FILE__,__LINE__
       call taugb5
+!zap write(0,*)__FILE__,__LINE__
       call taugb6
+!zap write(0,*)__FILE__,__LINE__
       call taugb7
+!zap write(0,*)__FILE__,__LINE__
       call taugb8
+!zap write(0,*)__FILE__,__LINE__
       call taugb9
+!zap write(0,*)__FILE__,__LINE__
       call taugb10
+!zap write(0,*)__FILE__,__LINE__
       call taugb11
+!zap write(0,*)__FILE__,__LINE__
       call taugb12
+!zap write(0,*)__FILE__,__LINE__
       call taugb13
+!zap write(0,*)__FILE__,__LINE__
       call taugb14
+!zap write(0,*)__FILE__,__LINE__
       call taugb15
+!zap write(0,*)__FILE__,__LINE__
       call taugb16
+!zap write(0,*)__FILE__,__LINE__
 
       contains
 
@@ -5162,6 +5179,7 @@ contains
 !     lower - n2o, p = 706.272 mbar, t = 278.94 k
 !     upper - n2o, p = 95.58 mbar, t = 215.7 k
 
+!zap write(0,*)__FILE__,__LINE__
 !  P = 212.725 mb
       refrat_planck_a = chi_mls(1,9)/chi_mls(2,9)
 
@@ -5179,8 +5197,10 @@ contains
 ! self-continuum and foreign continuum is interpolated (in temperature) 
 ! separately.
 
+!zap write(0,*)__FILE__,__LINE__,laytrop
 ! Lower atmosphere loop
       do lay = 1, laytrop
+!zap write(0,*)__FILE__,__LINE__,lay
 
          speccomb = colh2o(lay) + rat_h2oco2(lay)*colco2(lay)
          specparm = colh2o(lay)/speccomb
@@ -5189,6 +5209,7 @@ contains
          js = 1 + int(specmult)
          fs = mod(specmult,1.0_rb)        
 
+!zap write(0,*)__FILE__,__LINE__,lay
          speccomb1 = colh2o(lay) + rat_h2oco2_1(lay)*colco2(lay)
          specparm1 = colh2o(lay)/speccomb1
          if (specparm1 .ge. oneminus) specparm1 = oneminus
@@ -5196,6 +5217,7 @@ contains
          js1 = 1 + int(specmult1)
          fs1 = mod(specmult1,1.0_rb)
 
+!zap write(0,*)__FILE__,__LINE__,lay
          speccomb_mn2o = colh2o(lay) + refrat_m_a*colco2(lay)
          specparm_mn2o = colh2o(lay)/speccomb_mn2o
          if (specparm_mn2o .ge. oneminus) specparm_mn2o = oneminus
@@ -5215,6 +5237,7 @@ contains
             adjcoln2o = coln2o(lay)
          endif
 
+!zap write(0,*)__FILE__,__LINE__,lay
          speccomb_planck = colh2o(lay)+refrat_planck_a*colco2(lay)
          specparm_planck = colh2o(lay)/speccomb_planck
          if (specparm_planck .ge. oneminus) specparm_planck=oneminus
@@ -5228,6 +5251,7 @@ contains
          indf = indfor(lay)
          indm = indminor(lay)
 
+!zap write(0,*)__FILE__,__LINE__,lay
          if (specparm .lt. 0.125_rb) then
             p = fs - 1
             p4 = p**4
@@ -5289,17 +5313,26 @@ contains
             fac111 = fs1 * fac11(lay)
          endif
 
+!zap write(0,*)__FILE__,__LINE__,lay,ng3
          do ig = 1, ng3
+!zap write(0,*)__FILE__,__LINE__,lay,ig
             tauself = selffac(lay)* (selfref(inds,ig) + selffrac(lay) * &
                  (selfref(inds+1,ig) - selfref(inds,ig)))
+!zap write(0,*)__FILE__,__LINE__,lay,ig
             taufor = forfac(lay) * (forref(indf,ig) + forfrac(lay) * &
                  (forref(indf+1,ig) - forref(indf,ig))) 
+!zap write(0,*)__FILE__,__LINE__,lay,ig
+!zap write(0,*)__FILE__,__LINE__,lay,ig,jmn2o
+!zap write(0,*)__FILE__,__LINE__,lay,ig,indm
             n2om1 = ka_mn2o(jmn2o,indm,ig) + fmn2o * &
                  (ka_mn2o(jmn2o+1,indm,ig) - ka_mn2o(jmn2o,indm,ig))
+!zap write(0,*)__FILE__,__LINE__,lay,ig
             n2om2 = ka_mn2o(jmn2o,indm+1,ig) + fmn2o * &
                  (ka_mn2o(jmn2o+1,indm+1,ig) - ka_mn2o(jmn2o,indm+1,ig))
+!zap write(0,*)__FILE__,__LINE__,lay,ig
             absn2o = n2om1 + minorfrac(lay) * (n2om2 - n2om1)
 
+!zap write(0,*)__FILE__,__LINE__,lay,ig
             if (specparm .lt. 0.125_rb) then
                tau_major = speccomb * &
                     (fac000 * absa(ind0,ig) + &
@@ -5348,16 +5381,21 @@ contains
                     fac111 * absa(ind1+10,ig))
             endif
 
+!zap write(0,*)__FILE__,__LINE__,lay,ig
             taug(lay,ngs2+ig) = tau_major + tau_major1 &
                  + tauself + taufor &
                  + adjcoln2o*absn2o
             fracs(lay,ngs2+ig) = fracrefa(ig,jpl) + fpl * &
                  (fracrefa(ig,jpl+1)-fracrefa(ig,jpl))
+!zap write(0,*)__FILE__,__LINE__,lay,ig
          enddo
+!zap write(0,*)__FILE__,__LINE__,lay
       enddo
+!zap write(0,*)__FILE__,__LINE__
 
 ! Upper atmosphere loop
       do lay = laytrop+1, nlayers
+!zap write(0,*)__FILE__,__LINE__,lay
 
          speccomb = colh2o(lay) + rat_h2oco2(lay)*colco2(lay)
          specparm = colh2o(lay)/speccomb
@@ -5436,8 +5474,10 @@ contains
             fracs(lay,ngs2+ig) = fracrefb(ig,jpl) + fpl * &
                 (fracrefb(ig,jpl+1)-fracrefb(ig,jpl))
          enddo
+!zap write(0,*)__FILE__,__LINE__,lay
       enddo
 
+!zap write(0,*)__FILE__,__LINE__
       end subroutine taugb3
 
 !----------------------------------------------------------------------------
@@ -10905,6 +10945,7 @@ contains
 ! Set imca to select calculation type:
 !  imca = 0, use standard forward model calculation
 !  imca = 1, use McICA for Monte Carlo treatment of sub-grid cloud variability
+!zap write(0,*)__FILE__,__LINE__
 
 ! *** This version uses McICA (imca = 1) ***
 
@@ -10949,6 +10990,7 @@ contains
 !  effective radius must be passed into cldprop.  Cloud fraction and cloud
 !  optical depth are transferred to rrtmg_lw arrays in cldprop.  
 
+!zap write(0,*)__FILE__,__LINE__
          call cldprmc(nlayers, inflag, iceflag, liqflag, cldfmc, ciwpmc, &
                       clwpmc, cswpmc, reicmc, relqmc, resnmc, ncbands, taucmc)
 
@@ -10957,6 +10999,7 @@ contains
 ! coefficients and indices needed to compute the optical depths
 ! by interpolating data from stored reference atmospheres. 
 
+!zap write(0,*)__FILE__,__LINE__
          call setcoef(nlayers, istart, pavel, tavel, tz, tbound, semiss, &
                       coldry, wkl, wbrodl, &
                       laytrop, jp, jt, jt1, planklay, planklev, plankbnd, &
@@ -10971,6 +11014,7 @@ contains
 !  Calculate the gaseous optical depths and Planck fractions for 
 !  each longwave spectral band.
 
+!zap write(0,*)__FILE__,__LINE__
          call taumol(nlayers, pavel, wx, coldry, &
                      laytrop, jp, jt, jt1, planklay, planklev, plankbnd, &
                      colh2o, colco2, colo3, coln2o, colco, colch4, colo2, &
@@ -10983,6 +11027,7 @@ contains
                      fracs, taug)
 
 
+!zap write(0,*)__FILE__,__LINE__
 ! Combine gaseous and aerosol optical depths, if aerosol active
          if (iaer .eq. 0) then
             do k = 1, nlayers
@@ -11004,11 +11049,13 @@ contains
 ! to be used.  Clear sky calculation is done simultaneously.
 ! For McICA, RTRNMC is called for clear and cloudy calculations.
 
+!zap write(0,*)__FILE__,__LINE__
          call rtrnmc(nlayers, istart, iend, iout, pz, semiss, ncbands, &
                      cldfmc, taucmc, planklay, planklev, plankbnd, &
                      pwvcm, fracs, taut, &
                      totuflux, totdflux, fnet, htr, &
                      totuclfl, totdclfl, fnetc, htrc )
+!zap write(0,*)__FILE__,__LINE__
 
 !  Transfer up and down fluxes and heating rate to output arrays.
 !  Vertical indexing goes from bottom to top; reverse here for GCM if necessary.
@@ -11024,6 +11071,7 @@ contains
             hrc(iplon,k+1) = htrc(k)
          enddo
 
+!zap write(0,*)__FILE__,__LINE__
       enddo
 
       end subroutine rrtmg_lw
@@ -11800,6 +11848,7 @@ CONTAINS
 !
 !ccc Read time-varying trace gases concentrations and interpolate them to run date.
 !
+!zap write(0,*)__FILE__,__LINE__
 #ifdef CLWRFGHG
 
    CALL read_CAMgases(yr,julian,"RRTMG",co2,n2o,ch4,cfc11,cfc12)
@@ -11812,6 +11861,7 @@ CONTAINS
    ENDIF
 
 #endif
+!zap write(0,*)__FILE__,__LINE__
 !ccc
 
 ! latitude loop
@@ -11820,6 +11870,7 @@ CONTAINS
 ! longitude loop
      i_loop: do i = its,ite
 
+!zap write(0,*)__FILE__,__LINE__,i,j
          do k=kts,kte+1
             Pw1D(K) = p8w(I,K,J)/100.
             Tw1D(K) = t8w(I,K,J)
@@ -11959,6 +12010,7 @@ CONTAINS
 !         GLW0=0. 
 !         OLR0=0. 
 !         TSFC=TSK(I,J)
+!zap write(0,*)__FILE__,__LINE__,i,j
          DO K=kts,kte
             QV1D(K)=AMAX1(QV1D(K),1.E-12) 
          ENDDO
@@ -12048,6 +12100,7 @@ CONTAINS
                ENDDO
             ENDIF
          ENDIF
+!zap write(0,*)__FILE__,__LINE__,i,j
 
 ! Layer indexing goes bottom to top here for all fields.
 ! Water vapor and ozone are converted from mmr to vmr. 
@@ -12299,6 +12352,8 @@ CONTAINS
            end if
 
 
+!zap write(0,*)__FILE__,__LINE__,i,j
+
 !link the aerosol feedback to cloud  -czhao
   if( PRESENT( progn ) ) then
     if (progn == 1) then
@@ -12346,6 +12401,7 @@ CONTAINS
 !..If we already have effective radius of cloud and ice, then just overwrite what
 !.. was computed in the relcalc and reicalc subroutines above.
 
+!zap write(0,*)__FILE__,__LINE__,i,j
       if (inflglw .ge. 3) then
          do k = kts, kte
             reliq(ncol,k) = recloud1d(ncol,k)
@@ -12356,6 +12412,7 @@ CONTAINS
             reice(ncol,k) = reice1d(ncol,k)
          end do
       endif
+!zap write(0,*)__FILE__,__LINE__,i,j
 
 ! Limit upper bound of reice for Fu ice parameterization and convert
 ! from effective radius to generalized effective size (*1.0315; Fu, 1996)
@@ -12450,10 +12507,12 @@ CONTAINS
          irng = 0
          permuteseed = 150
 
+!zap write(0,*)__FILE__,__LINE__,i,j
 ! Sub-column generator for McICA
          call mcica_subcol_lw(iplon, ncol, nlay, icld, permuteseed, irng, play, &
                        cldfrac, ciwpth, clwpth, cswpth, rei, rel, res, taucld, cldfmcl, &
                        ciwpmcl, clwpmcl, cswpmcl, reicmcl, relqmcl, resnmcl, taucmcl)
+!zap write(0,*)__FILE__,__LINE__,i,j
 
 !--------------------------------------------------------------------------
 ! Aerosol optical depth, single scattering albedo and asymmetry parameter -czhao 03/2010
@@ -12475,6 +12534,7 @@ CONTAINS
       end do
       end do
 
+!zap write(0,*)__FILE__,__LINE__,i,j
 #if ( WRF_CHEM == 1 )
    IF ( AER_RA_FEEDBACK == 1) then
 !     do nb = 1, nbndlw 
@@ -12526,6 +12586,7 @@ CONTAINS
 #endif
 
 ! Call RRTMG longwave radiation model
+!zap write(0,*)__FILE__,__LINE__,i,j
          call rrtmg_lw &
             (ncol    ,nlay    ,icld    , &
              play    ,plev    ,tlay    ,tlev    ,tsfc    , & 
@@ -12535,6 +12596,7 @@ CONTAINS
              taucmcl ,ciwpmcl ,clwpmcl ,cswpmcl, reicmcl ,relqmcl ,resnmcl , &
              tauaer  , &
              uflx    ,dflx    ,hr      ,uflxc   ,dflxc,  hrc)
+!zap write(0,*)__FILE__,__LINE__,i,j
 
 ! Output downard surface flux, and outgoing longwave flux and cloud forcing 
 ! at the top of atmosphere (W/m2)
@@ -12580,6 +12642,7 @@ CONTAINS
 !
       end do i_loop
    end do j_loop                                           
+!zap write(0,*)__FILE__,__LINE__
 
 !-------------------------------------------------------------------
 
@@ -12904,8 +12967,10 @@ IMPLICIT NONE
 
 #define DM_BCAST_MACRO(A) CALL wrf_dm_bcast_bytes ( A , size ( A ) * RWORDSIZE )
 
+!zap write(0,*)__FILE__,__LINE__
       IF ( wrf_dm_on_monitor() ) READ (rrtmg_unit,ERR=9010) &
          fracrefao, fracrefbo, kao, kbo, kao_mn2, kbo_mn2, selfrefo, forrefo
+!zap write(0,*)__FILE__,__LINE__
       DM_BCAST_MACRO(fracrefao)
       DM_BCAST_MACRO(fracrefbo)
       DM_BCAST_MACRO(kao)
@@ -12982,8 +13047,10 @@ IMPLICIT NONE
 
 #define DM_BCAST_MACRO(A) CALL wrf_dm_bcast_bytes ( A , size ( A ) * RWORDSIZE )
 
+!zap write(0,*)__FILE__,__LINE__
       IF ( wrf_dm_on_monitor() ) READ (rrtmg_unit,ERR=9010) &
          fracrefao, fracrefbo, kao, kbo, selfrefo, forrefo
+!zap write(0,*)__FILE__,__LINE__
       DM_BCAST_MACRO(fracrefao)
       DM_BCAST_MACRO(fracrefbo)
       DM_BCAST_MACRO(kao)
@@ -13098,8 +13165,10 @@ IMPLICIT NONE
 
 #define DM_BCAST_MACRO(A) CALL wrf_dm_bcast_bytes ( A , size ( A ) * RWORDSIZE )
 
+!zap write(0,*)__FILE__,__LINE__
       IF ( wrf_dm_on_monitor() ) READ (rrtmg_unit,ERR=9010) &
          fracrefao, fracrefbo, kao, kbo, kao_mn2o, kbo_mn2o, selfrefo, forrefo
+!zap write(0,*)__FILE__,__LINE__
       DM_BCAST_MACRO(fracrefao)
       DM_BCAST_MACRO(fracrefbo)
       DM_BCAST_MACRO(kao)
@@ -13187,8 +13256,10 @@ IMPLICIT NONE
 
 #define DM_BCAST_MACRO(A) CALL wrf_dm_bcast_bytes ( A , size ( A ) * RWORDSIZE )
 
+!zap write(0,*)__FILE__,__LINE__
       IF ( wrf_dm_on_monitor() ) READ (rrtmg_unit,ERR=9010) &
          fracrefao, fracrefbo, kao, kbo, selfrefo, forrefo
+!zap write(0,*)__FILE__,__LINE__
       DM_BCAST_MACRO(fracrefao)
       DM_BCAST_MACRO(fracrefbo)
       DM_BCAST_MACRO(kao)
@@ -13293,8 +13364,10 @@ IMPLICIT NONE
 
 #define DM_BCAST_MACRO(A) CALL wrf_dm_bcast_bytes ( A , size ( A ) * RWORDSIZE )
 
+!zap write(0,*)__FILE__,__LINE__
       IF ( wrf_dm_on_monitor() ) READ (rrtmg_unit,ERR=9010) &
          fracrefao, fracrefbo, kao, kbo, kao_mo3, ccl4o, selfrefo, forrefo
+!zap write(0,*)__FILE__,__LINE__
       DM_BCAST_MACRO(fracrefao)
       DM_BCAST_MACRO(fracrefbo)
       DM_BCAST_MACRO(kao)
@@ -13374,8 +13447,10 @@ IMPLICIT NONE
 
 #define DM_BCAST_MACRO(A) CALL wrf_dm_bcast_bytes ( A , size ( A ) * RWORDSIZE )
 
+!zap write(0,*)__FILE__,__LINE__
       IF ( wrf_dm_on_monitor() ) READ (rrtmg_unit,ERR=9010) &
          fracrefao, kao, kao_mco2, cfc11adjo, cfc12o, selfrefo, forrefo
+!zap write(0,*)__FILE__,__LINE__
       DM_BCAST_MACRO(fracrefao)
       DM_BCAST_MACRO(kao)
       DM_BCAST_MACRO(kao_mco2)
@@ -13477,8 +13552,10 @@ IMPLICIT NONE
 
 #define DM_BCAST_MACRO(A) CALL wrf_dm_bcast_bytes ( A , size ( A ) * RWORDSIZE )
 
+!zap write(0,*)__FILE__,__LINE__
       IF ( wrf_dm_on_monitor() ) READ (rrtmg_unit,ERR=9010) &
          fracrefao, fracrefbo, kao, kbo, kao_mco2, kbo_mco2, selfrefo, forrefo
+!zap write(0,*)__FILE__,__LINE__
       DM_BCAST_MACRO(fracrefao)
       DM_BCAST_MACRO(fracrefbo)
       DM_BCAST_MACRO(kao)
@@ -13585,9 +13662,11 @@ IMPLICIT NONE
 
 #define DM_BCAST_MACRO(A) CALL wrf_dm_bcast_bytes ( A , size ( A ) * RWORDSIZE )
 
+!zap write(0,*)__FILE__,__LINE__
       IF ( wrf_dm_on_monitor() ) READ (rrtmg_unit,ERR=9010) &
          fracrefao, fracrefbo, kao, kbo, kao_mco2, kbo_mco2, kao_mn2o, &
          kbo_mn2o, kao_mo3, cfc12o, cfc22adjo, selfrefo, forrefo
+!zap write(0,*)__FILE__,__LINE__
       DM_BCAST_MACRO(fracrefao)
       DM_BCAST_MACRO(fracrefbo)
       DM_BCAST_MACRO(kao)
@@ -13695,8 +13774,10 @@ IMPLICIT NONE
 
 #define DM_BCAST_MACRO(A) CALL wrf_dm_bcast_bytes ( A , size ( A ) * RWORDSIZE )
 
+!zap write(0,*)__FILE__,__LINE__
       IF ( wrf_dm_on_monitor() ) READ (rrtmg_unit,ERR=9010) &
          fracrefao, fracrefbo, kao, kbo, kao_mn2o, kbo_mn2o, selfrefo, forrefo
+!zap write(0,*)__FILE__,__LINE__
       DM_BCAST_MACRO(fracrefao)
       DM_BCAST_MACRO(fracrefbo)
       DM_BCAST_MACRO(kao)
@@ -13773,8 +13854,10 @@ IMPLICIT NONE
 
 #define DM_BCAST_MACRO(A) CALL wrf_dm_bcast_bytes ( A , size ( A ) * RWORDSIZE )
 
+!zap write(0,*)__FILE__,__LINE__
       IF ( wrf_dm_on_monitor() ) READ (rrtmg_unit,ERR=9010) &
          fracrefao, fracrefbo, kao, kbo, selfrefo, forrefo
+!zap write(0,*)__FILE__,__LINE__
       DM_BCAST_MACRO(fracrefao)
       DM_BCAST_MACRO(fracrefbo)
       DM_BCAST_MACRO(kao)
@@ -13864,8 +13947,10 @@ IMPLICIT NONE
 
 #define DM_BCAST_MACRO(A) CALL wrf_dm_bcast_bytes ( A , size ( A ) * RWORDSIZE )
 
+!zap write(0,*)__FILE__,__LINE__
       IF ( wrf_dm_on_monitor() ) READ (rrtmg_unit,ERR=9010) &
          fracrefao, fracrefbo, kao, kbo, kao_mo2, kbo_mo2, selfrefo, forrefo
+!zap write(0,*)__FILE__,__LINE__
       DM_BCAST_MACRO(fracrefao)
       DM_BCAST_MACRO(fracrefbo)
       DM_BCAST_MACRO(kao)
@@ -13935,8 +14020,10 @@ IMPLICIT NONE
 
 #define DM_BCAST_MACRO(A) CALL wrf_dm_bcast_bytes ( A , size ( A ) * RWORDSIZE )
 
+!zap write(0,*)__FILE__,__LINE__
       IF ( wrf_dm_on_monitor() ) READ (rrtmg_unit,ERR=9010) &
          fracrefao, kao, selfrefo, forrefo
+!zap write(0,*)__FILE__,__LINE__
       DM_BCAST_MACRO(fracrefao)
       DM_BCAST_MACRO(kao)
       DM_BCAST_MACRO(selfrefo)
@@ -14023,8 +14110,10 @@ IMPLICIT NONE
 
 #define DM_BCAST_MACRO(A) CALL wrf_dm_bcast_bytes ( A , size ( A ) * RWORDSIZE )
 
+!zap write(0,*)__FILE__,__LINE__
       IF ( wrf_dm_on_monitor() ) READ (rrtmg_unit,ERR=9010) &
          fracrefao, fracrefbo, kao, kao_mco2, kao_mco, kbo_mo3, selfrefo, forrefo
+!zap write(0,*)__FILE__,__LINE__
       DM_BCAST_MACRO(fracrefao)
       DM_BCAST_MACRO(fracrefbo)
       DM_BCAST_MACRO(kao)
@@ -14107,8 +14196,10 @@ IMPLICIT NONE
 
 #define DM_BCAST_MACRO(A) CALL wrf_dm_bcast_bytes ( A , size ( A ) * RWORDSIZE )
 
+!zap write(0,*)__FILE__,__LINE__
       IF ( wrf_dm_on_monitor() ) READ (rrtmg_unit,ERR=9010) &
          fracrefao, fracrefbo, kao, kbo, selfrefo, forrefo
+!zap write(0,*)__FILE__,__LINE__
       DM_BCAST_MACRO(fracrefao)
       DM_BCAST_MACRO(fracrefbo)
       DM_BCAST_MACRO(kao)
@@ -14188,8 +14279,10 @@ IMPLICIT NONE
 
 #define DM_BCAST_MACRO(A) CALL wrf_dm_bcast_bytes ( A , size ( A ) * RWORDSIZE )
 
+!zap write(0,*)__FILE__,__LINE__
       IF ( wrf_dm_on_monitor() ) READ (rrtmg_unit,ERR=9010) &
          fracrefao, kao, kao_mn2, selfrefo, forrefo
+!zap write(0,*)__FILE__,__LINE__
       DM_BCAST_MACRO(fracrefao)
       DM_BCAST_MACRO(kao)
       DM_BCAST_MACRO(kao_mn2)
@@ -14269,8 +14362,10 @@ IMPLICIT NONE
 
 #define DM_BCAST_MACRO(A) CALL wrf_dm_bcast_bytes ( A , size ( A ) * RWORDSIZE )
 
+!zap write(0,*)__FILE__,__LINE__
       IF ( wrf_dm_on_monitor() ) READ (rrtmg_unit,ERR=9010) &
          fracrefao, fracrefbo, kao, kbo, selfrefo, forrefo
+!zap write(0,*)__FILE__,__LINE__
       DM_BCAST_MACRO(fracrefao)
       DM_BCAST_MACRO(fracrefbo)
       DM_BCAST_MACRO(kao)
