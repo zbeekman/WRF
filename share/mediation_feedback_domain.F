@@ -6,7 +6,7 @@ SUBROUTINE med_feedback_domain ( parent_grid , nested_grid )
    USE module_domain
    USE module_configure
    USE module_intermediate_nmm
-   USE module_dm, only: local_communicator, intercomm_active
+   USE module_dm, only: local_communicator, intercomm_active,push_communicators_for_domain,pop_communicators_for_domain
    IMPLICIT NONE
    TYPE(domain), POINTER :: parent_grid , nested_grid
    TYPE(domain), POINTER :: grid
@@ -177,13 +177,15 @@ write(0,*)"calling feedback_domain_em_part2 grid%id, intermediate_grid%id, neste
 #      include "actual_new_args.inc"
 
                                    )
-write(0,*)"back from feedback_domain_em_part2"
+write(0,*)"back from feedback_domain_em_part2",grid%id
    WHERE   ( grid%nest_pos .NE. 9021000.  ) grid%ht = grid%ht_coarse
+   CALL push_communicators_for_domain(grid%id)
    CALL update_after_feedback_em ( grid  &
 !
 #      include "actual_new_args.inc"
 !
                                    )
+   CALL pop_communicators_for_domain
    grid => nested_grid%intermediate_grid
 #  if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
    IF ( intercomm_active( grid%id ) ) THEN

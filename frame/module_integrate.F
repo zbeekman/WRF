@@ -286,6 +286,7 @@ integer myproc,i,j
       CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
       IF ( config_flags%grid_allowed ) THEN
          CALL domain_clockprint ( 150, grid, 'DEBUG:  top of integrate(),' )
+       IF ( grid%active_this_task ) THEN
          DO WHILE ( .NOT. domain_clockisstopsubtime(grid) )
             IF ( wrf_dm_on_monitor() ) THEN
                CALL start_timing
@@ -386,21 +387,22 @@ write(0,*)__FILE__,__LINE__
                      domain_get_current_time(grid)
                    WRITE(message,*)grid%id,' module_integrate: recursive call to integrate '
                    CALL wrf_debug( 100 , message )
-                   IF ( grid_ptr%nests(kid)%ptr%active_this_task ) THEN
+!                   IF ( grid_ptr%nests(kid)%ptr%active_this_task ) THEN
 write(0,*)__FILE__,__LINE__
                       CALL integrate ( grid_ptr%nests(kid)%ptr ) 
 write(0,*)__FILE__,__LINE__,'RECURSING TO ACTIVE NEST',grid_ptr%nests(kid)%ptr%id
-                   ELSE
-write(0,*)__FILE__,__LINE__,'SKIPPING RECURSION TO NON-ACTIVE NEST',grid_ptr%nests(kid)%ptr%id
-                   ENDIF
+!                   ELSE
+!write(0,*)__FILE__,__LINE__,'SKIPPING RECURSION TO NON-ACTIVE NEST',grid_ptr%nests(kid)%ptr%id
+!                   ENDIF
                    WRITE(message,*)grid%id,' module_integrate: back from recursive call to integrate '
                    CALL wrf_debug( 100 , message )
                    IF ( .NOT. ( domain_clockisstoptime(head_grid              ) .OR. &
                                 domain_clockisstoptime(grid                   ) .OR. &
                                 domain_clockisstoptime(grid_ptr%nests(kid)%ptr) ) )  THEN
                      CALL wrf_debug( 100 , 'module_integrate: calling med_nest_feedback ' )
-write(0,*)"calling med_nest_feedback kid,grid_ptr%id,grid_ptr%nests(kid)%ptr%id ",kid,grid_ptr%id, grid_ptr%nests(kid)%ptr%id
+write(0,'("med_nest_feedback call kid,grid_ptr%id,grid_ptr%nests(kid)%ptr%id ",3i9)')kid,grid_ptr%id, grid_ptr%nests(kid)%ptr%id
                      CALL med_nest_feedback ( grid_ptr , grid_ptr%nests(kid)%ptr , config_flags )
+write(0,'("med_nest_feedback back kid,grid_ptr%id,grid_ptr%nests(kid)%ptr%id ",3i9)')kid,grid_ptr%id, grid_ptr%nests(kid)%ptr%id
                      CALL wrf_debug( 100 , 'module_integrate: back from med_nest_feedback ' )
                    END IF
 #ifdef MOVE_NESTS
@@ -430,14 +432,16 @@ write(0,*)"calling med_nest_feedback kid,grid_ptr%id,grid_ptr%nests(kid)%ptr%id 
             END IF
             CALL med_endup_step ( grid , config_flags )
          END DO
+write(0,*)"finished with time loop", grid%id
 
          ! Accumulation calculation for DFI
          CALL dfi_accumulate ( grid )
 
+       ENDIF
          ! Avoid double writes on nests if this is not really the last time;
          ! Do check for write if the parent domain is ending.
          IF ( grid%id .EQ. 1 ) THEN               ! head_grid
-            CALL med_last_solve_io ( grid , config_flags )
+            IF ( grid%active_this_task ) CALL med_last_solve_io ( grid , config_flags )
          ELSE
 ! zip up the tree and see if any ancestor is at its stop time
             should_do_last_io = domain_clockisstoptime( head_grid )
@@ -448,10 +452,13 @@ write(0,*)"calling med_nest_feedback kid,grid_ptr%id,grid_ptr%nests(kid)%ptr%id 
                END IF
                grid_ptr => grid_ptr%parents(1)%ptr
             ENDDO
+write(0,*)"should_do_last_io ",should_do_last_io
             IF ( should_do_last_io ) THEN 
                grid_ptr => grid 
+write(0,'("med_nest_feedback last call grid_ptr%id,grid_ptr%parents(1)%ptr%id ",2i9)')grid%id, grid_ptr%parents(1)%ptr%id
                CALL med_nest_feedback ( grid_ptr%parents(1)%ptr, grid , config_flags )
-               CALL med_last_solve_io ( grid , config_flags )
+write(0,'("med_nest_feedback last back grid_ptr%id,grid_ptr%parents(1)%ptr%id ",2i9)')grid%id, grid_ptr%parents(1)%ptr%id
+               IF ( grid%active_this_task ) CALL med_last_solve_io ( grid , config_flags )
             ENDIF
          ENDIF
       ENDIF

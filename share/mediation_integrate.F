@@ -559,7 +559,7 @@ write(0,*)__FILE__,__LINE__,'back from med_interp_domain ',parent%id, nest%id
 ! feedback, mostly for this new terrain, but it is the safe thing to do
      parent%ht_coarse = parent%ht
 
-#if 0
+#if 1
 write(0,*)__FILE__,__LINE__,'call med_nest_feedback parent%id,nest%id',parent%id,nest%id
      CALL med_nest_feedback ( parent , nest , config_flags )
 write(0,*)__FILE__,__LINE__,'back from med_nest_feedback nest%id ',nest%id
