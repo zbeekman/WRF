@@ -288,9 +288,9 @@ integer myproc,i,j
          CALL domain_clockprint ( 150, grid, 'DEBUG:  top of integrate(),' )
        IF ( grid%active_this_task ) THEN
          DO WHILE ( .NOT. domain_clockisstopsubtime(grid) )
-            IF ( wrf_dm_on_monitor() ) THEN
+!            IF ( wrf_dm_on_monitor() ) THEN
                CALL start_timing
-            END IF
+!            END IF
             CALL med_setup_step ( grid , config_flags )
 write(0,*)__FILE__,__LINE__
             a_nest_was_opened = .false.
@@ -312,8 +312,9 @@ write(0,*)__FILE__,__LINE__
                                                  kid        = kid        )
 write(0,*)__FILE__,__LINE__
                CALL Setup_Timekeeping (new_nest)
-write(0,*)__FILE__,__LINE__,"calling med_nest_initial ",grid%id, new_nest%id 
+write(0,*)__FILE__,__LINE__,"ZAP calling med_nest_initial ",grid%id, new_nest%id 
                CALL med_nest_initial ( grid , new_nest , config_flags )
+write(0,*)__FILE__,__LINE__,"ZAP back from med_nest_initial ",grid%id, new_nest%id 
 
 IF ( new_nest%id.eq.2.and.new_nest%active_this_task) THEN
 CALL wrf_get_myproc(myproc)
@@ -385,6 +386,11 @@ write(0,*)__FILE__,__LINE__
                      domain_get_current_time(grid) - domain_get_time_step(grid)
                    grid_ptr%nests(kid)%ptr%stop_subtime = &
                      domain_get_current_time(grid)
+                 ENDIF
+               ENDDO
+               DO kid = 1, max_nests
+                 IF ( ASSOCIATED( grid_ptr%nests(kid)%ptr ) ) THEN
+                   CALL set_current_grid_ptr( grid_ptr%nests(kid)%ptr )
                    WRITE(message,*)grid%id,' module_integrate: recursive call to integrate '
                    CALL wrf_debug( 100 , message )
 !                   IF ( grid_ptr%nests(kid)%ptr%active_this_task ) THEN
@@ -396,6 +402,11 @@ write(0,*)__FILE__,__LINE__,'RECURSING TO ACTIVE NEST',grid_ptr%nests(kid)%ptr%i
 !                   ENDIF
                    WRITE(message,*)grid%id,' module_integrate: back from recursive call to integrate '
                    CALL wrf_debug( 100 , message )
+                 ENDIF
+               ENDDO
+               DO kid = 1, max_nests
+                 IF ( ASSOCIATED( grid_ptr%nests(kid)%ptr ) ) THEN
+                   CALL set_current_grid_ptr( grid_ptr%nests(kid)%ptr )
                    IF ( .NOT. ( domain_clockisstoptime(head_grid              ) .OR. &
                                 domain_clockisstoptime(grid                   ) .OR. &
                                 domain_clockisstoptime(grid_ptr%nests(kid)%ptr) ) )  THEN
@@ -417,7 +428,8 @@ write(0,'("med_nest_feedback back kid,grid_ptr%id,grid_ptr%nests(kid)%ptr%id ",3
             END DO
             CALL set_current_grid_ptr( grid )
             !  Report on the timing for a single time step.
-            IF ( wrf_dm_on_monitor() .AND. grid%active_this_task ) THEN
+!            IF ( wrf_dm_on_monitor() .AND. grid%active_this_task ) THEN
+            IF ( grid%active_this_task ) THEN
                CALL domain_clock_get ( grid, current_timestr=message2 )
 #if (EM_CORE == 1)
                if (config_flags%use_adaptive_time_step) then

@@ -4800,6 +4800,8 @@ ENDIF
       jps_save = ngrid%j_parent_start
       ipe_save = ngrid%i_parent_start + (nide-nids+1) / ngrid%parent_grid_ratio - 1
       jpe_save = ngrid%j_parent_start + (njde-njds+1) / ngrid%parent_grid_ratio - 1
+write(0,'("id,ips_save,ipe_save,jps_save,jpe_save ",5i10)')ngrid%id,ips_save,ipe_save,jps_save,jpe_save
+
 
 ! feedback_nest_prep invokes a halo exchange on the ngrid. It is done this way
 ! in a separate routine because the HALOs need the data to be dereference from the
@@ -4912,6 +4914,13 @@ ENDIF
                                 nids, nide, njds, njde, nkds, nkde,    &
                                 nims, nime, njms, njme, nkms, nkme,    &
                                 nips, nipe, njps, njpe, nkps, nkpe    )
+
+      ips_save = ngrid%i_parent_start   ! used in feedback_domain_em_part2 below
+      jps_save = ngrid%j_parent_start
+      ipe_save = ngrid%i_parent_start + (nide-nids+1) / ngrid%parent_grid_ratio - 1
+      jpe_save = ngrid%j_parent_start + (njde-njds+1) / ngrid%parent_grid_ratio - 1
+write(0,'("id,ips_save,ipe_save,jps_save,jpe_save ",5i10)')ngrid%id,ips_save,ipe_save,jps_save,jpe_save
+
 
 IF ( ngrid%active_this_task ) THEN
 !cyl add this for trajectory

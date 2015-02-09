@@ -30,6 +30,7 @@ SUBROUTINE med_feedback_domain ( parent_grid , nested_grid )
    REAL(kind=8) :: this_time,ttime, feed1_now, feed2_now
    integer :: ierr
 #endif
+integer myproc,i,j
    character*255 :: message
 ! ----------------------------------------------------------
 ! ------------------------------------------------------
@@ -171,12 +172,40 @@ write(0,*)"back from feedback_domain_em_part1"
    grid => parent_grid
 
    grid%nest_mask = 0.
+
+IF ( nested_grid%id .eq. 3 ) THEN
+!ZAP
+CALL push_communicators_for_domain(grid%id)
+CALL wrf_get_myproc(myproc)
+WRITE (90+myproc,*)grid%ep31-grid%sp31+1,grid%ep33-grid%sp33+1,' ISLTYP 1 '
+DO j=grid%sp33,grid%ep33
+DO i=grid%sp31,grid%ep31
+WRITE (90+myproc,*)grid%isltyp(i,j)
+ENDDO
+ENDDO
+CALL pop_communicators_for_domain
+ENDIF
+
 write(0,*)"calling feedback_domain_em_part2 grid%id, intermediate_grid%id, nested_grid%id ",grid%id, nested_grid%intermediate_grid%id, nested_grid%id
    CALL feedback_domain_em_part2 ( grid , nested_grid%intermediate_grid, nested_grid , config_flags   &
 !
 #      include "actual_new_args.inc"
 
                                    )
+
+IF ( nested_grid%id .eq. 3 ) THEN
+!ZAP
+CALL push_communicators_for_domain(grid%id)
+CALL wrf_get_myproc(myproc)
+WRITE (90+myproc,*)grid%ep31-grid%sp31+1,grid%ep33-grid%sp33+1,' ISLTYP 2 '
+DO j=grid%sp33,grid%ep33
+DO i=grid%sp31,grid%ep31
+WRITE (90+myproc,*)grid%isltyp(i,j)
+ENDDO
+ENDDO
+CALL pop_communicators_for_domain
+ENDIF
+
 write(0,*)"back from feedback_domain_em_part2",grid%id
    WHERE   ( grid%nest_pos .NE. 9021000.  ) grid%ht = grid%ht_coarse
    CALL push_communicators_for_domain(grid%id)
@@ -186,6 +215,20 @@ write(0,*)"back from feedback_domain_em_part2",grid%id
 !
                                    )
    CALL pop_communicators_for_domain
+
+IF ( nested_grid%id .eq. 3 ) THEN
+!ZAP
+CALL push_communicators_for_domain(grid%id)
+CALL wrf_get_myproc(myproc)
+WRITE (90+myproc,*)grid%ep31-grid%sp31+1,grid%ep33-grid%sp33+1,' ISLTYP 3 '
+DO j=grid%sp33,grid%ep33
+DO i=grid%sp31,grid%ep31
+WRITE (90+myproc,*)grid%isltyp(i,j)
+ENDDO
+ENDDO
+CALL pop_communicators_for_domain
+ENDIF
+
    grid => nested_grid%intermediate_grid
 #  if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
    IF ( intercomm_active( grid%id ) ) THEN

@@ -1632,6 +1632,91 @@ print *,'column of cg pres = ',cprs
      IF( MOD(nrj,2) .NE. 0) THEN  ! odd refinement ratio
 
         DO cj = MAX(jpos+spec_zone,cjts),MIN(jpos+(njde-njds)/nrj-jstag-spec_zone,cjte)
+           nj = (cj-jpos)*nrj + jstag + 1
+           DO ck = ckts, ckte
+              nk = ck
+              DO ci = MAX(ipos+spec_zone,cits),MIN(ipos+(nide-nids)/nri-istag-spec_zone,cite)
+                 ni = (ci-ipos)*nri + istag + 1
+                 cfld( ci, ck, cj ) =  nfld( ni  , nk , nj  )
+              ENDDO
+           ENDDO
+        ENDDO
+
+     ELSE  ! even refinement ratio
+        DO cj = MAX(jpos+spec_zone,cjts),MIN(jpos+(njde-njds)/nrj-jstag-spec_zone,cjte)
+           nj = (cj-jpos)*nrj + 1
+           DO ck = ckts, ckte
+              nk = ck
+              DO ci = MAX(ipos+spec_zone,cits),MIN(ipos+(nide-nids)/nri-istag-spec_zone,cite)
+                 ni = (ci-ipos)*nri + 1
+                 ipoints = nri/2 -1
+                 jpoints = nrj/2 -1
+                 cfld( ci, ck, cj ) =  nfld( ni+ipoints , nk , nj+jpoints )
+              END DO
+           END DO
+        END DO
+
+     END IF
+
+     RETURN
+
+   END SUBROUTINE copy_fcni
+
+
+   SUBROUTINE copy_fcni_dbg ( cfld,                                 &  ! CD field
+                           cids, cide, ckds, ckde, cjds, cjde,   &
+                           cims, cime, ckms, ckme, cjms, cjme,   &
+                           cits, cite, ckts, ckte, cjts, cjte,   &
+                           nfld,                                 &  ! ND field
+                           nids, nide, nkds, nkde, njds, njde,   &
+                           nims, nime, nkms, nkme, njms, njme,   &
+                           nits, nite, nkts, nkte, njts, njte,   &
+                           shw,                                  &  ! stencil half width for interp
+                           imask,                                &  ! interpolation mask
+                           xstag, ystag,                         &  ! staggering of field
+                           ipos, jpos,                           &  ! Position of lower left of nest in CD
+                           nri, nrj                             )   ! nest ratios
+     USE module_configure
+     USE module_wrf_error
+     IMPLICIT NONE
+
+
+     INTEGER, INTENT(IN) :: cids, cide, ckds, ckde, cjds, cjde,   &
+                            cims, cime, ckms, ckme, cjms, cjme,   &
+                            cits, cite, ckts, ckte, cjts, cjte,   &
+                            nids, nide, nkds, nkde, njds, njde,   &
+                            nims, nime, nkms, nkme, njms, njme,   &
+                            nits, nite, nkts, nkte, njts, njte,   &
+                            shw,                                  &
+                            ipos, jpos,                           &
+                            nri, nrj
+     LOGICAL, INTENT(IN) :: xstag, ystag
+
+     INTEGER, DIMENSION ( cims:cime, ckms:ckme, cjms:cjme ), INTENT(OUT) :: cfld
+     INTEGER, DIMENSION ( nims:nime, nkms:nkme, njms:njme ), INTENT(IN) :: nfld
+     INTEGER, DIMENSION ( nims:nime, njms:njme ), INTENT(IN)  :: imask
+
+     ! Local
+
+     INTEGER ci, cj, ck, ni, nj, nk, ip, jp, ioff, joff, ioffa, joffa
+     INTEGER :: icmin,icmax,jcmin,jcmax
+     INTEGER :: istag,jstag, ipoints,jpoints,ijpoints
+     INTEGER , PARAMETER :: passes = 2
+     INTEGER spec_zone
+
+     CALL nl_get_spec_zone( 1, spec_zone ) 
+     istag = 1 ; jstag = 1
+     IF ( xstag ) istag = 0
+     IF ( ystag ) jstag = 0
+
+write(0,"('nri,nrj,spec_zone,istag,jstag ',5i10)")nri,nrj,spec_zone,istag,jstag
+
+     IF( MOD(nrj,2) .NE. 0) THEN  ! odd refinement ratio
+
+write(0,"('cjts,cjte ',2i10)")cjts,cjte
+write(0,"('MAX(jpos+spec_zone,cjts) ',1i10)")MAX(jpos+spec_zone,cjts)
+write(0,"('MIN(jpos+(njde-njds)/nrj-jstag-spec_zone,cjte) ',1i10)")MIN(jpos+(njde-njds)/nrj-jstag-spec_zone,cjte)
+        DO cj = MAX(jpos+spec_zone,cjts),MIN(jpos+(njde-njds)/nrj-jstag-spec_zone,cjte)
 write(0,*)'cj ',cj,' jpos ',jpos,' nrj ',nrj,' nj ',nj
            nj = (cj-jpos)*nrj + jstag + 1
            DO ck = ckts, ckte
@@ -1662,7 +1747,7 @@ write(0,'("copy_fcni ci,ck,cj ni,nk,nj cfld(ci,ck,cj) ",7i6)')ci,ck,cj,ni,nk,nj,
 
      RETURN
 
-   END SUBROUTINE copy_fcni
+   END SUBROUTINE copy_fcni_dbg
 
 !==================================
 

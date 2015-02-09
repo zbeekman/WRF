@@ -1231,6 +1231,7 @@ SUBROUTINE med_nest_feedback ( parent , nest , config_flags )
     IF ( config_flags%feedback .NE. 0 ) THEN
 write(0,*)'calling med_feedback_domain parent%id,nest%id ',parent%id,nest%id
       CALL med_feedback_domain( parent, nest )
+write(0,*)'back from med_feedback_domain parent%id,nest%id ',parent%id,nest%id
 #ifdef MOVE_NESTS
       IF ( parent%active_this_task) THEN
       CALL get_ijk_from_grid (  parent ,                         &
