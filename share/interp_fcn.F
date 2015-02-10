@@ -1709,7 +1709,7 @@ print *,'column of cg pres = ',cprs
      IF ( xstag ) istag = 0
      IF ( ystag ) jstag = 0
 
-write(0,"('nri,nrj,spec_zone,istag,jstag ',5i10)")nri,nrj,spec_zone,istag,jstag
+write(0,"('nri,nrj,spec_zone,istag,jstag  ',5i10)")nri,nrj,spec_zone,istag,jstag
 
      IF( MOD(nrj,2) .NE. 0) THEN  ! odd refinement ratio
 
