@@ -4800,7 +4800,8 @@ ENDIF
       jps_save = ngrid%j_parent_start
       ipe_save = ngrid%i_parent_start + (nide-nids+1) / ngrid%parent_grid_ratio - 1
       jpe_save = ngrid%j_parent_start + (njde-njds+1) / ngrid%parent_grid_ratio - 1
-write(0,'("id,ips_save,ipe_save,jps_save,jpe_save ",5i10)')ngrid%id,ips_save,ipe_save,jps_save,jpe_save
+write(0,'("1 id,ips_save,ipe_save,nids,nide,(nide-nids+1) ",6i10)')ngrid%id,ips_save,ipe_save,nids,nide,(nide-nids+1)
+write(0,'("1 id,jps_save,jpe_save,njds,njde,(njde-njds+1) ",6i10)')ngrid%id,jps_save,jpe_save,njds,njde,(njde-njds+1)
 
 
 ! feedback_nest_prep invokes a halo exchange on the ngrid. It is done this way
@@ -4870,6 +4871,9 @@ write(0,'("id,ips_save,ipe_save,jps_save,jpe_save ",5i10)')ngrid%id,ips_save,ipe
       INTEGER       ::          nids, nide, njds, njde, nkds, nkde,    &
                                 nims, nime, njms, njme, nkms, nkme,    &
                                 nips, nipe, njps, njpe, nkps, nkpe
+      INTEGER       ::          xids, xide, xjds, xjde, xkds, xkde,    &
+                                xims, xime, xjms, xjme, xkms, xkme,    &
+                                xips, xipe, xjps, xjpe, xkps, xkpe
       INTEGER       ::          ids, ide, jds, jde, kds, kde,    &
                                 ims, ime, jms, jme, kms, kme,    &
                                 ips, ipe, jps, jpe, kps, kpe
@@ -4914,12 +4918,17 @@ write(0,'("id,ips_save,ipe_save,jps_save,jpe_save ",5i10)')ngrid%id,ips_save,ipe
                                 nids, nide, njds, njde, nkds, nkde,    &
                                 nims, nime, njms, njme, nkms, nkme,    &
                                 nips, nipe, njps, njpe, nkps, nkpe    )
+      CALL get_ijk_from_grid (  ngrid ,              &
+                                xids, xide, xjds, xjde, xkds, xkde,    &
+                                xims, xime, xjms, xjme, xkms, xkme,    &
+                                xips, xipe, xjps, xjpe, xkps, xkpe    )
 
       ips_save = ngrid%i_parent_start   ! used in feedback_domain_em_part2 below
       jps_save = ngrid%j_parent_start
-      ipe_save = ngrid%i_parent_start + (nide-nids+1) / ngrid%parent_grid_ratio - 1
-      jpe_save = ngrid%j_parent_start + (njde-njds+1) / ngrid%parent_grid_ratio - 1
-write(0,'("id,ips_save,ipe_save,jps_save,jpe_save ",5i10)')ngrid%id,ips_save,ipe_save,jps_save,jpe_save
+      ipe_save = ngrid%i_parent_start + (xide-xids+1) / ngrid%parent_grid_ratio - 1
+      jpe_save = ngrid%j_parent_start + (xjde-xjds+1) / ngrid%parent_grid_ratio - 1
+write(0,'("2 id,ips_save,ipe_save,xids,xide,(xide-xids+1) ",6i10)')ngrid%id,ips_save,ipe_save,xids,xide,(xide-xids+1)
+write(0,'("2 id,jps_save,jpe_save,xjds,xjde,(xjde-xjds+1) ",6i10)')ngrid%id,jps_save,jpe_save,xjds,xjde,(xjde-xjds+1)
 
 
 IF ( ngrid%active_this_task ) THEN

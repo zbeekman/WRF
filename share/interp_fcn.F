@@ -5886,5 +5886,210 @@ write(0,'("copy_fcni ci,ck,cj ni,nk,nj cfld(ci,ck,cj) ",7i6)')ci,ck,cj,ni,nk,nj,
       deallocate (icount_land)
 
    END SUBROUTINE interp_mask_soil
+
+   SUBROUTINE interp_mask_soil_dbg ( enable,                  &  ! says whether to allow interpolation or just the bcasts
+                                       cfld,                     &  ! CD field
+                           cids, cide, ckds, ckde, cjds, cjde,   &
+                           cims, cime, ckms, ckme, cjms, cjme,   &
+                           cits, cite, ckts, ckte, cjts, cjte,   &
+                           nfld,                                 &  ! ND field
+                           nids, nide, nkds, nkde, njds, njde,   &
+                           nims, nime, nkms, nkme, njms, njme,   &
+                           nits, nite, nkts, nkte, njts, njte,   &
+                           shw,                                  &  ! stencil half width
+                           imask,                                &  ! interpolation mask
+                           xstag, ystag,                         &  ! staggering of field
+                           ipos, jpos,                           &  ! Position of lower left of nest in CD
+                           nri, nrj,                             &  ! nest ratios
+                           clu, nlu )
+
+      USE module_configure
+      USE module_wrf_error
+      USE module_dm , only : wrf_dm_sum_real, wrf_dm_sum_integer
+
+      IMPLICIT NONE
+
+
+      LOGICAL, INTENT(IN) :: enable
+      INTEGER, INTENT(IN) :: cids, cide, ckds, ckde, cjds, cjde,   &
+                             cims, cime, ckms, ckme, cjms, cjme,   &
+                             cits, cite, ckts, ckte, cjts, cjte,   &
+                             nids, nide, nkds, nkde, njds, njde,   &
+                             nims, nime, nkms, nkme, njms, njme,   &
+                             nits, nite, nkts, nkte, njts, njte,   &
+                             shw,                                  &  ! stencil half width
+                             ipos, jpos,                           &
+                             nri, nrj
+      LOGICAL, INTENT(IN) :: xstag, ystag
+
+      INTEGER, DIMENSION ( cims:cime, ckms:ckme, cjms:cjme ) :: cfld
+      INTEGER, DIMENSION ( nims:nime, nkms:nkme, njms:njme ) :: nfld
+      INTEGER, DIMENSION ( nims:nime, njms:njme ) :: imask
+
+      REAL, DIMENSION ( cims:cime, cjms:cjme ) :: clu
+      REAL, DIMENSION ( nims:nime, njms:njme ) :: nlu
+
+      ! Local
+
+      INTEGER ci, cj, ck, ni, nj, nk, ip, jp
+      INTEGER :: icount, ii , jj , ist , ien , jst , jen , iswater, num_soil_cat, ierr
+      REAL :: avg, sum, dx , dy
+      INTEGER , ALLOCATABLE :: icount_water(:,: ), icount_land(:,:)
+      INTEGER , PARAMETER :: max_search = 5
+      CHARACTER*120 message
+      INTEGER, PARAMETER :: isoilwater = 14
+
+      CALL nl_get_iswater(1,iswater)
+      CALL nl_get_num_soil_cat(1,num_soil_cat)
+
+      allocate (icount_water(nkms:nkme,1:num_soil_cat))
+      allocate ( icount_land(nkms:nkme,1:num_soil_cat))
+
+      !  Right now, only mass point locations permitted.
+
+      IF ( ( .NOT. xstag) .AND. ( .NOT. ystag ) ) THEN
+
+        !  Loop over each i,k,j in the nested domain.
+
+        IF ( enable ) THEN
+
+          DO nj = njts, njte
+             cj = jpos + (nj-1) / nrj     ! j coord of CD point 
+            DO nk = nkts, nkte
+               ck = nk
+               DO ni = nits, nite
+                  ci = ipos + (ni-1) / nri      ! j coord of CD point 
+
+write(0,'("ni,nj,imask,nlu,ci,cj,cfld",7i5)')ni,nj,imask(ni,nj),NINT(nlu(ni,nj)),ci,cj,cfld(ci,ck,cj)
+                  IF ( imask(ni, nj) .NE. 1 ) cycle
+
+                  IF ( ( NINT(nlu(ni, nj)) .EQ. iswater ) ) then
+
+                     IF ( ( NINT(clu(ci  ,cj  )) .EQ. iswater ) ) then 
+                       nfld(ni,nk,nj) = cfld(ci,ck,cj)
+                     ELSE 
+                       nfld(ni,nk,nj) = -1
+                     ENDIF
+
+                  ELSE IF ( ( NINT(nlu(ni, nj)) .NE. iswater ) ) THEN
+
+                      IF ( ( NINT(clu(ci  ,cj  )) .NE. iswater ) ) THEN 
+                         nfld(ni,nk,nj) = cfld(ci,ck,cj)
+                      ELSE 
+                         nfld(ni,nk,nj) = -1
+                      ENDIF
+
+                  END IF
+               END DO
+            END DO
+          END DO
+
+          DO nj = njts, njte
+             DO nk = nkts, nkte
+                DO ni = nits, nite
+                  IF ( imask(ni, nj) .NE. 1 ) cycle
+                  IF ( nfld(ni,nk,nj) .EQ. -1 ) THEN
+                     IF ( NINT(nlu(ni,nj)) .EQ. iswater ) THEN 
+                        nfld(ni,nk,nj) = isoilwater
+                     END IF
+                  END IF
+               END DO
+             END DO
+          END DO
+#if 0
+          IF ( ANY(nfld .EQ. -1) ) THEN
+
+            !  Get an average of the whole domain for problem locations.
+
+            sum_water    = 0
+            icount_water = 0
+            sum_land     = 0
+            icount_land  = 0
+            avg_water    = 0
+            avg_land     = 0
+           
+            DO nj = njts, njte
+               cj = jpos + (nj-1) / nrj     ! j coord of CD point 
+               DO nk = nkts, nkte
+                  DO ni = nits, nite
+                     ci = ipos + (ni-1) / nri      ! j coord of CD point 
+                     IF ( imask(ni, nj) .NE. 1 ) cycle
+                     IF ( nfld(ni,nk,nj) .EQ. -1 ) THEN
+                        ist = MAX (ci-max_search,cits)
+                        ien = MIN (ci+max_search,cite,cide-1)
+                        jst = MAX (cj-max_search,cjts)
+                        jen = MIN (cj+max_search,cjte,cjde-1)
+                        DO jj = jst,jen
+                           DO ii = ist,ien
+                              IF ( NINT(clu(ii,jj)) .NE. iswater ) THEN
+                                 icount_land(nk,cfld(ii,nk,jj)) = icount_land(nk,cfld(ii,nk,jj)) +1
+                              END IF
+                           END DO
+                        END DO
+                        IF ( maxval(icount_land(nk,:)) .GT. 0 .and. maxloc(icount_land(nk,:)) .ne. isoilwater ) then
+                            nfld(ni,nk,nj) = maxloc(icount_land(nk,:))
+                        END IF
+                     END IF
+                  END DO
+               END DO
+            END DO
+
+          END IF ! nfld = -1
+
+
+          IF ( ANY(nfld .EQ. -1) ) THEN
+            sum_water    = 0
+            icount_water = 0
+            sum_land     = 0
+            icount_land  = 0
+            avg_water    = 0
+            avg_land     = 0
+
+            DO nj = njts, njte
+               DO nk = nkts, nkte
+                  DO ni = nits, nite
+                     IF ( nlu(ni,nj ) .NE. iswater ) THEN
+                        icount_land(nk,nfld(ni,nk,nj)) = icount_land(nk,nfld(ni,nk,nj)) +1
+                     END IF
+                  ENDDO
+               ENDDO
+            ENDDO
+
+            DO nj = njts, njte
+               DO nk = nkts, nkte
+                  DO ni = nits, nite
+                     IF ( imask(ni, nj) .NE. 1 ) cycle
+                     IF ( nfld(ni,nk,nj) .EQ. -1 .and. maxloc(icount_land(nk,:)) .ne. isoilwater) THEN
+                        nfld(ni,nk,nj) = MAXLOC(icount_land(nk,:))
+                     END IF
+                  ENDDO
+               ENDDO
+            ENDDO
+          END IF ! nfld = -1
+#endif
+
+          IF ( ANY(nfld .EQ. -1) ) THEN
+            DO nj = njts, njte
+               DO nk = nkts, nkte
+                  DO ni = nits, nite
+                     IF ( imask(ni, nj) .NE. 1 ) cycle
+                     IF ( nfld(ni,nk,nj) .EQ. -1 ) THEN
+                        nfld(ni,nk,nj) = 8
+                     END IF
+                  ENDDO
+               ENDDO
+            ENDDO
+          END IF ! nfld = -1
+
+        END IF  ! enable
+      ELSE
+         CALL wrf_error_fatal ( "only unstaggered fields right now" )
+      END IF
+
+
+      deallocate (icount_water)
+      deallocate (icount_land)
+
+   END SUBROUTINE interp_mask_soil_dbg
 #endif 
 ! End of third block of ARW-only routines

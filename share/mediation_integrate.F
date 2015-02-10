@@ -1187,10 +1187,12 @@ SUBROUTINE med_nest_force ( parent , nest )
 
    IF ( .NOT. WRFU_ClockIsStopTime(nest%domain_clock ,rc=rc) ) THEN
 ! initialize nest with interpolated data from the parent
-     nest%imask_nostag = 1
-     nest%imask_xstag = 1
-     nest%imask_ystag = 1
-     nest%imask_xystag = 1
+     IF ( nest%active_this_task ) THEN
+       nest%imask_nostag = 1
+       nest%imask_xstag = 1
+       nest%imask_ystag = 1
+       nest%imask_xystag = 1
+     ENDIF
      CALL med_force_domain( parent, nest )
    ENDIF
 
