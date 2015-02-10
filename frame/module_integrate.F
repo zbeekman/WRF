@@ -357,8 +357,8 @@ write(0,*)__FILE__,__LINE__
                IF ( grid_ptr%active_this_task ) THEN
                   CALL set_current_grid_ptr( grid_ptr )
                   CALL wrf_debug( 100 , 'module_integrate: calling solve interface ' )
-write(0,*)__FILE__,__LINE__,' solve interface commented out'
-!                  CALL solve_interface ( grid_ptr ) 
+write(0,*)__FILE__,__LINE__!,' solve interface commented out'
+                  CALL solve_interface ( grid_ptr ) 
 write(0,*)__FILE__,__LINE__
                ENDIF
                CALL domain_clockadvance ( grid_ptr )

@@ -4929,6 +4929,8 @@ write(0,'("1 id,jps_save,jpe_save,njds,njde,(njde-njds+1) ",6i10)')ngrid%id,jps_
       jpe_save = ngrid%j_parent_start + (xjde-xjds+1) / ngrid%parent_grid_ratio - 1
 write(0,'("2 id,ips_save,ipe_save,xids,xide,(xide-xids+1) ",6i10)')ngrid%id,ips_save,ipe_save,xids,xide,(xide-xids+1)
 write(0,'("2 id,jps_save,jpe_save,xjds,xjde,(xjde-xjds+1) ",6i10)')ngrid%id,jps_save,jpe_save,xjds,xjde,(xjde-xjds+1)
+write(0,*)"2 ngrid%active_this_task ",ngrid%active_this_task
+
 
 
 IF ( ngrid%active_this_task ) THEN
