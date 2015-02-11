@@ -8,7 +8,9 @@ SUBROUTINE med_force_domain ( parent_grid , nested_grid )
    USE module_domain
    USE module_configure
    USE module_intermediate_nmm
-   USE module_dm, ONLY : intercomm_active,push_communicators_for_domain,pop_communicators_for_domain
+   USE module_dm, ONLY : intercomm_active,push_communicators_for_domain,pop_communicators_for_domain, &
+                         mpi_comm_to_kid, mpi_comm_to_mom, which_kid
+
    IMPLICIT NONE
    TYPE(domain), POINTER :: parent_grid , nested_grid
    TYPE(domain), POINTER :: grid
@@ -22,6 +24,7 @@ SUBROUTINE med_force_domain ( parent_grid , nested_grid )
    TYPE (grid_config_rec_type)            :: config_flags
 #endif
 
+integer myproc, i, j
 ! ----------------------------------------------------------
 ! ------------------------------------------------------
 ! Interface blocks
@@ -167,9 +170,10 @@ this_time=now_time()
                             grid%sm31x, grid%em31x, grid%sm32x, grid%em32x, grid%sm33x, grid%em33x, &   ! x-xpose
                             grid%sm31y, grid%em31y, grid%sm32y, grid%em32y, grid%sm33y, grid%em33y  &   ! y-xpose
      )
-     ENDIF
+   ENDIF
 #  endif
 
+#if 1
    ! couple parent domain
    grid => parent_grid
    IF ( grid%active_this_task ) THEN
@@ -195,6 +199,9 @@ this_time=now_time()
                                    )
      CALL pop_communicators_for_domain
    ENDIF
+#else
+write(0,*)__FILE__," WARNING DECOUPLING DISABLED IN med_force_domain"
+#endif
    ! perform first part: transfer data from parent to intermediate domain
    ! at the same resolution but on the same decomposition as the nest
    ! note that this will involve communication on multiple DM procs
@@ -206,15 +213,36 @@ this_time=now_time()
    !   
    ! T. Hutchinson, WSI  1/23/07
    !
-   nested_grid%intermediate_grid%dt = grid%dt
 
-   CALL wrf_dm_nestexchange_init
+   IF ( parent_grid%active_this_task .AND. nested_grid%active_this_task ) THEN
+     nested_grid%intermediate_grid%dt = grid%dt
+   ENDIF
+   IF ( parent_grid%active_this_task ) THEN
+     CALL BYTE_BCAST( parent_grid%dt,RWORDSIZE,mpi_comm_to_kid( which_kid( nested_grid%id ) , parent_grid%id ))
+   ELSE IF ( nested_grid%active_this_task ) THEN
+     CALL BYTE_BCAST( nested_grid%dt,RWORDSIZE,mpi_comm_to_mom( nested_grid%id ) )
+   ENDIF
 
-   CALL interp_domain_em_part1 ( grid , nested_grid%intermediate_grid, nested_grid, config_flags  &
+IF (nested_grid%id .eq. 2) THEN
+CALL wrf_get_myproc(myproc)
+write(100+myproc,*)grid%ep31-grid%sp31+1,grid%ep33-grid%sp33+1,grid%id,'10 w force down'
+do j=grid%sp33,grid%ep33
+do i=grid%sp31,grid%ep31
+write(100+myproc,*)grid%w_2(i,10,j)
+enddo
+enddo
+ENDIF
+
+   IF ( parent_grid%active_this_task .OR. nested_grid%active_this_task ) THEN
+     CALL wrf_dm_nestexchange_init
+
+     CALL interp_domain_em_part1 ( grid , nested_grid%intermediate_grid, nested_grid, config_flags  &
 !
 #         include "actual_new_args.inc"
 !
                                     )
+   ENDIF
+
   IF ( nested_grid%active_this_task ) THEN
    grid => nested_grid%intermediate_grid
       ! perform 2nd part: run interpolation on the intermediate domain
@@ -226,8 +254,9 @@ this_time=now_time()
 #          include "actual_new_args.inc"
 !
                                    )
-   ! uncouple the nest
   ENDIF
+#if 1
+   ! uncouple the nest
    grid => nested_grid
    IF ( grid%active_this_task ) THEN
      CALL push_communicators_for_domain(grid%id)
@@ -251,6 +280,9 @@ this_time=now_time()
                                 )
      CALL pop_communicators_for_domain
    ENDIF
+#else
+write(0,*)__FILE__," WARNING DECOUPLING DISABLED IN med_force_domain"
+#endif
    IF ( nested_grid%first_force ) THEN
       nested_grid%first_force = .FALSE.
    ENDIF

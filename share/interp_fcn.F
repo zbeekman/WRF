@@ -2262,6 +2262,181 @@ write(0,'("copy_fcni ci,ck,cj ni,nk,nj cfld(ci,ck,cj) ",7i6)')ci,ck,cj,ni,nk,nj,
 
    END SUBROUTINE bdy_interp
 
+!8888888888888888888
+   SUBROUTINE bdy_interp_dbg ( cfld,                                 &  ! CD field
+                           cids, cide, ckds, ckde, cjds, cjde,   &
+                           cims, cime, ckms, ckme, cjms, cjme,   &
+                           cits, cite, ckts, ckte, cjts, cjte,   &
+                           nfld,                                 &  ! ND field
+                           nids, nide, nkds, nkde, njds, njde,   &
+                           nims, nime, nkms, nkme, njms, njme,   &
+                           nits, nite, nkts, nkte, njts, njte,   &
+                           shw,                                  &  ! stencil half width
+                           imask,                                &  ! interpolation mask
+                           xstag, ystag,                         &  ! staggering of field
+                           ipos, jpos,                           &  ! Position of lower left of nest in CD
+                           nri, nrj,                             &  ! nest ratios
+                           cbdy_xs, nbdy_xs,                     &  ! Boundary components, for the CG and FG,
+                           cbdy_xe, nbdy_xe,                     &  ! for each of the four sides (x start, e end, y start, y end)
+                           cbdy_ys, nbdy_ys,                     &  ! and also for the two components of the LBC:
+                           cbdy_ye, nbdy_ye,                     &  ! the "starting" value and the tendency
+                           cbdy_txs, nbdy_txs,                   &
+                           cbdy_txe, nbdy_txe,                   &  ! The CG is at a parent time step ahead of the FG
+                           cbdy_tys, nbdy_tys,                   &
+                           cbdy_tye, nbdy_tye,                   &
+                           cdt, ndt                              )  ! Time step size for CG and FG
+
+     USE module_interp_info
+
+     IMPLICIT NONE
+
+     INTEGER, INTENT(IN) :: cids, cide, ckds, ckde, cjds, cjde,   &
+                            cims, cime, ckms, ckme, cjms, cjme,   &
+                            cits, cite, ckts, ckte, cjts, cjte,   &
+                            nids, nide, nkds, nkde, njds, njde,   &
+                            nims, nime, nkms, nkme, njms, njme,   &
+                            nits, nite, nkts, nkte, njts, njte,   &
+                            shw,                                  &
+                            ipos, jpos,                           &
+                            nri, nrj
+
+     LOGICAL, INTENT(IN) :: xstag, ystag
+
+     REAL, DIMENSION ( cims:cime, ckms:ckme, cjms:cjme ) :: cfld
+     REAL, DIMENSION ( nims:nime, nkms:nkme, njms:njme ) :: nfld
+     INTEGER, DIMENSION ( nims:nime, njms:njme ) :: imask
+     REAL,  DIMENSION( * ), INTENT(INOUT) :: cbdy_xs, cbdy_txs
+     REAL,  DIMENSION( * ), INTENT(INOUT) :: cbdy_xe, cbdy_txe
+     REAL,  DIMENSION( * ), INTENT(INOUT) :: cbdy_ys, cbdy_tys
+     REAL,  DIMENSION( * ), INTENT(INOUT) :: cbdy_ye, cbdy_tye
+     REAL, DIMENSION ( njms:njme, nkms:nkme, 5 ), INTENT(INOUT) :: nbdy_xs, nbdy_txs
+     REAL, DIMENSION ( njms:njme, nkms:nkme, 5 ), INTENT(INOUT) :: nbdy_xe, nbdy_txe
+     REAL, DIMENSION ( nims:nime, nkms:nkme, 5 ), INTENT(INOUT) :: nbdy_ys, nbdy_tys
+     REAL, DIMENSION ( nims:nime, nkms:nkme, 5 ), INTENT(INOUT) :: nbdy_ye, nbdy_tye
+     REAL cdt, ndt
+
+     ! Local
+
+     INTEGER nijds, nijde, spec_bdy_width
+integer i,j,myproc
+
+     nijds = min(nids, njds)
+     nijde = max(nide, njde)
+     CALL nl_get_spec_bdy_width( 1, spec_bdy_width )
+
+     IF      ( interp_method_type .EQ. NOT_DEFINED_YET  ) THEN
+        interp_method_type = SINT
+     END IF
+
+     IF      ( interp_method_type .EQ. SINT      ) THEN
+         CALL bdy_interp1( cfld,                                 &  ! CD field
+                           cids, cide, ckds, ckde, cjds, cjde,   &
+                           cims, cime, ckms, ckme, cjms, cjme,   &
+                           cits, cite, ckts, ckte, cjts, cjte,   &
+                           nfld,                                 &  ! ND field
+                           nijds, nijde ,                        &  ! start and end of nest LBC size in the LONG direction
+                           spec_bdy_width ,                      &  ! width of the LBC, the SHORT direction
+                           nids, nide, nkds, nkde, njds, njde,   &
+                           nims, nime, nkms, nkme, njms, njme,   &
+                           nits, nite, nkts, nkte, njts, njte,   &
+                           shw, imask,                           &
+                           xstag, ystag,                         &  ! staggering of field
+                           ipos, jpos,                           &  ! Position of lower left of nest in CD
+                           nri, nrj,                             &
+                           cbdy_xs, nbdy_xs,                     &  ! Boundary components, for the CG and FG,
+                           cbdy_xe, nbdy_xe,                     &  ! for each of the four sides (x start, e end, y start, y end)
+                           cbdy_ys, nbdy_ys,                     &  ! and also for the two components of the LBC:
+                           cbdy_ye, nbdy_ye,                     &  ! the "starting" value and the tendency
+                           cbdy_txs, nbdy_txs,                   &
+                           cbdy_txe, nbdy_txe,                   &  ! The CG is at a parent time step ahead of the FG
+                           cbdy_tys, nbdy_tys,                   &
+                           cbdy_tye, nbdy_tye,                   &
+                           cdt, ndt                              &  ! Time step size for CG and FG
+                                                                 )
+
+IF ( nite-nits+1 .EQ. 52 ) THEN
+!IF ( nite-nits+1 .EQ. 46 ) THEN
+CALL wrf_get_myproc(myproc)
+#if 1
+WRITE(60+myproc,*)cite-cits+1,cjte-cjts+1,' cfld i '
+DO j = cjts,cjte
+DO i = cits,cite
+WRITE(60+myproc,*)cfld(i,10,j)
+ENDDO
+ENDDO
+!WRITE(60+myproc,*)cite-cits+1,cjte-cjts+1,' cfld j '
+!DO j = cjts,cjte
+!DO i = cits,cite
+!WRITE(60+myproc,*)cfld(i,2,j)
+!ENDDO
+!ENDDO
+
+#endif
+#if 0
+WRITE(60+myproc,*)nite-nits+1,spec_bdy_width,' ye i'
+DO j = 1,spec_bdy_width
+DO i = nits,nite
+WRITE(60+myproc,*)nbdy_ye(i,10,j)
+ENDDO
+ENDDO
+!WRITE(60+myproc,*)nite-nits+1,spec_bdy_width,' ye j'
+!DO j = 1,spec_bdy_width
+!DO i = nits,nite
+!WRITE(60+myproc,*)nbdy_ye(i,2,j)
+!ENDDO
+!ENDDO
+
+WRITE(60+myproc,*)nite-nits+1,spec_bdy_width,' ys i'
+DO j = 1,spec_bdy_width
+DO i = nits,nite
+WRITE(60+myproc,*)nbdy_ys(i,10,j)
+ENDDO
+ENDDO
+!WRITE(60+myproc,*)nite-nits+1,spec_bdy_width,' ys j'
+!DO j = 1,spec_bdy_width
+!DO i = nits,nite
+!WRITE(60+myproc,*)nbdy_ys(i,2,j)
+!ENDDO
+!ENDDO
+#endif
+ENDIF
+
+     ELSE IF      ( ( interp_method_type .EQ. BILINEAR         ) .OR. &
+                    ( interp_method_type .EQ. NEAREST_NEIGHBOR ) .OR. &
+                    ( interp_method_type .EQ. QUADRATIC        ) .OR. &
+                    ( interp_method_type .EQ. SPLINE           ) .OR. &
+                    ( interp_method_type .EQ. SINT_NEW         ) ) THEN 
+         CALL bdy_interp2( cfld,                                 &  ! CD field
+                           cids, cide, ckds, ckde, cjds, cjde,   &
+                           cims, cime, ckms, ckme, cjms, cjme,   &
+                           cits, cite, ckts, ckte, cjts, cjte,   &
+                           nfld,                                 &  ! ND field
+                           nijds, nijde ,                        &  ! start and end of nest LBC size in the LONG direction
+                           spec_bdy_width ,                      &  ! width of the LBC, the SHORT direction
+                           nids, nide, nkds, nkde, njds, njde,   &
+                           nims, nime, nkms, nkme, njms, njme,   &
+                           nits, nite, nkts, nkte, njts, njte,   &
+                           shw, imask,                           &
+                           xstag, ystag,                         &  ! staggering of field
+                           ipos, jpos,                           &  ! Position of lower left of nest in CD
+                           nri, nrj,                             &
+                           cbdy_xs, nbdy_xs,                     &  ! Boundary components, for the CG and FG,
+                           cbdy_xe, nbdy_xe,                     &  ! for each of the four sides (x start, e end, y start, y end)
+                           cbdy_ys, nbdy_ys,                     &  ! and also for the two components of the LBC:
+                           cbdy_ye, nbdy_ye,                     &  ! the "starting" value and the tendency
+                           cbdy_txs, nbdy_txs,                   &
+                           cbdy_txe, nbdy_txe,                   &  ! The CG is at a parent time step ahead of the FG
+                           cbdy_tys, nbdy_tys,                   &
+                           cbdy_tye, nbdy_tye,                   &
+                           cdt, ndt                              &  ! Time step size for CG and FG
+                                                                 )
+
+     ELSE
+        CALL wrf_error_fatal ('Hold on there cowboy #2, we need to know which nested lateral boundary interpolation option you want')
+     END IF
+
+   END SUBROUTINE bdy_interp_dbg
+
 !==================================
 
    SUBROUTINE bdy_interp1( cfld,                                 &  ! CD field

@@ -25,7 +25,3 @@ include ../configure.wrf
 clean:
 	@ echo 'use the clean script'
 
-# DEPENDENCIES : only dependencies after this line (don't remove the word DEPENDENCIES)
-
-solve_exp.o:   module_exp.o
-

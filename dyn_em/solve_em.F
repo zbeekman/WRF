@@ -398,6 +398,7 @@ integer myproc
      grid%max_vert_cfl = 0
    ENDIF
 
+#if 0
 write(0,*)'ips,ipe,jps,jpe',ips,ipe,jps,jpe
 !checkerboard pattern
       k = 1
@@ -435,20 +436,31 @@ write(0,*)'ips,ipe,jps,jpe',ips,ipe,jps,jpe
       ENDIF
       ENDIF
       ENDDO
+#endif
+#if 0
+      DO j=jps,jpe
+      DO i=ips,ipe
+          grid%w_2(i,1,j) = i
+          grid%w_2(i,2,j) = j
+      ENDDO
+      ENDDO
+#endif
 
 
+#if 1
 !ZAP
-IF ( grid%id.eq.2) THEN
+IF ( grid%id.eq.1) THEN
 CALL wrf_get_myproc(myproc)
-write(30+myproc,*)ipe-ips+1,jpe-jps+1
+write(130+myproc,*)ipe-ips+1,jpe-jps+1
 DO j=jps,jpe
 DO i=ips,ipe
-write(30+myproc,*)grid%w_2(i,1,j)
+write(130+myproc,*)grid%w_2(i,1,j)
 ENDDO
 ENDDO
 ENDIF
 
-     RETURN
+!     RETURN
+#endif
 
 ! setting bdy tendencies to zero for DFI if constant_bc = true
 

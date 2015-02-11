@@ -188,8 +188,3 @@ md_calls.inc : md_calls.m4
 	  $(M4) md_calls.m4 > md_calls.inc ; \
 	fi
 
-# DEPENDENCIES : only dependencies after this line (don't remove the word DEPENDENCIES)
-
-include ../main/depend.common
-
-# DO NOT DELETE
