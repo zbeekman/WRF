@@ -316,6 +316,8 @@ write(0,*)__FILE__,__LINE__,"ZAP calling med_nest_initial ",grid%id, new_nest%id
                CALL med_nest_initial ( grid , new_nest , config_flags )
 write(0,*)__FILE__,__LINE__,"ZAP back from med_nest_initial ",grid%id, new_nest%id 
 
+
+#if (EM_CORE == 1)
 IF ( new_nest%id.eq.2.and.new_nest%active_this_task) THEN
 CALL wrf_get_myproc(myproc)
 write(40+myproc,*)new_nest%ep31-new_nest%sp31+1,new_nest%ep33-new_nest%sp33+1,' w_2 '
@@ -324,15 +326,14 @@ DO i=new_nest%sp31,new_nest%ep31
 write(40+myproc,*)new_nest%w_2(i,10,j)
 ENDDO
 ENDDO
-
 write(40+myproc,*)new_nest%ep31-new_nest%sp31+1,new_nest%ep33-new_nest%sp33+1,' t_2 '
 DO j=new_nest%sp33,new_nest%ep33
 DO i=new_nest%sp31,new_nest%ep31
 write(40+myproc,*)new_nest%t_2(i,10,j)
 ENDDO
 ENDDO
-
 ENDIF
+#endif
 
 write(0,*)__FILE__,__LINE__
                IF ( grid%dfi_stage == DFI_STARTFWD ) THEN
@@ -357,6 +358,7 @@ write(0,*)__FILE__,__LINE__
                IF ( grid_ptr%active_this_task ) THEN
                   CALL set_current_grid_ptr( grid_ptr )
                   CALL wrf_debug( 100 , 'module_integrate: calling solve interface ' )
+#if (EM_CORE == 1)
 write(0,*)__FILE__,__LINE__!,' solve interface commented out'
 IF ( grid_ptr%id .eq. 1 ) THEN
 CALL wrf_get_myproc(myproc)
@@ -367,7 +369,9 @@ write(40+myproc,*)grid_ptr%w_2(i,10,j)
 ENDDO
 ENDDO
 ENDIF
+#endif
                   CALL solve_interface ( grid_ptr ) 
+#if (EM_CORE == 1)
 IF ( grid_ptr%id .eq. 1 ) THEN
 CALL wrf_get_myproc(myproc)
 write(40+myproc,*)grid_ptr%ep31-grid_ptr%sp31+1,grid_ptr%ep33-grid_ptr%sp33+1,' w_2 after solve '
@@ -377,6 +381,7 @@ write(40+myproc,*)grid_ptr%w_2(i,10,j)
 ENDDO
 ENDDO
 ENDIF
+#endif
 write(0,*)__FILE__,__LINE__
                ENDIF
                CALL domain_clockadvance ( grid_ptr )
@@ -399,6 +404,7 @@ write(0,*)__FILE__,__LINE__
                    ! Recursive -- advance nests from previous time level to this time level.
                    CALL wrf_debug( 100 , 'module_integrate: calling med_nest_force ' )
 
+#if (EM_CORE == 1)
 IF ( grid_ptr%nests(kid)%ptr%id .eq.2.and.grid_ptr%id .eq. 1 ) THEN
 CALL wrf_get_myproc(myproc)
 write(40+myproc,*)grid_ptr%ep31-grid_ptr%sp31+1,grid_ptr%ep33-grid_ptr%sp33+1,' w_2 before force '
@@ -408,6 +414,7 @@ write(40+myproc,*)grid_ptr%w_2(i,10,j)
 ENDDO
 ENDDO
 ENDIF
+#endif
 
                    CALL med_nest_force ( grid_ptr , grid_ptr%nests(kid)%ptr )
                    CALL wrf_debug( 100 , 'module_integrate: back from med_nest_force ' )

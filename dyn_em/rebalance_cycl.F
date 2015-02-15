@@ -7,16 +7,19 @@
 
       TYPE (domain)          :: grid
 
+#if (EM_CORE == 1)
       CALL rebalance_cycl( grid &
 !
 #include "actual_new_args.inc"
 !
       )
+#endif
 
    END SUBROUTINE rebalance_driver_cycl
 
 !---------------------------------------------------------------------
 
+#if (EM_CORE == 1)
    SUBROUTINE rebalance_cycl ( grid  &
 !
 #include "dummy_new_args.inc"
@@ -272,13 +275,14 @@
         ENDDO !j
 
       ips = its ; ipe = ite ; jps = jts ; jpe = jte ; kps = kts ; kpe = kte
-#ifdef DM_PARALLEL
+# ifdef DM_PARALLEL
 #   include "HALO_EM_INIT_1.inc"
 #   include "HALO_EM_INIT_2.inc"
 #   include "HALO_EM_INIT_3.inc"
 #   include "HALO_EM_INIT_4.inc"
 #   include "HALO_EM_INIT_5.inc"
-#endif
+# endif
    END SUBROUTINE rebalance_cycl
+#endif
 
 !---------------------------------------------------------------------

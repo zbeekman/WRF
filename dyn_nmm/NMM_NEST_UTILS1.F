@@ -6,12 +6,14 @@
 !===========================================================================
 
 SUBROUTINE med_nest_egrid_configure ( parent , nest )
+ USE module_dm
  USE module_domain
  USE module_configure
  USE module_timing
 
  IMPLICIT NONE
  TYPE(domain) , POINTER             :: parent , nest
+ TYPE(domain), POINTER  :: grid
  REAL, PARAMETER                    :: ERAD=6371200.
  REAL, PARAMETER                    :: DTR=0.01745329
  REAL, PARAMETER                    :: DTAD=1.0
@@ -20,6 +22,8 @@ SUBROUTINE med_nest_egrid_configure ( parent , nest )
  INTEGER                            :: IMS,IME,JMS,JME,KMS,KME
  INTEGER                            :: ITS,ITE,JTS,JTE,KTS,KTE
  CHARACTER(LEN=255)                 :: message
+ INTEGER :: comzilla
+
 
 !----------------------------------------------------------------------------
 !  PURPOSE: 
@@ -127,6 +131,7 @@ SUBROUTINE med_nest_egrid_configure ( parent , nest )
     CALL wrf_message(trim(message))
 
 
+   IF ( parent%active_this_task .AND. nest%active_this_task ) THEN
 !   soil configuration
 
 #ifdef HWRF
@@ -201,6 +206,70 @@ SUBROUTINE med_nest_egrid_configure ( parent , nest )
 !bao
    CALL nl_set_map_proj(nest%id, nest%map_proj)
    CALL nl_set_iswater(nest%id, nest%iswater)
+  ENDIF
+! handle case where task computes parent or nest but not both (case of both is handled above)
+  IF ( parent%active_this_task .OR. nest%active_this_task ) THEN
+     IF ( parent%active_this_task ) THEN
+       comzilla = mpi_comm_to_kid( which_kid( nest%id ) , parent%id )
+write(0,*)__FILE__,__LINE__,'Patt: mpi_comm_to_kid ',comzilla,which_kid( nest%id ) ,nest%id, parent%id
+       grid => parent
+     ELSE
+       comzilla = mpi_comm_to_mom( nest%id )
+write(0,*)__FILE__,__LINE__,'Natt: mpi_comm_to_mom ',comzilla,nest%id
+       grid => nest
+     ENDIF
+
+!   soil configuration
+#ifdef HWRF
+!zhang 
+    if ( .not.nest%analysis ) then
+#endif
+      CALL BYTE_BCAST( grid%sldpth, RWORDSIZE, comzilla ) !  nest%sldpth  = parent%sldpth
+      CALL BYTE_BCAST( grid%dzsoil, RWORDSIZE, comzilla ) !  nest%dzsoil  = parent%dzsoil
+      CALL BYTE_BCAST( grid%rtdpth, RWORDSIZE, comzilla ) !  nest%rtdpth  = parent%rtdpth
+#ifdef HWRF 
+    endif
+#endif
+!   numerical set up
+
+      CALL BYTE_BCAST( grid%deta, RWORDSIZE, comzilla )  !  nest%deta        = parent%deta
+      CALL BYTE_BCAST( grid%aeta, RWORDSIZE, comzilla )  !  nest%aeta        = parent%aeta
+      CALL BYTE_BCAST( grid%etax, RWORDSIZE, comzilla )  !  nest%etax        = parent%etax
+      CALL BYTE_BCAST( grid%dfl, RWORDSIZE, comzilla )   !  nest%dfl         = parent%dfl
+      CALL BYTE_BCAST( grid%deta1, RWORDSIZE, comzilla ) !  nest%deta1       = parent%deta1
+      CALL BYTE_BCAST( grid%aeta1, RWORDSIZE, comzilla ) !  nest%aeta1       = parent%aeta1
+      CALL BYTE_BCAST( grid%eta1, RWORDSIZE, comzilla )  !  nest%eta1        = parent%eta1
+      CALL BYTE_BCAST( grid%deta2, RWORDSIZE, comzilla ) !  nest%deta2       = parent%deta2
+      CALL BYTE_BCAST( grid%aeta2, RWORDSIZE, comzilla ) !  nest%aeta2       = parent%aeta2
+      CALL BYTE_BCAST( grid%eta2, RWORDSIZE, comzilla )  !  nest%eta2        = parent%eta2
+      CALL BYTE_BCAST( grid%pdtop, RWORDSIZE, comzilla ) !  nest%pdtop       = parent%pdtop
+      CALL BYTE_BCAST( grid%pt, RWORDSIZE, comzilla )    !  nest%pt          = parent%pt
+      CALL BYTE_BCAST( grid%dfrlg, RWORDSIZE, comzilla ) !  nest%dfrlg       = parent%dfrlg
+      CALL BYTE_BCAST( grid%num_soil_layers, IWORDSIZE, comzilla ) !  nest%num_soil_layers = parent%num_soil_layers
+      CALL BYTE_BCAST( grid%num_moves, IWORDSIZE, comzilla )       !  nest%num_moves       = parent%num_moves
+
+! Unfortunately, some of the single value constants in used in module_initialize have
+! to be defiend here instead of the usual spot in med_initialize_nest_nmm. There
+! appears to be a problem in Registry and related code in this area.
+!
+! state  logical upstrm   -      dyn_nmm     -      -      -
+
+  ENDIF
+
+  IF ( nest%active_this_task ) THEN
+
+    nest%dlmd   = nest%dx
+    nest%dphd   = nest%dy
+    nest%dy_nmm = erad*(nest%dphd*dtr)
+    nest%cpgfv  = -nest%dt/(48.*nest%dy_nmm)
+    nest%en     = nest%dt/( 4.*nest%dy_nmm)*dtad
+    nest%ent    = nest%dt/(16.*nest%dy_nmm)*dtad
+    nest%f4d    = -.5*nest%dt*dtad
+    nest%f4q    = -nest%dt*dtad
+    nest%ef4t   = .5*nest%dt/cp
+
+  ENDIF
+
 
 !   physics and other configurations
 !   CALL nl_get_iswater (parent%id, nest%iswater) ! iswater is just based on parents
@@ -211,12 +280,14 @@ SUBROUTINE med_nest_egrid_configure ( parent , nest )
 END SUBROUTINE med_nest_egrid_configure
 
 SUBROUTINE med_construct_egrid_weights ( parent , nest )
+ USE module_dm
  USE module_domain
  USE module_configure
  USE module_timing
 
  IMPLICIT NONE
  TYPE(domain) , POINTER             :: parent , nest
+ TYPE(domain), POINTER  :: grid
  LOGICAL, EXTERNAL                  :: wrf_dm_on_monitor
  INTEGER                            :: IDS,IDE,JDS,JDE,KDS,KDE
  INTEGER                            :: IMS,IME,JMS,JME,KMS,KME
@@ -227,6 +298,7 @@ SUBROUTINE med_construct_egrid_weights ( parent , nest )
  REAL                               :: SW_LATD,SW_LOND
  REAL                               :: ADDSUM1,ADDSUM2
  REAL                               :: xr,zr,xc
+ INTEGER :: comzilla
 !-----------------------------------------------------------------------------------------------------------
 !   PURPOSE: 
 !           - Initialize lat-lons and determine weights 
@@ -234,6 +306,16 @@ SUBROUTINE med_construct_egrid_weights ( parent , nest )
 !----------------------------------------------------------------------------------------------------------
 
 !   First obtain central latitude and longitude for the parent domain
+
+  IF ( parent%active_this_task .OR.  nest%active_this_task ) THEN
+    IF ( parent%active_this_task ) THEN
+       comzilla = mpi_comm_to_kid( which_kid( nest%id ) , parent%id )
+       grid => parent
+    ELSE
+       comzilla = mpi_comm_to_mom( nest%id )
+       grid => nest
+    ENDIF
+  ENDIF
 
     CALL nl_get_cen_lat (parent%ID, parent_CLAT)
     CALL nl_get_cen_lon (parent%ID, parent_CLON)
@@ -266,7 +348,10 @@ SUBROUTINE med_construct_egrid_weights ( parent , nest )
     parent_WBD  = parent%wbd0
     parent_SBD  = parent%sbd0
 
+
 !   Now compute Geodetic lat/lon (Positive East) of parent grid in degrees
+
+  IF ( parent%active_this_task ) THEN
 
     CALL EARTH_LATLON ( parent%HLAT,parent%HLON,parent%VLAT,parent%VLON,  & !output
                         parent_DLMD,parent_DPHD,parent_WBD,parent_SBD,                    & !inputs 
@@ -274,6 +359,7 @@ SUBROUTINE med_construct_egrid_weights ( parent , nest )
                         IDS,IDE,JDS,JDE,KDS,KDE,                                          &
                         IMS,IME,JMS,JME,KMS,KME,                                          &
                         ITS,ITE,JTS,JTE,KTS,KTE                                           )
+  ENDIF
 
 !   Nested grid configuration, including, western and southern boundary
 
@@ -308,6 +394,7 @@ SUBROUTINE med_construct_egrid_weights ( parent , nest )
 !   as the parent grid
 !
 
+  IF ( nest%active_this_task ) THEN
     CALL EARTH_LATLON ( nest%HLAT,nest%HLON,nest%VLAT,nest%VLON, & ! output
                         nest_DLMD,nest_DPHD,nest_WBD,nest_SBD,                   & ! nest inputs
                         parent_CLAT,parent_CLON,                                 & ! parent central lat/lon
@@ -391,6 +478,7 @@ SUBROUTINE med_construct_egrid_weights ( parent , nest )
                        IDS,IDE,JDS,JDE,KDS,KDE,                               & !
                        IMS,IME,JMS,JME,KMS,KME,                               & ! nested grid configuration
                        ITS,ITE,JTS,JTE,KTS,KTE                                )
+  ENDIF
 
 !------------------------------------------------------------------------------------------
 
