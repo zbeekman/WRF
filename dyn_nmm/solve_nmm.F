@@ -787,6 +787,7 @@
       write(message,*)' No Ocean Coupling Run'
       call wrf_message(trim(message))
 #else
+#  if 0
 ! Coupling insertion:->
       btimx=now_time()
       call ATM_TSTEP_INIT(NTSD_current,grid%NPHS,GRID%ID,grid%NPHS*grid%dt, &
@@ -798,6 +799,10 @@
       sst_tim=sst_tim+now_time()-btimx
 !<-:coupling insertion
 !
+#  else
+      write(message,*)' WARNING No Ocean Coupling Run'
+      call wrf_message(trim(message))
+#  endif
 #endif
 #endif
 !-----------------------------------------------------------------------
@@ -1636,11 +1641,16 @@
       write(message,*)' No Ocean Coupling Run'
       call wrf_message(trim(message))
 #else
+#  if 0
 ! Coupling insertion:->
         btimx=now_time()
         CALL ATM_GETSST(grid%sst,grid%sm)
         sst_tim=sst_tim+now_time()-btimx
 !<-:Coupling insertion
+#  else
+      write(message,*)' WARNING No Ocean Coupling Run'
+      call wrf_message(trim(message))
+#  endif
 #endif
 #endif
 !----------------------------------------------------------------------
@@ -1743,6 +1753,7 @@
       write(message,*)' No Ocean Coupling Run'
       call wrf_message(trim(message))
 #else
+#if 0
 ! Coupling insertion:->
       btimx=now_time()
       call ATM_DOFLUXES(grid%twbs,grid%qwbs,grid%rlwin,grid%rswin,grid%radot,grid%rswout, &
@@ -1755,6 +1766,10 @@
         btimx=now_time()
         flux_tim=flux_tim+now_time()-btimx
       ENDIF
+#  else
+      write(message,*)' WARNING No Ocean Coupling Run'
+      call wrf_message(trim(message))
+#  endif
 
 #endif
 #endif
@@ -2614,6 +2629,7 @@
       write(message,*)' No Ocean Coupling Run'
       call wrf_message(trim(message))
 #else
+#  if 0
 ! Coupling insertion:->
       btimx=now_time()
       call ATM_SENDFLUXES
@@ -2624,6 +2640,10 @@
 !
 !  IF(grid%id==2)WRITE(0,*)'AFTER ATM_SENDFLUX grid%qwbs grid%twbs AT 10 10 ',grid%ntsd,grid%qwbs(10,10),grid%twbs(10,10)
 !
+#  else
+      write(message,*)' WARNING No Ocean Coupling Run'
+      call wrf_message(trim(message))
+#  endif
 #endif
 #endif
 

@@ -215,13 +215,13 @@ SUBROUTINE wrf_message( str )
 #endif
   else
 !$OMP MASTER
-     if(stderrlog/=0) then
+!     if(stderrlog/=0) then
 300     format(A)
         write(0,300) trim(str)
 # ifdef _WIN32
   CALL FLUSH(0)
 # endif
-     endif
+!     endif
      print 300,trim(str)
 !$OMP END MASTER
   endif

@@ -286,7 +286,6 @@ integer myproc,i,j
       CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
       IF ( config_flags%grid_allowed ) THEN
          CALL domain_clockprint ( 150, grid, 'DEBUG:  top of integrate(),' )
-       IF ( grid%active_this_task ) THEN
          DO WHILE ( .NOT. domain_clockisstopsubtime(grid) )
 !            IF ( wrf_dm_on_monitor() ) THEN
                CALL start_timing
@@ -316,74 +315,33 @@ write(0,*)__FILE__,__LINE__,"ZAP calling med_nest_initial ",grid%id, new_nest%id
                CALL med_nest_initial ( grid , new_nest , config_flags )
 write(0,*)__FILE__,__LINE__,"ZAP back from med_nest_initial ",grid%id, new_nest%id 
 
-
-#if (EM_CORE == 1)
-IF ( new_nest%id.eq.2.and.new_nest%active_this_task) THEN
-CALL wrf_get_myproc(myproc)
-write(40+myproc,*)new_nest%ep31-new_nest%sp31+1,new_nest%ep33-new_nest%sp33+1,' w_2 '
-DO j=new_nest%sp33,new_nest%ep33
-DO i=new_nest%sp31,new_nest%ep31
-write(40+myproc,*)new_nest%w_2(i,10,j)
-ENDDO
-ENDDO
-write(40+myproc,*)new_nest%ep31-new_nest%sp31+1,new_nest%ep33-new_nest%sp33+1,' t_2 '
-DO j=new_nest%sp33,new_nest%ep33
-DO i=new_nest%sp31,new_nest%ep31
-write(40+myproc,*)new_nest%t_2(i,10,j)
-ENDDO
-ENDDO
-ENDIF
-#endif
-
+IF ( grid%active_this_task ) THEN
 write(0,*)__FILE__,__LINE__
                IF ( grid%dfi_stage == DFI_STARTFWD ) THEN
                   CALL wrf_dfi_startfwd_init(new_nest)
                ENDIF
 write(0,*)__FILE__,__LINE__
                IF (coupler_on) CALL cpl_defdomain( new_nest ) 
+ENDIF ! active_this_task
             END DO
 write(0,*)__FILE__,__LINE__
             IF ( a_nest_was_opened ) THEN
                CALL set_overlaps ( grid )   ! find overlapping and set pointers
             END IF
 
-            IF ( grid%active_this_task ) THEN
+IF ( grid%active_this_task ) THEN
             ! Accumulation calculation for DFI
               CALL dfi_accumulate ( grid )
 
               CALL med_before_solve_io ( grid , config_flags )
-            ENDIF
+ENDIF ! active_this_task
             grid_ptr => grid
             DO WHILE ( ASSOCIATED( grid_ptr ) )
-               IF ( grid_ptr%active_this_task ) THEN
+IF ( grid_ptr%active_this_task ) THEN
                   CALL set_current_grid_ptr( grid_ptr )
                   CALL wrf_debug( 100 , 'module_integrate: calling solve interface ' )
-#if (EM_CORE == 1)
-write(0,*)__FILE__,__LINE__!,' solve interface commented out'
-IF ( grid_ptr%id .eq. 1 ) THEN
-CALL wrf_get_myproc(myproc)
-write(40+myproc,*)grid_ptr%ep31-grid_ptr%sp31+1,grid_ptr%ep33-grid_ptr%sp33+1,' w_2 before solve '
-DO j=grid_ptr%sp33,grid_ptr%ep33
-DO i=grid_ptr%sp31,grid_ptr%ep31
-write(40+myproc,*)grid_ptr%w_2(i,10,j)
-ENDDO
-ENDDO
-ENDIF
-#endif
                   CALL solve_interface ( grid_ptr ) 
-#if (EM_CORE == 1)
-IF ( grid_ptr%id .eq. 1 ) THEN
-CALL wrf_get_myproc(myproc)
-write(40+myproc,*)grid_ptr%ep31-grid_ptr%sp31+1,grid_ptr%ep33-grid_ptr%sp33+1,' w_2 after solve '
-DO j=grid_ptr%sp33,grid_ptr%ep33
-DO i=grid_ptr%sp31,grid_ptr%ep31
-write(40+myproc,*)grid_ptr%w_2(i,10,j)
-ENDDO
-ENDDO
 ENDIF
-#endif
-write(0,*)__FILE__,__LINE__
-               ENDIF
                CALL domain_clockadvance ( grid_ptr )
                CALL wrf_debug( 100 , 'module_integrate: back from solve interface ' )
                ! print lots of time-related information for testing
@@ -393,9 +351,9 @@ write(0,*)__FILE__,__LINE__
             END DO
             CALL set_current_grid_ptr( grid )
             CALL med_calc_model_time ( grid , config_flags )
-            IF ( grid%active_this_task ) THEN
+IF ( grid%active_this_task ) THEN
               CALL med_after_solve_io ( grid , config_flags )
-            ENDIF
+ENDIF
             grid_ptr => grid
             DO WHILE ( ASSOCIATED( grid_ptr ) )
                DO kid = 1, max_nests
@@ -403,19 +361,6 @@ write(0,*)__FILE__,__LINE__
                    CALL set_current_grid_ptr( grid_ptr%nests(kid)%ptr )
                    ! Recursive -- advance nests from previous time level to this time level.
                    CALL wrf_debug( 100 , 'module_integrate: calling med_nest_force ' )
-
-#if (EM_CORE == 1)
-IF ( grid_ptr%nests(kid)%ptr%id .eq.2.and.grid_ptr%id .eq. 1 ) THEN
-CALL wrf_get_myproc(myproc)
-write(40+myproc,*)grid_ptr%ep31-grid_ptr%sp31+1,grid_ptr%ep33-grid_ptr%sp33+1,' w_2 before force '
-DO j=grid_ptr%sp33,grid_ptr%ep33
-DO i=grid_ptr%sp31,grid_ptr%ep31
-write(40+myproc,*)grid_ptr%w_2(i,10,j)
-ENDDO
-ENDDO
-ENDIF
-#endif
-
                    CALL med_nest_force ( grid_ptr , grid_ptr%nests(kid)%ptr )
                    CALL wrf_debug( 100 , 'module_integrate: back from med_nest_force ' )
                    grid_ptr%nests(kid)%ptr%start_subtime = &
@@ -429,13 +374,9 @@ ENDIF
                    CALL set_current_grid_ptr( grid_ptr%nests(kid)%ptr )
                    WRITE(message,*)grid%id,' module_integrate: recursive call to integrate '
                    CALL wrf_debug( 100 , message )
-!                   IF ( grid_ptr%nests(kid)%ptr%active_this_task ) THEN
 write(0,*)__FILE__,__LINE__
                       CALL integrate ( grid_ptr%nests(kid)%ptr ) 
-write(0,*)__FILE__,__LINE__,'RECURSING TO ACTIVE NEST',grid_ptr%nests(kid)%ptr%id
-!                   ELSE
-!write(0,*)__FILE__,__LINE__,'SKIPPING RECURSION TO NON-ACTIVE NEST',grid_ptr%nests(kid)%ptr%id
-!                   ENDIF
+write(0,*)__FILE__,__LINE__,'RECURSING TO NEST',grid_ptr%nests(kid)%ptr%id
                    WRITE(message,*)grid%id,' module_integrate: back from recursive call to integrate '
                    CALL wrf_debug( 100 , message )
                  ENDIF
@@ -464,8 +405,7 @@ write(0,'("med_nest_feedback back kid,grid_ptr%id,grid_ptr%nests(kid)%ptr%id ",3
             END DO
             CALL set_current_grid_ptr( grid )
             !  Report on the timing for a single time step.
-!            IF ( wrf_dm_on_monitor() .AND. grid%active_this_task ) THEN
-            IF ( grid%active_this_task ) THEN
+IF ( grid%active_this_task ) THEN
                CALL domain_clock_get ( grid, current_timestr=message2 )
 #if (EM_CORE == 1)
                if (config_flags%use_adaptive_time_step) then
@@ -477,15 +417,17 @@ write(0,'("med_nest_feedback back kid,grid_ptr%id,grid_ptr%nests(kid)%ptr%id ",3
                   WRITE ( message , FMT = '("main: time ",A," on domain ",I3)' ) TRIM(message2), grid%id
 #endif
                CALL end_timing ( TRIM(message) )
-            END IF
+ENDIF ! active_this_task
             CALL med_endup_step ( grid , config_flags )
          END DO
 write(0,*)"finished with time loop", grid%id
 
+IF ( grid%active_this_task ) THEN
          ! Accumulation calculation for DFI
          CALL dfi_accumulate ( grid )
+ENDIF ! active_this_task
 
-       ENDIF
+
          ! Avoid double writes on nests if this is not really the last time;
          ! Do check for write if the parent domain is ending.
          IF ( grid%id .EQ. 1 ) THEN               ! head_grid

@@ -419,7 +419,9 @@ integer myproc
    END INTERFACE
 
 
+write(0,*)__FILE__,__LINE__
    CALL interp_init
+write(0,*)__FILE__,__LINE__
 
 
    CALL domain_clock_get( parent, start_time=strt_time, current_time=cur_time )
@@ -453,8 +455,6 @@ integer myproc
 write(0,*)__FILE__,__LINE__,'calling med_interp_domain ',parent%id, nest%id
      CALL med_interp_domain( parent, nest )
 write(0,*)__FILE__,__LINE__,'back from med_interp_domain ',parent%id, nest%id
-
-
 
 !  De-reference dimension information stored in the grid data structure.
      CALL get_ijk_from_grid (  nest ,                   &
@@ -578,22 +578,6 @@ write(0,*)__FILE__,__LINE__,'back from med_nest_feedback nest%id ',nest%id
 ! set some other initial fields, fill out halos, base fields; re-do parent due
 ! to new terrain elevation from feedback
 
-IF ( nest%id.eq.2.and.nest%active_this_task) THEN
-CALL wrf_get_myproc(myproc)
-write(50+myproc,*)nest%ep31-nest%sp31+1,nest%ep33-nest%sp33+1,' w_2 '
-DO j=nest%sp33,nest%ep33
-DO i=nest%sp31,nest%ep31
-write(50+myproc,*)nest%w_2(i,10,j)
-ENDDO
-ENDDO
-write(50+myproc,*)nest%ep31-nest%sp31+1,nest%ep33-nest%sp33+1,' t_2 '
-DO j=nest%sp33,nest%ep33
-DO i=nest%sp31,nest%ep31
-write(50+myproc,*)nest%t_2(i,10,j)
-ENDDO
-ENDDO
-ENDIF
-
      IF ( nest%active_this_task) THEN
        nest%imask_nostag = 1
        nest%imask_xstag = 1
@@ -606,22 +590,6 @@ write(0,*)'calling start_domain for nest ',nest%id
 write(0,*)'back from start_domain for ',nest%id
        CALL pop_communicators_for_domain
      ENDIF
-
-IF ( nest%id.eq.2.and.nest%active_this_task) THEN
-CALL wrf_get_myproc(myproc)
-write(50+myproc,*)nest%ep31-nest%sp31+1,nest%ep33-nest%sp33+1,' w_2 '
-DO j=nest%sp33,nest%ep33
-DO i=nest%sp31,nest%ep31
-write(50+myproc,*)nest%w_2(i,10,j)
-ENDDO
-ENDDO
-write(50+myproc,*)nest%ep31-nest%sp31+1,nest%ep33-nest%sp33+1,' t_2 '
-DO j=nest%sp33,nest%ep33
-DO i=nest%sp31,nest%ep31
-write(50+myproc,*)nest%t_2(i,10,j)
-ENDDO
-ENDDO
-ENDIF
 
      CALL push_communicators_for_domain( parent%id )
 write(0,*)'at MPI_Barrier nest%id, parent%id ',nest%id, parent%id
@@ -856,6 +824,7 @@ write(0,*)'back from start_domain for ',parent%id
    ! not use MOIST and SCALAR as prognostic variables (they are
    ! recalculated on the fly every timestep):
 !zhang's doing for analysis option
+write(0,*)__FILE__,__LINE__
   IF(.not. nest%analysis .and. .not. config_flags%restart)THEN    ! initialize for cold-start
 #endif
 
@@ -863,7 +832,9 @@ write(0,*)'back from start_domain for ',parent%id
 !  initialize nested domain configurations including setting up wbd,sbd, etc 
 !----------------------------------------------------------------------------
 
+write(0,*)__FILE__,__LINE__
    CALL med_nest_egrid_configure ( parent , nest )
+write(0,*)__FILE__,__LINE__
 
 !-------------------------------------------------------------------------
 !  initialize lat-lons and determine weights 
@@ -937,6 +908,7 @@ write(0,*)'back from start_domain for ',parent%id
     KPE = nest%ep33
 
 
+    IF ( nest%active_this_task ) THEN
     CALL NEST_TERRAIN ( nest, config_flags )
 
 !   Initialize some more constants required especially for terrain adjustment processes
@@ -961,9 +933,13 @@ write(0,*)'back from start_domain for ',parent%id
     nest%imask_xstag  = 0 
     nest%imask_ystag  = 0 
     nest%imask_xystag = 0 
+    ENDIF
 
 #ifdef HWRF
    CALL med_interp_domain( parent, nest )
+
+write(0,*)__FILE__,__LINE__
+
 #else
     CALL domain_clock_get( parent, start_time=strt_time, current_time=cur_time )
 

@@ -2088,7 +2088,7 @@ write(0,*)i,'local_communicator_x_store ',local_communicator_x_store(i),ntasks_x
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         DO nest_id = 2, ndoms
-write(0,*)'nest_id = ',nest_id
+write(0,*)'>>>>>>  nest_id = ',nest_id
            par_id  = parent_id(nest_id)
            icolor2 = 0
            DO j = 1,ntasks !iterate over all the tasks in the "big" communicator
@@ -2103,17 +2103,21 @@ write(0,*)'nest_pes_x(nest_id) ',nest_pes_x(nest_id)
 write(0,*)'nest_pes_y(nest_id) ',nest_pes_y(nest_id)
            DO j = 1,ntasks
 
-write(0,*)'nest, par ',j-1,comm_start(comm_domain(nest_id)) .LE. j-1 .AND. j-1 .LT. comm_start(comm_domain(nest_id)) + nest_pes_x(nest_id)*nest_pes_y(nest_id), comm_start(comm_domain(par_id)) .LE. j-1 .AND. j-1 .LT. comm_start(comm_domain(par_id)) + nest_pes_x(par_id)*nest_pes_y(par_id)
+write(0,*)'nest, par ',j-1,   &
+          comm_start(comm_domain(nest_id)) .LE. j-1 .AND. j-1 .LT. comm_start(comm_domain(nest_id)) + nest_pes_x(nest_id)*nest_pes_y(nest_id), &
+          comm_start(comm_domain(par_id))  .LE. j-1 .AND. j-1 .LT. comm_start(comm_domain(par_id))  + nest_pes_x(par_id) *nest_pes_y(par_id)
 
              IF ( comm_start(comm_domain(nest_id)) .LE. j-1 .AND. j-1 .LT. comm_start(comm_domain(nest_id)) + nest_pes_x(nest_id)*nest_pes_y(nest_id) )  THEN
                icolor2(j)=1
-               mytask_is_nest=.TRUE.
+               if ( j-1 .EQ. mytask ) mytask_is_nest=.TRUE.
              ENDIF
              IF ( comm_start(comm_domain(par_id )) .LE. j-1 .AND. j-1 .LT. comm_start(comm_domain(par_id )) + nest_pes_x(par_id )*nest_pes_y(par_id ) )  THEN
                icolor2(j)=1
-               mytask_is_par=.TRUE.
+               if ( j-1 .EQ. mytask ) mytask_is_par=.TRUE.
              ENDIF
            ENDDO
+write(0,*)nest_id,'mytask_is_par ',mytask_is_par
+write(0,*)nest_id,'mytask_is_nest ',mytask_is_nest
 
            i = icolor2(mytask+1)
            CALL MPI_Comm_dup(mpi_comm_here,comdup,ierr)
@@ -2126,12 +2130,12 @@ write(0,*)'calling MPI_Comm_split ierr         ',ierr
 CALL MPI_Comm_size(mpi_comm_me_and_mom,iii,ierr) ; write(0,*)nest_id,'mpi_comm_me_and_mom sz',iii
 CALL MPI_Comm_rank(mpi_comm_me_and_mom,iii,ierr) ; write(0,*)nest_id,'mpi_comm_me_and_mom rk',iii
 
-           IF ( mytask_is_par  ) THEN
-              intercomm_active(par_id)  = .TRUE.
-              mpi_comm_to_mom(par_id)   =  mpi_comm_me_and_mom
+           IF ( mytask_is_nest  ) THEN
+              intercomm_active(nest_id)  = .TRUE.
+              mpi_comm_to_mom(nest_id)   =  mpi_comm_me_and_mom
 write(0,*)'setting mpi_comm_to_mom par_id ',par_id,mpi_comm_me_and_mom
            ENDIF
-           IF ( mytask_is_nest ) THEN
+           IF ( mytask_is_par ) THEN
               intercomm_active(nest_id)              = .TRUE.
               mpi_comm_to_kid(which_kid(nest_id),par_id)  =  mpi_comm_me_and_mom
 write(0,*)'setting mpi_comm_to_kid which_kid(nest_id),nest_id ',which_kid(nest_id),par_id,mpi_comm_me_and_mom

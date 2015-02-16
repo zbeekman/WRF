@@ -88,6 +88,11 @@ SUBROUTINE med_nest_egrid_configure ( parent , nest )
        parent%sbd0var = parent%sbd0
     end if
     nest%wbd0   = parent%wbd0 + (nest%i_parent_start-1)*2.*parent%dx + mod(nest%j_parent_start+1,2)*parent%dx
+write(0,*)' nest%i_parent_start ',nest%i_parent_start
+write(0,*)' nest%j_parent_start ',nest%j_parent_start
+write(0,*)' parent%dx ',parent%dx
+write(0,*)' parent%wbd0 ',parent%wbd0
+write(0,*)' nest%wbd0 ',nest%wbd0
     nest%sbd0   = parent%sbd0 + (nest%j_parent_start-1)*parent%dy
     nest%wbd0var = nest%wbd0
     nest%sbd0var = nest%sbd0
@@ -119,19 +124,15 @@ SUBROUTINE med_nest_egrid_configure ( parent , nest )
     CALL nl_get_cen_lat (parent%id, parent%cen_lat) ! cen_lat of parent set to nested domain
     CALL nl_get_cen_lon (parent%id, parent%cen_lon) ! cen_lon of parent set to nested domain
 
+   IF ( parent%active_this_task .AND. nest%active_this_task ) THEN
     nest%cen_lat=parent%cen_lat
     nest%cen_lon=parent%cen_lon
 !
     CALL nl_set_cen_lat ( nest%id , nest%cen_lat)  ! for output purpose
     CALL nl_set_cen_lon ( nest%id , nest%cen_lon)  ! for output purpose
 
-    write(message,*)" - nest%cen_lat   = ",nest%cen_lat
-    CALL wrf_message(trim(message))
-    write(message,*)" - nest%cen_lon   = ",nest%cen_lon
-    CALL wrf_message(trim(message))
 
 
-   IF ( parent%active_this_task .AND. nest%active_this_task ) THEN
 !   soil configuration
 
 #ifdef HWRF
@@ -231,6 +232,41 @@ write(0,*)__FILE__,__LINE__,'Natt: mpi_comm_to_mom ',comzilla,nest%id
     endif
 #endif
 !   numerical set up
+
+      CALL BYTE_BCAST( grid%cen_lat, RWORDSIZE, comzilla )  !
+      CALL BYTE_BCAST( grid%cen_lon, RWORDSIZE, comzilla )  !
+      CALL nl_set_cen_lat ( nest%id , nest%cen_lat)  ! for output purpose
+      CALL nl_set_cen_lon ( nest%id , nest%cen_lon)  ! for output purpose
+    ! "For output purposes" is not entirely true, because 
+    ! the central lat (parent) is needed in the call to EARTH_LATLON
+    ! but it is derived (read from the input) so if this task isn't active
+    ! on the parent, it won't know it, so set it here.
+    ! Other way to have done this would have been to pass the nested cen_lat/lon
+    ! into EARTH_LATLON instead of the parent's.  Flipped a coin.
+      IF ( .NOT. parent%active_this_nest ) THEN
+        CALL nl_set_cen_lat ( parent%id , nest%cen_lat)  ! for output purpose
+        CALL nl_set_cen_lon ( parent%id , nest%cen_lon)  ! for output purpose
+      ENDIF
+
+      IF ( nest%active_this_task ) THEN
+        write(message,*)" - nest%cen_lat   = ",nest%cen_lat
+        CALL wrf_message(trim(message))
+        write(message,*)" - nest%cen_lon   = ",nest%cen_lon
+        CALL wrf_message(trim(message))
+      ENDIF
+
+      CALL BYTE_BCAST( grid%truelat1, RWORDSIZE, comzilla )  !
+      CALL BYTE_BCAST( grid%truelat2, RWORDSIZE, comzilla )  !
+      CALL nl_set_truelat1(nest%id, nest%truelat1)
+      CALL nl_set_truelat2(nest%id, nest%truelat2)
+
+      CALL BYTE_BCAST( grid%stand_lon, RWORDSIZE, comzilla )  !
+      CALL nl_set_stand_lon(nest%id, nest%stand_lon)
+
+      CALL BYTE_BCAST( grid%map_proj, IWORDSIZE, comzilla )  !
+      CALL BYTE_BCAST( grid%iswater, IWORDSIZE, comzilla )  !
+      CALL nl_set_map_proj(nest%id, nest%map_proj)
+      CALL nl_set_iswater(nest%id, nest%iswater)
 
       CALL BYTE_BCAST( grid%deta, RWORDSIZE, comzilla )  !  nest%deta        = parent%deta
       CALL BYTE_BCAST( grid%aeta, RWORDSIZE, comzilla )  !  nest%aeta        = parent%aeta
@@ -401,6 +437,39 @@ SUBROUTINE med_construct_egrid_weights ( parent , nest )
                         IDS,IDE,JDS,JDE,KDS,KDE,                                 & ! nested domain dimension
                         IMS,IME,JMS,JME,KMS,KME,                                 &
                         ITS,ITE,JTS,JTE,KTS,KTE                                  )
+write(0,*)'back from EARTH_LATLON nest%id ',nest%id
+write(0,*)'back from EARTH_LATLON shape(nest%HLAT) ',shape(nest%HLAT)
+write(0,*)'back from EARTH_LATLON nest%dx ',nest%dx
+write(0,*)'back from EARTH_LATLON nest%dy ',nest%dy
+write(0,*)'back from EARTH_LATLON nest%wbd0 ',nest%wbd0
+write(0,*)'back from EARTH_LATLON nest%sbd0 ',nest%sbd0
+write(0,*)'back from EARTH_LATLON nest%HLAT '
+write(0,*)'back from EARTH_LATLON parent_CLAT ',parent_CLAT
+write(0,*)'back from EARTH_LATLON parent_CLON ',parent_CLON
+write(100,*)ite-its+1,jte-jts+1,' HLAT '
+do j =jts,jte
+do i =its,ite
+  write(100,*)nest%HLAT(i,j)
+enddo
+enddo
+write(100,*)ite-its+1,jte-jts+1,' HLON '
+do j =jts,jte
+do i =its,ite
+  write(100,*)nest%HLON(i,j)
+enddo
+enddo
+write(100,*)ite-its+1,jte-jts+1,' VLAT '
+do j =jts,jte
+do i =its,ite
+  write(100,*)nest%VLAT(i,j)
+enddo
+enddo
+write(100,*)ite-its+1,jte-jts+1,' VLON '
+do j =jts,jte
+do i =its,ite
+  write(100,*)nest%VLON(i,j)
+enddo
+enddo
 
 !   Determine the weights of nested grid h points nearest to H points of parent domain 
 
@@ -2803,6 +2872,7 @@ SUBROUTINE NEST_TERRAIN ( nest, config_flags )
  USE module_TERRAIN
  USE wrfsi_static
  USE module_SMOOTH_TERRAIN
+ USE module_dm, ONLY : push_communicators_for_domain, pop_communicators_for_domain
 
  IMPLICIT NONE
 
@@ -2936,6 +3006,8 @@ SUBROUTINE NEST_TERRAIN ( nest, config_flags )
        end if
 
       ! Monitor process stores high-resolution topography:
+      IF ( nest%active_this_task ) THEN
+        CALL push_communicators_for_domain(nest%id)
 #ifdef DM_PARALLEL
       monitor_only: IF ( wrf_dm_on_monitor() ) THEN
 #endif
@@ -2947,7 +3019,6 @@ SUBROUTINE NEST_TERRAIN ( nest, config_flags )
          call SLAVE(IDS,IDE,JDS,JDE)
       ENDIF monitor_only
 #endif
-
       if(config_flags%terrain_smoothing==2) then     
          call wrf_debug(1,'Call fast smoother (smooth_terrain)')
          call smooth_terrain(nest,12,12, &
@@ -2974,6 +3045,8 @@ SUBROUTINE NEST_TERRAIN ( nest, config_flags )
      ENDDO
 
      write(message,'("Nest d",I0," nest_terrain")') nest%id
+        CALL pop_communicators_for_domain
+      ENDIF
      call END_TIMING(trim(message))
 
 #ifdef IDEAL_NMM_TC
@@ -3011,6 +3084,7 @@ CONTAINS
     avc_nest = 0.0
     lnd_nest = 0.0
     
+write(0,*)'calling terrain_for(',level
     tr=>terrain_for(level,input_type,io_form_auxinput2)
 
     ! select subdomain from big fine grid
@@ -3025,6 +3099,9 @@ CONTAINS
     i=1 ; j=1
     lah_nest_11 = tr%lah(i_start+i-1 + mod(j+1,2)*i_add, j_start+j-1)
     loh_nest_11 = tr%loh(i_start+i-1 + mod(j+1,2)*i_add, j_start+j-1)
+
+WRITE(0,*)'lah_nest_11,nest%HLAT(1,1)',lah_nest_11,nest%HLAT(1,1)
+WRITE(0,*)'loh_nest_11,nest%HLON(1,1)',loh_nest_11,nest%HLON(1,1)
 
     IF(ABS(lah_nest_11-nest%HLAT(1,1)) .GE. 0.5 .OR.  & 
          ABS(loh_nest_11-nest%HLON(1,1)) .GE. 0.5)THEN 
