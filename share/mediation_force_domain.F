@@ -314,7 +314,7 @@ write(0,*)__FILE__," WARNING DECOUPLING DISABLED IN med_force_domain"
 !dusan orig    CALL alloc_space_field ( grid, grid%id , 1 , 2 ,  .TRUE. ,    &
 #  if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
    IF ( intercomm_active(grid%id) ) THEN
-   CALL ensure_space_field &
+     CALL ensure_space_field &
                           ( grid, grid%id , 1 , 3 ,  .FALSE. ,    &
                             grid%sd31, grid%ed31, grid%sd32, grid%ed32, grid%sd33, grid%ed33, &
                             grid%sm31,  grid%em31,  grid%sm32,  grid%em32,  grid%sm33,  grid%em33, &
@@ -343,6 +343,7 @@ write(0,*)__FILE__," WARNING DECOUPLING DISABLED IN med_force_domain"
 !    IF ( .NOT. ( config_flags%restart .AND. nested_grid%first_force ) ) THEN
        ! couple nested domain
        grid => nested_grid
+IF ( grid%active_this_task ) THEN
        CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
        ! Apply halos on weights and indices:
     call before_interp_halos_nmm(grid,config_flags &
@@ -350,6 +351,7 @@ write(0,*)__FILE__," WARNING DECOUPLING DISABLED IN med_force_domain"
 #   include "actual_new_args.inc"
 !
                                 )
+ENDIF
 
    ! Copy interpolation information from parent grid to intermediate grid:
  !  grid => parent_grid
@@ -361,6 +363,7 @@ write(0,*)__FILE__," WARNING DECOUPLING DISABLED IN med_force_domain"
 
    ! Transfer remaining information from parent to intermediate grid:
    grid => parent_grid
+IF ( grid%active_this_task .OR. nested_grid%active_this_task ) THEN
    CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
    CALL force_domain_nmm_part1 ( grid , nested_grid%intermediate_grid,  &
                                  nested_grid, config_flags    &
@@ -368,6 +371,8 @@ write(0,*)__FILE__," WARNING DECOUPLING DISABLED IN med_force_domain"
 #         include "actual_new_args.inc"
 !
                                      )
+ENDIF
+IF ( nested_grid%active_this_task ) THEN
     grid => nested_grid%intermediate_grid
     IF ( .NOT. ( config_flags%restart .AND. nested_grid%first_force ) ) THEN
        ! Finish transfering information from parent to intermediate
@@ -380,6 +385,7 @@ write(0,*)__FILE__," WARNING DECOUPLING DISABLED IN med_force_domain"
 !
 )
     ENDIF ! not restart and first_force
+ENDIF
 
     IF ( nested_grid%first_force ) THEN
        nested_grid%first_force = .FALSE.
@@ -403,13 +409,6 @@ write(0,*)__FILE__," WARNING DECOUPLING DISABLED IN med_force_domain"
 ! ------------------------------------------------------
 !    End of Forcing calls for COAMPS.
 ! ------------------------------------------------------
-#ifdef NMM_FIND_LOAD_IMBALANCE
-   this_time=now_time()-this_time
-   total_time(parent_grid%id)=total_time(parent_grid%id)+this_time
-30 format('med_force_domain for grid ',I0,' to grid ',I0,': ',F12.6,'s; running total: ',F12.6,'s')
-   write(message,30) parent_grid%id,nested_grid%id,this_time,total_time(parent_grid%id)
-   call wrf_debug(1,message)
-#endif
    RETURN
 END SUBROUTINE med_force_domain
 

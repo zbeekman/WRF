@@ -116,7 +116,6 @@
 
 !..Need to fill special height var for setting up initial condition.  G. Thompson
    REAL, ALLOCATABLE, DIMENSION(:,:,:) :: z_at_q
-integer myproc
 
    CALL get_ijk_from_grid ( grid ,                              &
                            ids, ide, jds, jde, kds, kde,        &
@@ -145,10 +144,6 @@ integer myproc
    END IF
 
    IF ( config_flags%polar ) THEN
-!write(0,*)__FILE__,__LINE__,' clat ',ips,ipe,jps,jpe
-!do j = jps,jpe
-!write(0,*)__FILE__,__LINE__,' clat ',ids,j,grid%clat(ips,j)
-!enddo
 
 #ifdef DM_PARALLEL
 ! WARNING:  this might present scaling issues on very large numbers of processors
@@ -872,28 +867,6 @@ if(config_flags%sf_surface_physics.eq.NOAHMPSCHEME.and.config_flags%opt_run.eq.5
 endif
 #endif
 
-write(0,*)__FILE__,__LINE__,'grid%i_start ',grid%i_start
-write(0,*)__FILE__,__LINE__,'grid%i_end ',grid%i_end
-write(0,*)__FILE__,__LINE__,'grid%j_start ',grid%j_start
-write(0,*)__FILE__,__LINE__,'grid%j_end ',grid%j_end
-
-IF ( grid%id.eq.2.and.grid%active_this_task) THEN
-CALL wrf_get_myproc(myproc)
-write(50+myproc,*)grid%ep31-grid%sp31+1,grid%ep33-grid%sp33+1,' w_2  before phy_init '
-DO j=grid%sp33,grid%ep33
-DO i=grid%sp31,grid%ep31
-write(50+myproc,*)grid%w_2(i,10,j)
-ENDDO
-ENDDO
-write(50+myproc,*)grid%ep31-grid%sp31+1,grid%ep33-grid%sp33+1,' t_2 before phy_init'
-DO j=grid%sp33,grid%ep33
-DO i=grid%sp31,grid%ep31
-write(50+myproc,*)grid%t_2(i,10,j)
-ENDDO
-ENDDO
-ENDIF
-
-
    DO ij = 1, grid%num_tiles
 
 !tgs do not need physics initialization for backward DFI integration
@@ -1109,22 +1082,6 @@ ENDIF
 
    ENDDO
 
-IF ( grid%id.eq.2.and.grid%active_this_task) THEN
-CALL wrf_get_myproc(myproc)
-write(50+myproc,*)grid%ep31-grid%sp31+1,grid%ep33-grid%sp33+1,' w_2  after phy_init '
-DO j=grid%sp33,grid%ep33
-DO i=grid%sp31,grid%ep31
-write(50+myproc,*)grid%w_2(i,10,j)
-ENDDO
-ENDDO
-write(50+myproc,*)grid%ep31-grid%sp31+1,grid%ep33-grid%sp33+1,' t_2 after phy_init'
-DO j=grid%sp33,grid%ep33
-DO i=grid%sp31,grid%ep31
-write(50+myproc,*)grid%t_2(i,10,j)
-ENDDO
-ENDDO
-ENDIF
-
    CALL wrf_debug ( 100 , 'start_domain_em: After call to phy_init' )
 
    IF (config_flags%do_avgflx_em .EQ. 1) THEN
@@ -1306,22 +1263,6 @@ endif
 ! we leave w alone.  Initial value is V dot grad(topo) at surface, then smoothly decaying
 ! above that.
 
-IF ( grid%id.eq.2.and.grid%active_this_task) THEN
-CALL wrf_get_myproc(myproc)
-write(50+myproc,*)grid%ep31-grid%sp31+1,grid%ep33-grid%sp33+1,' w_2 after set_phys_bc '
-DO j=grid%sp33,grid%ep33
-DO i=grid%sp31,grid%ep31
-write(50+myproc,*)grid%w_2(i,10,j)
-ENDDO
-ENDDO
-write(50+myproc,*)grid%ep31-grid%sp31+1,grid%ep33-grid%sp33+1,' t_2 after set_phys_bc '
-DO j=grid%sp33,grid%ep33
-DO i=grid%sp31,grid%ep31
-write(50+myproc,*)grid%t_2(i,10,j)
-ENDDO
-ENDDO
-ENDIF
-
    IF ( ( start_of_simulation .OR. config_flags%cycling ) .AND. ( .NOT. config_flags%restart ) ) THEN
 
 ! If W already exists (not zero), then we leave it alone.  How to do this?  We find the
@@ -1359,22 +1300,6 @@ ENDIF
 
          ! setting kinematic condition for w at the surface
 
-IF ( grid%id.eq.2.and.grid%active_this_task) THEN
-CALL wrf_get_myproc(myproc)
-write(50+myproc,*)grid%ep31-grid%sp31+1,grid%ep33-grid%sp33+1,' w_2 1 after set_phys_bc '
-DO j=grid%sp33,grid%ep33
-DO i=grid%sp31,grid%ep31
-write(50+myproc,*)grid%w_2(i,10,j)
-ENDDO
-ENDDO
-write(50+myproc,*)grid%ep31-grid%sp31+1,grid%ep33-grid%sp33+1,' t_2 1 after set_phys_bc '
-DO j=grid%sp33,grid%ep33
-DO i=grid%sp31,grid%ep31
-write(50+myproc,*)grid%t_2(i,10,j)
-ENDDO
-ENDDO
-ENDIF
-
          fill_w_flag = .true.
          CALL set_w_surface(  config_flags, grid%znw, fill_w_flag,             &
                               grid%w_1, grid%ht, grid%u_1, grid%v_1, grid%cf1, &
@@ -1383,41 +1308,12 @@ ENDIF
                               ims, ime, jms, jme, kms, kme,                    &
                               its, ite, jts, jte, kts, kte                     )
 
-IF ( grid%id.eq.2.and.grid%active_this_task) THEN
-CALL wrf_get_myproc(myproc)
-write(50+myproc,*)grid%ep31-grid%sp31+1,grid%ep33-grid%sp33+1,' w_2 ',fill_w_flag
-DO j=grid%sp33,grid%ep33
-DO i=grid%sp31,grid%ep31
-write(50+myproc,*)grid%w_2(i,10,j)
-ENDDO
-ENDDO
-ENDIF
-
-write(0,*)__FILE__,__LINE__,'ZNW: ',grid%znw
-
          CALL set_w_surface(  config_flags, grid%znw, fill_w_flag,             &
                               grid%w_2, grid%ht, grid%u_2, grid%v_2, grid%cf1, &
                               grid%cf2, grid%cf3, grid%rdx, grid%rdy, grid%msftx, grid%msfty, &
                               ids, ide, jds, jde, kds, kde,                    &
                               ims, ime, jms, jme, kms, kme,                    &
                               its, ite, jts, jte, kts, kte                     ) 
-
-IF ( grid%id.eq.2.and.grid%active_this_task) THEN
-CALL wrf_get_myproc(myproc)
-write(50+myproc,*)grid%ep31-grid%sp31+1,grid%ep33-grid%sp33+1,' w_2 3 after set_phys_bc '
-DO j=grid%sp33,grid%ep33
-DO i=grid%sp31,grid%ep31
-write(50+myproc,*)grid%w_2(i,10,j)
-ENDDO
-ENDDO
-write(50+myproc,*)grid%ep31-grid%sp31+1,grid%ep33-grid%sp33+1,' t_2 3 after set_phys_bc '
-DO j=grid%sp33,grid%ep33
-DO i=grid%sp31,grid%ep31
-write(50+myproc,*)grid%t_2(i,10,j)
-ENDDO
-ENDDO
-ENDIF
-
       END IF
    END IF
 
@@ -1504,22 +1400,6 @@ ENDIF
        endif
 
    END IF
-
-IF ( grid%id.eq.2.and.grid%active_this_task) THEN
-CALL wrf_get_myproc(myproc)
-write(50+myproc,*)grid%ep31-grid%sp31+1,grid%ep33-grid%sp33+1,' w_2 aftset_physical_bc3d '
-DO j=grid%sp33,grid%ep33
-DO i=grid%sp31,grid%ep31
-write(50+myproc,*)grid%w_2(i,10,j)
-ENDDO
-ENDDO
-write(50+myproc,*)grid%ep31-grid%sp31+1,grid%ep33-grid%sp33+1,' t_2 aftset_physical_bc3d '
-DO j=grid%sp33,grid%ep33
-DO i=grid%sp31,grid%ep31
-write(50+myproc,*)grid%t_2(i,10,j)
-ENDDO
-ENDDO
-ENDIF
 
    CALL set_physical_bc3d( grid%w_1 , 'W' , config_flags ,                 &
                          ids , ide , jds , jde , kds , kde ,        &

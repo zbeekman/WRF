@@ -1000,7 +1000,12 @@ write(0,*)'back from start_domain for ',parent%id
 ! set some other initial fields, fill out halos, etc. 
 !--------------------------------------------------------------------------------------
 
-    CALL start_domain ( nest, .TRUE.)
+    IF ( nest%active_this_task) THEN
+      CALL push_communicators_for_domain( nest%id )
+      CALL start_domain ( nest, .TRUE.)
+      CALL pop_communicators_for_domain
+    ENDIF
+    
 
 #ifdef HWRF
 !zhang's doing: else for analysis or restart option
@@ -1013,8 +1018,10 @@ write(0,*)'back from start_domain for ',parent%id
     CALL nl_set_julyr (nest%id, config_flags%julyr)       
     CALL nl_set_julday ( nest%id , config_flags%julday )
 !zhang test ends
+    IF ( nest%active_this_task) THEN
      CALL model_to_grid_config_rec ( nest%id , model_config_rec , nest_config_flags )
-    CALL med_analysis_out ( nest, nest_config_flags )
+     CALL med_analysis_out ( nest, nest_config_flags )
+    ENDIF
 
    ELSE
 
@@ -1023,10 +1030,12 @@ write(0,*)'back from start_domain for ',parent%id
 !------------------------------------------------------------------------------------
 
 !zhang's doing
+  IF ( nest%active_this_task) THEN
   IF( nest%analysis .and. .not. config_flags%restart)THEN
    CALL med_analysis_in ( nest, config_flags )
   ELSE IF (config_flags%restart)THEN
    CALL med_restart_in ( nest, config_flags )
+  ENDIF
   ENDIF
 !end of zhang's doing
 
@@ -1059,7 +1068,11 @@ write(0,*)'back from start_domain for ',parent%id
 ! analysis back to false for future use
 !--------------------------------------------------------------------------------------
 
+  IF ( nest%active_this_task) THEN
+    CALL push_communicators_for_domain( nest%id )
     CALL start_domain ( nest, .TRUE.)
+    CALL pop_communicators_for_domain
+  ENDIF
 
     nest%analysis=.FALSE.
     CALL nl_set_analysis( nest%id, nest%analysis)

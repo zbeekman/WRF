@@ -3214,6 +3214,7 @@ SUBROUTINE med_initialize_nest_nmm( grid &
     WRITE(message,*)'IDS,IDE ON DOMAIN',grid%id,'==',ids,ide
     CALL wrf_message(trim(message))
 !
+IF ( grid%active_this_task ) THEN
     ALLOCATE(KHL2(JTS:NNYP),KVL2(JTS:NNYP),KHH2(JTS:NNYP),KVH2(JTS:NNYP))
     ALLOCATE(DXJ(JTS:NNYP),WPDARJ(JTS:NNYP),CPGFUJ(JTS:NNYP),CURVJ(JTS:NNYP))
     ALLOCATE(FCPJ(JTS:NNYP),FDIVJ(JTS:NNYP),FADJ(JTS:NNYP))
@@ -3262,45 +3263,6 @@ SUBROUTINE med_initialize_nest_nmm( grid &
 
      ENDDO
     ENDDO
-
-#if 0
-    DO J = JTS, MIN(JTE,JDE-1)
-     DO I = ITS, MIN(ITE,IDE-1)
-      IF(grid%sm(I,J).GT.0.9) THEN           ! OVER WATER SURFACE
-!
-           IF (XICE(I,J) .gt. 0)THEN    ! XICE: SI INPUT ON PARENT, INTERPOLATED ONTO NEST
-             grid%si(I,J)=1.0                ! INITIALIZE SI BASED ON XICE FROM INTERPOLATED INPUT
-           ENDIF
-!
-           grid%epsr(I,J)= 0.97              ! VALID OVER SEA SURFACE
-           grid%embck(I,J)= 0.97              ! VALID OVER SEA SURFACE
-           grid%gffc(I,J)= 0.
-           grid%albedo(I,J)=.06
-           grid%albase(I,J)=.06
-!
-              IF(grid%si (I,J) .GT. 0.)THEN  ! VALID OVER SEA-ICE 
-                 grid%sm(I,J)=0.
-                 grid%si(I,J)=0.             ! 
-                 grid%sice(I,J)=1.
-                 grid%gffc(I,J)=0.           ! just leave zero as irrelevant
-                 grid%albedo(I,J)=.60        ! DEFINE grid%albedo 
-                 grid%albase(I,J)=.60
-              ENDIF
-!
-      ELSE                              ! OVER LAND SURFACE
-!
-           grid%si(I,J)=5.0*grid%weasd(I,J)/1000. ! SNOW WATER EQ (mm) OBTAINED FROM PARENT (grid%si) IS INTERPOLATED 
-           grid%epsr(I,J)=1.0                ! EMISSIVITY DEFINED OVER LAND IN THE NESTED DOMAIN
-           grid%embck(I,J)=1.0                ! EMISSIVITY DEFINED OVER LAND IN THE NESTED DOMAIN
-           grid%gffc(I,J)=0.0                ! just leave zero as irrelevant
-           grid%sice(I,J)=0.                 ! SEA ICE
-           grid%sno(I,J)=grid%si(I,J)*.20         ! LAND-SNOW COVER 
-!
-      ENDIF
-!
-     ENDDO
-    ENDDO
-#endif
 
 !   This may just be a fix and may need some Registry related changes, later on
 
@@ -3742,6 +3704,7 @@ SUBROUTINE med_initialize_nest_nmm( grid &
     DEALLOCATE(HDACJ,DDMPUJ,DDMPVJ)
     DEALLOCATE(KHLA,KHHA)
     DEALLOCATE(KVLA,KVHA)
+ENDIF
 
 
 END SUBROUTINE med_initialize_nest_nmm

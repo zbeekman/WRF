@@ -253,7 +253,7 @@ ENDIF
    grid => nested_grid%intermediate_grid
 !dusan orig     CALL alloc_space_field ( grid, grid%id , 1 , 2 , .TRUE. ,     &
 #  if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
-   IF ( intercomm_active( grid%id ) ) THEN
+   IF (  grid%active_this_task ) THEN
    CALL ensure_space_field &
                           ( grid, grid%id , 1 , 3 , .FALSE. ,     &
                             grid%sd31, grid%ed31, grid%sd32, grid%ed32, grid%sd33, grid%ed33, &
@@ -279,101 +279,35 @@ ENDIF
    ! STEP 1: Copy from parent grid to intermediate grid:
    grid => parent_grid
 #if (NMM_NEST==1)
-!#  include "deref_kludge.h"
-
-#ifdef NMM_FIND_LOAD_IMBALANCE
-   ttime=now_time()
-   call mpi_barrier(local_communicator,ierr)
-#endif
-
    call parent_to_inter_part1(parent_grid, nested_grid%intermediate_grid, &
                               nested_grid, config_flags)
 
-#ifdef NMM_FIND_LOAD_IMBALANCE
-   call mpi_barrier(local_communicator,ierr)
-   p2i_1_now=now_time()-ttime
-   p2i_1_time(nested_grid%id)=p2i_1_time(nested_grid%id)+p2i_1_now
-
-   ttime=now_time()
-   call mpi_barrier(local_communicator,ierr)
-#endif
-
    grid => nested_grid%intermediate_grid
-   call parent_to_inter_part2(nested_grid%intermediate_grid, config_flags)
+   call parent_to_inter_part2(nested_grid%intermediate_grid, nested_grid, config_flags)
 
-#ifdef NMM_FIND_LOAD_IMBALANCE
-   call mpi_barrier(local_communicator,ierr)
-   p2i_2_now=now_time()-ttime
-   p2i_2_time(nested_grid%id)=p2i_2_time(nested_grid%id)+p2i_2_now
 #endif
-#endif
+  IF ( nested_grid%active_this_task ) THEN
    ! STEP 2: Interpolate from nest grid to intermediate grid
    grid => nested_grid%intermediate_grid
 !#    include "deref_kludge.h"
-#ifdef NMM_FIND_LOAD_IMBALANCE
-   ttime=now_time()
-   call mpi_barrier(local_communicator,ierr)
-#endif
    CALL feedback_domain_nmm_part1 ( grid, nested_grid, config_flags    &
 !
 #      include "actual_new_args.inc"
 !
                                    )
-#ifdef NMM_FIND_LOAD_IMBALANCE
-   call mpi_barrier(local_communicator,ierr)
-   feed1_now=now_time()-ttime
-   feed1_time(nested_grid%id)=feed1_time(nested_grid%id)+feed1_now
-   ttime=now_time()
-   call mpi_barrier(local_communicator,ierr)
-#endif
+  ENDIF
 
    grid => parent_grid
-!#    include "deref_kludge.h"
-
 !
    CALL feedback_domain_nmm_part2 ( grid , nested_grid%intermediate_grid, nested_grid , config_flags    &
 !
 #      include "actual_new_args.inc"
 !
                                    )
-#ifdef NMM_FIND_LOAD_IMBALANCE
-   call mpi_barrier(local_communicator,ierr)
-   feed2_now=now_time()-ttime
-   feed2_time(nested_grid%id)=feed2_time(nested_grid%id)+feed2_now
-   grid => nested_grid%intermediate_grid
-#endif
 #endif
 ! ------------------------------------------------------
 !    End of Feedback calls for NMM.
 ! ------------------------------------------------------
-! ------------------------------------------------------
-! ------------------------------------------------------
-!    Feedback calls for COAMPS. (Placeholder)
-! ------------------------------------------------------
-#if (COAMPS_CORE == 1)
-#endif
-! ------------------------------------------------------
-!    End of Feedback calls for COAMPS.
-! ------------------------------------------------------
-#ifdef NMM_FIND_LOAD_IMBALANCE
-   this_time=now_time()-this_time
-   total_time(nested_grid%id)=total_time(nested_grid%id)+this_time
-30 format('med_feedback_domain for grid ',I0,' to grid ',I0,': ',F12.6,'s; running total: ',F12.6,'s')
-   write(message,30) nested_grid%id,parent_grid%id,this_time,total_time(nested_grid%id)
-   call wrf_debug(1,message)
-#if (NMM_NEST==1)
-40 format('  feedback parts: p2i1=',F7.4,'/',F10.4,' (',F6.2,'%) p2i2=',F7.4,'/',F10.4,' (',F6.2,'%)')
-   write(message,40) &
-        p2i_1_now,p2i_1_time(nested_grid%id),p2i_1_time(nested_grid%id)/total_time(nested_grid%id)*100., &
-        p2i_2_now,p2i_2_time(nested_grid%id),p2i_2_time(nested_grid%id)/total_time(nested_grid%id)*100.
-   call wrf_debug(1,message)
-#endif
-50 format('  feedback parts: feed1=',F7.4,'/',F10.4,' (',F6.2,'%) feed2=',F7.4,'/',F10.4,' (',F6.2,'%)')
-   write(message,50) &
-        feed1_now,feed1_time(nested_grid%id),feed1_time(nested_grid%id)/total_time(nested_grid%id)*100., &
-        feed2_now,feed2_time(nested_grid%id),feed2_time(nested_grid%id)/total_time(nested_grid%id)*100.
-   call wrf_debug(1,message)
-#endif
    RETURN
 END SUBROUTINE med_feedback_domain
 

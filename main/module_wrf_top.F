@@ -21,7 +21,7 @@ MODULE module_wrf_top
    USE module_nesting
 
 #ifdef DM_PARALLEL
-   USE module_dm, ONLY : wrf_dm_initialize, domain_active_this_task
+   USE module_dm, ONLY : wrf_dm_initialize, domain_active_this_task,mpi_comm_allcompute
 #endif
 
    USE module_cpl, ONLY : coupler_on, cpl_finalize, cpl_defdomain
@@ -109,7 +109,7 @@ CONTAINS
      use accel_lib
 #endif
      LOGICAL, OPTIONAL, INTENT(IN) :: no_init1
-     INTEGER i, myproc, nproc, hostid, loccomm, ierr, buddcounter, mydevice
+     INTEGER i, myproc, nproc, hostid, loccomm, ierr, buddcounter, mydevice, save_comm
      INTEGER, ALLOCATABLE :: hostids(:), budds(:)
      CHARACTER*512 hostname
 CHARACTER*512 mminlu_loc
@@ -150,6 +150,7 @@ CHARACTER*512 mminlu_loc
    ENDIF
    ! Phase 2 resumes after MPI_INIT() (if it is called)
    CALL init_modules(2)
+write(0,*)__FILE__,__LINE__
 
 !<DESCRIPTION>
 ! The wrf namelist.input file is read and stored in the USE associated
@@ -166,33 +167,55 @@ CHARACTER*512 mminlu_loc
 !</DESCRIPTION>
 
 #ifdef DM_PARALLEL
+   CALL wrf_get_dm_communicator( save_comm )
+   CALL wrf_set_dm_communicator( mpi_comm_allcompute )
+write(0,*)__FILE__,__LINE__
    IF ( wrf_dm_on_monitor() ) THEN
+write(0,*)__FILE__,__LINE__
      CALL initial_config
+write(0,*)__FILE__,__LINE__
    ENDIF
+write(0,*)__FILE__,__LINE__
    CALL get_config_as_buffer( configbuf, configbuflen, nbytes )
+write(0,*)__FILE__,__LINE__
    CALL wrf_dm_bcast_bytes( configbuf, nbytes )
+write(0,*)__FILE__,__LINE__
    CALL set_config_as_buffer( configbuf, configbuflen )
+write(0,*)__FILE__,__LINE__
    CALL wrf_dm_initialize
+write(0,*)__FILE__,__LINE__
+   CALL wrf_set_dm_communicator( save_comm )
 #else
    CALL initial_config
 #endif
 
+write(0,*)__FILE__,__LINE__
    CALL set_derived_rconfigs
+write(0,*)__FILE__,__LINE__
    CALL check_nml_consistency
+write(0,*)__FILE__,__LINE__
    CALL set_physics_rconfigs
+write(0,*)__FILE__,__LINE__
 
 #ifdef _ACCEL
    buddcounter = 1
    mydevice = 0
 # if defined(DM_PARALLEL) && !defined(STUBMPI) 
+write(0,*)__FILE__,__LINE__
    CALL wrf_get_myproc( myproc )
+write(0,*)__FILE__,__LINE__
    CALL wrf_get_nproc( nproc )
+write(0,*)__FILE__,__LINE__
    CALL wrf_get_hostid ( hostid )
+write(0,*)__FILE__,__LINE__
    CALL wrf_get_dm_communicator ( loccomm )
+write(0,*)__FILE__,__LINE__
 
+write(0,*)__FILE__,__LINE__
    ALLOCATE( hostids(nproc) )
    ALLOCATE( budds(nproc) )
    CALL mpi_allgather( hostid, 1, MPI_INTEGER, hostids, 1, MPI_INTEGER, loccomm, ierr )
+write(0,*)__FILE__,__LINE__
    if ( ierr .NE. 0 ) print * ,'error in mpi_allgather ',ierr
    budds = -1
    buddcounter = 0
@@ -231,15 +254,23 @@ CHARACTER*512 mminlu_loc
 # endif
 #endif
 
+write(0,*)__FILE__,__LINE__
 #ifdef RUN_ON_GPU
    CALL wrf_get_myproc( myproc )
+write(0,*)__FILE__,__LINE__
    CALL wrf_get_nproc( nproc )
+write(0,*)__FILE__,__LINE__
 # ifdef DM_PARALLEL
+write(0,*)__FILE__,__LINE__
    CALL wrf_get_hostid ( hostid ) 
+write(0,*)__FILE__,__LINE__
    CALL wrf_get_dm_communicator ( loccomm )
+write(0,*)__FILE__,__LINE__
    ALLOCATE( hostids(nproc) )
    ALLOCATE( budds(nproc) )
+write(0,*)__FILE__,__LINE__
    CALL mpi_allgather( hostid, 1, MPI_INTEGER, hostids, 1, MPI_INTEGER, loccomm, ierr )
+write(0,*)__FILE__,__LINE__
    IF ( ierr .NE. 0 ) THEN
       write(a_message,*)__FILE__,__LINE__,'error in mpi_allgather ',ierr
       CALL wrf_message ( a_message ) 
@@ -261,6 +292,7 @@ CHARACTER*512 mminlu_loc
 # endif
    CALL wsm5_gpu_init( myproc, nproc, mydevice )
 #endif
+write(0,*)__FILE__,__LINE__
 
 !<DESCRIPTION>
 ! Among the configuration variables read from the namelist is
@@ -274,7 +306,9 @@ CHARACTER*512 mminlu_loc
 ! 
 !</DESCRIPTION>
 
+write(0,*)__FILE__,__LINE__
    CALL nl_get_debug_level ( 1, debug_level )
+write(0,*)__FILE__,__LINE__
    CALL set_wrf_debug_level ( debug_level )
 
    ! allocated and configure the mother domain
@@ -290,13 +324,16 @@ CHARACTER*512 mminlu_loc
 ! run option or we are on an acceptable machine.
 !</DESCRIPTION>
 
+write(0,*)__FILE__,__LINE__
    CALL nl_get_max_dom( 1, max_dom )
+write(0,*)__FILE__,__LINE__
    IF ( max_dom > 1 ) THEN
 #if ( ! defined(DM_PARALLEL)  &&   ! defined(STUBMPI) )
    CALL wrf_error_fatal( &
      'nesting requires either an MPI build or use of the -DSTUBMPI option' ) 
 #endif
    END IF
+write(0,*)__FILE__,__LINE__
 
 !<DESCRIPTION>
 ! The top-most domain in the simulation is then allocated and configured
@@ -316,6 +353,7 @@ CHARACTER*512 mminlu_loc
 !</DESCRIPTION>
    CALL       wrf_message ( program_name )
    CALL       wrf_debug ( 100 , 'wrf: calling alloc_and_configure_domain ' )
+write(0,*)__FILE__,__LINE__
    CALL alloc_and_configure_domain ( domain_id  = 1 ,                  &
 #ifdef DM_PARALLEL
                                active_this_task = domain_active_this_task(1), &
@@ -324,17 +362,31 @@ CHARACTER*512 mminlu_loc
                                      parent     = null_domain ,        &
                                      kid        = -1                   )
 
+write(0,*)__FILE__,__LINE__
    CALL       wrf_debug ( 100 , 'wrf: calling model_to_grid_config_rec ' )
+write(0,*)__FILE__,__LINE__
    CALL model_to_grid_config_rec ( head_grid%id , model_config_rec , config_flags )
+write(0,*)__FILE__,__LINE__
    CALL       wrf_debug ( 100 , 'wrf: calling set_scalar_indices_from_config ' )
+write(0,*)__FILE__,__LINE__
    CALL set_scalar_indices_from_config ( head_grid%id , idum1, idum2 )
+write(0,*)__FILE__,__LINE__
    CALL       wrf_debug ( 100 , 'wrf: calling init_wrfio' )
+write(0,*)__FILE__,__LINE__
    CALL init_wrfio
+write(0,*)__FILE__,__LINE__
 
 #ifdef DM_PARALLEL
+   CALL wrf_get_dm_communicator( save_comm )
+   CALL wrf_set_dm_communicator( mpi_comm_allcompute )
+write(0,*)__FILE__,__LINE__
    CALL get_config_as_buffer( configbuf, configbuflen, nbytes )
+write(0,*)__FILE__,__LINE__
    CALL wrf_dm_bcast_bytes( configbuf, nbytes )
+write(0,*)__FILE__,__LINE__
    CALL set_config_as_buffer( configbuf, configbuflen )
+write(0,*)__FILE__,__LINE__
+   CALL wrf_set_dm_communicator( save_comm )
 #endif
 
 ! #if (EM_CORE == 1)
@@ -345,6 +397,7 @@ CHARACTER*512 mminlu_loc
 ! #endif
 
    CALL Setup_Timekeeping (head_grid)
+write(0,*)__FILE__,__LINE__
 
 !<DESCRIPTION>
 ! The head grid is initialized with read-in data through the call to <a
@@ -367,8 +420,10 @@ CHARACTER*512 mminlu_loc
 ! 
 !</DESCRIPTION>
 
+write(0,*)__FILE__,__LINE__
  IF ( domain_active_this_task(1) ) THEN
    CALL med_initialdata_input( head_grid , config_flags )
+write(0,*)__FILE__,__LINE__
 
    IF ( config_flags%write_restart_at_0h ) THEN
       CALL med_restart_out ( head_grid, config_flags )
@@ -395,14 +450,18 @@ CHARACTER*512 mminlu_loc
    !  the domains do not all start at the same time, then there will be inconsistencies,
    !  which is what DFI is supposed to address.
 
+write(0,*)__FILE__,__LINE__
 #if (EM_CORE == 1)
    IF ( head_grid%dfi_opt .NE. DFI_NODFI ) THEN
       CALL alloc_doms_for_dfi ( head_grid )
    END IF
 #endif
 
+write(0,*)__FILE__,__LINE__
    IF (coupler_on) CALL cpl_defdomain( head_grid ) 
+write(0,*)__FILE__,__LINE__
   ENDIF  ! domain_active_this_task
+write(0,*)__FILE__,__LINE__
 
    END SUBROUTINE wrf_init
 

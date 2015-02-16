@@ -46,6 +46,7 @@ MODULE module_dm
                                      ,local_iocommunicator_store                                  &
                                      ,local_communicator_x_store, local_communicator_y_store
 
+   INTEGER :: mpi_comm_allcompute         = MPI_UNDEFINED
    INTEGER :: local_communicator          = MPI_UNDEFINED
    INTEGER :: local_communicator_periodic = MPI_UNDEFINED
    INTEGER :: local_iocommunicator        = MPI_UNDEFINED
@@ -1890,6 +1891,7 @@ write(0,*)'mpi_inited ',mpi_inited
 
       CALL MPI_Comm_rank ( mpi_comm_here, mytask, ierr ) ;
       CALL MPI_Comm_size ( mpi_comm_here, ntasks, ierr ) ;
+      mpi_comm_allcompute = mpi_comm_here
 write(0,*)'mytask ',mytask
 write(0,*)'ntasks ',ntasks
 write(0,*)__LINE__,mpi_comm_here
@@ -2160,6 +2162,7 @@ write(0,*)'setting mpi_comm_to_kid which_kid(nest_id),nest_id ',which_kid(nest_i
       DEALLOCATE( icolor )
       DEALLOCATE( icolor2 )
       DEALLOCATE( idomain )
+write(0,*)'returning from split_communicator'
 #endif
    END SUBROUTINE split_communicator
 
@@ -2832,8 +2835,12 @@ END
       INCLUDE 'mpif.h'
       INTEGER tsk, ierr, mpi_comm_local
       CALL wrf_get_dm_communicator( mpi_comm_local )
-      CALL mpi_comm_rank ( mpi_comm_local, tsk , ierr )
-      wrf_dm_on_monitor = tsk .EQ. 0
+      IF ( mpi_comm_local .NE. MPI_UNDEFINED ) THEN
+        CALL mpi_comm_rank ( mpi_comm_local, tsk , ierr )
+        wrf_dm_on_monitor = tsk .EQ. 0
+      ELSE
+        wrf_dm_on_monitor = .FALSE.
+      ENDIF
 #else
       wrf_dm_on_monitor = .TRUE.
 #endif
@@ -5047,7 +5054,8 @@ ENDIF
       USE module_configure, ONLY : grid_config_rec_type
       USE module_dm, ONLY : ntasks, ntasks_x, ntasks_y, itrace, local_communicator, mytask, &
                             ipe_save, jpe_save, ips_save, jps_save, get_dm_max_halo_width,  &
-                            nest_pes_x, nest_pes_y
+                            nest_pes_x, nest_pes_y,                                         &
+                            push_communicators_for_domain, pop_communicators_for_domain
       USE module_comm_dm, ONLY : HALO_NMM_WEIGHTS_sub
 
       IMPLICIT NONE
@@ -5080,7 +5088,10 @@ ENDIF
      &                      ,IMS,IME,JMS,JME,KMS,KME                    &
      &                      ,IPS,IPE,JPS,JPE,KPS,KPE )
 
+     CALL push_communicators_for_domain(grid%id)
 #include "HALO_NMM_WEIGHTS.inc"
+     CALL pop_communicators_for_domain
+
    END SUBROUTINE before_interp_halos_nmm
 
    SUBROUTINE interp_domain_nmm_part1 ( grid, intermediate_grid, ngrid, config_flags    &
