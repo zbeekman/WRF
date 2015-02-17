@@ -962,7 +962,7 @@ CONTAINS
         CALL wrf_message(TRIM(wrf_err_message))
       ENDIF
 #ifdef DM_PARALLEL
-      CALL wrf_get_dm_communicator ( grid%communicator )
+      CALL wrf_get_dm_communicator_for_id( grid%id, grid%communicator )
       CALL wrf_dm_define_comms( grid )
 #endif
 

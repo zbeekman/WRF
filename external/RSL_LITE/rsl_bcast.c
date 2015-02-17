@@ -607,7 +607,8 @@ fprintf(stderr,"%s %d : %d %d %d \n",__FILE__,__LINE__,mytask_on_comm,dir,*offse
       "rsl_lite_allgather_msgs: rsl_to_child_info or rsl_to_parent_info not called first" ) ;
   }
 
-  ntasks = MAX(ntasks_par,ntasks_nest) ;
+  ntasks = MAX(ntasks_par,ntasks_nest+*offset_p) ;
+
   RSL_TEST_ERR( ntasks >= RSL_MAXPROC ,
     "rsl_lite_allgather_msgs: raise the compile time value of MAXPROC" ) ;
   

@@ -2136,7 +2136,7 @@ CALL MPI_Comm_rank(mpi_comm_me_and_mom,iii,ierr) ; write(0,*)nest_id,'mpi_comm_m
 write(0,*)'setting mpi_comm_to_mom par_id ',par_id,mpi_comm_me_and_mom
            ENDIF
            IF ( mytask_is_par ) THEN
-              intercomm_active(nest_id)              = .TRUE.
+              intercomm_active(par_id)              = .TRUE.
               mpi_comm_to_kid(which_kid(nest_id),par_id)  =  mpi_comm_me_and_mom
 write(0,*)'setting mpi_comm_to_kid which_kid(nest_id),nest_id ',which_kid(nest_id),par_id,mpi_comm_me_and_mom
            ENDIF
@@ -3150,6 +3150,15 @@ write(0,*)'rsl_comm_iter returns ',went
       wrf_dm_monitor_rank = 0
       RETURN
    END FUNCTION wrf_dm_monitor_rank
+
+   SUBROUTINE wrf_get_dm_communicator_for_id ( id, communicator )
+      USE module_dm , ONLY : local_communicator_store
+      IMPLICIT NONE
+      INTEGER , INTENT(IN) :: id
+      INTEGER , INTENT(OUT) :: communicator
+      communicator = local_communicator_store(id)
+      RETURN
+   END SUBROUTINE wrf_get_dm_communicator_for_id
 
    SUBROUTINE wrf_get_dm_communicator ( communicator )
       USE module_dm , ONLY : local_communicator
@@ -5181,6 +5190,22 @@ ENDIF
 #include "nest_interpdown_pack.inc"
       ENDIF
 
+      ! determine which communicator and offset to use
+write(0,*)__FILE__,__LINE__,"grid%id ",grid%id
+write(0,*)__FILE__,__LINE__,"ngrid%id ",ngrid%id
+write(0,*)__FILE__,__LINE__,"intercomm_active ",intercomm_active(1:3)
+      IF ( intercomm_active( grid%id ) ) THEN        ! I am parent
+        local_comm = mpi_comm_to_kid( which_kid(ngrid%id), grid%id )
+        ioffset = nest_task_offsets(ngrid%id)
+write(0,*)__FILE__,__LINE__,"interp_domain_nmm_part1 ioffset ",ioffset,local_comm
+      ELSE IF ( intercomm_active( ngrid%id ) ) THEN  ! I am nest
+        local_comm = mpi_comm_to_mom( ngrid%id )
+        ioffset = nest_task_offsets(ngrid%id)
+write(0,*)__FILE__,__LINE__,"interp_domain_nmm_part1 ioffset ",ioffset,local_comm
+      ENDIF
+      CALL mpi_comm_rank(local_comm,myproc,ierr)
+      CALL mpi_comm_size(local_comm,nproc,ierr)
+
       IF ( grid%active_this_task .OR. ngrid%active_this_task ) THEN
       CALL rsl_lite_bcast_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
                                         nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       & 
@@ -5266,6 +5291,40 @@ ENDIF
 ! Grid is set to ngrid%intermediate_grid in the call from med_interp_domain
 ! (share/mediation_interp_domain.F) so if one is active_this_task, so is the other
         call store_interp_info(ngrid,grid)
+write(0,*)__FILE__,__LINE__
+write(0,*)__FILE__,__LINE__,ngrid%pdtop
+write(0,*)__FILE__,__LINE__,shape(grid%pd)
+write(0,*)__FILE__,__LINE__,shape(grid%pint)
+write(110,*)ipe-ips+1,jpe-jps+1,' grid%pd '
+do j=jps,jpe
+do i=ips,ipe
+write(110,*)grid%pd(i,j)
+enddo
+enddo
+write(110,*)ipe-ips+1,jpe-jps+1,' grid%pint '
+do j=jps,jpe
+do i=ips,ipe
+write(110,*)grid%pint(i,j,10)
+enddo
+enddo
+
+write(50,*)'ngrid%IIH ',ngrid%IIH
+write(50,*)'ngrid%JJH ',ngrid%JJH
+write(50,*)'ngrid%HBWGT1 ',ngrid%HBWGT1
+write(50,*)'ngrid%HBWGT2 ',ngrid%HBWGT2
+write(50,*)'ngrid%HBWGT3 ',ngrid%HBWGT3
+write(50,*)'ngrid%HBWGT4 ',ngrid%HBWGT4
+write(50,*)'ngrid%deta1 ',ngrid%deta1
+write(50,*)'ngrid%deta2 ',ngrid%deta2
+write(50,*)'ngrid%eta1 ',ngrid%eta1
+write(50,*)'ngrid%eta2 ',ngrid%eta2
+write(50,*)'ngrid%pt ',ngrid%pt
+write(50,*)'ngrid%pdtop ',ngrid%pdtop
+write(50,*)'grid%pint ',ngrid%pint
+write(50,*)'grid%t ',ngrid%t
+write(50,*)'grid%pd ',ngrid%pd
+write(50,*)'grid%q ',ngrid%q
+
         call ext_c2n_fulldom(ngrid%IIH,ngrid%JJH,ngrid%HBWGT1, &
              ngrid%HBWGT2,ngrid%HBWGT3,ngrid%HBWGT4,         &
              ngrid%deta1,ngrid%deta2,ngrid%eta1,             &
@@ -5277,8 +5336,11 @@ ENDIF
              nids, nide, njds, njde, nkds, nkde,             &
              nims, nime, njms, njme, nkms, nkme,             &
              nips, nipe, njps, njpe, nkps, nkpe)
+write(0,*)__FILE__,__LINE__
 
 #include "nest_interpdown_interp.inc"
+
+write(0,*)__FILE__,__LINE__
 
         CALL pop_communicators_for_domain
 
@@ -5368,6 +5430,19 @@ ENDIF
       IF ( grid%active_this_task ) THEN
 #include "nest_forcedown_pack.inc"
       ENDIF
+
+      ! determine which communicator and offset to use
+      IF ( intercomm_active( grid%id ) ) THEN        ! I am parent
+        local_comm = mpi_comm_to_kid( which_kid(ngrid%id), grid%id )
+        ioffset = nest_task_offsets(ngrid%id)
+write(0,*)__FILE__,__LINE__,"force_domain_nmm_part1 ioffset ",ioffset
+      ELSE IF ( intercomm_active( ngrid%id ) ) THEN  ! I am nest
+        local_comm = mpi_comm_to_mom( ngrid%id )
+        ioffset = nest_task_offsets(ngrid%id)
+write(0,*)__FILE__,__LINE__,"force_domain_nmm_part1 ioffset ",ioffset
+      ENDIF
+      CALL mpi_comm_rank(local_comm,myproc,ierr)
+      CALL mpi_comm_size(local_comm,nproc,ierr)
 
       IF ( grid%active_this_task .OR. ngrid%active_this_task ) THEN
         CALL rsl_lite_bcast_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
@@ -5468,6 +5543,8 @@ IF ( ngrid%active_this_task ) THEN
       CALL pop_communicators_for_domain
 
       call store_interp_info(ngrid,grid)
+
+
       call ext_c2b_fulldom(ngrid%IIH,ngrid%JJH,ngrid%HBWGT1, &
            ngrid%HBWGT2,ngrid%HBWGT3,ngrid%HBWGT4,         &
            ngrid%deta1,ngrid%deta2,ngrid%eta1,             &
@@ -5915,6 +5992,9 @@ ENDIF
       ENDIF
       CALL mpi_comm_rank(local_comm,myproc,ierr)
       CALL mpi_comm_size(local_comm,nproc,ierr)
+
+write(0,*)__FILE__,__LINE__,'grid%id ',grid%id,local_comm
+write(0,*)__FILE__,__LINE__,'ngrid%id ',ngrid%id,local_comm
 
       IF ( grid%active_this_task .OR. ngrid%active_this_task ) THEN
         CALL rsl_lite_merge_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &

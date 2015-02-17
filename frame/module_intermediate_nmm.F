@@ -136,6 +136,8 @@ contains
       ENDDO
     ENDIF ! grid%active_this_task
 
+write(0,*)__FILE__,__LINE__,' grid%id ',grid%id
+write(0,*)__FILE__,__LINE__,' ngrid%id ',ngrid%id
     IF ( intercomm_active( grid%id ) ) THEN        ! I am parent
       local_comm = mpi_comm_to_kid( which_kid(ngrid%id), grid%id )
       ioffset = nest_task_offsets(ngrid%id)
@@ -146,7 +148,17 @@ contains
     CALL mpi_comm_rank(local_comm,myproc,ierr)
     CALL mpi_comm_size(local_comm,nproc,ierr)
 
-    CALL rsl_lite_bcast_msgs( myproc, nproc, local_comm )
+write(0,*)__FILE__,__LINE__
+write(0,*)__FILE__,__LINE__
+
+    IF ( grid%active_this_task .OR. ngrid%active_this_task ) THEN
+        CALL rsl_lite_bcast_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
+                                          nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       &
+                                          ioffset, local_comm )
+    ENDIF
+
+write(0,*)__FILE__,__LINE__
+write(0,*)__FILE__,__LINE__
 
     RETURN
   END SUBROUTINE parent_to_inter_part1

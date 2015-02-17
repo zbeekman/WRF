@@ -244,6 +244,8 @@ SUBROUTINE wrf_open_for_write_begin( FileName , grid, SysDepInfo, &
 
   WRITE(mess,*) 'module_io.F: in wrf_open_for_write_begin, FileName = ',TRIM(FileName)
   CALL wrf_debug( 100, mess )
+  WRITE(mess,*) 'module_io.F: in wrf_open_for_write_begin, SysDepInfo = ',TRIM(SysDepInfo)
+  CALL wrf_debug( 100, mess )
 
   Comm_compute = grid%communicator
   Comm_io = grid%iocommunicator
@@ -253,6 +255,10 @@ SUBROUTINE wrf_open_for_write_begin( FileName , grid, SysDepInfo, &
   CALL nl_get_ncd_nofill( 1 , ncd_nofill )
 
   io_form = io_form_for_dataset( DataSet )
+write(0,*)__FILE__,__LINE__,'io_form ',io_form
+write(0,*)__FILE__,__LINE__,'grid%id ', grid%id
+write(0,*)__FILE__,__LINE__,'grid%communicator ',grid%communicator
+write(0,*)__FILE__,__LINE__,'grid%iocommunicator ',grid%iocommunicator
 
   Status = 0
   Hndl = -1
@@ -289,6 +295,7 @@ SUBROUTINE wrf_open_for_write_begin( FileName , grid, SysDepInfo, &
       CASE (IO_PNETCDF  )
         WRITE(tstr,"(A,',NTASKS_X=',i10,',MYTASK_X=',i10,',LOCAL_COMMUNICATOR_X=',i10)") &
               TRIM(SysDepInfo),ntasks_x,mytask_x,local_communicator_x
+write(0,*)__FILE__,__LINE__,TRIM(tstr)
         j=1
         t1 = " "
         DO i=1,len(TRIM(tstr))
@@ -298,8 +305,10 @@ SUBROUTINE wrf_open_for_write_begin( FileName , grid, SysDepInfo, &
           ENDIF
         ENDDO
         tstr = t1
+write(0,*)__FILE__,__LINE__,Comm_compute, Comm_io
         CALL ext_pnc_open_for_write_begin( FileName, Comm_compute, Comm_io, tstr, &
                                             Hndl, Status)
+write(0,*)__FILE__,__LINE__,Status
 #endif
 #ifdef PIO
       CASE ( IO_PIO )

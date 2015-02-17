@@ -296,7 +296,8 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
    USE module_io_domain
    USE module_configure	, ONLY : grid_config_rec_type
    USE module_utility
-   USE module_dm, ONLY : push_communicators_for_domain, pop_communicators_for_domain, local_communicator
+   USE module_dm, ONLY : push_communicators_for_domain, pop_communicators_for_domain, local_communicator, &
+                         mpi_comm_to_mom, mpi_comm_to_kid, which_kid
   ! Model layer
 
    IMPLICIT NONE
@@ -910,18 +911,30 @@ write(0,*)__FILE__,__LINE__
 
     IF ( nest%active_this_task ) THEN
     CALL NEST_TERRAIN ( nest, config_flags )
+    ENDIF
 
 !   Initialize some more constants required especially for terrain adjustment processes
 
+    IF ( nest%active_this_task .AND. parent%active_this_task ) THEN
     nest%PSTD=parent%PSTD
-    nest%KZMAX=KME
-    parent%KZMAX=KME  ! just for safety
+    ENDIF
+    IF ( nest%active_this_task .OR. parent%active_this_task ) THEN
+      IF ( parent%active_this_task ) THEN
+        CALL BYTE_BCAST( parent%PSTD, KME*RWORDSIZE, mpi_comm_to_kid( which_kid( nest%id ) , parent%id ) )
+      ELSE
+        CALL BYTE_BCAST( nest%PSTD, KME*RWORDSIZE, mpi_comm_to_mom( nest%id ) )
+      ENDIF
+    ENDIF
 
-    DO J = JPS, MIN(JPE,JDE-1)
-      DO I = IPS, MIN(IPE,IDE-1)
-       nest%fis(I,J)=nest%hres_fis(I,J)
-     ENDDO
-    ENDDO
+    IF ( nest%active_this_task ) THEN
+      nest%KZMAX=KME
+      parent%KZMAX=KME  ! just for safety
+
+      DO J = JPS, MIN(JPE,JDE-1)
+        DO I = IPS, MIN(IPE,IDE-1)
+         nest%fis(I,J)=nest%hres_fis(I,J)
+       ENDDO
+      ENDDO
 
 !--------------------------------------------------------------------------
 !  interpolation call
@@ -929,10 +942,10 @@ write(0,*)__FILE__,__LINE__
 
 ! initialize nest with interpolated data from the parent
 
-    nest%imask_nostag = 0 
-    nest%imask_xstag  = 0 
-    nest%imask_ystag  = 0 
-    nest%imask_xystag = 0 
+      nest%imask_nostag = 0 
+      nest%imask_xstag  = 0 
+      nest%imask_ystag  = 0 
+      nest%imask_xystag = 0 
     ENDIF
 
 #ifdef HWRF
@@ -996,7 +1009,9 @@ write(0,*)__FILE__,__LINE__
 !zhang test ends
     IF ( nest%active_this_task) THEN
      CALL model_to_grid_config_rec ( nest%id , model_config_rec , nest_config_flags )
+     CALL push_communicators_for_domain( nest%id )
      CALL med_analysis_out ( nest, nest_config_flags )
+     CALL pop_communicators_for_domain
     ENDIF
 
    ELSE

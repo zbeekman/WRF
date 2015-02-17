@@ -2486,6 +2486,7 @@ contains
              RTOPP    = TRG*tA(iz,ix)*(1.0+qA(iz,ix)*P608)/APELP
              DZ       = RTOPP*(DETA1(iz)*PDTOP+DETA2(iz)*pdA(ix))
              znext=z+dz
+write(0,'(2i5," z ",f," dz ",f," znext ",f," deta1 ",f," deta2 ",f," pintA(iz+1) ",f," pintA(iz) ",f)')ix,iz,z,dz,znext,DETA1(iz),DETA2(iz),pintA(iz+1,ix),pintA(iz,ix)
 
              if(znext>zB) then
                 ! Interpolate between these two levels
@@ -2813,7 +2814,7 @@ contains
 
           enddo
 
-201       format('Target domain surface height ',F0.4,'m is higher than the model top ',F0.4,'m of the source domain.  ABORTING')
+201       format('Target domain surface height (kpres)',F0.4,'m is higher than the model top ',F0.4,'m of the source domain.  ABORTING')
           write(message,201) zB,znext
           call wrf_error_fatal(message)
        enddo xloop

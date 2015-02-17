@@ -121,11 +121,6 @@ integer myproc,i,j
       END SUBROUTINE feedback_domain_nmm_part2
 
 #endif
-! ----------------------------------------------------------
-!    Interface definitions for COAMPS (placeholder)
-! ----------------------------------------------------------
-#if (COAMPS_CORE == 1 )
-#endif
    END INTERFACE
 ! ----------------------------------------------------------
 ! End of Interface blocks
@@ -134,9 +129,6 @@ integer myproc,i,j
 ! ----------------------------------------------------------
 ! Executable code
 ! ----------------------------------------------------------
-#ifdef NMM_FIND_LOAD_IMBALANCE
-   this_time=now_time()
-#endif
 ! ----------------------------------------------------------
 !    Feedback calls for EM CORE.
 ! ----------------------------------------------------------
@@ -173,38 +165,12 @@ write(0,*)"back from feedback_domain_em_part1"
 
    grid%nest_mask = 0.
 
-IF ( nested_grid%id .eq. 3 ) THEN
-!ZAP
-CALL push_communicators_for_domain(grid%id)
-CALL wrf_get_myproc(myproc)
-WRITE (90+myproc,*)grid%ep31-grid%sp31+1,grid%ep33-grid%sp33+1,' ISLTYP 1 '
-DO j=grid%sp33,grid%ep33
-DO i=grid%sp31,grid%ep31
-WRITE (90+myproc,*)grid%isltyp(i,j)
-ENDDO
-ENDDO
-CALL pop_communicators_for_domain
-ENDIF
-
 write(0,*)"calling feedback_domain_em_part2 grid%id, intermediate_grid%id, nested_grid%id ",grid%id, nested_grid%intermediate_grid%id, nested_grid%id
    CALL feedback_domain_em_part2 ( grid , nested_grid%intermediate_grid, nested_grid , config_flags   &
 !
 #      include "actual_new_args.inc"
 
                                    )
-
-IF ( nested_grid%id .eq. 3 ) THEN
-!ZAP
-CALL push_communicators_for_domain(grid%id)
-CALL wrf_get_myproc(myproc)
-WRITE (90+myproc,*)grid%ep31-grid%sp31+1,grid%ep33-grid%sp33+1,' ISLTYP 2 '
-DO j=grid%sp33,grid%ep33
-DO i=grid%sp31,grid%ep31
-WRITE (90+myproc,*)grid%isltyp(i,j)
-ENDDO
-ENDDO
-CALL pop_communicators_for_domain
-ENDIF
 
 write(0,*)"back from feedback_domain_em_part2",grid%id
    WHERE   ( grid%nest_pos .NE. 9021000.  ) grid%ht = grid%ht_coarse
@@ -215,19 +181,6 @@ write(0,*)"back from feedback_domain_em_part2",grid%id
 !
                                    )
    CALL pop_communicators_for_domain
-
-IF ( nested_grid%id .eq. 3 ) THEN
-!ZAP
-CALL push_communicators_for_domain(grid%id)
-CALL wrf_get_myproc(myproc)
-WRITE (90+myproc,*)grid%ep31-grid%sp31+1,grid%ep33-grid%sp33+1,' ISLTYP 3 '
-DO j=grid%sp33,grid%ep33
-DO i=grid%sp31,grid%ep31
-WRITE (90+myproc,*)grid%isltyp(i,j)
-ENDDO
-ENDDO
-CALL pop_communicators_for_domain
-ENDIF
 
    grid => nested_grid%intermediate_grid
 #  if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
@@ -249,6 +202,7 @@ ENDIF
 !    This is gopal's extension for the NMM core
 ! ------------------------------------------------------
 
+write(0,*)__FILE__,__LINE__
    CALL model_to_grid_config_rec ( nested_grid%id , model_config_rec , config_flags )
    grid => nested_grid%intermediate_grid
 !dusan orig     CALL alloc_space_field ( grid, grid%id , 1 , 2 , .TRUE. ,     &
@@ -272,18 +226,24 @@ ENDIF
   nested_grid%intermediate_grid%pdyn_smooth_age=parent_grid%pdyn_smooth_age
 #endif
 
+write(0,*)__FILE__,__LINE__
    ! NOTE: the intermediate grid is a grid with the spatial extent and
    ! processor decomposition of the nest, at the resolution of the
    ! parent.  It is stored as nested_grid%intermediate_grid.
  
    ! STEP 1: Copy from parent grid to intermediate grid:
+write(0,*)__FILE__,__LINE__
    grid => parent_grid
 #if (NMM_NEST==1)
+write(0,*)__FILE__,__LINE__
    call parent_to_inter_part1(parent_grid, nested_grid%intermediate_grid, &
                               nested_grid, config_flags)
+write(0,*)__FILE__,__LINE__
 
    grid => nested_grid%intermediate_grid
+write(0,*)__FILE__,__LINE__
    call parent_to_inter_part2(nested_grid%intermediate_grid, nested_grid, config_flags)
+write(0,*)__FILE__,__LINE__
 
 #endif
   IF ( nested_grid%active_this_task ) THEN
@@ -299,11 +259,13 @@ ENDIF
 
    grid => parent_grid
 !
+write(0,*)__FILE__,__LINE__
    CALL feedback_domain_nmm_part2 ( grid , nested_grid%intermediate_grid, nested_grid , config_flags    &
 !
 #      include "actual_new_args.inc"
 !
                                    )
+write(0,*)__FILE__,__LINE__
 #endif
 ! ------------------------------------------------------
 !    End of Feedback calls for NMM.

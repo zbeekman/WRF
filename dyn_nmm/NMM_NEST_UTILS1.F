@@ -243,7 +243,7 @@ write(0,*)__FILE__,__LINE__,'Natt: mpi_comm_to_mom ',comzilla,nest%id
     ! on the parent, it won't know it, so set it here.
     ! Other way to have done this would have been to pass the nested cen_lat/lon
     ! into EARTH_LATLON instead of the parent's.  Flipped a coin.
-      IF ( .NOT. parent%active_this_nest ) THEN
+      IF ( .NOT. parent%active_this_task ) THEN
         CALL nl_set_cen_lat ( parent%id , nest%cen_lat)  ! for output purpose
         CALL nl_set_cen_lon ( parent%id , nest%cen_lon)  ! for output purpose
       ENDIF
@@ -268,16 +268,17 @@ write(0,*)__FILE__,__LINE__,'Natt: mpi_comm_to_mom ',comzilla,nest%id
       CALL nl_set_map_proj(nest%id, nest%map_proj)
       CALL nl_set_iswater(nest%id, nest%iswater)
 
-      CALL BYTE_BCAST( grid%deta, RWORDSIZE, comzilla )  !  nest%deta        = parent%deta
-      CALL BYTE_BCAST( grid%aeta, RWORDSIZE, comzilla )  !  nest%aeta        = parent%aeta
-      CALL BYTE_BCAST( grid%etax, RWORDSIZE, comzilla )  !  nest%etax        = parent%etax
-      CALL BYTE_BCAST( grid%dfl, RWORDSIZE, comzilla )   !  nest%dfl         = parent%dfl
-      CALL BYTE_BCAST( grid%deta1, RWORDSIZE, comzilla ) !  nest%deta1       = parent%deta1
-      CALL BYTE_BCAST( grid%aeta1, RWORDSIZE, comzilla ) !  nest%aeta1       = parent%aeta1
-      CALL BYTE_BCAST( grid%eta1, RWORDSIZE, comzilla )  !  nest%eta1        = parent%eta1
-      CALL BYTE_BCAST( grid%deta2, RWORDSIZE, comzilla ) !  nest%deta2       = parent%deta2
-      CALL BYTE_BCAST( grid%aeta2, RWORDSIZE, comzilla ) !  nest%aeta2       = parent%aeta2
-      CALL BYTE_BCAST( grid%eta2, RWORDSIZE, comzilla )  !  nest%eta2        = parent%eta2
+#define BCAST_RARRAY(X) BYTE_BCAST( X, size(X)*RWORDSIZE, comzilla )  
+      CALL BCAST_RARRAY( grid%deta )  !  nest%deta        = parent%deta
+      CALL BCAST_RARRAY( grid%aeta )  !  nest%aeta        = parent%aeta
+      CALL BCAST_RARRAY( grid%etax )  !  nest%etax        = parent%etax
+      CALL BCAST_RARRAY( grid%dfl )   !  nest%dfl         = parent%dfl
+      CALL BCAST_RARRAY( grid%deta1 ) !  nest%deta1       = parent%deta1
+      CALL BCAST_RARRAY( grid%aeta1 ) !  nest%aeta1       = parent%aeta1
+      CALL BCAST_RARRAY( grid%eta1 )  !  nest%eta1        = parent%eta1
+      CALL BCAST_RARRAY( grid%deta2 ) !  nest%deta2       = parent%deta2
+      CALL BCAST_RARRAY( grid%aeta2 ) !  nest%aeta2       = parent%aeta2
+      CALL BCAST_RARRAY( grid%eta2 )  !  nest%eta2        = parent%eta2
       CALL BYTE_BCAST( grid%pdtop, RWORDSIZE, comzilla ) !  nest%pdtop       = parent%pdtop
       CALL BYTE_BCAST( grid%pt, RWORDSIZE, comzilla )    !  nest%pt          = parent%pt
       CALL BYTE_BCAST( grid%dfrlg, RWORDSIZE, comzilla ) !  nest%dfrlg       = parent%dfrlg
