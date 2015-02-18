@@ -394,8 +394,12 @@ write(0,'("med_nest_feedback back kid,grid_ptr%id,grid_ptr%nests(kid)%ptr%id ",3
                      CALL wrf_debug( 100 , 'module_integrate: back from med_nest_feedback ' )
                    END IF
 #ifdef MOVE_NESTS
+write(0,*)'domain_clockisstoptime( head_grid ) ',domain_clockisstoptime( head_grid )
                    IF ( .NOT. domain_clockisstoptime( head_grid ) ) THEN
+write(0,*)'calling med_nest_move grid_ptr%id ',grid_ptr%id
+write(0,*)'calling med_nest_move grid_ptr%nests(kid)%ptr%id ',grid_ptr%nests(kid)%ptr%id
                      CALL med_nest_move ( grid_ptr , grid_ptr%nests(kid)%ptr )
+write(0,*)'back from med_nest_move grid_ptr%id ',grid_ptr%id
                    ENDIF
 #endif
                  END IF

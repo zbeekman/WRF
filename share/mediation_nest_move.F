@@ -1244,6 +1244,8 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
    abort=.false. ! will be set to .true. if any safety checks fail
 
 
+write(0,*)__FILE__,__LINE__,'grid%id ',grid%id
+write(0,*)__FILE__,__LINE__,'parent%id ',parent%id
 
    ! INITIALIZE NEST MOTION TO DISABLED
    move_cd_x=0
@@ -1317,7 +1319,10 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
          pgr=grid%parent_grid_ratio+0.01
          pgrn=grid%parent_grid_ratio-0.01
          
+write(0,*)__FILE__,__LINE__,'grid%id ',grid%id
+write(0,*)__FILE__,__LINE__,'parent%id ',parent%id
          kid=>grid%nests(1)%ptr ! find my kid
+write(0,*)__FILE__,__LINE__,'ASSOCIATED(grid%nests(1)%ptr)',ASSOCIATED(grid%nests(1)%ptr)
          
          ! find my center location
          my_ic = grid%ed31/2.0
