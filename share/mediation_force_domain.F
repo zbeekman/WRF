@@ -148,9 +148,6 @@ integer myproc, i, j
 ! ----------------------------------------------------------
 ! Executable code
 ! ----------------------------------------------------------
-#ifdef NMM_FIND_LOAD_IMBALANCE
-this_time=now_time()
-#endif
 ! ----------------------------------------------------------
 !    Forcing calls for EM CORE.
 ! ----------------------------------------------------------
@@ -364,6 +361,7 @@ ENDIF
    ! Transfer remaining information from parent to intermediate grid:
    grid => parent_grid
 IF ( grid%active_this_task .OR. nested_grid%active_this_task ) THEN
+   CALL wrf_dm_nestexchange_init
    CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
    CALL force_domain_nmm_part1 ( grid , nested_grid%intermediate_grid,  &
                                  nested_grid, config_flags    &

@@ -290,14 +290,10 @@ integer myproc,i,j
 !            IF ( wrf_dm_on_monitor() ) THEN
                CALL start_timing
 !            END IF
-write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
             CALL med_setup_step ( grid , config_flags )
-write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
             a_nest_was_opened = .false.
             ! for each nest whose time has come...
             DO WHILE ( nests_to_open( grid , nestid , kid ) )
-write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
-write(0,*)__FILE__,__LINE__
                ! nestid is index into model_config_rec (module_configure) of the grid
                ! to be opened; kid is index into an open slot in grid's list of children
                a_nest_was_opened = .true.
@@ -351,10 +347,8 @@ IF ( grid_ptr%active_this_task ) THEN
                   CALL set_current_grid_ptr( grid_ptr )
                   CALL wrf_debug( 100 , 'module_integrate: calling solve interface ' )
 write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
-write(0,*)__FILE__,__LINE__,' new_nest%MVNEST ',new_nest%MVNEST
                   CALL solve_interface ( grid_ptr ) 
 write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
-write(0,*)__FILE__,__LINE__,' new_nest%MVNEST ',new_nest%MVNEST
 ENDIF
                CALL domain_clockadvance ( grid_ptr )
                CALL wrf_debug( 100 , 'module_integrate: back from solve interface ' )
@@ -438,7 +432,6 @@ IF ( grid%active_this_task ) THEN
 ENDIF ! active_this_task
             CALL med_endup_step ( grid , config_flags )
          END DO
-write(0,*)"finished with time loop", grid%id
 
 IF ( grid%active_this_task ) THEN
          ! Accumulation calculation for DFI

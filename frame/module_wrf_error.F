@@ -208,7 +208,7 @@ SUBROUTINE wrf_message( str )
   IMPLICIT NONE
 
   CHARACTER*(*) str
-  if(silence/=0) return
+!  if(silence/=0) return
   if(buffered/=0) then
 #if defined(WRF_LOG_BUFFERING)
      call wrf_log_action(wrf_log_write,len_trim(str),str)
