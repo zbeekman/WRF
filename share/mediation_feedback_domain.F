@@ -138,8 +138,8 @@ integer myproc,i,j
    parent_grid%ht_coarse = parent_grid%ht
    grid => nested_grid%intermediate_grid
 #  if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
-   IF ( intercomm_active( grid%id ) ) THEN
-   CALL alloc_space_field ( grid, grid%id , 1 , 2 , .TRUE. ,     &
+!   IF ( intercomm_active( grid%id ) ) THEN
+   CALL alloc_space_field ( grid, grid%id , 1 , 2 , .TRUE. , intercomm_active( grid%id ),    &
                             grid%sd31, grid%ed31, grid%sd32, grid%ed32, grid%sd33, grid%ed33, &
                             grid%sm31,  grid%em31,  grid%sm32,  grid%em32,  grid%sm33,  grid%em33, &
                             grid%sp31,  grid%ep31,  grid%sp32,  grid%ep32,  grid%sp33,  grid%ep33, &
@@ -148,7 +148,7 @@ integer myproc,i,j
                             grid%sm31x, grid%em31x, grid%sm32x, grid%em32x, grid%sm33x, grid%em33x, &   ! x-xpose
                             grid%sm31y, grid%em31y, grid%sm32y, grid%em32y, grid%sm33y, grid%em33y  &   ! y-xpose
      )
-   ENDIF
+!   ENDIF
 #  endif
    CALL wrf_dm_nestexchange_init
   IF ( nested_grid%active_this_task ) THEN
@@ -207,9 +207,9 @@ write(0,*)__FILE__,__LINE__
    grid => nested_grid%intermediate_grid
 !dusan orig     CALL alloc_space_field ( grid, grid%id , 1 , 2 , .TRUE. ,     &
 #  if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
-   IF (  grid%active_this_task ) THEN
+!   IF (  grid%active_this_task ) THEN
    CALL ensure_space_field &
-                          ( grid, grid%id , 1 , 3 , .FALSE. ,     &
+                          ( grid, grid%id , 1 , 3 , .FALSE. , grid%active_this_task ,    &
                             grid%sd31, grid%ed31, grid%sd32, grid%ed32, grid%sd33, grid%ed33, &
                             grid%sm31,  grid%em31,  grid%sm32,  grid%em32,  grid%sm33,  grid%em33, &
                             grid%sp31,  grid%ep31,  grid%sp32,  grid%ep32,  grid%sp33,  grid%ep33, &
@@ -218,7 +218,7 @@ write(0,*)__FILE__,__LINE__
                             grid%sm31x, grid%em31x, grid%sm32x, grid%em32x, grid%sm33x, grid%em33x, &   ! x-xpose
                             grid%sm31y, grid%em31y, grid%sm32y, grid%em32y, grid%sm33y, grid%em33y  &   ! y-xpose
        )
-   ENDIF
+!   ENDIF
 # endif
    nested_grid%intermediate_grid%interp_mp=parent_grid%interp_mp .or. nested_grid%interp_mp
 #if (HWRF == 1)

@@ -1017,8 +1017,8 @@ ENDIF
 
 #if ( defined(SGIALTIX) && (! defined(MOVE_NESTS) ) ) || ( defined(FUJITSU_FX10) && (! defined(MOVE_NESTS) ) )
          ! allocate space for the intermediate domain
-         IF ( intercomm_active( intermediate_grid%id ) THEN
-         CALL alloc_space_field ( intermediate_grid, intermediate_grid%id , 1, 2 , .TRUE., &   ! use same id as nest
+!         IF ( intercomm_active( intermediate_grid%id ) THEN
+         CALL alloc_space_field ( intermediate_grid, intermediate_grid%id , 1, 2 , .TRUE., intercomm_active( intermediate_grid%id ), &   ! use same id as nest
                                c_sd1, c_ed1, c_sd2, c_ed2, c_sd3, c_ed3,       &
                                c_sm1,  c_em1,  c_sm2,  c_em2,  c_sm3,  c_em3,  &
                                c_sp1,  c_ep1,  c_sp2,  c_ep2,  c_sp3,  c_ep3,  &
@@ -1026,7 +1026,7 @@ ENDIF
                                c_sm1y, c_em1y, c_sm2y, c_em2y, c_sm3y, c_em3y, &
                                c_sm1x, c_em1x, c_sm2x, c_em2x, c_sm3x, c_em3x, &   ! x-xpose
                                c_sm1y, c_em1y, c_sm2y, c_em2y, c_sm3y, c_em3y  )   ! y-xpose
-         ENDIF
+!         ENDIF
 #endif
          intermediate_grid%sd31                            =   c_sd1
          intermediate_grid%ed31                            =   c_ed1
@@ -4732,7 +4732,9 @@ ENDIF
       CALL push_communicators_for_domain( grid%id )
 
 #ifdef DM_PARALLEL
+write(0,*)__FILE__,__LINE__
 #include "HALO_INTERP_UP.inc"
+write(0,*)__FILE__,__LINE__
 #endif
 
       CALL pop_communicators_for_domain
@@ -5275,6 +5277,12 @@ write(0,*)__FILE__,__LINE__,"interp_domain_nmm_part1 ioffset ",ioffset,local_com
 
         nlev  = ckde - ckds + 1 
 
+write(0,*)__FILE__,__LINE__,'shape(moist) ',shape(moist)
+write(0,'(7i8)') grid%sm31,grid%em31,grid%sm32,grid%em32,grid%sm33,grid%em33,num_moist
+write(0,*)__FILE__,__LINE__,'shape(grid%moist) ',shape(grid%moist)
+write(0,*)__FILE__,__LINE__,'shape(ngrid%moist) ',shape(ngrid%moist)
+write(0,*)__FILE__,__LINE__,'shape(grid%iinfo) ',shape(grid%iinfo)
+write(0,*)__FILE__,__LINE__,'shape(ngrid%iinfo) ',shape(ngrid%iinfo)
 #include "nest_interpdown_unpack.inc"
 
         CALL get_ijk_from_grid (  grid ,              &
@@ -5435,11 +5443,11 @@ write(0,*)__FILE__,__LINE__
       IF ( intercomm_active( grid%id ) ) THEN        ! I am parent
         local_comm = mpi_comm_to_kid( which_kid(ngrid%id), grid%id )
         ioffset = nest_task_offsets(ngrid%id)
-write(0,*)__FILE__,__LINE__,"force_domain_nmm_part1 ioffset ",ioffset
+write(0,*)__FILE__,__LINE__,"force_domain_nmm_part1 ioffset ",ioffset,local_comm
       ELSE IF ( intercomm_active( ngrid%id ) ) THEN  ! I am nest
         local_comm = mpi_comm_to_mom( ngrid%id )
         ioffset = nest_task_offsets(ngrid%id)
-write(0,*)__FILE__,__LINE__,"force_domain_nmm_part1 ioffset ",ioffset
+write(0,*)__FILE__,__LINE__,"force_domain_nmm_part1 ioffset ",ioffset,local_comm
       ENDIF
       CALL mpi_comm_rank(local_comm,myproc,ierr)
       CALL mpi_comm_size(local_comm,nproc,ierr)
@@ -5646,8 +5654,11 @@ ENDIF
     IF ( grid%active_this_task ) THEN
       CALL push_communicators_for_domain( grid%id )
 #ifdef DM_PARALLEL
+write(0,*)__FILE__,__LINE__
 #include "HALO_INTERP_UP.inc"
+write(0,*)__FILE__,__LINE__
 #include "HALO_NMM_WEIGHTS.inc"
+write(0,*)__FILE__,__LINE__
 #endif
       CALL pop_communicators_for_domain
     ENDIF
@@ -6002,6 +6013,10 @@ write(0,*)__FILE__,__LINE__,'ngrid%id ',ngrid%id,local_comm
                                           ioffset, local_comm )
       ENDIF
 
+write(0,*)__FILE__,__LINE__,' grid%id ',grid%id
+write(0,*)__FILE__,__LINE__,' ngrid%id ',ngrid%id
+write(0,*)__FILE__,__LINE__,' grid%active_this_task ',grid%active_this_task
+write(0,*)__FILE__,__LINE__,' ngrid%active_this_task ',ngrid%active_this_task
 IF ( grid%active_this_task ) THEN
     CALL push_communicators_for_domain( grid%id )
 
@@ -6019,7 +6034,9 @@ IF ( grid%active_this_task ) THEN
                                 ims, ime, jms, jme, kms, kme,    &
                                 ips, ipe, jps, jpe, kps, kpe    )
 
+write(0,*)__FILE__,__LINE__
 #include "HALO_INTERP_UP.inc"
+write(0,*)__FILE__,__LINE__
 
       CALL get_ijk_from_grid (  grid ,                   &
                                 cids, cide, cjds, cjde, ckds, ckde,    &

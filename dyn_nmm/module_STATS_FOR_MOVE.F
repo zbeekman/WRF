@@ -312,6 +312,7 @@ contains
     MOVEFREQ=grid%nphs
     vortex_tracker=-1
 #endif
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
     skip_nest_motion=.false.
     IF(MOD(grid%NTSD+1,MOVEFREQ)/=0 .or. grid%id==1)THEN
 #ifdef HWRF
@@ -324,6 +325,7 @@ contains
     ENDIF
 
 #ifdef HWRF
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
     if(skip_nest_motion .and. ( grid%pdyn_smooth_age/=0 .or. size(grid%pdyn_smooth)<=1)) then
        ! Pdyn_smooth is up to date and it is not yet time to move the
        ! nest, so we can return now.
@@ -335,25 +337,30 @@ contains
        ! we cannot return yet.
     endif
 
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
     ! Update membrane_mslp:
     call make_membrane_mslp(grid)
 
 
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
     ! Update regular mslp:
     CALL UPDATE_PDYN_MSLP(grid,config_flags, &
                           IDS,IDE,JDS,JDE,KDS,KDE, &
                           IMS,IME,JMS,JME,KMS,KME, &
                           IPS,IPE,JPS,JPE,KPS,KPE)
 
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
     if(skip_nest_motion) then
        ! We get here if we had to update pdyn_smooth, but it is not
        ! yet time to move the nest.
        return
     endif
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
 #endif
 
     !     HAND OFF CONTROL TO STATS_FOR_MOVE_123 FOR TRACKERS 1, 2 and 3
     oldmove: if(vortex_tracker<4) then
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
        ! PDYN causes noise in the presence of strong vorticity variations,
        ! so it is not used by HWRF for nest tracking.
        CALL STATS_FOR_MOVE_123 (grid%XLOC_2,grid%YLOC_2                   &
@@ -373,9 +380,11 @@ contains
             ,IDS,IDE-1,JDS,JDE-1,KDS,KDE                                  &
             ,IMS,IME,JMS,JME,KMS,KME                                      &
             ,ITS,ITE,JTS,JTE,KTS,KTE)
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
        RETURN
 #ifdef HWRF
     elseif(vortex_tracker==6 .or. vortex_tracker==7) then
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
        ! Tracker #6 and #7: do whatever the inline NCEP Tracker says
        call ncep_tracker_center(grid)
        call vt67_move(grid%tracker_ifix,grid%tracker_jfix,  &
@@ -398,6 +407,7 @@ contains
           write(message,39) grid%id
           call wrf_message(trim(message))
        endif
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
     elseif(vortex_tracker==5) then
        ! Tracker #5: follow average of grandparent and parent PDYN
        call vt5_move(grid%pdyn_parent,grid%distsq,grid%vt5searchrad, &
@@ -419,16 +429,20 @@ contains
 13011  format("Search radius now ",F0.3,"km for domain ",I0)
        write(message,13011) grid%vt5searchrad/1000.0,grid%id
        call wrf_debug(1,message)
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
     else
     !     HANDLE VORTEX TRACKER 4 HERE
 
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
        ! (we only get here in HWRF mode)
        if(config_flags%vt4_noise_iter<0) then
           grid%mslp_noisy=0
        else
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
 # ifdef DM_PARALLEL
 #         include "HALO_NMM_VT4_MSLP.inc"
 # endif
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
           call vt4_noise_detect(grid%mslp,grid%mslp_noisy,   &
                                 config_flags%vt4_noise_pmax, &
                                 config_flags%vt4_noise_pmin, &
@@ -437,6 +451,7 @@ contains
                                 IDS,IDE,JDS,JDE,KDS,KDE,     &
                                 IMS,IME,JMS,JME,KMS,KME,     &
                                 ITS,ITE,JTS,JTE,KTS,KTE)
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
           do i=1,config_flags%vt4_noise_iter          
 # ifdef DM_PARALLEL
 #         include "HALO_NMM_VT4_NOISE.inc"
@@ -446,7 +461,9 @@ contains
                                  IMS,IME,JMS,JME,KMS,KME,     &
                                  ITS,ITE,JTS,JTE,KTS,KTE)
           enddo
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
        endif
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
        call vt4_move(grid%mslp,grid%weightout,grid%distsq, &
                      grid%mslp_noisy, grid%dx_nmm,         &
                      grid%dy_nmm,grid%xloc_2,grid%yloc_2,  &
@@ -458,9 +475,11 @@ contains
                      IMS,IME,JMS,JME,KMS,KME,              &
                      IPS,IPE,JPS,JPE,KPS,KPE,              &
                      ITS,ITE,JTS,JTE,KTS,KTE)
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
 #endif
     endif oldmove
 #endif
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
   END SUBROUTINE STATS_FOR_MOVE
 
   SUBROUTINE vt4_noise_iter(NOISY,                   &

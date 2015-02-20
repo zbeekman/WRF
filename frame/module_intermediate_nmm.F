@@ -27,7 +27,9 @@ contains
          ipe_save, jpe_save, ips_save, jps_save, get_dm_max_halo_width,                   &
          nest_pes_x, nest_pes_y,                                                          &
          intercomm_active, nest_task_offsets,                                             &
-         mpi_comm_to_mom, mpi_comm_to_kid, which_kid
+         mpi_comm_to_mom, mpi_comm_to_kid, which_kid,                                     &
+         push_communicators_for_domain,pop_communicators_for_domain
+
 
     USE module_timing
     IMPLICIT NONE
@@ -85,10 +87,11 @@ contains
     nlev  = ckde - ckds + 1
 
     CALL get_dm_max_halo_width ( ngrid%id , thisdomain_max_halo_width )
+    CALL wrf_dm_nestexchange_init
 
     IF ( grid%active_this_task ) THEN
-    msize = 5
-      CALL rsl_lite_to_child_info( local_communicator, msize*4                               &
+      msize = 5
+      CALL rsl_lite_to_child_info( msize*4                               &
          ,cips,cipe,cjps,cjpe                               &
          ,iids,iide,ijds,ijde                               &
          ,nids,nide,njds,njde                               &
@@ -103,6 +106,7 @@ contains
          ,idim_cd,jdim_cd                                   &
          ,pig,pjg,retval )
       DO while ( retval .eq. 1 )
+write(0,*)'parent_to_inter_part1 pig,pjg ',pig,pjg
        IF ( SIZE(grid%hres_fis) .GT. 1 ) THEN ! okay for intermediate_grid too. see comment in gen_comms.c
           xv(1)=grid%hres_fis(pig,pjg)
           CALL rsl_lite_to_child_msg(4,xv)
@@ -119,7 +123,7 @@ contains
           xv(1)=grid%fis(pig,pjg)
           CALL rsl_lite_to_child_msg(4,xv)
        ENDIF
-       CALL rsl_lite_to_child_info( local_communicator, msize*4                               &
+       CALL rsl_lite_to_child_info( msize*4                               &
             ,cips,cipe,cjps,cjpe                               &
             ,iids,iide,ijds,ijde                               &
             ,nids,nide,njds,njde                               &
@@ -231,6 +235,8 @@ IF ( ngrid%active_this_task ) THEN
        CALL rsl_lite_from_parent_info(pig,pjg,retval)
        !write(0,*) 'back with retval=',retval
     ENDDO
+
+
     !write(0,*) 'out of loop'
 
     CALL get_ijk_from_grid (  grid ,              &
@@ -243,6 +249,7 @@ IF ( ngrid%active_this_task ) THEN
     CALL pop_communicators_for_domain
 
 ENDIF
+    CALL wrf_dm_nestexchange_init
     RETURN
   END SUBROUTINE parent_to_inter_part2
 #endif

@@ -290,11 +290,13 @@ integer myproc,i,j
 !            IF ( wrf_dm_on_monitor() ) THEN
                CALL start_timing
 !            END IF
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
             CALL med_setup_step ( grid , config_flags )
-write(0,*)__FILE__,__LINE__
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
             a_nest_was_opened = .false.
             ! for each nest whose time has come...
             DO WHILE ( nests_to_open( grid , nestid , kid ) )
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
 write(0,*)__FILE__,__LINE__
                ! nestid is index into model_config_rec (module_configure) of the grid
                ! to be opened; kid is index into an open slot in grid's list of children
@@ -312,14 +314,22 @@ write(0,*)__FILE__,__LINE__
 write(0,*)__FILE__,__LINE__
                CALL Setup_Timekeeping (new_nest)
 write(0,*)__FILE__,__LINE__,"ZAP calling med_nest_initial ",grid%id, new_nest%id 
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
+write(0,*)__FILE__,__LINE__,' new_nest%MVNEST ',new_nest%MVNEST
                CALL med_nest_initial ( grid , new_nest , config_flags )
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
+write(0,*)__FILE__,__LINE__,' new_nest%MVNEST ',new_nest%MVNEST
 write(0,*)__FILE__,__LINE__,"ZAP back from med_nest_initial ",grid%id, new_nest%id 
 
 IF ( grid%active_this_task ) THEN
 write(0,*)__FILE__,__LINE__
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
+write(0,*)__FILE__,__LINE__,' new_nest%MVNEST ',new_nest%MVNEST
                IF ( grid%dfi_stage == DFI_STARTFWD ) THEN
                   CALL wrf_dfi_startfwd_init(new_nest)
                ENDIF
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
+write(0,*)__FILE__,__LINE__,' new_nest%MVNEST ',new_nest%MVNEST
 write(0,*)__FILE__,__LINE__
                IF (coupler_on) CALL cpl_defdomain( new_nest ) 
 ENDIF ! active_this_task
@@ -340,7 +350,11 @@ ENDIF ! active_this_task
 IF ( grid_ptr%active_this_task ) THEN
                   CALL set_current_grid_ptr( grid_ptr )
                   CALL wrf_debug( 100 , 'module_integrate: calling solve interface ' )
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
+write(0,*)__FILE__,__LINE__,' new_nest%MVNEST ',new_nest%MVNEST
                   CALL solve_interface ( grid_ptr ) 
+write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
+write(0,*)__FILE__,__LINE__,' new_nest%MVNEST ',new_nest%MVNEST
 ENDIF
                CALL domain_clockadvance ( grid_ptr )
                CALL wrf_debug( 100 , 'module_integrate: back from solve interface ' )

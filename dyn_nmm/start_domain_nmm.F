@@ -1974,13 +1974,21 @@
                                                                                                                                               
 4041  format('Bounds: ip=',I0,',',I0,' jp=',I0,',',I0,' myi=',I0,',',I0,&
              ' myj=',I0,',',I0)
+write(0,*)__FILE__,__LINE__,'grid%id ',grid%id
       write(message,4041) ips,ipe,jps,jpe,myis,myie,myjs,myje
       call wrf_message(message)
+write(0,*)__FILE__,__LINE__,'grid%id ',grid%id
+write(0,*)__FILE__,__LINE__,'MYJS,MYJE ',MYJS,MYJE
+write(0,*)__FILE__,__LINE__,'MYIS,MYIE ',MYJS,MYJE
+write(0,*)__FILE__,__LINE__,'shape(grid%z0base) ',shape(grid%z0base) 
+write(0,*)__FILE__,__LINE__,'shape(grid%sm) ',shape(grid%sm) 
+write(0,*)__FILE__,__LINE__,'shape(grid%ivgtyp) ',shape(grid%ivgtyp) 
 
       IF(.NOT.RESTRT)THEN
         DO J=MYJS,MYJE
         DO I=MYIS,MYIE
 !
+write(0,*)__FILE__,__LINE__,'I,J ',I,J,grid%sm(I,J)
           IF(grid%sm(I,J)==0)then
             grid%z0base(I,J)=VZ0TBL_24(grid%ivgtyp(I,J))+Z0LAND
           ELSE
@@ -1990,6 +1998,7 @@
         ENDDO
         ENDDO
       ENDIF
+write(0,*)__FILE__,__LINE__,'grid%id ',grid%id
 !
 ! when allocating CAM radiation 4d arrays (ozmixm, aerosolc) these are not needed
       num_ozmixm=1
@@ -2001,8 +2010,10 @@
 ! nest and if this part of the domain is not being initialized (not the 
 ! leading edge).)  Calling domain_setgmtetc() here will avoid this problem 
 ! when NMM moves to moving nests.  
+write(0,*)__FILE__,__LINE__,'grid%id ',grid%id
       CALL domain_setgmtetc( GRID, START_OF_SIMULATION )
 
+write(0,*)__FILE__,__LINE__,'grid%id ',grid%id
       if(restrt) then
 #ifdef HWRF
 !zhang 
@@ -2040,6 +2051,7 @@
          ENDIF
       END IF
 
+write(0,*)__FILE__,__LINE__,'grid%id ',grid%id
       CALL PHY_INIT(GRID%ID,CONFIG_FLAGS,GRID%DT,LRESTART,SFULL,SMID    &
      &             ,grid%pt,TSFC,GRID%RADT,GRID%BLDT,GRID%CUDT,GRID%GSMDT    &
      &             ,grid%DUCUDT, grid%DVCUDT                            &
@@ -2117,6 +2129,7 @@
      &                sf_surface_mosaic=config_flags%sf_surface_mosaic, mosaic_cat=config_flags%mosaic_cat, nlcat=1,     & ! Noah tiling
      &                MAXPATCH=1,ccn_conc=config_flags%ccn_conc & ! CLM
      &                )
+write(0,*)__FILE__,__LINE__,'grid%id ',grid%id
 
 #ifdef HWRF
 !zhang's doing
