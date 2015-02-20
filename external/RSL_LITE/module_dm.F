@@ -4238,12 +4238,12 @@ write(0,*)__FILE__,__LINE__,"interp_domain_em_part1 ioffset ",ioffset
         ioffset = nest_task_offsets(ngrid%id)
 write(0,*)__FILE__,__LINE__,"interp_domain_em_part1 ioffset ",ioffset
       ENDIF
-      CALL mpi_comm_rank(local_comm,myproc,ierr)
-      CALL mpi_comm_size(local_comm,nproc,ierr)
 write(0,*)__FILE__,__LINE__,"interp_domain_em_part1 nproc ",nproc
 write(0,*)__FILE__,__LINE__,"interp_domain_em_part1 myproc ",myproc
 
       IF ( grid%active_this_task .OR. ngrid%active_this_task ) THEN
+        CALL mpi_comm_rank(local_comm,myproc,ierr)
+        CALL mpi_comm_size(local_comm,nproc,ierr)
         CALL rsl_lite_bcast_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
                                           nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       & 
                                           ioffset, local_comm )
@@ -5008,11 +5008,10 @@ ENDIF
         local_comm = mpi_comm_to_mom( ngrid%id )
         ioffset = nest_task_offsets(ngrid%id)
       ENDIF
-      CALL mpi_comm_rank(local_comm,myproc,ierr)
-      CALL mpi_comm_size(local_comm,nproc,ierr)
-
 
       IF ( grid%active_this_task .OR. ngrid%active_this_task ) THEN
+        CALL mpi_comm_rank(local_comm,myproc,ierr)
+        CALL mpi_comm_size(local_comm,nproc,ierr)
         CALL rsl_lite_merge_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
                                           nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       & 
                                           ioffset, local_comm )
@@ -5205,11 +5204,11 @@ write(0,*)__FILE__,__LINE__,"interp_domain_nmm_part1 ioffset ",ioffset,local_com
         ioffset = nest_task_offsets(ngrid%id)
 write(0,*)__FILE__,__LINE__,"interp_domain_nmm_part1 ioffset ",ioffset,local_comm
       ENDIF
-      CALL mpi_comm_rank(local_comm,myproc,ierr)
-      CALL mpi_comm_size(local_comm,nproc,ierr)
 
       IF ( grid%active_this_task .OR. ngrid%active_this_task ) THEN
-      CALL rsl_lite_bcast_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
+        CALL mpi_comm_rank(local_comm,myproc,ierr)
+        CALL mpi_comm_size(local_comm,nproc,ierr)
+        CALL rsl_lite_bcast_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
                                         nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       & 
                                         ioffset, local_comm )
       ENDIF
@@ -5449,10 +5448,10 @@ write(0,*)__FILE__,__LINE__,"force_domain_nmm_part1 ioffset ",ioffset,local_comm
         ioffset = nest_task_offsets(ngrid%id)
 write(0,*)__FILE__,__LINE__,"force_domain_nmm_part1 ioffset ",ioffset,local_comm
       ENDIF
-      CALL mpi_comm_rank(local_comm,myproc,ierr)
-      CALL mpi_comm_size(local_comm,nproc,ierr)
 
       IF ( grid%active_this_task .OR. ngrid%active_this_task ) THEN
+        CALL mpi_comm_rank(local_comm,myproc,ierr)
+        CALL mpi_comm_size(local_comm,nproc,ierr)
         CALL rsl_lite_bcast_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
                                         nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       & 
                                         ioffset, local_comm )
@@ -6001,13 +6000,12 @@ ENDIF
         local_comm = mpi_comm_to_mom( ngrid%id )
         ioffset = nest_task_offsets(ngrid%id)
       ENDIF
-      CALL mpi_comm_rank(local_comm,myproc,ierr)
-      CALL mpi_comm_size(local_comm,nproc,ierr)
-
 write(0,*)__FILE__,__LINE__,'grid%id ',grid%id,local_comm
 write(0,*)__FILE__,__LINE__,'ngrid%id ',ngrid%id,local_comm
 
       IF ( grid%active_this_task .OR. ngrid%active_this_task ) THEN
+        CALL mpi_comm_rank(local_comm,myproc,ierr)
+        CALL mpi_comm_size(local_comm,nproc,ierr)
         CALL rsl_lite_merge_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
                                           nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       &
                                           ioffset, local_comm )

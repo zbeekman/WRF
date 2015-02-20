@@ -149,14 +149,14 @@ write(0,*)__FILE__,__LINE__,' ngrid%id ',ngrid%id
       local_comm = mpi_comm_to_mom( ngrid%id )
       ioffset = nest_task_offsets(ngrid%id)
     ENDIF
-    CALL mpi_comm_rank(local_comm,myproc,ierr)
-    CALL mpi_comm_size(local_comm,nproc,ierr)
 
 write(0,*)__FILE__,__LINE__
 write(0,*)__FILE__,__LINE__
 
     IF ( grid%active_this_task .OR. ngrid%active_this_task ) THEN
-        CALL rsl_lite_bcast_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
+      CALL mpi_comm_rank(local_comm,myproc,ierr)
+      CALL mpi_comm_size(local_comm,nproc,ierr)
+      CALL rsl_lite_bcast_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
                                           nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       &
                                           ioffset, local_comm )
     ENDIF
