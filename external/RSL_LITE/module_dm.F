@@ -62,13 +62,12 @@ MODULE module_dm
    LOGICAL domain_active_this_task( max_domains )
 ! see comments below (search for "Communicator definition")
    INTEGER comm_start(max_domains)   ! set in namelist_split
-   INTEGER comm_pes  (max_domains)   ! either this may be set in namelist_split
-   INTEGER comm_pes_x(max_domains)   ! or these may be set in namelist_split
-   INTEGER comm_pes_y(max_domains)   ! "    "   may be set in namelist_split
-   INTEGER comm_domain(max_domains)  ! set in namelist_split
-   INTEGER nest_pes_x(max_domains)   ! derived
-   INTEGER nest_pes_y(max_domains)   ! derived
-   INTEGER ncomms                    ! derived number of local communicators
+!   INTEGER comm_pes  (max_domains)   ! either this may be set in namelist_split
+!   INTEGER comm_pes_x(max_domains)   ! or these may be set in namelist_split
+!   INTEGER comm_pes_y(max_domains)   ! "    "   may be set in namelist_split
+!   INTEGER comm_domain(max_domains)  ! set in namelist_split
+   INTEGER nest_pes_x(max_domains)   ! set in namelist_split
+   INTEGER nest_pes_y(max_domains)   ! set in namelist_split
    INTEGER comms_i_am_in (max_domains)  ! list of local communicators this task is a member of
    INTEGER loc_comm(max_domains)
 
@@ -645,7 +644,7 @@ ENDIF
          DO i = c_ids, c_ide
             ni = ( i - i_parent_start ) * parent_grid_ratio + 1 + 1 ;
 !jm            CALL task_for_point ( ni, nj, ids, ide, jds, jde, ntasks_x, ntasks_y, Px, Py, &
-            CALL task_for_point ( ni, nj, ids, ide, jds, jde, comm_pes_x(id), comm_pes_y(id),Px,Py, &
+            CALL task_for_point ( ni, nj, ids, ide, jds, jde, nest_pes_x(id), nest_pes_y(id),Px,Py, &
                                   minx, miny,  ierr )
             IF ( ierr .NE. 0 ) CALL wrf_error_fatal('error code returned by task_for_point in module_dm.F (a)')
             IF ( Px .EQ. mytask_x ) THEN
@@ -667,7 +666,7 @@ ENDIF
          DO j = c_jds, c_jde
             nj = ( j - j_parent_start ) * parent_grid_ratio + 1 + 1 ;
 !            CALL task_for_point ( ni, nj, ids, ide, jds, jde, ntasks_x, ntasks_y, Px, Py, &
-            CALL task_for_point ( ni, nj, ids, ide, jds, jde, comm_pes_x(id), comm_pes_y(id), Px, Py, &
+            CALL task_for_point ( ni, nj, ids, ide, jds, jde, nest_pes_x(id), nest_pes_y(id), Px, Py, &
                                   minx, miny, ierr )
             IF ( ierr .NE. 0 ) CALL wrf_error_fatal('error code returned by task_for_point in module_dm.F (b)')
 
@@ -1821,30 +1820,41 @@ write(0,'("compute_memory_dims_rsl_lite tfp ",11i5)') id, i, j, ids, ide, jds, j
 !               1    0 1 2 3 4 5                (2) (3)
 !               2    0 1                         |
 !               3        0 1 2 3                (4)
+!               4    0 1
 !
 !    Notes: 1. No requirement that any communicator be all tasks
 !           2. A task may be a member of an arbitrary number 
 !              of local communicators (But you may not want to do this)
 !
-!  Namelist Split Settings (for 3 comms, 4 domains)
-!   (comm_id)       1    2    3    ...
-!   comm_start      0    0    2
-!   comm_pes_x      2    1    2
-!   comm_pes_y      3    2    2
 !
-!  Domain definitions
+!  Namelist Split Settings (for 3 comms, 4 domains)
+!  Revised namelist semantics -- no need for binding nests to separately defined communicators
+!
 !   (domain_id)     1    2    3    4
 !   parent_id       -    1    1    2
-!   comm_domain     1    2    3    2
-! * nest_pes_x      2    1    2    1
-! * nest_pes_y      3    2    2    2
-!
-!   [* nest_pes_x is comm_pes_x(comm_domain(domain_id))]
-!
+!   comm_start      0    0    2    0
+!   nest_pes_x      2    1    2    1
+!   nest_pes_y      3    2    2    2
+!   
+!! superceded
+!!  Namelist Split Settings (for 3 comms, 4 domains)
+!!   (comm_id)       1    2    3    ...
+!!   comm_start      0    0    2
+!!   comm_pes_x      2    1    2
+!!   comm_pes_y      3    2    2
+!!
+!!  Domain definitions
+!!   (domain_id)     1    2    3    4
+!!   parent_id       -    1    1    2
+!!   comm_domain     1    2    3    2
+!! * nest_pes_x      2    1    2    1
+!! * nest_pes_y      3    2    2    2
+!!
+!!   [* nest_pes_x is comm_pes_x(comm_domain(domain_id))]
 !
 
-      NAMELIST /namelist_split/ tasks_per_split, comm_start, comm_pes_x, comm_pes_y, comm_domain
-      INTEGER ndoms,dims(3)
+      NAMELIST /namelist_split/ tasks_per_split, comm_start, nest_pes_x, nest_pes_y
+      INTEGER dims(3)
 ! for parallel nesting, 201408, jm
       INTEGER :: intercomm 
       INTEGER :: domain_id,par_id,nest_id,kid_id
@@ -1899,11 +1909,11 @@ write(0,*)__LINE__,mpi_comm_here
       IF ( mytask .EQ. 0 ) THEN
         OPEN ( unit=27, file="namelist.input", form="formatted", status="old" )
         tasks_per_split = ntasks
-        comm_domain = -1   ! by default, domain is always on communicator 1
-        comm_domain(1) = 1   ! by default, domain is always on communicator 1
+!        comm_domain = -1   ! by default, domain is always on communicator 1
+!        comm_domain(1) = 1   ! by default, domain is always on communicator 1
         comm_start = -1   ! use this to find how many communicators have actually been defined
-        comm_pes_x = 0    ! dimensions of communicator in X and y
-        comm_pes_y = 0
+        nest_pes_x = 0    ! dimensions of communicator in X and y
+        nest_pes_y = 0
         READ ( 27 , NML = namelist_split, IOSTAT=io_status )
 ! we need to sneak-peak the parent_id namelist setting, ,which is in the "domains" section
 ! of the namelist.  That namelist is registry generated, so the registry-generated information
@@ -1920,12 +1930,11 @@ write(0,*)'after mpi_bcast',io_status
       ENDIF
       CALL mpi_bcast( tasks_per_split, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( comm_start, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
-      CALL mpi_bcast( comm_domain, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
-      CALL mpi_bcast( comm_pes_x, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
-      CALL mpi_bcast( comm_pes_y, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+!      CALL mpi_bcast( comm_domain, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+      CALL mpi_bcast( nest_pes_x, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+      CALL mpi_bcast( nest_pes_y, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( parent_id, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( max_dom, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
-      ndoms = 1
       nkids = 1
       which_kid = 0
 write(0,*)__LINE__,mpi_comm_here
@@ -1938,27 +1947,26 @@ write(0,*)'which_kid i,parent_id(i),nkids(parent_id(i))',i,parent_id(i),nkids(pa
           WRITE(wrf_err_message,*)'invalid parent id for domain ',i
           CALL wrf_error_fatal(TRIM(wrf_err_message))
         ENDIF 
-        IF ( comm_domain(i) .gt. 0 ) ndoms = ndoms + 1
       ENDDO
 write(0,*)'which_kid ',which_kid(2:max_dom)
 
-      DO nest_id = 1,ndoms
-        nest_pes_x(nest_id) = comm_pes_x(comm_domain(nest_id))
-        nest_pes_y(nest_id) = comm_pes_y(comm_domain(nest_id))
-        nest_task_offsets(nest_id) = comm_start(comm_domain(nest_id))
+      DO nest_id = 1,max_dom
+!        nest_pes_x(nest_id) = nest_pes_x(comm_domain(nest_id))
+!        nest_pes_y(nest_id) = nest_pes_y(comm_domain(nest_id))
+        nest_task_offsets(nest_id) = comm_start(nest_id)
         IF ( nest_id .EQ. 1 ) THEN
-          nest_task_offsets(nest_id) = comm_start(comm_domain(nest_id))
+          nest_task_offsets(nest_id) = comm_start(nest_id)
         ELSE
-          nest_task_offsets(nest_id) = comm_start(comm_domain(nest_id))-comm_start(comm_domain(parent_id(nest_id)))
+          nest_task_offsets(nest_id) = comm_start(nest_id)-comm_start(parent_id(nest_id))  ! needs bulletproofing
         ENDIF
 write(0,'(" nest_task_offsets(",i3,") = ", i3)')nest_id,nest_task_offsets(nest_id)
       ENDDO
 
-write(0,*)'ndoms ',ndoms
+write(0,*)'max_dom ',max_dom
 write(0,*)'MPI_UNDEFINED ',MPI_UNDEFINED
 write(0,*)__LINE__,mpi_comm_here
 
-      IF ( ndoms .GT. 1 ) THEN
+      IF ( max_dom .GT. 1 ) THEN
 !jm Additional code here to set up communicator for this domain and tables
 !jm mapping individual domain task IDs to the original local communicator
 !jm that is unsplit over nest domains.  from now on what we are calling
@@ -1978,30 +1986,19 @@ write(0,*)__LINE__,mpi_comm_here
         ALLOCATE( idomain(ntasks) )
 write(0,*)__LINE__,mpi_comm_here
         k = 0
-        domain_id = ndoms
 ! split off the separate local communicators
-! we don't know yet how many local communicators there are so iterate over ndoms which is always >= number of communicators
-! Note requirement above that all other communicators must be disjoint
-        ncomms = 0
-        DO i = 1, ndoms
-           IF ( comm_start(i) .GE. 0 ) THEN
-write(0,*)'comm_start ',i,comm_start(i)
-             ncomms = ncomms + 1
-           ENDIF
-        ENDDO
-write(0,*)'ncomms ',ncomms
 write(0,*)__LINE__,mpi_comm_here
 
 ! construct list of local communicators my task is in
         comms_i_am_in = MPI_UNDEFINED
-        DO i = 1, ncomms
+        DO i = 1, max_dom
 write(0,*)'i = ',i
           inthisone = .FALSE.
           icolor = 0
-          DO j = comm_start(i), comm_start(i)+comm_pes_x(i)*comm_pes_y(i)-1
+          DO j = comm_start(i), comm_start(i)+nest_pes_x(i)*nest_pes_y(i)-1
 write(0,*)'setting icolor ',j+1
             IF ( j+1 .GT. ntasks ) THEN
-              WRITE(wrf_err_message,*)"check comm_start, comm_pes_x, comm_pes_y settings in namelist for comm ",i
+              WRITE(wrf_err_message,*)"check comm_start, nest_pes_x, nest_pes_y settings in namelist for comm ",i
               CALL wrf_error_fatal(wrf_err_message)
             ENDIF
             icolor(j+1) = 1
@@ -2014,38 +2011,20 @@ write(0,*)'called MPI_Comm_dup ierr ', ierr
           CALL MPI_Comm_split(comdup,icolor(mytask+1),mytask,mpi_comm_local,ierr)
 write(0,*)'called MPI_Comm_split ierr ', ierr
           IF ( inthisone ) THEN
-            dims(1) = comm_pes_y(i) ! rows
-            dims(2) = comm_pes_x(i)  ! columns
+            dims(1) = nest_pes_y(i) ! rows
+            dims(2) = nest_pes_x(i)  ! columns
             isperiodic(1) = .false.
             isperiodic(2) = .false.
             CALL mpi_cart_create( mpi_comm_local, 2, dims, isperiodic, .false., comms_i_am_in(i), ierr )
 write(0,*)' CALL mpi_cart_create comm ', i, dims(1:2), comms_i_am_in(i)
-
-!            dims(1) = comm_pes_y(i) ! rows
-!            dims(2) = comm_pes_x(i)  ! columns
-!            isperiodic(1) = .true.
-!            isperiodic(2) = .true.
-!            CALL mpi_cart_create( mpi_comm_local, 2, dims, isperiodic, .false., local_comm_per, ierr )
           ENDIF
         ENDDO
-write(0,*)'comms_i_am_in ',comms_i_am_in(1:ncomms)
-
-!  Namelist Split Settings (for 3 comms, 4 domains)
-!   (comm_id)       1    2    3    ...
-!   comm_start      0    0    2
-!   comm_pes_x      2    1    2
-!   comm_pes_y      3    2    2
-!  Domain definitions
-!   (domain_id)     1    2    3    4
-!   parent_id       -    1    1    2
-!   comm_domain     1    2    3    2
-! * nest_pes_x      2    1    2    1
-! * nest_pes_y      3    2    2    2
+write(0,*)'comms_i_am_in ',comms_i_am_in(1:max_dom)
 
 ! assign domains to communicators
         local_communicator = MPI_UNDEFINED
-        DO i = 1, ndoms
-          local_communicator_store(i) = comms_i_am_in(comm_domain(i))
+        DO i = 1, max_dom
+          local_communicator_store(i) = comms_i_am_in(i)
           domain_active_this_task(i) = ( local_communicator_store(i) .NE. MPI_UNDEFINED )
 write(0,*)i,'local_communicator_store ',local_communicator_store(i)
           IF ( local_communicator_store(i) .NE. MPI_UNDEFINED ) THEN
@@ -2087,7 +2066,7 @@ write(0,*)i,'local_communicator_x_store ',local_communicator_x_store(i),ntasks_x
         ! (in that case, the offset would be the first task of the parent-nest communicator and that communicator)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        DO nest_id = 2, ndoms
+        DO nest_id = 2, max_dom
 write(0,*)'>>>>>>  nest_id = ',nest_id
            par_id  = parent_id(nest_id)
            icolor2 = 0
@@ -2098,20 +2077,20 @@ write(0,*)'>>>>>>  nest_id = ',nest_id
            icolor2 = 0
            mytask_is_nest = .FALSE.
            mytask_is_par = .FALSE.
-write(0,*)'comm_start(comm_domain(nest_id)) ',nest_id,comm_start(comm_domain(nest_id))
+write(0,*)'comm_start(nest_id) ',nest_id,comm_start(nest_id)
 write(0,*)'nest_pes_x(nest_id) ',nest_pes_x(nest_id)
 write(0,*)'nest_pes_y(nest_id) ',nest_pes_y(nest_id)
            DO j = 1,ntasks
 
 write(0,*)'nest, par ',j-1,   &
-          comm_start(comm_domain(nest_id)) .LE. j-1 .AND. j-1 .LT. comm_start(comm_domain(nest_id)) + nest_pes_x(nest_id)*nest_pes_y(nest_id), &
-          comm_start(comm_domain(par_id))  .LE. j-1 .AND. j-1 .LT. comm_start(comm_domain(par_id))  + nest_pes_x(par_id) *nest_pes_y(par_id)
+          comm_start(nest_id) .LE. j-1 .AND. j-1 .LT. comm_start(nest_id) + nest_pes_x(nest_id)*nest_pes_y(nest_id), &
+          comm_start(par_id)  .LE. j-1 .AND. j-1 .LT. comm_start(par_id)  + nest_pes_x(par_id) *nest_pes_y(par_id)
 
-             IF ( comm_start(comm_domain(nest_id)) .LE. j-1 .AND. j-1 .LT. comm_start(comm_domain(nest_id)) + nest_pes_x(nest_id)*nest_pes_y(nest_id) )  THEN
+             IF ( comm_start(nest_id) .LE. j-1 .AND. j-1 .LT. comm_start(nest_id) + nest_pes_x(nest_id)*nest_pes_y(nest_id) )  THEN
                icolor2(j)=1
                if ( j-1 .EQ. mytask ) mytask_is_nest=.TRUE.
              ENDIF
-             IF ( comm_start(comm_domain(par_id )) .LE. j-1 .AND. j-1 .LT. comm_start(comm_domain(par_id )) + nest_pes_x(par_id )*nest_pes_y(par_id ) )  THEN
+             IF ( comm_start(par_id ) .LE. j-1 .AND. j-1 .LT. comm_start(par_id ) + nest_pes_x(par_id )*nest_pes_y(par_id ) )  THEN
                icolor2(j)=1
                if ( j-1 .EQ. mytask ) mytask_is_par=.TRUE.
              ENDIF
