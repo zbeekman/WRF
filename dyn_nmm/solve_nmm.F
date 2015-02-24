@@ -2656,7 +2656,9 @@
 !
      IF(mod(grid%NTSD,grid%ntornado)==0) then
         btimx=now_time()
+write(0,*)__FILE__,' grid ',grid%id,' calling calc_tornado_genesis'
         CALL CALC_TORNADO_GENESIS(GRID,CONFIG_FLAGS)
+write(0,*)__FILE__,' grid ',grid%id,' back from calc_tornado_genesis'
         tornado_tim=tornado_tim+now_time()-btimx
      ENDIF
 

@@ -113,7 +113,7 @@ module module_interp_nmm
   public :: c2n_massikj, n2c_massikj
   public :: c2b_copy3d, c2n_copy3d, n2c_copy3d
 
-  public :: c2b_copy2d, c2n_copy2d, n2c_copy2d, c2n_copy2d_nomask
+  public :: c2b_copy2d, c2n_copy2d, n2c_copy2d, n2c_copy2d_dbg, c2n_copy2d_nomask
   public :: c2b_near2d, c2n_near2d, n2c_near2d
   public :: c2b_inear2d, c2n_inear2d, n2c_inear2d
 
@@ -633,6 +633,53 @@ contains
        enddo iloop
     enddo bigj 
  end subroutine n2c_copy2d
+
+!!!!!!!!!!!!!!
+  subroutine n2c_copy2d_dbg (&
+       cfield,nfield,ipos,jpos,  &
+       cids, cide, cjds, cjde,   &
+       cims, cime, cjms, cjme,   &
+       cits, cite, cjts, cjte,   &
+       nids, nide, njds, njde,   &
+       nims, nime, njms, njme,   &
+       nits, nite, njts, njte, &
+       hgrid)
+    implicit none
+    integer, intent(in) :: &
+         cids, cide, cjds, cjde,   &
+         cims, cime, cjms, cjme,   &
+         cits, cite, cjts, cjte,   &
+         nids, nide, njds, njde,   &
+         nims, nime, njms, njme,   &
+         nits, nite, njts, njte,   &
+         ipos,jpos
+    real, intent(out) :: cfield(cims:cime,cjms:cjme)
+    real, intent(in) :: nfield(nims:nime,njms:njme)
+    logical, intent(in) :: hgrid
+
+    integer, parameter :: nri=3, nrj=3 ! parent:nest ratio, must be 3 in NMM
+    integer :: nz,jstart,jend,istart,iend,ni,nj,a,i,j
+
+    jstart=MAX(jpos+1,cjts)
+    jend=MIN(jpos+(njde-njds)/nrj-1,cjte)
+
+    bigj: do j=jstart,jend
+          a=mod(j,2)
+          if(.not.hgrid) then
+             a=1-a
+          endif
+       istart=MAX(ipos+a,cits)
+       iend=MIN(ipos+(nide-nids)/nri-1,cite)
+       nj = (j-jpos)*nrj + 1
+
+       iloop: do i=istart,iend
+          ni = (i-ipos)*nri + 2 - a
+          cfield(i,j)=NGRAB2D(nfield,ni,nj)
+write(0,'("cfield ",2i5," nfield ",2i5," fld ",f)')i,j,ni,nj,cfield(i,j)
+       enddo iloop
+    enddo bigj 
+ end subroutine n2c_copy2d_dbg
+!!!!!!!!!!!!!!
 
   subroutine n2c_max2d (&
        cfield,nfield,ipos,jpos,  &

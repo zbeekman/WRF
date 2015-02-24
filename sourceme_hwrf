@@ -1,4 +1,6 @@
+module load pnetcdf
 setenv HWRF 1 
+setenv PNETCDF_QUILT 1
 setenv WRF_NMM_CORE 1 
 setenv WRF_NMM_NEST 1
 setenv WRFIO_NCD_LARGE_FILE_SUPPORT 1

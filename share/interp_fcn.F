@@ -5068,6 +5068,57 @@ ENDIF
              nits, nite, njts, njte, nkts, nkte, .true.)
      endif
    end subroutine UpCopy
+!!!!!!!!!!!!!
+   subroutine UpCopy_dbg     (cfld,                                 &  ! CD field
+        cids, cide, ckds, ckde, cjds, cjde,   &
+        cims, cime, ckms, ckme, cjms, cjme,   &
+        cits, cite, ckts, ckte, cjts, cjte,   &
+        nfld,                                 &  ! ND field
+        nids, nide, nkds, nkde, njds, njde,   &
+        nims, nime, nkms, nkme, njms, njme,   &
+        nits, nite, nkts, nkte, njts, njte,   &
+        shw,                                  &  ! stencil half width for interp
+        imask,                                &  ! interpolation mask
+        xstag, ystag,                         &  ! staggering of field
+        ipos, jpos,                           &  ! Position of lower left of nest in CD
+        nri, nrj)                                ! nest ratios                         
+
+     use module_interp_nmm, only: n2c_copy3d, n2c_copy2d_dbg
+     implicit none
+     LOGICAL,INTENT(IN) :: xstag, ystag
+     INTEGER,INTENT(IN) :: cids, cide, ckds, ckde, cjds, cjde,   &
+          cims, cime, ckms, ckme, cjms, cjme,   &
+          cits, cite, ckts, ckte, cjts, cjte,   &
+          nids, nide, nkds, nkde, njds, njde,   &
+          nims, nime, nkms, nkme, njms, njme,   &
+          nits, nite, nkts, nkte, njts, njte,   &
+          shw,ipos,jpos,nri,nrj
+
+     INTEGER,DIMENSION(nims:nime,njms:njme),          INTENT(IN)           :: IMASK
+     REAL,DIMENSION(cims:cime,cjms:cjme,ckms:ckme),   INTENT(OUT)           :: CFLD
+     REAL,DIMENSION(nims:nime,njms:njme,nkms:nkme),   INTENT(IN)          :: nfld
+
+     if(nkts==nkte) then
+        call n2c_copy2d_dbg(&
+             cfld,nfld,ipos,jpos,                   &
+             cids, cide, cjds, cjde,   &
+             cims, cime, cjms, cjme,   &
+             cits, cite, cjts, cjte,   &
+             nids, nide, njds, njde,   &
+             nims, nime, njms, njme,   &
+             nits, nite, njts, njte, .true.)
+     else
+        call n2c_copy3d(&
+             cfld,nfld,ipos,jpos,                   &
+             cids, cide, cjds, cjde, ckds, ckde,   &
+             cims, cime, cjms, cjme, ckms, ckme,   &
+             cits, cite, cjts, cjte, ckts, ckte,   &
+             nids, nide, njds, njde, nkds, nkde,   &
+             nims, nime, njms, njme, nkms, nkme,   &
+             nits, nite, njts, njte, nkts, nkte, .true.)
+     endif
+   end subroutine UpCopy_dbg
+!!!!!!!!!!!!!
 
    subroutine UpMax          (cfld,                                 &  ! CD field
         cids, cide, ckds, ckde, cjds, cjde,   &
