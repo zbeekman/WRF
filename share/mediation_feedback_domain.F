@@ -226,24 +226,18 @@ write(0,*)__FILE__,__LINE__
   nested_grid%intermediate_grid%pdyn_smooth_age=parent_grid%pdyn_smooth_age
 #endif
 
-write(0,*)__FILE__,__LINE__
    ! NOTE: the intermediate grid is a grid with the spatial extent and
    ! processor decomposition of the nest, at the resolution of the
    ! parent.  It is stored as nested_grid%intermediate_grid.
  
    ! STEP 1: Copy from parent grid to intermediate grid:
-write(0,*)__FILE__,__LINE__
    grid => parent_grid
 #if (NMM_NEST==1)
-write(0,*)__FILE__,__LINE__
    call parent_to_inter_part1(parent_grid, nested_grid%intermediate_grid, &
                               nested_grid, config_flags)
-write(0,*)__FILE__,__LINE__
 
    grid => nested_grid%intermediate_grid
-write(0,*)__FILE__,__LINE__
    call parent_to_inter_part2(nested_grid%intermediate_grid, nested_grid, config_flags)
-write(0,*)__FILE__,__LINE__
 
 #endif
   IF ( nested_grid%active_this_task ) THEN

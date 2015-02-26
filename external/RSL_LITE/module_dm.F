@@ -4860,6 +4860,7 @@ write(0,'("1 id,jps_save,jpe_save,njds,njde,(njde-njds+1) ",6i10)')ngrid%id,jps_
       TYPE(domain), POINTER :: grid          ! name of the grid being dereferenced (must be "grid")
       TYPE(domain), POINTER :: intermediate_grid
       TYPE(domain), POINTER :: ngrid
+      TYPE(domain), POINTER :: xgrid
 
 #include <dummy_new_decl.inc>
       INTEGER nlev, msize
@@ -4928,6 +4929,7 @@ write(0,'("1 id,jps_save,jpe_save,njds,njde,(njde-njds+1) ",6i10)')ngrid%id,jps_
       jps_save = ngrid%j_parent_start
       ipe_save = ngrid%i_parent_start + (xide-xids+1) / ngrid%parent_grid_ratio - 1
       jpe_save = ngrid%j_parent_start + (xjde-xjds+1) / ngrid%parent_grid_ratio - 1
+
 write(0,'("2 id,ips_save,ipe_save,xids,xide,(xide-xids+1) ",6i10)')ngrid%id,ips_save,ipe_save,xids,xide,(xide-xids+1)
 write(0,'("2 id,jps_save,jpe_save,xjds,xjde,(xjde-xjds+1) ",6i10)')ngrid%id,jps_save,jpe_save,xjds,xjde,(xjde-xjds+1)
 write(0,*)"2 ngrid%active_this_task ",ngrid%active_this_task
@@ -4970,7 +4972,10 @@ IF ( ngrid%active_this_task ) THEN
 
       CALL get_dm_max_halo_width ( grid%id , thisdomain_max_halo_width )
 
+      xgrid => grid
+      grid => ngrid
 #include "nest_feedbackup_pack.inc"
+      grid => xgrid
     CALL pop_communicators_for_domain
 
 ENDIF
@@ -5252,6 +5257,7 @@ write(0,*)__FILE__,__LINE__,"interp_domain_nmm_part1 ioffset ",ioffset,local_com
                                   nids, nide, njds, njde, nkds, nkde,    &
                                   nims, nime, njms, njme, nkms, nkme,    &
                                   nips, nipe, njps, njpe, nkps, nkpe    )
+
 
         nlev  = ckde - ckds + 1 
 
@@ -5857,6 +5863,11 @@ integer myproc
 
 !------------------------------------------------------------------
 
+! from share/mediation_feedback_domain.F
+!  grid => parent_grid
+!  CALL feedback_domain_nmm_part2 ( grid , nested_grid%intermediate_grid, nested_grid , config_flags    &
+
+
    SUBROUTINE feedback_domain_nmm_part2 ( grid, intermediate_grid, ngrid , config_flags    &
 !
 #include "dummy_new_args.inc"
@@ -5881,6 +5892,7 @@ integer myproc
       TYPE(domain), POINTER :: grid          ! name of the grid being dereferenced (must be "grid")
       TYPE(domain), POINTER :: intermediate_grid
       TYPE(domain), POINTER :: ngrid
+      TYPE(domain), POINTER :: xgrid
 
 #include <dummy_new_decl.inc>
       INTEGER nlev, msize
@@ -5946,6 +5958,15 @@ integer myproc
                                 nids, nide, njds, njde, nkds, nkde,    &
                                 nims, nime, njms, njme, nkms, nkme,    &
                                 nips, nipe, njps, njpe, nkps, nkpe    )
+      CALL get_ijk_from_grid (  ngrid ,              &
+                                xids, xide, xjds, xjde, xkds, xkde,    &
+                                xims, xime, xjms, xjme, xkms, xkme,    &
+                                xips, xipe, xjps, xjpe, xkps, xkpe    )
+
+      ips_save = ngrid%i_parent_start   ! used in feedback_domain_em_part2 below
+      jps_save = ngrid%j_parent_start
+      ipe_save = ngrid%i_parent_start + (xide-xids+1) / ngrid%parent_grid_ratio - 1
+      jpe_save = ngrid%j_parent_start + (xjde-xjds+1) / ngrid%parent_grid_ratio - 1
 
       nide = nide - 1   !dusan
       njde = njde - 1   !dusan
@@ -5963,7 +5984,12 @@ IF ( ngrid%active_this_task ) THEN
       nlev  = ckde - ckds + 1
 
       CALL get_dm_max_halo_width ( ngrid%id , thisdomain_max_halo_width )
+      xgrid => grid
+      grid => ngrid
+write(0,*)'ZAP calling "nest_feedbackup_pack.inc" ',grid%id,SIZE(grid%tg_updhel25),config_flags%tg_option
 #include "nest_feedbackup_pack.inc"
+write(0,*)'ZAP back from "nest_feedbackup_pack.inc" ',grid%id
+      grid => xgrid
     CALL pop_communicators_for_domain
 ENDIF
 
