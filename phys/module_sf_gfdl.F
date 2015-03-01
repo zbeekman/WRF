@@ -17,13 +17,13 @@ CONTAINS
                      XLAND,HFX,QFX,TAUX,TAUY,LH,GSW,GLW,TSK,FLHC,FLQC,    & ! gopal's doing for Ocean coupling
                      QGH,QSFC,U10,V10,                          &
                      GZ1OZ0,WSPD,BR,ISFFLX,                     &
-                     EP1,EP2,KARMAN,NTSFLG,SFENTH,              &
+                     EP1,EP2,KARMAN,NTSFLG,SFENTH,itimestep,    &
                      ids,ide, jds,jde, kds,kde,                 &
                      ims,ime, jms,jme, kms,kme,                 &
                      its,ite, jts,jte, kts,kte                  )
 !-------------------------------------------------------------------
       USE MODULE_GFS_MACHINE, ONLY : kind_phys
-      USE MODULE_GFS_FUNCPHYS , ONLY : gfuncphys,fpvs
+      USE MODULE_GFS_FUNCPHYS , ONLY : gfuncphys,fpvs,fpvs_dbg
       USE MODULE_GFS_PHYSCONS, grav => con_g
 !-------------------------------------------------------------------
       IMPLICIT NONE
@@ -145,6 +145,7 @@ CONTAINS
       REAL, DIMENSION(ims:ime, jms:jme), INTENT(OUT) ::                 &
                                         U10,                            &
                                         V10 
+      INTEGER, INTENT(IN) :: itimestep
 
 
 !--------------------------- LOCAL VARS ------------------------------
@@ -261,10 +262,17 @@ CONTAINS
 
    WRITE(message,*)'WITHIN THE GFDL SCHEME, NTSFLG=1 FOR GFDL SLAB  2010 UPGRADS',NTSFLG
    call wrf_debug(1,message)
+   if(itimestep.eq.0) then
+write(0,*)'calling GFUNCPHYS from sf_gfdl'
+     CALL GFUNCPHYS
+write(0,*)'back from GFUNCPHYS from sf_gfdl'
+   endif
+
 
    DO J=jts,jte
 
       DO i=its,ite
+if ( i.eq.10.and.j.eq.10 ) write(0,*)__LINE__,qsfc(i,j)
         DDVEL(I)=0.
         RCL(i)=1.
         PRSL1(i)=P3D(i,kts,j)*.001
@@ -308,6 +316,7 @@ CONTAINS
       ENDDO
 
       DO i=its,ite
+if ( i.eq.10.and.j.eq.10 ) write(0,*)__LINE__,qsfc(i,j)
          PRSLKI(i)=(PS(I)/PRSL1(I))**ROVCP
          THGB(I)=TSKIN(i)*(100./PS(I))**ROVCP
          THX(I)=T1(i)*(100./PRSL1(I))**ROVCP
@@ -434,9 +443,20 @@ CONTAINS
         CPM(I,J)=CP*(1.+0.8*QV3D(i,kts,j))
         esat = fpvs(t1(i))
         QGH(I,J)=ep2*esat/(1000.*ps(i)-esat)
+if ( i.eq.10.and.j.eq.10) then
+        esat = fpvs_dbg(tskin(i))
+else
         esat = fpvs(tskin(i))
+endif
         qss(i) = ep2*esat/(1000.*ps(i)-esat)
+if ( i.eq.10.and.j.eq.10 ) write(0,*)__LINE__,'ps(i) ',ps(i)
+if ( i.eq.10.and.j.eq.10 ) write(0,*)__LINE__,'tskin(i) ',tskin(i)
+if ( i.eq.10.and.j.eq.10 ) write(0,*)__LINE__,'ep2 ',ep2
+if ( i.eq.10.and.j.eq.10 ) write(0,*)__LINE__,'esat ',esat
+if ( i.eq.10.and.j.eq.10 ) write(0,*)__LINE__,'qss ',qss(i)
+if ( i.eq.10.and.j.eq.10 ) write(0,*)__LINE__,'qsfc ',qsfc(i,j)
         QSFC(I,J)=qss(i)
+if ( i.eq.10.and.j.eq.10 ) write(0,*)__LINE__,'qsfc ',qsfc(i,j)
 !       PSIH(i,j)=PH(i)
 !       PSIM(i,j)=PM(i)
         UST(i,j)=ustar(i)

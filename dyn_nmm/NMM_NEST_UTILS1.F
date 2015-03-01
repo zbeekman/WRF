@@ -220,14 +220,15 @@ write(0,*)__FILE__,__LINE__,'Natt: mpi_comm_to_mom ',comzilla,nest%id
        grid => nest
      ENDIF
 
+#define BCAST_RARRAY(X) BYTE_BCAST( X, size(X)*RWORDSIZE, comzilla )  
 !   soil configuration
 #ifdef HWRF
 !zhang 
     if ( .not.nest%analysis ) then
 #endif
-      CALL BYTE_BCAST( grid%sldpth, RWORDSIZE, comzilla ) !  nest%sldpth  = parent%sldpth
-      CALL BYTE_BCAST( grid%dzsoil, RWORDSIZE, comzilla ) !  nest%dzsoil  = parent%dzsoil
-      CALL BYTE_BCAST( grid%rtdpth, RWORDSIZE, comzilla ) !  nest%rtdpth  = parent%rtdpth
+      CALL BCAST_RARRAY( grid%sldpth ) !  nest%sldpth  = parent%sldpth
+      CALL BCAST_RARRAY( grid%dzsoil ) !  nest%dzsoil  = parent%dzsoil
+      CALL BCAST_RARRAY( grid%rtdpth ) !  nest%rtdpth  = parent%rtdpth
 #ifdef HWRF 
     endif
 #endif
@@ -268,7 +269,6 @@ write(0,*)__FILE__,__LINE__,'Natt: mpi_comm_to_mom ',comzilla,nest%id
       CALL nl_set_map_proj(nest%id, nest%map_proj)
       CALL nl_set_iswater(nest%id, nest%iswater)
 
-#define BCAST_RARRAY(X) BYTE_BCAST( X, size(X)*RWORDSIZE, comzilla )  
       CALL BCAST_RARRAY( grid%deta )  !  nest%deta        = parent%deta
       CALL BCAST_RARRAY( grid%aeta )  !  nest%aeta        = parent%aeta
       CALL BCAST_RARRAY( grid%etax )  !  nest%etax        = parent%etax

@@ -180,7 +180,9 @@ CONTAINS
 
 
    if(itimestep.eq.0) then
+write(0,*)'calling GFUNCPHYS'
      CALL GFUNCPHYS
+write(0,*)'back from GFUNCPHYS'
    endif
 
    IM=ITE-ITS+1

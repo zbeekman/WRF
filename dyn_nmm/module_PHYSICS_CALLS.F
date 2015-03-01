@@ -1338,6 +1338,7 @@
       CALL SET_TILES(GRID,IDS,IDE-1,JDS+1,JDE-1,ITS,ITE,JTS,JTE)
 
 !
+write(0,*)'before SURFACE_DRIVER ',qs
       CALL SURFACE_DRIVER(                                              &
      &           HYDRO_dt=-1.0,  SFCHEADRT=SFCHEADRT,                   &
      &           INFXSRT=INFXSRT,  SOLDRAIN=SOLDRAIN,                   &
@@ -1492,6 +1493,7 @@
      &        ,maxpatch=1,inest=1,history_interval=config_flags%history_interval  & !clm
 
      &                                                          )
+write(0,*)'after SURFACE_DRIVER ',qs
 !
 !-----------------------------------------------------------------------
 !
@@ -1547,6 +1549,7 @@
 !      write(0,*) 'var_ric & coef_ric_s l from namelist Kwon  ',var_ric,coef_ric_s,coef_ric_l
 #endif
 !
+write(0,*)'before PBL_DRIVER ',qs
       CALL PBL_DRIVER(                                                &
      &                ITIMESTEP=NTSD,DT=DT                            &
      &               ,U_FRAME=U_FRAME,V_FRAME=V_FRAME                 &
@@ -1615,6 +1618,7 @@
      &               ,IS_CAMMGMP_USED=IS_CAMMGMP_USED                 &
      &               ,wstar=wstar_ysu,delta=delta_ysu                 &
      &               ,sf_urban_physics=CONFIG_FLAGS%SF_URBAN_PHYSICS)
+write(0,*)'after PBL_DRIVER ',qs
 !
 !***  NOTE THAT THE EXCHANGE COEFFICIENTS FOR HEAT EXCH_H COMING OUT OF
 !***  PBL_DRIVER ARE DEFINED AT THE TOPS OF THE LAYERS KTS TO KTE-1

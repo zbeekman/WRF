@@ -1674,6 +1674,7 @@
             ids,ide,jds,jde,kds,kde, &
             ims,ime,jms,jme,kms,kme, &
             its,ite,jts,jte,kts,kte)
+write(0,*)'before call to TURBL ',grid%id, grid%qsh
         CALL TURBL(grid%ntsd,GRID%DT,GRID%NPHS,RESTRT                       &
      &            ,N_MOIST,GRID%NUM_SOIL_LAYERS,grid%sldpth,grid%dzsoil          &
      &            ,grid%deta1,grid%deta2,grid%aeta1,grid%aeta2,grid%eta1,grid%eta2,grid%pdtop,grid%pt          &
@@ -1722,6 +1723,7 @@
      &            ,IMS,IME,JMS,JME,KMS,KME                             &
      &            ,IPS,IPE,JPS,JPE,KPS,KPE                             &
      &            ,ITS,ITE,JTS,JTE,KTS,KTE)
+write(0,*)'after call to TURBL ',grid%id, grid%qsh
 !
 !                     ***  NOTE  ***
 ! grid%rlwin/grid%rswin - downward longwave/shortwave at the surface

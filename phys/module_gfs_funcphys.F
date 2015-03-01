@@ -275,6 +275,7 @@ module module_gfs_funcphys
   public gpvsl,fpvsl,fpvslq,fpvslx
   public gpvsi,fpvsi,fpvsiq,fpvsix
   public gpvs,fpvs,fpvsq,fpvsx
+  public fpvs_dbg
   public gtdpl,ftdpl,ftdplq,ftdplx,ftdplxg
   public gtdpi,ftdpi,ftdpiq,ftdpix,ftdpixg
   public gtdp,ftdp,ftdpq,ftdpx,ftdpxg
@@ -747,6 +748,57 @@ contains
     xj=min(max(c1xpvs+c2xpvs*t,1._krealfp),real(nxpvs,krealfp))
     jx=min(xj,nxpvs-1._krealfp)
     fpvs=tbpvs(jx)+(xj-jx)*(tbpvs(jx+1)-tbpvs(jx))
+! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  end function
+  function fpvs_dbg(t)
+!$$$     Subprogram Documentation Block
+!
+! Subprogram: fpvs         Compute saturation vapor pressure
+!   Author: N Phillips            w/NMC2X2   Date: 30 dec 82
+!
+! Abstract: Compute saturation vapor pressure from the temperature.
+!   A linear interpolation is done between values in a lookup table
+!   computed in gpvs. See documentation for fpvsx for details.
+!   Input values outside table range are reset to table extrema.
+!   The interpolation accuracy is almost 6 decimal places.
+!   On the Cray, fpvs is about 4 times faster than exact calculation.
+!   This function should be expanded inline in the calling routine.
+!
+! Program History Log:
+!   91-05-07  Iredell             made into inlinable function
+!   94-12-30  Iredell             expand table
+! 1999-03-01  Iredell             f90 module
+! 2001-02-26  Iredell             ice phase
+!
+! Usage:   pvs=fpvs(t)
+!
+!   Input argument list:
+!     t          Real(krealfp) temperature in Kelvin
+!
+!   Output argument list:
+!     fpvs       Real(krealfp) saturation vapor pressure in Pascals
+!
+! Attributes:
+!   Language: Fortran 90.
+!
+!$$$
+    implicit none
+    real(krealfp) fpvs_dbg
+    real(krealfp),intent(in):: t
+    integer jx
+    real(krealfp) xj
+! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+write(0,*)'c1xpvs ',c1xpvs
+write(0,*)'c2xpvs ',c2xpvs
+write(0,*)'nxpvs ',nxpvs
+write(0,*)'t  ',t 
+    xj=min(max(c1xpvs+c2xpvs*t,1._krealfp),real(nxpvs,krealfp))
+    jx=min(xj,nxpvs-1._krealfp)
+write(0,*)'xj ',xj
+write(0,*)'jx ',jx
+write(0,*)'tbpvs(jx) ',tbpvs(jx)
+write(0,*)'tbpvs(jx+1) ',tbpvs(jx+1)
+    fpvs_dbg=tbpvs(jx)+(xj-jx)*(tbpvs(jx+1)-tbpvs(jx))
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   end function
 !-------------------------------------------------------------------------------
@@ -2918,6 +2970,7 @@ contains
 !$$$
     implicit none
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+write(0,*)__FILE__,__LINE__,'gfuncphys'
     call gpvsl
     call gpvsi
     call gpvs
