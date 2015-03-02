@@ -22,6 +22,8 @@ SUBROUTINE med_nest_egrid_configure ( parent , nest )
  INTEGER                            :: IMS,IME,JMS,JME,KMS,KME
  INTEGER                            :: ITS,ITE,JTS,JTE,KTS,KTE
  CHARACTER(LEN=255)                 :: message
+ CHARACTER (LEN=256) :: char_junk
+
  INTEGER :: comzilla
 
 
@@ -207,7 +209,14 @@ write(0,*)' nest%wbd0 ',nest%wbd0
 !bao
    CALL nl_set_map_proj(nest%id, nest%map_proj)
    CALL nl_set_iswater(nest%id, nest%iswater)
+
+   CALL nl_get_mminlu ( 1, char_junk )
+   IF ( nest%id .GT. 1 ) THEN
+     CALL nl_set_mminlu ( nest%id, char_junk )
+   ENDIF
+
   ENDIF
+!!!!!!!!!!!!!
 ! handle case where task computes parent or nest but not both (case of both is handled above)
   IF ( parent%active_this_task .OR. nest%active_this_task ) THEN
      IF ( parent%active_this_task ) THEN
@@ -232,6 +241,15 @@ write(0,*)__FILE__,__LINE__,'Natt: mpi_comm_to_mom ',comzilla,nest%id
 #ifdef HWRF 
     endif
 #endif
+
+     IF ( parent%active_this_task ) THEN
+       CALL nl_get_mminlu ( 1, char_junk )
+     ENDIF
+     CALL wrf_dm_bcast_string_comm( char_junk, LEN(char_junk),comzilla) ! nest%mminlu  = trim(parent%mminlu)
+     IF ( nest%active_this_task .AND. nest%id .GT. 1 ) THEN
+       CALL nl_set_mminlu ( nest%id, char_junk )
+     ENDIF
+
 !   numerical set up
 
       CALL BYTE_BCAST( grid%cen_lat, RWORDSIZE, comzilla )  !

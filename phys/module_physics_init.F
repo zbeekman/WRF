@@ -974,6 +974,7 @@ write(0,*)'phy_init: kte ',kte
     endif
 
    CALL wrf_debug ( 200 , 'module_start: phy_init: Before call to landuse_init' )
+write(0,*)'mminlu_loc ',mminlu_loc 
 
    IF(mminlu_loc .ne. '    ')THEN
 !-- initialize surface properties
@@ -1544,6 +1545,7 @@ write(0,*)'after wrf_dm_bcast_bytes scfx ',local_communicator
       ENDIF
     ENDIF  ! allowed_to_read
 
+write(0,*)'FOUND_LU ',id,FOUND_LU
     IF(FOUND_LU)THEN
 ! Set arrays according to lu_index
       itf = min0(ite, ide-1)
@@ -1603,6 +1605,7 @@ write(0,*)'after wrf_dm_bcast_bytes scfx ',local_communicator
             ZNT(I,J)=Z0(I,J)
             MAVAIL(I,J)=SLMO(ISICE,ISN)
           ENDIF
+write(0,*)'ZNT ',id,i,j,ZNT(i,j)
         ENDDO
       ENDDO
     ENDIF
