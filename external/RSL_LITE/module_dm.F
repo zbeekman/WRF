@@ -5965,7 +5965,7 @@ integer myproc
 
       ips_save = ngrid%i_parent_start   ! used in feedback_domain_em_part2 below
       jps_save = ngrid%j_parent_start
-      ipe_save = ngrid%i_parent_start + (xide-xids+1) / ngrid%parent_grid_ratio - 1
+      ipe_save = ngrid%i_parent_start + (xide-xids+1) / ngrid%parent_grid_ratio - 2
       jpe_save = ngrid%j_parent_start + (xjde-xjds+1) / ngrid%parent_grid_ratio - 1
 
       nide = nide - 1   !dusan
