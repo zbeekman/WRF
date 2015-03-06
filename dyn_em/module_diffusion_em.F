@@ -6030,6 +6030,7 @@ END SUBROUTINE phy_bc
     END SUBROUTINE compute_diff_metrics
 
     SUBROUTINE cal_helicity ( config_flags, u, v, w, uh, up_heli_max,&
+                                   up_heli_min,                      &
                                    ph, phb,                          &
                                    msfux, msfuy,                     &
                                    msfvx, msfvy,                     &
@@ -6076,7 +6077,7 @@ END SUBROUTINE phy_bc
     ::  u, v, w, ph, phb, zx, zy, rdz, rdzw
 
     REAL, DIMENSION( ims:ime, jms:jme ), INTENT( INOUT )  &
-    :: uh, up_heli_max
+    :: uh, up_heli_max, up_heli_min
 
 ! Local variables.
 
@@ -6423,6 +6424,8 @@ END SUBROUTINE phy_bc
       IF ( use_column(i,j) ) THEN
         IF ( uh_smth .GT. up_heli_max(i,j) ) THEN
            up_heli_max(i,j) = uh_smth
+        ELSE IF ( uh_smth .LT. up_heli_min(i,j) ) THEN
+           up_heli_min(i,j) = uh_smth
         ENDIF
       ENDIF
 

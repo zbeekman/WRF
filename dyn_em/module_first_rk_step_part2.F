@@ -473,6 +473,7 @@ BENCH_START(helicity_tim)
           CALL cal_helicity ( config_flags,grid%u_2,grid%v_2,grid%w_2,  &
                               grid%uh,                             &
                               grid%up_heli_max,                    &
+                              grid%up_heli_min,                    &
                               grid%ph_2,grid%phb,                  &
                               grid%msfux,grid%msfuy,               &
                               grid%msfvx,grid%msfvy,               &
