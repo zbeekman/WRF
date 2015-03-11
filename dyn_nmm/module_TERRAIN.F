@@ -195,11 +195,9 @@ write(0,*)__FILE__,level,minlevel,maxlevel
 #endif
 
           write(message,'("domain nx=",I0," ny=",I0)') domain_end(1),domain_end(2)
-write(0,'("domain nx=",I0," ny=",I0)') domain_end(1),domain_end(2)
           tr%nx = domain_end(1)
           tr%ny = domain_end(2)
           write(message,'("nx=",I0," ny=",I0)') tr%nx,tr%ny
-write(0,'("nx=",I0," ny=",I0)') tr%nx,tr%ny
           if (cname(1:10) == "XLAT_M    ") then
              call wrf_debug(10,'tr%lah...')
              ALLOCATE (tr%lah(tr%nx,tr%ny))

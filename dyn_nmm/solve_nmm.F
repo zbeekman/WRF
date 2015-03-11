@@ -801,7 +801,7 @@
 !
 #  else
       write(message,*)' WARNING No Ocean Coupling Run'
-      call wrf_message(trim(message))
+      call wrf_debug(2,trim(message))
 #  endif
 #endif
 #endif
@@ -1649,7 +1649,7 @@
 !<-:Coupling insertion
 #  else
       write(message,*)' WARNING No Ocean Coupling Run'
-      call wrf_message(trim(message))
+      call wrf_debug(2, trim(message))
 #  endif
 #endif
 #endif
@@ -1674,7 +1674,6 @@
             ids,ide,jds,jde,kds,kde, &
             ims,ime,jms,jme,kms,kme, &
             its,ite,jts,jte,kts,kte)
-write(0,*)'before call to TURBL ',grid%id, grid%qsh
         CALL TURBL(grid%ntsd,GRID%DT,GRID%NPHS,RESTRT                       &
      &            ,N_MOIST,GRID%NUM_SOIL_LAYERS,grid%sldpth,grid%dzsoil          &
      &            ,grid%deta1,grid%deta2,grid%aeta1,grid%aeta2,grid%eta1,grid%eta2,grid%pdtop,grid%pt          &
@@ -1723,7 +1722,6 @@ write(0,*)'before call to TURBL ',grid%id, grid%qsh
      &            ,IMS,IME,JMS,JME,KMS,KME                             &
      &            ,IPS,IPE,JPS,JPE,KPS,KPE                             &
      &            ,ITS,ITE,JTS,JTE,KTS,KTE)
-write(0,*)'after call to TURBL ',grid%id, grid%qsh
 !
 !                     ***  NOTE  ***
 ! grid%rlwin/grid%rswin - downward longwave/shortwave at the surface
@@ -1770,7 +1768,7 @@ write(0,*)'after call to TURBL ',grid%id, grid%qsh
       ENDIF
 #  else
       write(message,*)' WARNING No Ocean Coupling Run'
-      call wrf_message(trim(message))
+      call wrf_debug(2,trim(message))
 #  endif
 
 #endif
@@ -1914,8 +1912,6 @@ write(0,*)'after call to TURBL ',grid%id, grid%qsh
        ENDIF
 !
 !----------------------------------------------------------------------
-       call wrf_message('call cucnvc')
-       call start_timing
         call check_grid(grid,config_flags,'before CUCNVC', &
             ids,ide,jds,jde,kds,kde, &
             ims,ime,jms,jme,kms,kme, &
@@ -1953,7 +1949,6 @@ write(0,*)'after call to TURBL ',grid%id, grid%qsh
             ids,ide,jds,jde,kds,kde, &
             ims,ime,jms,jme,kms,kme, &
             its,ite,jts,jte,kts,kte)
-        call end_timing('cucnvc')
 !----------------------------------------------------------------------
 !
         cucnvc_tim=cucnvc_tim+now_time()-btimx
@@ -2584,7 +2579,7 @@ write(0,*)'after call to TURBL ',grid%id, grid%qsh
 #ifdef MOVE_NESTS
    IF ( grid%num_moves.EQ.-99 ) THEN
      btimx=now_time()
-      call start_timing()
+!      call start_timing()
       call stats_for_move(grid,config_flags &
                          ,IDS,IDE,JDS,JDE,KDS,KDE &
                          ,IMS,IME,JMS,JME,KMS,KME &
@@ -2592,7 +2587,7 @@ write(0,*)'after call to TURBL ',grid%id, grid%qsh
                          ,ITS,ITE,JTS,JTE,KTS,KTE)
 3303  format('stats_for_move on domain ',I0)
       write(message,3303) grid%id
-      call end_timing(message)
+!      call end_timing(message)
    CALL wrf_debug ( 100 , 'nmm stats_for_move: after advection' )
      diag_tim=diag_tim+now_time()-btimx
    ENDIF
@@ -2644,7 +2639,7 @@ write(0,*)'after call to TURBL ',grid%id, grid%qsh
 !
 #  else
       write(message,*)' WARNING No Ocean Coupling Run'
-      call wrf_message(trim(message))
+      call wrf_debug(2,trim(message))
 #  endif
 #endif
 #endif
@@ -2658,9 +2653,7 @@ write(0,*)'after call to TURBL ',grid%id, grid%qsh
 !
      IF(mod(grid%NTSD,grid%ntornado)==0) then
         btimx=now_time()
-write(0,*)__FILE__,' grid ',grid%id,' calling calc_tornado_genesis'
         CALL CALC_TORNADO_GENESIS(GRID,CONFIG_FLAGS)
-write(0,*)__FILE__,' grid ',grid%id,' back from calc_tornado_genesis'
         tornado_tim=tornado_tim+now_time()-btimx
      ENDIF
 

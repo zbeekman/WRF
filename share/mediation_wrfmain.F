@@ -121,7 +121,6 @@ use module_io
 #if (EM_CORE == 1)
      grid%press_adj = .FALSE.
 #endif
-write(0,*)__FILE__,__LINE__,'calling start_domain for ',grid%id
      CALL start_domain ( grid , .TRUE. )
    ELSE
 

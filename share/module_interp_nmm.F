@@ -675,7 +675,6 @@ contains
        iloop: do i=istart,iend
           ni = (i-ipos)*nri + 2 - a
           cfield(i,j)=NGRAB2D(nfield,ni,nj)
-write(0,'("cfield ",2i5," nfield ",2i5," fld ",f)')i,j,ni,nj,cfield(i,j)
        enddo iloop
     enddo bigj 
  end subroutine n2c_copy2d_dbg
@@ -763,7 +762,6 @@ write(0,'("cfield ",2i5," nfield ",2i5," fld ",f)')i,j,ni,nj,cfield(i,j)
        nj = (j-jpos)*nrj + 1
        iloop: do i=istart,iend
           ni = (i-ipos)*nri + 2 - a
-write(0,'("cfield(",2i4,")=max(",8f,")")')i,j,cfield(i,j),nfield(ni,nj+2),nfield(ni-1,nj  ),nfield(ni,nj  ),nfield(ni+1,nj  ),nfield(ni-a  ,nj-1),nfield(ni+1-a,nj-1),nfield(ni,nj-2)
           cfield(i,j)=max(cfield(i,j), max(nfield(ni,nj+2), max(nfield(ni-1,nj  ),max(nfield(ni,nj  ),  max(nfield(ni+1,nj  ),     max(nfield(ni-a  ,nj-1),max(nfield(ni+1-a,nj-1),     nfield(ni,nj-2) )))))))
        enddo iloop
     enddo bigj
@@ -2594,7 +2592,6 @@ write(0,'("cfield(",2i4,")=max(",8f,")")')i,j,cfield(i,j),nfield(ni,nj+2),nfield
              RTOPP    = TRG*tA(iz,ix)*(1.0+qA(iz,ix)*P608)/APELP
              DZ       = RTOPP*(DETA1(iz)*PDTOP+DETA2(iz)*pdA(ix))
              znext=z+dz
-write(0,'(2i5," z ",f," dz ",f," znext ",f," deta1 ",f," deta2 ",f," pintA(iz+1) ",f," pintA(iz) ",f)')ix,iz,z,dz,znext,DETA1(iz),DETA2(iz),pintA(iz+1,ix),pintA(iz,ix)
 
              if(znext>zB) then
                 ! Interpolate between these two levels

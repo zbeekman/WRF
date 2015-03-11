@@ -22,22 +22,17 @@ PROGRAM wrf
 #endif
 
   ! Set up WRF model.  
-write(0,*)__FILE__,__LINE__
   CALL wrf_init
 
   ! Run digital filter initialization if requested.
-write(0,*)__FILE__,__LINE__
   CALL wrf_dfi
 
   ! WRF model time-stepping.  Calls integrate().  
-write(0,*)__FILE__,__LINE__
   CALL wrf_run
 
   ! WRF model clean-up.  This calls MPI_FINALIZE() for DM parallel runs.  
-write(0,*)__FILE__,__LINE__
   CALL wrf_finalize
 
-write(0,*)__FILE__,__LINE__
 END PROGRAM wrf
 
 

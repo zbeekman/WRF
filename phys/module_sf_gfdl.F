@@ -263,9 +263,7 @@ CONTAINS
    WRITE(message,*)'WITHIN THE GFDL SCHEME, NTSFLG=1 FOR GFDL SLAB  2010 UPGRADS',NTSFLG
    call wrf_debug(1,message)
    if(itimestep.eq.0) then
-write(0,*)'calling GFUNCPHYS from sf_gfdl'
      CALL GFUNCPHYS
-write(0,*)'back from GFUNCPHYS from sf_gfdl'
    endif
 
 

@@ -298,7 +298,6 @@ integer myproc,i,j
                ! to be opened; kid is index into an open slot in grid's list of children
                a_nest_was_opened = .true.
                CALL med_pre_nest_initial ( grid , nestid , config_flags )
-write(0,*)__FILE__,__LINE__
                CALL alloc_and_configure_domain ( domain_id  = nestid ,   &
 ! better if this were not ifdef'd here, try moving into module_dm? see comment above. jm 20140828
 #ifdef DM_PARALLEL
@@ -307,30 +306,15 @@ write(0,*)__FILE__,__LINE__
                                                  grid       = new_nest , &
                                                  parent     = grid ,     &
                                                  kid        = kid        )
-write(0,*)__FILE__,__LINE__
                CALL Setup_Timekeeping (new_nest)
-write(0,*)__FILE__,__LINE__,"ZAP calling med_nest_initial ",grid%id, new_nest%id 
-write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
-write(0,*)__FILE__,__LINE__,' new_nest%MVNEST ',new_nest%MVNEST
                CALL med_nest_initial ( grid , new_nest , config_flags )
-write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
-write(0,*)__FILE__,__LINE__,' new_nest%MVNEST ',new_nest%MVNEST
-write(0,*)__FILE__,__LINE__,"ZAP back from med_nest_initial ",grid%id, new_nest%id 
-
 IF ( grid%active_this_task ) THEN
-write(0,*)__FILE__,__LINE__
-write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
-write(0,*)__FILE__,__LINE__,' new_nest%MVNEST ',new_nest%MVNEST
                IF ( grid%dfi_stage == DFI_STARTFWD ) THEN
                   CALL wrf_dfi_startfwd_init(new_nest)
                ENDIF
-write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
-write(0,*)__FILE__,__LINE__,' new_nest%MVNEST ',new_nest%MVNEST
-write(0,*)__FILE__,__LINE__
                IF (coupler_on) CALL cpl_defdomain( new_nest ) 
 ENDIF ! active_this_task
             END DO
-write(0,*)__FILE__,__LINE__
             IF ( a_nest_was_opened ) THEN
                CALL set_overlaps ( grid )   ! find overlapping and set pointers
             END IF
@@ -346,9 +330,7 @@ ENDIF ! active_this_task
 IF ( grid_ptr%active_this_task ) THEN
                   CALL set_current_grid_ptr( grid_ptr )
                   CALL wrf_debug( 100 , 'module_integrate: calling solve interface ' )
-write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
                   CALL solve_interface ( grid_ptr ) 
-write(0,*)__FILE__,__LINE__,' grid%MVNEST ',grid%MVNEST
 ENDIF
                CALL domain_clockadvance ( grid_ptr )
                CALL wrf_debug( 100 , 'module_integrate: back from solve interface ' )
@@ -382,9 +364,7 @@ ENDIF
                    CALL set_current_grid_ptr( grid_ptr%nests(kid)%ptr )
                    WRITE(message,*)grid%id,' module_integrate: recursive call to integrate '
                    CALL wrf_debug( 100 , message )
-write(0,*)__FILE__,__LINE__
                       CALL integrate ( grid_ptr%nests(kid)%ptr ) 
-write(0,*)__FILE__,__LINE__,'RECURSING TO NEST',grid_ptr%nests(kid)%ptr%id
                    WRITE(message,*)grid%id,' module_integrate: back from recursive call to integrate '
                    CALL wrf_debug( 100 , message )
                  ENDIF
@@ -396,18 +376,12 @@ write(0,*)__FILE__,__LINE__,'RECURSING TO NEST',grid_ptr%nests(kid)%ptr%id
                                 domain_clockisstoptime(grid                   ) .OR. &
                                 domain_clockisstoptime(grid_ptr%nests(kid)%ptr) ) )  THEN
                      CALL wrf_debug( 100 , 'module_integrate: calling med_nest_feedback ' )
-write(0,'("med_nest_feedback call kid,grid_ptr%id,grid_ptr%nests(kid)%ptr%id ",3i9)')kid,grid_ptr%id, grid_ptr%nests(kid)%ptr%id
                      CALL med_nest_feedback ( grid_ptr , grid_ptr%nests(kid)%ptr , config_flags )
-write(0,'("med_nest_feedback back kid,grid_ptr%id,grid_ptr%nests(kid)%ptr%id ",3i9)')kid,grid_ptr%id, grid_ptr%nests(kid)%ptr%id
                      CALL wrf_debug( 100 , 'module_integrate: back from med_nest_feedback ' )
                    END IF
 #ifdef MOVE_NESTS
-write(0,*)'domain_clockisstoptime( head_grid ) ',domain_clockisstoptime( head_grid )
                    IF ( .NOT. domain_clockisstoptime( head_grid ) ) THEN
-write(0,*)'calling med_nest_move grid_ptr%id ',grid_ptr%id
-write(0,*)'calling med_nest_move grid_ptr%nests(kid)%ptr%id ',grid_ptr%nests(kid)%ptr%id
                      CALL med_nest_move ( grid_ptr , grid_ptr%nests(kid)%ptr )
-write(0,*)'back from med_nest_move grid_ptr%id ',grid_ptr%id
                    ENDIF
 #endif
                  END IF
@@ -453,12 +427,9 @@ ENDIF ! active_this_task
                END IF
                grid_ptr => grid_ptr%parents(1)%ptr
             ENDDO
-write(0,*)"should_do_last_io ",should_do_last_io
             IF ( should_do_last_io ) THEN 
                grid_ptr => grid 
-write(0,'("med_nest_feedback last call grid_ptr%id,grid_ptr%parents(1)%ptr%id ",2i9)')grid%id, grid_ptr%parents(1)%ptr%id
                CALL med_nest_feedback ( grid_ptr%parents(1)%ptr, grid , config_flags )
-write(0,'("med_nest_feedback last back grid_ptr%id,grid_ptr%parents(1)%ptr%id ",2i9)')grid%id, grid_ptr%parents(1)%ptr%id
                IF ( grid%active_this_task ) CALL med_last_solve_io ( grid , config_flags )
             ENDIF
          ENDIF

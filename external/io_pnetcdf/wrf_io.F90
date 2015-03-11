@@ -38,7 +38,7 @@
 module wrf_data_pnc
 
   integer                , parameter      :: FATAL            = 0
-  integer                , parameter      :: WARN             = 0
+  integer                , parameter      :: WARN             = 1
   integer                , parameter      :: WrfDataHandleMax = 99
   integer                , parameter      :: MaxDims          = 2000 ! = NF_MAX_VARS
   integer                , parameter      :: MaxVars          = 3000

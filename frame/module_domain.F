@@ -768,9 +768,9 @@ CONTAINS
 !      IF (active) THEN
         ! only allocate state if this set of tasks actually computes that domain, jm 20140822
       new_grid%active_this_task = active
-write(0,*)__FILE__,__LINE__,'new_grid%id ',new_grid%id
-write(0,*)__FILE__,__LINE__,'new_grid%active_this_task ',new_grid%active_this_task
-write(0,*)__FILE__,__LINE__,'new_grid%is_intermediate ',new_grid%is_intermediate
+!debug write(0,*)__FILE__,__LINE__,'new_grid%id ',new_grid%id
+!debug write(0,*)__FILE__,__LINE__,'new_grid%active_this_task ',new_grid%active_this_task
+!debug write(0,*)__FILE__,__LINE__,'new_grid%is_intermediate ',new_grid%is_intermediate
       CALL alloc_space_field ( new_grid, domain_id , 3 , 3 , .FALSE. , active,     &
                                sd1, ed1, sd2, ed2, sd3, ed3,       &
                                sm1,  em1,  sm2,  em2,  sm3,  em3,  &
@@ -930,9 +930,9 @@ write(0,*)__FILE__,__LINE__,'new_grid%is_intermediate ',new_grid%is_intermediate
 ! properly assigned to the new_grid record
 
       grid => new_grid
-write(0,*)__FILE__,__LINE__,'grid%mvnest ',grid%mvnest
+!debug write(0,*)__FILE__,__LINE__,'grid%mvnest ',grid%mvnest
  
-write(0,*)__FILE__,__LINE__,'grid%mvnest ',grid%mvnest
+!debug write(0,*)__FILE__,__LINE__,'grid%mvnest ',grid%mvnest
       IF ( grid%active_this_task ) THEN
 ! Allocate storage for time series metadata
         ALLOCATE( grid%lattsloc( grid%max_ts_locs ) )
@@ -966,7 +966,7 @@ write(0,*)__FILE__,__LINE__,'grid%mvnest ',grid%mvnest
         WRITE (wrf_err_message,*)"Not allocating time series storage for domain ",domain_id," on this set of tasks"
         CALL wrf_message(TRIM(wrf_err_message))
       ENDIF
-write(0,*)__FILE__,__LINE__,'grid%mvnest ',grid%mvnest
+!debug write(0,*)__FILE__,__LINE__,'grid%mvnest ',grid%mvnest
 #ifdef DM_PARALLEL
       CALL wrf_get_dm_communicator_for_id( grid%id, grid%communicator )
       CALL wrf_dm_define_comms( grid )
@@ -978,7 +978,7 @@ write(0,*)__FILE__,__LINE__,'grid%mvnest ',grid%mvnest
       grid%interp_mp = .true.
 #endif
 
-write(0,*)__FILE__,__LINE__,'grid%mvnest ',grid%mvnest
+!debug write(0,*)__FILE__,__LINE__,'grid%mvnest ',grid%mvnest
    END SUBROUTINE alloc_and_configure_domain
 
    SUBROUTINE get_fieldstr(ix,c,instr,outstr,noutstr,noerr)

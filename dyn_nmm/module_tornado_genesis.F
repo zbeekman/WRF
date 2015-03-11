@@ -369,7 +369,6 @@ contains
           enddo
           grid%tg_updhel25(i,j)=updhel25
           grid%tg_updhel03(i,j)=updhel03
-write(0,'("updhel25 ",3i5,f)')grid%id,i,j,updhel25
           if(updhel25>grid%tg_max_updhel25(i,j)) &
                grid%tg_max_updhel25(i,j)=updhel25
           if(updhel03>grid%tg_max_updhel03(i,j)) &

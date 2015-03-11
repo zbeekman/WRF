@@ -815,10 +815,10 @@ CONTAINS
    REAL,    OPTIONAL, DIMENSION(ims:ime , jms:jme),                    INTENT(INOUT) ::                    &
            TVXY,    TGXY,CANICEXY,CANLIQXY,   EAHXY,   TAHXY,    CMXY,    CHXY,  FWETXY,SNEQVOXY,ALBOLDXY, &
         QSNOWXY,WSLAKEXY,   ZWTXY,    WAXY,    WTXY,LFMASSXY,RTMASSXY,STMASSXY,  WOODXY,STBLCPXY,FASTCPXY, &
-	 XSAIXY, TAUSSXY,  T2MVXY,  T2MBXY,  Q2MVXY,  Q2MBXY,  TRADXY,   NEEXY,   GPPXY,                   &
+         XSAIXY, TAUSSXY,  T2MVXY,  T2MBXY,  Q2MVXY,  Q2MBXY,  TRADXY,   NEEXY,   GPPXY,                   &
           NPPXY,  FVEGXY, RUNSFXY, RUNSBXY,  ECANXY,  EDIRXY, ETRANXY,   FSAXY,  FIRAXY,  APARXY,   PSNXY, &
-	  SAVXY,   SAGXY, RSSUNXY, RSSHAXY,  BGAPXY,  WGAPXY,   TGVXY,   TGBXY,   CHVXY,   CHBXY,   SHGXY, &
-	  SHCXY,   SHBXY,   EVGXY,   EVBXY,   GHVXY,   GHBXY,   IRGXY,   IRCXY,   IRBXY,    TRXY,   EVCXY, &
+          SAVXY,   SAGXY, RSSUNXY, RSSHAXY,  BGAPXY,  WGAPXY,   TGVXY,   TGBXY,   CHVXY,   CHBXY,   SHGXY, &
+          SHCXY,   SHBXY,   EVGXY,   EVBXY,   GHVXY,   GHBXY,   IRGXY,   IRCXY,   IRBXY,    TRXY,   EVCXY, &
        CHLEAFXY,  CHUCXY,  CHV2XY,  CHB2XY,CHSTARXY                         
 
 !  NoahMP specific fields - runoff option 5
@@ -1754,7 +1754,6 @@ CONTAINS
      ENDDO
      !$OMP END PARALLEL DO
 
-write(0,*)__LINE__,qsfc
      !$OMP PARALLEL DO   &
      !$OMP PRIVATE ( ij, i, j, k )
      DO ij = 1 , num_tiles
@@ -1799,7 +1798,6 @@ write(0,*)__LINE__,qsfc
                                                       .TRUE. ) THEN
          CALL wrf_debug( 100, 'in SFCLAY' )
          IF ( FRACTIONAL_SEAICE == 1 ) THEN
-write(0,*)__LINE__,qsfc
             CALL SFCLAY_SEAICE_WRAPPER(u_phytmp,v_phytmp,t_phy,qv_curr,&
                  p_phy,dz8w,cp,g,rcp,r_d,xlv,psfc,chs,chs2,cqs2,cpm, &
                  znt,ust,pblh,mavail,zol,mol,regime,psim,psih,fm,fhh, &
@@ -1817,9 +1815,7 @@ write(0,*)__LINE__,qsfc
                  i_start(ij),i_end(ij), j_start(ij),j_end(ij), kts,kte,    &
                  ustm,ck,cka,cd,cda,isftcflx,iz0tlnd,                &
                  sf_surface_physics  )
-write(0,*)__LINE__,qsfc
          ELSE
-write(0,*)__LINE__,qsfc
          CALL SFCLAY(u_phytmp,v_phytmp,t_phy,qv_curr,              &
                p_phy,dz8w,cp,g,rcp,r_d,xlv,psfc,chs,chs2,cqs2,cpm, &
                znt,ust,pblh,mavail,zol,mol,regime,psim,psih,fm,fhh, &
@@ -1832,7 +1828,6 @@ write(0,*)__LINE__,qsfc
                ims,ime, jms,jme, kms,kme,                          &
                i_start(ij),i_end(ij), j_start(ij),j_end(ij), kts,kte,    &
                ustm,ck,cka,cd,cda,isftcflx,iz0tlnd,scm_force_flux  )
-write(0,*)__LINE__,qsfc
 #if ( EM_CORE==1)
            DO j = j_start(ij),j_end(ij)
            DO i = i_start(ij),i_end(ij)
@@ -1855,7 +1850,6 @@ write(0,*)__LINE__,qsfc
                                                       .TRUE. ) THEN
          CALL wrf_debug( 100, 'in SFCLAY' )
          IF ( FRACTIONAL_SEAICE == 1 ) THEN
-write(0,*)__LINE__,qsfc
             CALL SFCLAYREV_SEAICE_WRAPPER(u_phytmp,v_phytmp,t_phy,qv_curr,&
                  p_phy,dz8w,cp,g,rcp,r_d,xlv,psfc,chs,chs2,cqs2,cpm, &
                  znt,ust,pblh,mavail,zol,mol,regime,psim,psih,fm,fhh, &
@@ -1873,9 +1867,7 @@ write(0,*)__LINE__,qsfc
                  i_start(ij),i_end(ij), j_start(ij),j_end(ij), kts,kte,    &
                  ustm,ck,cka,cd,cda,isftcflx,iz0tlnd,                &
                  sf_surface_physics  )
-write(0,*)__LINE__,qsfc
          ELSE
-write(0,*)__LINE__,qsfc
          CALL SFCLAYREV(u_phytmp,v_phytmp,t_phy,qv_curr,&
                p_phy,dz8w,cp,g,rcp,r_d,xlv,psfc,chs,chs2,cqs2,cpm, &
                znt,ust,pblh,mavail,zol,mol,regime,psim,psih,fm,fhh, &
@@ -1888,7 +1880,6 @@ write(0,*)__LINE__,qsfc
                ims,ime, jms,jme, kms,kme,                          &
                i_start(ij),i_end(ij), j_start(ij),j_end(ij), kts,kte,    &
                ustm,ck,cka,cd,cda,isftcflx,iz0tlnd, scm_force_flux    )
-write(0,*)__LINE__,qsfc
 #if ( EM_CORE==1)
            DO j = j_start(ij),j_end(ij)
            DO i = i_start(ij),i_end(ij)
@@ -1909,7 +1900,6 @@ write(0,*)__LINE__,qsfc
                                                       .TRUE. ) THEN
          CALL wrf_debug( 100, 'in PX Surface Layer scheme' )
          IF ( FRACTIONAL_SEAICE == 1 ) THEN
-write(0,*)__LINE__,qsfc
             CALL PXSFCLAY_SEAICE_WRAPPER(u_phytmp,v_phytmp,t_phy,th_phy,qv_curr,&
                  p_phy,dz8w,cp,g,rcp,r_d,xlv,psfc,chs,chs2,cqs2,cpm, &
                  znt,ust,pblh,mavail,zol,mol,regime,psim,psih,       &
@@ -1923,9 +1913,7 @@ write(0,*)__LINE__,qsfc
                  ids,ide, jds,jde, kds,kde,                          &
                  ims,ime, jms,jme, kms,kme,                          &
                  i_start(ij),i_end(ij), j_start(ij),j_end(ij), kts,kte    )
-write(0,*)__LINE__,qsfc
          ELSE
-write(0,*)__LINE__,qsfc
          CALL PXSFCLAY(u_phytmp,v_phytmp,t_phy,th_phy,qv_curr,&
                p_phy,dz8w,cp,g,rcp,r_d,xlv,psfc,chs,chs2,cqs2,cpm, &
                znt,ust,pblh,mavail,zol,mol,regime,psim,psih,       &
@@ -1936,7 +1924,6 @@ write(0,*)__LINE__,qsfc
                ids,ide, jds,jde, kds,kde,                          &
                ims,ime, jms,jme, kms,kme,                          &
                i_start(ij),i_end(ij), j_start(ij),j_end(ij), kts,kte    )
-write(0,*)__LINE__,qsfc
          ENDIF
        ELSE
          CALL wrf_error_fatal('Lacking arguments for PX Surface Layer in surface driver')
@@ -1951,7 +1938,6 @@ write(0,*)__LINE__,qsfc
 
         CALL wrf_debug(100,'in MYJSFC')
         IF ( FRACTIONAL_SEAICE == 1 ) THEN
-write(0,*)__LINE__,qsfc
            CALL MYJSFC_SEAICE_WRAPPER(itimestep,ht,dz8w,             &
                 p_phy,p8w,th_phy,t_phy,                              &
                 qv_curr,qc_curr,                                     &
@@ -1975,9 +1961,7 @@ write(0,*)__LINE__,qsfc
                 ids,ide, jds,jde, kds,kde,                           &
                 ims,ime, jms,jme, kms,kme,                           &
                 i_start(ij),i_end(ij), j_start(ij),j_end(ij), kts,kte    )
-write(0,*)__LINE__,qsfc
         ELSE
-write(0,*)__LINE__,qsfc
             CALL MYJSFC(itimestep,ht,dz8w,                         &
               p_phy,p8w,th_phy,t_phy,                              &
               qv_curr,qc_curr,                                      &
@@ -1994,7 +1978,6 @@ write(0,*)__LINE__,qsfc
               ids,ide, jds,jde, kds,kde,                           &
               ims,ime, jms,jme, kms,kme,                           &
               i_start(ij),i_end(ij), j_start(ij),j_end(ij), kts,kte    )
-write(0,*)__LINE__,qsfc
 #if ( EM_CORE==1)
          DO j = j_start(ij),j_end(ij)
             DO i = i_start(ij),i_end(ij)
@@ -2039,7 +2022,6 @@ write(0,*)__LINE__,qsfc
                                                       .TRUE. ) THEN
             CALL wrf_debug(100,'in QNSESFC')
              IF ( FRACTIONAL_SEAICE == 1 ) THEN
-write(0,*)__LINE__,qsfc
            CALL QNSESFC_SEAICE_WRAPPER(itimestep,ht,dz8w,             &
                 p_phy,p8w,th_phy,t_phy,                              &
                 qv_curr,qc_curr,                                     &
@@ -2062,9 +2044,7 @@ write(0,*)__LINE__,qsfc
                 ids,ide, jds,jde, kds,kde,                           &
                 ims,ime, jms,jme, kms,kme,                           &
                 i_start(ij),i_end(ij), j_start(ij),j_end(ij), kts,kte,SCM_FORCE_FLUX    )
-write(0,*)__LINE__,qsfc
            ELSE
-write(0,*)__LINE__,qsfc
             CALL QNSESFC(itimestep,ht,dz8w,                         &
               p_phy,p8w,th_phy,t_phy,                              &
               qv_curr,qc_curr,                                     &
@@ -2081,7 +2061,6 @@ write(0,*)__LINE__,qsfc
               ims,ime, jms,jme, kms,kme,                           &
               i_start(ij),i_end(ij), j_start(ij),j_end(ij),     &
               kts,kte,scm_force_flux    )
-write(0,*)__LINE__,qsfc
 #if ( EM_CORE==1)
          DO j = j_start(ij),j_end(ij)
             DO i = i_start(ij),i_end(ij)
@@ -2143,7 +2122,6 @@ write(0,*)__LINE__,qsfc
           CALL wrf_debug(100,'in MYNNSFC')          
 
          IF (FRACTIONAL_SEAICE == 1) THEN
-write(0,*)__LINE__,qsfc
           CALL MYNN_SEAICE_WRAPPER(u_phytmp,v_phytmp,t_phy,qv_curr,&
                p_phy,dz8w,cp,g,rcp,r_d,xlv,psfc,chs,chs2,cqs2,cpm, &
                znt,ust,pblh,mavail,zol,mol,regime,psim,psih,       &
@@ -2161,9 +2139,7 @@ write(0,*)__LINE__,qsfc
                ims,ime, jms,jme, kms,kme,                          &
                i_start(ij),i_end(ij), j_start(ij),j_end(ij), kts,kte, &   
                ustm,ck,cka,cd,cda,isftcflx,iz0tlnd,bl_mynn_cloudpdf)
-write(0,*)__LINE__,qsfc
          ELSE
-write(0,*)__LINE__,qsfc
           CALL SFCLAY_mynn(u_phytmp,v_phytmp,t_phy,qv_curr,        &
                p_phy,dz8w,cp,g,rcp,r_d,xlv,psfc,chs,chs2,cqs2,cpm, &
                znt,ust,pblh,mavail,zol,mol,regime,psim,psih,       &
@@ -2177,7 +2153,6 @@ write(0,*)__LINE__,qsfc
                ims,ime, jms,jme, kms,kme,                          &
                i_start(ij),i_end(ij),j_start(ij),j_end(ij),kts,kte,&
                ustm,ck,cka,cd,cda,isftcflx,iz0tlnd,bl_mynn_cloudpdf)
-write(0,*)__LINE__,qsfc
          ENDIF
        ELSE
           CALL wrf_error_fatal('Lacking arguments for SFCLAY_mynn in surface driver')
@@ -2197,7 +2172,6 @@ write(0,*)__LINE__,qsfc
        !    ZNT(i,j) = 0.03     ! For GABLS2
        ! ENDDO
        ! ENDDO
-write(0,*)__LINE__,qsfc
          CALL TEMFSFCLAY(u3d=u_phytmp,v3d=v_phytmp,th3d=th_phy,    &
                qv3d=qv_curr,p3d=p_phy,pi3d=pi_phy,rho=rho,z=z,ht=ht, &
                CP=cp,G=g,ROVCP=rovcp,R=r_d,XLV=xlv,psfc=psfc,chs=chs,&
@@ -2212,7 +2186,6 @@ write(0,*)__LINE__,qsfc
                ims=ims,ime=ime, jms=jms,jme=jme, kms=kms,kme=kme,  &
                its=i_start(ij),ite=i_end(ij),                      &
                jts=j_start(ij),jte=j_end(ij), kts=kts,kte=kte )
-write(0,*)__LINE__,qsfc
        ELSE
          CALL wrf_error_fatal('Lacking arguments for TEMFSFCLAY in surface driver')
        ENDIF
@@ -2220,7 +2193,6 @@ write(0,*)__LINE__,qsfc
      CASE (IDEALSCMSFCSCHEME)
        IF (PRESENT(qv_curr)) THEN
          CALL wrf_debug( 100, 'in IDEALSCMSFCLAY' )
-write(0,*)__LINE__,qsfc
          CALL IDEALSCMSFCLAY(u3d=u_phytmp,v3d=v_phytmp,th3d=th_phy,    &
                qv3d=qv_curr,p3d=p_phy,pi3d=pi_phy,rho=rho,z=z,ht=ht, &
                CP=cp,G=g,ROVCP=rovcp,R=r_d,XLV=xlv,psfc=psfc,chs=chs,&
@@ -2240,7 +2212,6 @@ write(0,*)__LINE__,qsfc
                ims=ims,ime=ime, jms=jms,jme=jme, kms=kms,kme=kme,  &
                its=i_start(ij),ite=i_end(ij),                      &
                jts=j_start(ij),jte=j_end(ij), kts=kts,kte=kte )
-write(0,*)__LINE__,qsfc
        ELSE
          CALL wrf_error_fatal('Lacking arguments for IDEALSCMSFCLAY in surface driver')
        ENDIF
@@ -2257,7 +2228,6 @@ write(0,*)__LINE__,qsfc
         GFDL_NTSFLG=0
       ENDIF
 
-write(0,*)__LINE__,qsfc
       CALL SF_GFDL(u_phytmp,v_phytmp,t_phy,qv_curr,p_phy, &
                    CP,RCP,R_d,XLV,PSFC,CHS,CHS2,CQS2,CPM,                 &
                    DTBL, SMOIS,num_soil_layers,ISLTYP,ZNT,                &
@@ -2272,7 +2242,6 @@ write(0,*)__LINE__,qsfc
                    ids,ide, jds,jde, kds,kde,                     &
                    ims,ime, jms,jme, kms,kme,                             &
                    i_start(ij),i_end(ij),j_start(ij),j_end(ij),kts,kte    )
-write(0,*)__LINE__,qsfc
            DO j=j_start(ij),j_end(ij)
            DO i=i_start(ij),i_end(ij)
               CHKLOWQ(I,J)= 1.0
@@ -2287,7 +2256,6 @@ write(0,*)__LINE__,qsfc
        CALL wrf_error_fatal ( message )
 
      END SELECT sfclay_select
-write(0,*)__LINE__,qsfc
 
 !  Compute uratx, vratx, tratx for obs nudging
      IF(PRESENT(uratx) .and. PRESENT(vratx) .and. PRESENT(tratx))THEN
@@ -2354,7 +2322,6 @@ write(0,*)__LINE__,qsfc
      ENDDO
      !$OMP END PARALLEL DO
 
-write(0,*)__LINE__,qsfc
      IF (ISFFLX.EQ.0 ) GOTO 430
      !$OMP PARALLEL DO   &
      !$OMP PRIVATE ( ij, i, j, k ) firstprivate(frpcpn)
@@ -2378,7 +2345,6 @@ write(0,*)__LINE__,qsfc
               CALL wrf_error_fatal('SLAB scheme cannot be used with fractional seaice')
            ENDIF
         CALL wrf_debug(100,'in SLAB')
-write(0,*)__LINE__,qsfc
           CALL SLAB(t_phy,qv_curr,p_phy,flhc,flqc,  &
              psfc,xland,tmn,hfx,qfx,lh,tsk,qsfc,chklowq,          &
              gsw,glw,capg,thc,snowc,emiss,mavail,                 &
@@ -2389,7 +2355,6 @@ write(0,*)__LINE__,qsfc
              ids,ide, jds,jde, kds,kde,                           &
              ims,ime, jms,jme, kms,kme,                           &
              i_start(ij),i_end(ij), j_start(ij),j_end(ij), kts,kte)
-write(0,*)__LINE__,qsfc
 
            DO j=j_start(ij),j_end(ij)
            DO i=i_start(ij),i_end(ij)
@@ -2400,13 +2365,11 @@ write(0,*)__LINE__,qsfc
            ENDDO
 
         CALL wrf_debug(100,'in SFCDIAGS')
-write(0,*)__LINE__,qsfc
           CALL SFCDIAGS(hfx,qfx,tsk,qsfc,chs2,cqs2,t2,th2,q2,      &
                      psfc,cp,r_d,rcp,CHS,t_phy,qv_curr,ua_phys,    &
                      ids,ide, jds,jde, kds,kde,                    &
                      ims,ime, jms,jme, kms,kme,                    &
              i_start(ij),i_end(ij), j_start(ij),j_end(ij), kts,kte    )
-write(0,*)__LINE__,qsfc
 
        ENDIF
 
@@ -2480,7 +2443,6 @@ write(0,*)__LINE__,qsfc
          IF (sf_surface_mosaic == 1) THEN
           
            IF ( PRESENT( TSK_mosaic ) .AND. PRESENT( HFX_mosaic ) ) THEN
-write(0,*)__LINE__,qsfc
              CALL lsm_mosaic(dz8w,qv_curr,p8w,t_phy,tsk,                 &
                 hfx,qfx,lh,grdflx,qgh,gsw,swdown,glw,smstav,smstot,    &
                 sfcrunoff,udrunoff,ivgtyp,isltyp,isurban,isice,vegfra,        &
@@ -2491,7 +2453,7 @@ write(0,*)__LINE__,qsfc
                 smois,tslb,snow,canwat,                         &
                 chs, chs2, cqs2, cpm,rcp,SR,chklowq,lai,qz0,    &
                 myj,frpcpn,                                     &
-		sh2o,snowh,                                     & !h
+                sh2o,snowh,                                     & !h
                 u_phy,v_phy,                                    & !I
                 snoalb,shdmin,shdmax,                           & !i
                 snotime,                                        & !o
@@ -2567,15 +2529,13 @@ write(0,*)__LINE__,qsfc
                 b_t_bep,b_q_bep,b_e_bep,dlg_bep,                & !O multi-layer urban
                 dl_u_bep,sf_bep,vl_bep                          & !O multi-layer urban
                 ,sfcheadrt,INFXSRT, soldrain)
-write(0,*)__LINE__,qsfc
 
            ELSE
                CALL wrf_error_fatal('Lack arguments to call lsm_mosaic')
            ENDIF
 
-	  ELSEIF (sf_surface_mosaic == 0) THEN
-	                  
-write(0,*)__LINE__,qsfc
+          ELSEIF (sf_surface_mosaic == 0) THEN
+                          
                CALL lsm(dz8w,qv_curr,p8w,t_phy,tsk,                 &
                 hfx,qfx,lh,grdflx,qgh,gsw,swdown,glw,smstav,smstot,    &
                 sfcrunoff,udrunoff,ivgtyp,isltyp,isurban,isice,vegfra,        &
@@ -2586,7 +2546,7 @@ write(0,*)__LINE__,qsfc
                 smois,tslb,snow,canwat,                         &
                 chs, chs2, cqs2, cpm,rcp,SR,chklowq,lai,qz0,    &
                 myj,frpcpn,                                     &
-		sh2o,snowh,                                     & !h
+                sh2o,snowh,                                     & !h
                 u_phy,v_phy,                                    & !I
                 snoalb,shdmin,shdmax,                           & !i
                 snotime,                                        & !o
@@ -2643,10 +2603,8 @@ write(0,*)__LINE__,qsfc
                 dl_u_bep,sf_bep,vl_bep                          & !O multi-layer urban
                 ,sfcheadrt,INFXSRT, soldrain)
 
-write(0,*)__LINE__,qsfc
          ENDIF
 
-write(0,*)__LINE__,qsfc
          call seaice_noah( SEAICE_ALBEDO_OPT, SEAICE_ALBEDO_DEFAULT, SEAICE_THICKNESS_OPT, &
               &            SEAICE_THICKNESS_DEFAULT, SEAICE_SNOWDEPTH_OPT,             &
               &            SEAICE_SNOWDEPTH_MAX, SEAICE_SNOWDEPTH_MIN,                 &
@@ -2661,7 +2619,6 @@ write(0,*)__LINE__,qsfc
               &            ids,ide, jds,jde, kds,kde,                                  &
               &            ims,ime, jms,jme, kms,kme,                                  &
               &            i_start(ij),i_end(ij), j_start(ij),j_end(ij), kts,kte )
-write(0,*)__LINE__,qsfc
 
          IF ( FRACTIONAL_SEAICE == 1 ) THEN
             ! LSM Returns full land/ice values, no fractional values.
@@ -2678,7 +2635,6 @@ write(0,*)__LINE__,qsfc
             ENDDO
 
             IF ( isisfc ) THEN
-write(0,*)__LINE__,qsfc
                DO j=j_start(ij),j_end(ij)
                   DO i=i_start(ij),i_end(ij)
                      IF ( ( XICE(I,J) .GE. XICE_THRESHOLD) .AND. ( XICE(i,j) .LE. 1.0 ) ) THEN
@@ -2704,7 +2660,6 @@ write(0,*)__LINE__,qsfc
                      ENDIF
                   ENDDO
                ENDDO
-write(0,*)__LINE__,qsfc
             ELSE
                DO j = j_start(ij) , j_end(ij)
                   DO i = i_start(ij) , i_end(ij)
@@ -2854,35 +2809,34 @@ write(0,*)__LINE__,qsfc
          if(HYDRO_dt .ge. 0) HYDRO_dt = dtbl
 #endif
          CALL wrf_debug(100,'in NOAHMP DRV')
-write(0,*)__LINE__,qsfc
          CALL noahmplsm(ITIMESTEP,       YR, JULIAN_IN,   COSZEN, XLAT_URB2D, &
-	           DZ8W,     DTBL,      DZS,     NUM_SOIL_LAYERS,         DX, &
-		 IVGTYP,   ISLTYP,   VEGFRA,   SHDMAX,       TMN,             &
-		  XLAND,     XICE,     XICE_THRESHOLD,                        &
+                   DZ8W,     DTBL,      DZS,     NUM_SOIL_LAYERS,         DX, &
+                 IVGTYP,   ISLTYP,   VEGFRA,   SHDMAX,       TMN,             &
+                  XLAND,     XICE,     XICE_THRESHOLD,                        &
                   IDVEG, IOPT_CRS, IOPT_BTR, IOPT_RUN,  IOPT_SFC,   IOPT_FRZ, &
-	       IOPT_INF, IOPT_RAD, IOPT_ALB, IOPT_SNF, IOPT_TBOT,   IOPT_STC, &
-	        IZ0TLND,                                                      &
-		  T_PHY,  QV_CURR,    U_PHY,    V_PHY,    SWDOWN,        GLW, &
-		    P8W,   RAINBL,       SR,                                  &
-		    TSK,      HFX,      QFX,       LH,    GRDFLX,     SMSTAV, &
-		 SMSTOT,SFCRUNOFF, UDRUNOFF,   ALBEDO,     SNOWC,      SMOIS, &
-		   SH2O,     TSLB,     SNOW,    SNOWH,    CANWAT,     ACSNOM, &
-		 ACSNOW,    EMISS,     QSFC,                                  &
- 		     Z0,      ZNT,                                            & ! IN/OUT LSM eqv
-		ISNOWXY,     TVXY,     TGXY, CANICEXY,  CANLIQXY,      EAHXY, &
-		  TAHXY,     CMXY,     CHXY,   FWETXY,  SNEQVOXY,   ALBOLDXY, &
-		QSNOWXY, WSLAKEXY,    ZWTXY,     WAXY,      WTXY,     TSNOXY, &
-		ZSNSOXY,  SNICEXY,  SNLIQXY, LFMASSXY,  RTMASSXY,   STMASSXY, &
-		 WOODXY, STBLCPXY, FASTCPXY,      LAI,    XSAIXY,    TAUSSXY, &
-	        SMOISEQ, SMCWTDXY,DEEPRECHXY,  RECHXY,                        & ! IN/OUT Noah MP only
-	         T2MVXY,   T2MBXY,   Q2MVXY,   Q2MBXY,                        &
+               IOPT_INF, IOPT_RAD, IOPT_ALB, IOPT_SNF, IOPT_TBOT,   IOPT_STC, &
+                IZ0TLND,                                                      &
+                  T_PHY,  QV_CURR,    U_PHY,    V_PHY,    SWDOWN,        GLW, &
+                    P8W,   RAINBL,       SR,                                  &
+                    TSK,      HFX,      QFX,       LH,    GRDFLX,     SMSTAV, &
+                 SMSTOT,SFCRUNOFF, UDRUNOFF,   ALBEDO,     SNOWC,      SMOIS, &
+                   SH2O,     TSLB,     SNOW,    SNOWH,    CANWAT,     ACSNOM, &
+                 ACSNOW,    EMISS,     QSFC,                                  &
+                     Z0,      ZNT,                                            & ! IN/OUT LSM eqv
+                ISNOWXY,     TVXY,     TGXY, CANICEXY,  CANLIQXY,      EAHXY, &
+                  TAHXY,     CMXY,     CHXY,   FWETXY,  SNEQVOXY,   ALBOLDXY, &
+                QSNOWXY, WSLAKEXY,    ZWTXY,     WAXY,      WTXY,     TSNOXY, &
+                ZSNSOXY,  SNICEXY,  SNLIQXY, LFMASSXY,  RTMASSXY,   STMASSXY, &
+                 WOODXY, STBLCPXY, FASTCPXY,      LAI,    XSAIXY,    TAUSSXY, &
+                SMOISEQ, SMCWTDXY,DEEPRECHXY,  RECHXY,                        & ! IN/OUT Noah MP only
+                 T2MVXY,   T2MBXY,   Q2MVXY,   Q2MBXY,                        &
                  TRADXY,    NEEXY,    GPPXY,    NPPXY,    FVEGXY,    RUNSFXY, &
-	        RUNSBXY,   ECANXY,   EDIRXY,  ETRANXY,     FSAXY,     FIRAXY, &
+                RUNSBXY,   ECANXY,   EDIRXY,  ETRANXY,     FSAXY,     FIRAXY, &
                  APARXY,    PSNXY,    SAVXY,    SAGXY,   RSSUNXY,    RSSHAXY, &
                  BGAPXY,   WGAPXY,    TGVXY,    TGBXY,     CHVXY,      CHBXY, &
-		  SHGXY,    SHCXY,    SHBXY,    EVGXY,     EVBXY,      GHVXY, &
-		  GHBXY,    IRGXY,    IRCXY,    IRBXY,      TRXY,      EVCXY, &
-	       CHLEAFXY,   CHUCXY,   CHV2XY,   CHB2XY,                        &                          
+                  SHGXY,    SHCXY,    SHBXY,    EVGXY,     EVBXY,      GHVXY, &
+                  GHBXY,    IRGXY,    IRCXY,    IRBXY,      TRXY,      EVCXY, &
+               CHLEAFXY,   CHUCXY,   CHV2XY,   CHB2XY,                        &                          
 #ifdef WRF_HYDRO
                  sfcheadrt,INFXSRT,soldrain,                          &    !O
 #endif
@@ -2891,8 +2845,7 @@ write(0,*)__LINE__,qsfc
                 i_start(ij),i_end(ij), j_start(ij),j_end(ij), kts,kte,        &
 ! variables below are optional
                 MP_RAINC =  RAINCV, MP_RAINNC =    RAINNCV, MP_SHCV = RAINSHV,&
-		MP_SNOW  = SNOWNCV, MP_GRAUP  = GRAUPELNCV, MP_HAIL = HAILNCV )
-write(0,*)__LINE__,qsfc
+                MP_SNOW  = SNOWNCV, MP_GRAUP  = GRAUPELNCV, MP_HAIL = HAILNCV )
 
   if(iopt_run.eq.5.and.mod(itimestep,STEPWTD).eq.0)then
            CALL wrf_debug( 100, 'calling WTABLE' )
@@ -2941,7 +2894,6 @@ write(0,*)__LINE__,qsfc
             ENDDO
 
             IF ( isisfc ) THEN
-write(0,*)__LINE__,qsfc
                DO j=j_start(ij),j_end(ij)
                   DO i=i_start(ij),i_end(ij)
                      IF ( ( XICE(I,J) .GE. XICE_THRESHOLD) .AND. ( XICE(i,j) .LE. 1.0 ) ) THEN
@@ -2964,7 +2916,6 @@ write(0,*)__LINE__,qsfc
                      ENDIF
                   ENDDO
                ENDDO
-write(0,*)__LINE__,qsfc
             ELSE
                DO j = j_start(ij) , j_end(ij)
                   DO i = i_start(ij) , i_end(ij)
@@ -3097,7 +3048,6 @@ write(0,*)__LINE__,qsfc
               ENDIF
            ENDIF
 
-write(0,*)__LINE__,qsfc
            CALL LSMRUC(dtbl,itimestep,num_soil_layers,          &
 #if (EM_CORE==1)
                 lakemodel,lakemask,                             &
@@ -3123,7 +3073,6 @@ write(0,*)__LINE__,qsfc
                 ids,ide, jds,jde, kds,kde,                      &
                 ims,ime, jms,jme, kms,kme,                      &
                 i_start(ij),i_end(ij), j_start(ij),j_end(ij), kts,kte    )
-write(0,*)__LINE__,qsfc
 
            IF ( FRACTIONAL_SEAICE == 1 ) THEN
               ! LSMRUC Returns full land/ice values, no fractional values.
@@ -3140,7 +3089,6 @@ write(0,*)__LINE__,qsfc
                  !
                  !  back to ice and ocean average
                  !
-write(0,*)__LINE__,qsfc
                  DO j=j_start(ij),j_end(ij)
                     DO i=i_start(ij),i_end(ij)
                        IF ( ( XICE(I,J) .GE. XICE_THRESHOLD ) .and. ( XICE(i,j) .LE. 1.0 ) ) THEN
@@ -3161,7 +3109,6 @@ write(0,*)__LINE__,qsfc
                        ENDIF
                     ENDDO
                  ENDDO
-write(0,*)__LINE__,qsfc
               else
                  !
                  ! tsk back to liquid and ice average
@@ -3240,7 +3187,6 @@ write(0,*)__LINE__,qsfc
                 !
                 !  back to ice and ocean average
                 !
-write(0,*)__LINE__,qsfc
                 DO j = j_start(ij) , j_end(ij)
                    DO i = i_start(ij) , i_end(ij)
                       IF ( ( XICE(I,J) .GE. XICE_THRESHOLD ) .AND. ( XICE(i,j) .LE. 1.0 ) ) THEN
@@ -3262,7 +3208,6 @@ write(0,*)__LINE__,qsfc
                       ENDIF
                    ENDDO
                 ENDDO
-write(0,*)__LINE__,qsfc
              ELSE
                 !
                 ! tsk back to liquid and ice average
@@ -3354,7 +3299,6 @@ write(0,*)__LINE__,qsfc
 
        CALL wrf_debug(100,'in clmdrv')
 
-write(0,*)__LINE__,qsfc
        CALL clmdrv(dz8w,qv_curr,p8w, t_phy,tsk,                   &
                 hfx,qfx,lh,grdflx,qgh,gsw,swdown,               &
                 ra_sw_physics,history_interval,glw,smstav,smstot, &
@@ -3457,7 +3401,6 @@ write(0,*)__LINE__,qsfc
                 ,dwt_livecrootn_to_cwdn,dwt_deadcrootn_to_cwdn,retransn &
 #endif
                  )
-write(0,*)__LINE__,qsfc
 
          IF ( FRACTIONAL_SEAICE == 1 ) THEN
             DO j=j_start(ij),j_end(ij)
@@ -3470,7 +3413,6 @@ write(0,*)__LINE__,qsfc
             ENDDO
 
             IF ( isisfc ) THEN
-write(0,*)__LINE__,qsfc
                DO j=j_start(ij),j_end(ij)
                   DO i=i_start(ij),i_end(ij)
                      IF ( ( XICE(I,J) .GE. XICE_THRESHOLD) .AND. ( XICE(i,j) .LE. 1.0 ) ) THEN
@@ -3494,7 +3436,6 @@ write(0,*)__LINE__,qsfc
                      ENDIF
                   ENDDO
                ENDDO
-write(0,*)__LINE__,qsfc
             ELSE
                DO j = j_start(ij) , j_end(ij)
                   DO i = i_start(ij) , i_end(ij)
@@ -3864,7 +3805,6 @@ write(0,*)__LINE__,qsfc
      ENDIF
 
    ENDIF
-write(0,*)__LINE__,qsfc
 
    END SUBROUTINE surface_driver
 
@@ -5009,7 +4949,7 @@ TICE2TSK_IF2COLD,XICE_THRESHOLD,                                   &
 !-------------------------------------------------------------------------
 
    SUBROUTINE sf_gfs_seaice_wrapper(U3D,V3D,T3D,QV3D,P3D,        &
-		 CP,ROVCP,R,XLV,PSFC,CHS,CHS2,CQS2,CPM,          &
+                 CP,ROVCP,R,XLV,PSFC,CHS,CHS2,CQS2,CPM,          &
                      ZNT,UST,PSIM,PSIH,                          &
                      XLAND,HFX,QFX,LH,TSK,FLHC,FLQC,             &
                      QGH,QSFC,U10,V10,                           &

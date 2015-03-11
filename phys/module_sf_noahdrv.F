@@ -1677,22 +1677,10 @@ integer myproc
 
    errflag = 0
 
-IF ( id .ge. 3 ) THEN
-call wrf_get_myproc(myproc)
-write(0,*)'writing ISLTYP to hmv file grid ',id,myproc
-write(70+myproc,*)itf-its+1, jtf-jts+1
-DO j = jts,jtf
-DO i = its,itf
-write(70+myproc,*)ISLTYP(i,j)
-ENDDO
-ENDDO
-ENDIF
-
    DO j = jts,jtf
      DO i = its,itf
        IF ( ISLTYP( i,j ) .LT. 1 ) THEN
          errflag = 1
-write(0,*)__FILE__,__LINE__,i,j,ISLTYP( i,j ),id
          WRITE(err_message,*)"module_sf_noahdrv.F: lsminit: out of range ISLTYP ",i,j,ISLTYP( i,j )
          CALL wrf_message(err_message)
        ENDIF

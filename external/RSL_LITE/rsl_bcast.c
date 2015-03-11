@@ -146,7 +146,6 @@ RSL_LITE_NESTING_RESET (
 {
   int j ;
 
-fprintf(stderr,"%s %d RSL_LITE_NESTING_RESET called Plist %x\n",__FILE__,__LINE__,Plist) ;
   for ( j = 0 ; j < RSL_MAXPROC ; j++ ) {
     Ssizes[j] = 0 ;
     Sdisplacements[j] = 0 ;
@@ -156,14 +155,9 @@ fprintf(stderr,"%s %d RSL_LITE_NESTING_RESET called Plist %x\n",__FILE__,__LINE_
   Rdisplacements[RSL_MAXPROC] = 0 ;
   if ( Plist != NULL ) {
     for ( j = 0 ; j < Plist_length ; j++ ) {
-fprintf(stderr,"%s %d RSL_LITE_NESTING_RESET j=%d \n",__FILE__,__LINE__,j) ;
-fprintf(stderr,"%s %d RSL_LITE_NESTING_RESET Plist=%x\n",__FILE__,__LINE__,&(Plist[j])) ;
       destroy_list ( &(Plist[j]), NULL ) ;
-fprintf(stderr,"%s %d RSL_LITE_NESTING_RESET \n",__FILE__,__LINE__) ;
     }
-fprintf(stderr,"%s %d RSL_LITE_NESTING_RESET\n",__FILE__,__LINE__) ;
     RSL_FREE( Plist ) ;
-fprintf(stderr,"%s %d RSL_LITE_NESTING_RESET\n",__FILE__,__LINE__) ;
     Plist = NULL ;
   }
 }
@@ -218,6 +212,7 @@ RSL_LITE_TO_CHILD_INFO ( msize_p,                        /* number of tasks in m
     offset = *offset_p ;
     alltasks = MAX( s_ntasks_nest_x*s_ntasks_nest_y + offset, s_ntasks_par_x*s_ntasks_par_y ) ;
 
+#if 0
 fprintf(stderr,"s_ntasks_par_x %d\n",s_ntasks_par_x)  ;
 fprintf(stderr,"s_ntasks_par_y %d\n",s_ntasks_par_y)  ;
 fprintf(stderr,"s_ntasks_nest_x %d\n",s_ntasks_nest_x)  ;
@@ -225,6 +220,7 @@ fprintf(stderr,"s_ntasks_nest_y %d\n",s_ntasks_nest_y)  ;
 fprintf(stderr,"%s %d offset %d\n",__FILE__,__LINE__,offset)  ;
 fprintf(stderr,"%s %d alltasks %d\n",__FILE__,__LINE__,alltasks)  ;
 fprintf(stderr,"%s %d a %d b %d\n",__FILE__,__LINE__,s_ntasks_nest_x*s_ntasks_nest_y+offset,s_ntasks_par_x*s_ntasks_par_y)  ;
+#endif
 
     /* construct Plist */
     Sendbufsize = 0 ;
@@ -361,7 +357,6 @@ RSL_LITE_TO_PARENT_INFO ( msize_p,
   int coords[2] ;
   int ierr ;
 
-fprintf(stderr,"RSL_LITE_TO_PARENT_INFO Plist = %x\n",Plist ) ;
   if ( Plist == NULL ) {
     s_ntasks_nest_x = *ntasks_nest_x_p ;
     s_ntasks_nest_y = *ntasks_nest_y_p ;
@@ -377,7 +372,6 @@ fprintf(stderr,"RSL_LITE_TO_PARENT_INFO Plist = %x\n",Plist ) ;
     for ( j = 0 ; j < alltasks ; j++ ) {
        Plist[j] = NULL ;
        Sdisplacements[j] = 0 ;
-fprintf(stderr,"setting Ssizes[%d] to zero\n",j) ;
        Ssizes[j] = 0 ;
     }
     ierr = 0 ;
@@ -422,9 +416,6 @@ fprintf(stderr,"setting Ssizes[%d] to zero\n",j) ;
           r = (int *) &(Sendbuf[Recsizeindex]) ;
           *r = Sendbufcurs - Recsizeindex + 2 * sizeof(int) ;
           Ssizes[Pcurs] += *r ;
-
-fprintf(stderr,"Ssizes[%d]=%d\n",Pcurs,Ssizes[Pcurs]) ;
-
   }
 
   while ( Pptr == NULL ) {
@@ -542,9 +533,7 @@ RSL_LITE_BCAST_MSGS ( mytask_p, ntasks_par_p, ntasks_nest_p, offset_p, Fcomm )
 #else
   int comm ;
 #endif
-fprintf(stderr,"RSL_LITE_BCAST_MSGS calling rsl_lite_allgather_msgs\n") ;
   rsl_lite_allgather_msgs ( mytask_p, ntasks_par_p, ntasks_nest_p, offset_p, comm, 0 ) ;
-fprintf(stderr,"RSL_LITE_BCAST_MSGS back from rsl_lite_allgather_msgs\n") ;
 }
 
 /* nest->parent */
@@ -558,9 +547,7 @@ RSL_LITE_MERGE_MSGS ( mytask_p, ntasks_par_p, ntasks_nest_p, offset_p, Fcomm )
 #else
   int comm ;
 #endif
-fprintf(stderr,"RSL_LITE_MERGE_MSGS calling rsl_lite_allgather_msgs\n") ;
   rsl_lite_allgather_msgs ( mytask_p, ntasks_par_p, ntasks_nest_p, offset_p, comm, 1 ) ;
-fprintf(stderr,"RSL_LITE_MERGE_MSGS back from rsl_lite_allgather_msgs\n") ;
 }
 
 /* common code */
@@ -597,9 +584,11 @@ rsl_lite_allgather_msgs ( mytask_p, ntasks_par_p, ntasks_nest_p, offset_p, comm,
   mytask = 0 ;
   mytask_on_comm = 0 ;
 #endif
+#if 0
 fprintf(stderr,"inside rsl_lite_allgather_msgs  %d %d %d %d %d\n",mytask,ntasks_par,ntasks_nest,*offset_p, mytask_on_comm) ;
 
 fprintf(stderr,"%s %d : %d %d %d \n",__FILE__,__LINE__,mytask_on_comm,dir,*offset_p ) ;
+#endif
   if ( ( mytask_on_comm <  ntasks_par  && dir == 0 )   /* parent in parent->child */
     || ( mytask_on_comm >= *offset_p && 
          mytask_on_comm < *offset_p + ntasks_nest && dir == 1 )) { /* child  in child->parent */
@@ -616,12 +605,14 @@ fprintf(stderr,"%s %d : %d %d %d \n",__FILE__,__LINE__,mytask_on_comm,dir,*offse
  						    // everyone's list (not exactly scalable)
   for ( i = 0 ; i < ntasks*ntasks ; i++ ) Psize_all[i] = 0 ;
 
+#if 0
 fprintf(stderr,"%s %d : ntasks %d \n",__FILE__,__LINE__,ntasks) ;
 
   for ( j = 0 ; j < ntasks ; j++ ) 
   {
 fprintf(stderr,"(before MPI_Allgather) : Ssizes[%d] %d \n",j,Ssizes[j]) ;
   }
+#endif
 
 #ifndef STUBMPI
   MPI_Allgather(Ssizes,ntasks,MPI_INT,  Psize_all                      ,ntasks, MPI_INT, comm ) ;
@@ -635,12 +626,16 @@ fprintf(stderr,"(before MPI_Allgather) : Ssizes[%d] %d \n",j,Ssizes[j]) ;
   Psize_all[0] = Ssizes[0] ;
 #endif
 
+#if 0
 fprintf(stderr,"mytask_on_comm %d , ntasks %d \n",mytask_on_comm, ntasks ) ;
+#endif
+
   for ( j = 0 ; j < ntasks ; j++ ) 
   {
     Rsizes[j] = 0 ;
   }
 
+#if 0
 for ( j = 0 ; j < ntasks ; j++ ) 
 {
 int jj ;
@@ -650,6 +645,7 @@ fprintf(stderr,"%9d",Psize_all[INDEX_2(j,jj,ntasks)])  ;
 }
 fprintf(stderr,"\n") ;
 }
+#endif
 
   for ( j = 0 ; j < ntasks ; j++ )  /* loop through outer index of Psize_all */
   {
@@ -657,6 +653,7 @@ fprintf(stderr,"\n") ;
 
     Rsizes[j] += Psize_all[ INDEX_2( j, mytask_on_comm, ntasks ) ] ;
 
+#if 0
 fprintf(stderr,"j %d , mytask_on_comm %d,*offset_p %d \n",j,mytask_on_comm,*offset_p) ;
 fprintf(stderr,"Rsizes[%d]= %d; %d ; Psize_all[%d] = %d\n",
 j,
@@ -664,6 +661,7 @@ Rsizes[j],
 (mytask_on_comm-*offset_p+ntasks) % ntasks,
 INDEX_2( (mytask_on_comm-*offset_p+ntasks) % ntasks , j , ntasks ),
 Psize_all[ INDEX_2( (mytask_on_comm-*offset_p+ntasks) % ntasks , j , ntasks ) ]) ;
+#endif
   }
 
   for ( Rbufsize = 0, P = 0, Rdisplacements[0] = 0 ; P < ntasks ; P++ )
@@ -675,16 +673,21 @@ Psize_all[ INDEX_2( (mytask_on_comm-*offset_p+ntasks) % ntasks , j , ntasks ) ])
 
   /* this will be freed later */
 
+#if 0
 fprintf(stderr,"allocating Recvbuf %d bytes\n",Rbufsize + 3 * sizeof(int)) ;
+#endif
   Recvbuf = RSL_MALLOC( char , Rbufsize + 3 * sizeof(int) ) ; /* for sentinal record */
   Rbufcurs = 0 ;
   Rreclen = 0 ;
 
+#if 0
 fprintf(stderr,"%s %d before MPI_Alltoallv\n",__FILE__,__LINE__) ;
 fprintf(stderr,"before MPI_Alltoallv Ssizes %d %d %d %d %d %d \n",Ssizes[0],Ssizes[1],Ssizes[2],Ssizes[3],Ssizes[4],Ssizes[5]) ;
 fprintf(stderr,"before MPI_Alltoallv Sdisplacements %d %d %d %d %d %d \n",Sdisplacements[0],Sdisplacements[1],Sdisplacements[2],Sdisplacements[3],Sdisplacements[4],Sdisplacements[5]) ;
 fprintf(stderr,"before MPI_Alltoallv Rsizes %d %d %d %d %d %d \n",Rsizes[0],Rsizes[1],Rsizes[2],Rsizes[3],Rsizes[4],Rsizes[5]) ;
 fprintf(stderr,"before MPI_Alltoallv Rdisplacements %d %d %d %d %d %d \n",Rdisplacements[0],Rdisplacements[1],Rdisplacements[2],Rdisplacements[3],Rdisplacements[4],Rdisplacements[5]) ;
+#endif
+
 #ifndef STUBMPI
   rc = MPI_Alltoallv ( Sendbuf, Ssizes, Sdisplacements, MPI_BYTE , 
                        Recvbuf, Rsizes, Rdisplacements, MPI_BYTE ,  comm ) ;

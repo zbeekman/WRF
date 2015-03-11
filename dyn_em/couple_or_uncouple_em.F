@@ -104,7 +104,6 @@ SUBROUTINE couple_or_uncouple_em ( grid , config_flags , couple &
                              ips,ipe, jps,jpe   )
    ENDIF
 
-write(0,*)__FILE__,__LINE__,'local communicator ', local_communicator
 #ifdef DM_PARALLEL
 # include "HALO_EM_COUPLE_A.inc"
 # include "PERIOD_EM_COUPLE_A.inc"

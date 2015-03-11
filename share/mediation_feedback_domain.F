@@ -202,7 +202,6 @@ write(0,*)"back from feedback_domain_em_part2",grid%id
 !    This is gopal's extension for the NMM core
 ! ------------------------------------------------------
 
-write(0,*)__FILE__,__LINE__
    CALL model_to_grid_config_rec ( nested_grid%id , model_config_rec , config_flags )
    grid => nested_grid%intermediate_grid
 !dusan orig     CALL alloc_space_field ( grid, grid%id , 1 , 2 , .TRUE. ,     &
@@ -253,13 +252,11 @@ write(0,*)__FILE__,__LINE__
 
    grid => parent_grid
 !
-write(0,*)__FILE__,__LINE__
    CALL feedback_domain_nmm_part2 ( grid , nested_grid%intermediate_grid, nested_grid , config_flags    &
 !
 #      include "actual_new_args.inc"
 !
                                    )
-write(0,*)__FILE__,__LINE__
 #endif
 ! ------------------------------------------------------
 !    End of Feedback calls for NMM.

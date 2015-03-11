@@ -63,32 +63,21 @@ IF ( phase == 1 ) THEN
 #endif
 #ifdef DM_PARALLEL
  CALL split_communicator
-write(0,*)__FILE__,__LINE__
 CALL disable_quilting
-write(0,*)__FILE__,__LINE__,'WARNING: Called disable_quilting'
  CALL init_module_wrf_quilt    !! this *must* be called before init_module_dm
-write(0,*)__FILE__,__LINE__
 
  ! We must never reach this line or phase 2 in an I/O server.
 
  CALL init_module_dm
-write(0,*)__FILE__,__LINE__
 #endif
 ELSE
-write(0,*)__FILE__,__LINE__
  CALL init_module_wrf_error ! must be called after init_module_dm
 
-write(0,*)__FILE__,__LINE__
  CALL init_module_nesting
-write(0,*)__FILE__,__LINE__
  CALL init_module_timing
-write(0,*)__FILE__,__LINE__
  CALL init_module_tiles
-write(0,*)__FILE__,__LINE__
  CALL init_module_io_wrf
-write(0,*)__FILE__,__LINE__
  CALL init_module_io
-write(0,*)__FILE__,__LINE__
 
 ! core specific initializations -- add new cores here
 #if (EM_CORE == 1)
@@ -97,9 +86,7 @@ write(0,*)__FILE__,__LINE__
 #  endif
 #endif
 #if (NMM_CORE == 1)
-write(0,*)__FILE__,__LINE__
  CALL init_modules_nmm
-write(0,*)__FILE__,__LINE__
 #endif
 ENDIF
  

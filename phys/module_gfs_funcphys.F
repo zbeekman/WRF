@@ -788,16 +788,8 @@ contains
     integer jx
     real(krealfp) xj
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-write(0,*)'c1xpvs ',c1xpvs
-write(0,*)'c2xpvs ',c2xpvs
-write(0,*)'nxpvs ',nxpvs
-write(0,*)'t  ',t 
     xj=min(max(c1xpvs+c2xpvs*t,1._krealfp),real(nxpvs,krealfp))
     jx=min(xj,nxpvs-1._krealfp)
-write(0,*)'xj ',xj
-write(0,*)'jx ',jx
-write(0,*)'tbpvs(jx) ',tbpvs(jx)
-write(0,*)'tbpvs(jx+1) ',tbpvs(jx+1)
     fpvs_dbg=tbpvs(jx)+(xj-jx)*(tbpvs(jx+1)-tbpvs(jx))
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   end function
@@ -2970,7 +2962,6 @@ write(0,*)'tbpvs(jx+1) ',tbpvs(jx+1)
 !$$$
     implicit none
 ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-write(0,*)__FILE__,__LINE__,'gfuncphys'
     call gpvsl
     call gpvsi
     call gpvs

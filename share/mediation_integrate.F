@@ -420,9 +420,7 @@ integer myproc
    END INTERFACE
 
 
-write(0,*)__FILE__,__LINE__
    CALL interp_init
-write(0,*)__FILE__,__LINE__
 
 
    CALL domain_clock_get( parent, start_time=strt_time, current_time=cur_time )
@@ -453,9 +451,7 @@ write(0,*)__FILE__,__LINE__
      endif
 
 ! fill in entire fine grid domain with interpolated coarse grid data
-write(0,*)__FILE__,__LINE__,'calling med_interp_domain ',parent%id, nest%id
      CALL med_interp_domain( parent, nest )
-write(0,*)__FILE__,__LINE__,'back from med_interp_domain ',parent%id, nest%id
 
 !  De-reference dimension information stored in the grid data structure.
      CALL get_ijk_from_grid (  nest ,                   &
@@ -561,9 +557,7 @@ write(0,*)__FILE__,__LINE__,'back from med_interp_domain ',parent%id, nest%id
      parent%ht_coarse = parent%ht
 
 #if 1
-write(0,*)__FILE__,__LINE__,'call med_nest_feedback parent%id,nest%id',parent%id,nest%id
      CALL med_nest_feedback ( parent , nest , config_flags )
-write(0,*)__FILE__,__LINE__,'back from med_nest_feedback nest%id ',nest%id
 #else
  write(0,*)__FILE__, ' W A R N I N G  -- med_nest_feedback commented out'
 #endif
@@ -825,7 +819,6 @@ write(0,*)'back from start_domain for ',parent%id
    ! not use MOIST and SCALAR as prognostic variables (they are
    ! recalculated on the fly every timestep):
 !zhang's doing for analysis option
-write(0,*)__FILE__,__LINE__
   IF(.not. nest%analysis .and. .not. config_flags%restart)THEN    ! initialize for cold-start
 #endif
 
@@ -833,9 +826,7 @@ write(0,*)__FILE__,__LINE__
 !  initialize nested domain configurations including setting up wbd,sbd, etc 
 !----------------------------------------------------------------------------
 
-write(0,*)__FILE__,__LINE__
    CALL med_nest_egrid_configure ( parent , nest )
-write(0,*)__FILE__,__LINE__
 
 !-------------------------------------------------------------------------
 !  initialize lat-lons and determine weights 
@@ -950,9 +941,6 @@ write(0,*)__FILE__,__LINE__
 
 #ifdef HWRF
    CALL med_interp_domain( parent, nest )
-
-write(0,*)__FILE__,__LINE__
-
 #else
     CALL domain_clock_get( parent, start_time=strt_time, current_time=cur_time )
 

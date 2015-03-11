@@ -221,11 +221,11 @@ write(0,*)' nest%wbd0 ',nest%wbd0
   IF ( parent%active_this_task .OR. nest%active_this_task ) THEN
      IF ( parent%active_this_task ) THEN
        comzilla = mpi_comm_to_kid( which_kid( nest%id ) , parent%id )
-write(0,*)__FILE__,__LINE__,'Patt: mpi_comm_to_kid ',comzilla,which_kid( nest%id ) ,nest%id, parent%id
+!debug write(0,*)__FILE__,__LINE__,'Patt: mpi_comm_to_kid ',comzilla,which_kid( nest%id ) ,nest%id, parent%id
        grid => parent
      ELSE
        comzilla = mpi_comm_to_mom( nest%id )
-write(0,*)__FILE__,__LINE__,'Natt: mpi_comm_to_mom ',comzilla,nest%id
+!debug write(0,*)__FILE__,__LINE__,'Natt: mpi_comm_to_mom ',comzilla,nest%id
        grid => nest
      ENDIF
 
@@ -456,6 +456,7 @@ SUBROUTINE med_construct_egrid_weights ( parent , nest )
                         IDS,IDE,JDS,JDE,KDS,KDE,                                 & ! nested domain dimension
                         IMS,IME,JMS,JME,KMS,KME,                                 &
                         ITS,ITE,JTS,JTE,KTS,KTE                                  )
+#if 0
 write(0,*)'back from EARTH_LATLON nest%id ',nest%id
 write(0,*)'back from EARTH_LATLON shape(nest%HLAT) ',shape(nest%HLAT)
 write(0,*)'back from EARTH_LATLON nest%dx ',nest%dx
@@ -489,6 +490,7 @@ do i =its,ite
   write(100,*)nest%VLON(i,j)
 enddo
 enddo
+#endif
 
 !   Determine the weights of nested grid h points nearest to H points of parent domain 
 
@@ -3103,7 +3105,6 @@ CONTAINS
     avc_nest = 0.0
     lnd_nest = 0.0
     
-write(0,*)'calling terrain_for(',level
     tr=>terrain_for(level,input_type,io_form_auxinput2)
 
     ! select subdomain from big fine grid
@@ -3118,9 +3119,6 @@ write(0,*)'calling terrain_for(',level
     i=1 ; j=1
     lah_nest_11 = tr%lah(i_start+i-1 + mod(j+1,2)*i_add, j_start+j-1)
     loh_nest_11 = tr%loh(i_start+i-1 + mod(j+1,2)*i_add, j_start+j-1)
-
-WRITE(0,*)'lah_nest_11,nest%HLAT(1,1)',lah_nest_11,nest%HLAT(1,1)
-WRITE(0,*)'loh_nest_11,nest%HLON(1,1)',loh_nest_11,nest%HLON(1,1)
 
     IF(ABS(lah_nest_11-nest%HLAT(1,1)) .GE. 0.5 .OR.  & 
          ABS(loh_nest_11-nest%HLON(1,1)) .GE. 0.5)THEN 

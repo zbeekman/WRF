@@ -1244,9 +1244,6 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
    abort=.false. ! will be set to .true. if any safety checks fail
 
 
-write(0,*)__FILE__,__LINE__,'grid%id ',grid%id
-write(0,*)__FILE__,__LINE__,'parent%id ',parent%id
-
    ! INITIALIZE NEST MOTION TO DISABLED
    move_cd_x=0
    move_cd_y=0
@@ -1260,9 +1257,6 @@ write(0,*)__FILE__,__LINE__,'parent%id ',parent%id
       call WRF_MESSAGE(trim(mess))
       abort=.true.
    endif
-
-write(0,*)__FILE__,__LINE__,'grid%id ',grid%id
-write(0,*)__FILE__,__LINE__,'parent%id ',parent%id
 
    ! Switch off nest motion if we're at the analysis time or 6hr forecast
    if(grid%nomove_freq_hr>0) then
@@ -1279,8 +1273,6 @@ write(0,*)__FILE__,__LINE__,'parent%id ',parent%id
       endif
    endif
 
-write(0,*)__FILE__,__LINE__,'grid%id ',grid%id
-write(0,*)__FILE__,__LINE__,'parent%id ',parent%id
    !  SWITCH OFF NEST MOTION IF TOO CLOSE TO ANY OF THE BOUNDARIES
 
    coral_dist=(grid%ed31+grid%parent_grid_ratio-1)/grid%parent_grid_ratio
@@ -1294,8 +1286,6 @@ write(0,*)__FILE__,__LINE__,'parent%id ',parent%id
       call wrf_message(trim(mess))
   ENDIF
 
-write(0,*)__FILE__,__LINE__,'grid%id ',grid%id
-write(0,*)__FILE__,__LINE__,'parent%id ',parent%id
    coral_dist=(grid%ed32+grid%parent_grid_ratio-1)/grid%parent_grid_ratio
    IF(grid%j_parent_start .le. 5) THEN
       abort=.true.
@@ -1309,15 +1299,8 @@ write(0,*)__FILE__,__LINE__,'parent%id ',parent%id
    !
    !  DETERMINE AUTOMATICALLY THE DIRECTION OF GRID MOTION
    !
-write(0,*)__FILE__,__LINE__,'grid%id ',grid%id
-write(0,*)__FILE__,__LINE__,'parent%id ',parent%id
-write(0,*)__FILE__,__LINE__,'grid%num_moves ',grid%num_moves
-write(0,*)__FILE__,__LINE__,'grid%mvnest ',grid%mvnest
-write(0,*)__FILE__,__LINE__,'abort ',abort
    can_move: if(grid%num_moves.eq.-99 .and. grid%mvnest .and. .not. abort) then
 
-write(0,*)__FILE__,__LINE__,'grid%id ',grid%id
-write(0,*)__FILE__,__LINE__,'parent%id ',parent%id
       if(wrf_dm_on_monitor() .and. .not. abort) then
          WRITE(mess,*)'vortex tracking: id,mvnest,num_moves,num_nests: ', &
               grid%id,grid%mvnest,grid%num_moves,grid%num_nests
@@ -1327,18 +1310,13 @@ write(0,*)__FILE__,__LINE__,'parent%id ',parent%id
               grid%XLOC_1,grid%XLOC_2,grid%YLOC_1,grid%YLOC_2,grid%vortex_tracker
          call wrf_debug(1,mess)
       endif
-write(0,*)__FILE__,__LINE__,'grid%id ',grid%id
-write(0,*)__FILE__,__LINE__,'parent%id ',parent%id
 
       nest_following: IF(grid%vortex_tracker==2)THEN
          ! Follow child
          pgr=grid%parent_grid_ratio+0.01
          pgrn=grid%parent_grid_ratio-0.01
          
-write(0,*)__FILE__,__LINE__,'grid%id ',grid%id
-write(0,*)__FILE__,__LINE__,'parent%id ',parent%id
          kid=>grid%nests(1)%ptr ! find my kid
-write(0,*)__FILE__,__LINE__,'ASSOCIATED(grid%nests(1)%ptr)',ASSOCIATED(grid%nests(1)%ptr)
          
          ! find my center location
          my_ic = grid%ed31/2.0
@@ -1494,7 +1472,6 @@ write(0,*)__FILE__,__LINE__,'ASSOCIATED(grid%nests(1)%ptr)',ASSOCIATED(grid%nest
      enddo nest_loop
   ENDIF nest_safety
 
-write(0,*)__FILE__,__LINE__,'grid%mvnest ',grid%mvnest
   if(abort) then
      grid%mvnest=.false.
      move_cd_x=0
@@ -1505,7 +1482,6 @@ write(0,*)__FILE__,__LINE__,'grid%mvnest ',grid%mvnest
      write(mess,'("d",I0,"; motion has been aborted.")') grid%id
      call wrf_message(mess)
   endif
-write(0,*)__FILE__,__LINE__,'grid%mvnest ',grid%mvnest
   
   if(move_cd_x/=0 .or. move_cd_y/=0) then
      direction_of_move2 = .true.
