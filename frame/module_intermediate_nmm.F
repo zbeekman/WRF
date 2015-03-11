@@ -106,7 +106,6 @@ contains
          ,idim_cd,jdim_cd                                   &
          ,pig,pjg,retval )
       DO while ( retval .eq. 1 )
-write(0,*)'parent_to_inter_part1 pig,pjg ',pig,pjg
        IF ( SIZE(grid%hres_fis) .GT. 1 ) THEN ! okay for intermediate_grid too. see comment in gen_comms.c
           xv(1)=grid%hres_fis(pig,pjg)
           CALL rsl_lite_to_child_msg(4,xv)

@@ -3957,7 +3957,6 @@ LOGICAL FUNCTION cd_feedback_mask( pig, ips_save, ipe_save , pjg, jps_save, jpe_
 
    INTEGER ioff, joff
 
-write(0,'("cd_feedback_mask ",8i9)')pig, ips_save, ipe_save , pjg, jps_save, jpe_save, xstag, ystag
    ioff = 0 ; joff = 0
    IF ( xstag  ) ioff = 1
    IF ( ystag  ) joff = 1

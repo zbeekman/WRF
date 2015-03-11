@@ -297,7 +297,6 @@ fprintf(stderr,"%s %d a %d b %d\n",__FILE__,__LINE__,s_ntasks_nest_x*s_ntasks_ne
         Sdisplacements[Pcurs] = Sendbufcurs ;
         Ssizes[Pcurs] = 0 ;
         Pptr = Plist[Pcurs] ;
-fprintf(stderr,"%s %d Pptr %x Pcurs %d alltasks %d\n",__FILE__,__LINE__,Pptr, Pcurs, alltasks ) ;
       } else {
         *retval_p = 0 ;
         return ;  /* done */
