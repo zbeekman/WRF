@@ -124,7 +124,8 @@ CONTAINS
     INTEGER i, j, k, IFOUT, ind(1)
     CHARACTER*256 :: message
 
-    secdel = 1.0 !0.2
+    secdel = 5.0 ! KRF 3/13/15: Changed from 1.0 -> 5.0 per Becky at AFWA
+                 ! Old comment: 0.2
     g=9.81
     r_d = 287.
             
