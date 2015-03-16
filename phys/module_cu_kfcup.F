@@ -138,7 +138,7 @@ CONTAINS
                                                              )
 !
    USE module_state_description, only:  num_chem
-#ifdef WRF_CHEM
+#if ( WRF_CHEM == 1 )
    USE module_state_description, only:  cbmz_mosaic_4bin, cbmz_mosaic_4bin_aq, &
                                         cbmz_mosaic_8bin, cbmz_mosaic_8bin_aq, &
                                         saprc99_mosaic_8bin_vbs2_aq_kpp,       &
@@ -413,7 +413,7 @@ CONTAINS
 
 ! flag_chem is .TRUE. only when chem is present, shcu_aerosols_opt >= 2, and chem_opt is appropriate
    flag_chem = .FALSE.
-#ifdef WRF_CHEM
+#if ( WRF_CHEM == 1 )
    if ( PRESENT( chem ) .and. shcu_aerosols_opt >= 2) then
       if ( chem_opt == cbmz_mosaic_4bin    .or. &
            chem_opt == cbmz_mosaic_4bin_aq .or. &
@@ -738,7 +738,7 @@ PERTLOOPS:     do jpert = 1,numBins
                        wact, qndrop1d, qc1d, qi1d,          & !         "
                        fcvt_qc_to_qi, fcvt_qc_to_pr,        & !         "
                        fcvt_qi_to_pr, chem1d,               & !         "
-#ifdef WRF_CHEM
+#if ( WRF_CHEM == 1 )
                        maxd_acomp, maxd_aphase,             & !         "
                        maxd_atype, maxd_asize,              & !         "
                        ntype_aer, nsize_aer, ncomp_aer,     & !         "
@@ -861,8 +861,8 @@ PERTLOOPS:     do jpert = 1,numBins
                      nca_shall    = nca(i,j)!NINT(TIMEC_SHALL/DT)*DT ! add 01/11/2012 real(ntst)*DT !add dt 01/11/2012 All shallow clouds have a 40 min time scale per KF code.
                      raincv_shall = raincv_shall + raincv(i,j)*jfd(ipert,jpert)
                      !!!raincv_shall = raincv_shall + raincv(i,j)
-                     cubot_shall  = cubot_shall + z1d(cubot(i,j))*jfd(ipert,jpert) !Average the heights, then back out index later
-                     cutop_shall  = cutop_shall + z1d(cutop(i,j))*jfd(ipert,jpert) !ditto
+                     cubot_shall  = cubot_shall + z1d(nint(cubot(i,j)))*jfd(ipert,jpert) !Average the heights, then back out index later
+                     cutop_shall  = cutop_shall + z1d(nint(cutop(i,j)))*jfd(ipert,jpert) !ditto
                      qlg_shall    = qlg_shall + qlg*jfd(ipert,jpert)
                      !!!qlg_shall    = qlg_shall + qlg
                      qig_shall    = qig_shall + qig*jfd(ipert,jpert)
@@ -1154,7 +1154,7 @@ main_test_on_deep_shall_freq: &  ! rce 11-may-2012
                     wact, qndrop1d, qc1d, qi1d,          & !         "
                     fcvt_qc_to_qi, fcvt_qc_to_pr,        & !         "
                     fcvt_qi_to_pr, chem1d,               & !         "
-#ifdef WRF_CHEM
+#if ( WRF_CHEM == 1 )
                     maxd_acomp, maxd_aphase,             & !         "
                     maxd_atype, maxd_asize,              & !         "
                     ntype_aer, nsize_aer, ncomp_aer,     & !         "
@@ -2525,7 +2525,7 @@ updraft:    DO NK=K,KL-1
         PEFF2 = PEFF                                ! JSK MODS
        IF(IPRNT)THEN  
          WRITE(98,1035)PEF,PEFCBH,LC,LET,WKL,VWS
-!       call flush(98)   
+!       flush(98)   
        endif     
 !        WRITE(98,1035)PEF,PEFCBH,LC,LET,WKL,VWS
 !*****************************************************************
@@ -2722,7 +2722,7 @@ d_mf:   IF(TDER.LT.1.)THEN
          PEFF=PPTFLX/TRPPT
          IF(IPRNT)THEN
            write(98,*)'PRECIP EFFICIENCY =',PEFF
-!          call flush(98)   
+!          flush(98)   
          ENDIF
 !
 !
@@ -3267,7 +3267,7 @@ iter:     DO NCOUNT=1,10
 !     ENDIF
        IF(IPRNT)THEN  
          WRITE(98,1080)LFS,LDB,LDT,TIMEC,TADVEC,NSTEP,NCOUNT,FABE,AINC
-!        call flush(98)   
+!        flush(98)   
        endif  
 !     
 !...SEND FINAL PARAMETERIZED VALUES TO OUTPUT FILES...
@@ -3296,7 +3296,7 @@ iter:     DO NCOUNT=1,10
                          '   UDR  ','   DMF  ','   DER  '  ,'   DDR  ',&
                          '   EMS  ','    W0  ','  DETLQ ',' DETIC '
            write(98,*)'just before DO 300...'
-!          call flush(98)
+!          flush(98)
            DO NK=1,LTOP
              K=LTOP-NK+1
              DTT=(TG(K)-T0(K))*86400./TIMEC
@@ -3442,7 +3442,7 @@ iter:     DO NCOUNT=1,10
             WRITE(98,4456)P0(K)/100.,T0(K)-273.16,Q0(K)*1000.,          &
                      U0(K),V0(K),W0AVG1D(K),dp(k)/100.,tke(k)
  311        CONTINUE
-!           call flush(98)
+!           flush(98)
 
 !        GOTO 297
 !         STOP 'QVERR'
@@ -3553,7 +3553,7 @@ iter:     DO NCOUNT=1,10
 !      write (6,909)I,J,RNC
 !      WRITE(98,*)'at NTSD =',NTSD,',No. of KF points activated =',
 !     *            NCCNT
-!      call flush(98)
+!      flush(98)
 1000  FORMAT(' ',10A8)
 1005  FORMAT(' ',F6.0,2X,F6.4,2X,F7.3,1X,F6.4,2X,4(F6.3,2X),2(F7.3,1X))
 1010  FORMAT(' ',' VERTICAL VELOCITY IS NEGATIVE AT ',F4.0,' MB')
@@ -3711,7 +3711,7 @@ iter:     DO NCOUNT=1,10
       ithtb=int(tth)+1
        IF(IPTB.GE.220 .OR. IPTB.LE.1 .OR. ITHTB.GE.250 .OR. ITHTB.LE.1)THEN
          write(98,*)'**** OUT OF BOUNDS *********'
-!        call flush(98)
+!        flush(98)
        ENDIF
 !
       t00=ttab(ithtb  ,iptb  )
@@ -4548,7 +4548,7 @@ SUBROUTINE cup_jfd(slopeSfc, slopeEZ, sigmaSfc, sigmaEZ,                &
         if( abs(cterm) > bigcheck ) then
            write(message, &
            '("KFCuP setting a bogus cterm for JFD. c=",1e15.6," &
-              sigmaEZ=",1e15.6)') &
+            & sigmaEZ=",1e15.6)') &
                 c, sigmaEZ
            call wrf_debug(0,trim(message))
            cterm = sign(bigcheck,cterm)
@@ -4561,19 +4561,19 @@ SUBROUTINE cup_jfd(slopeSfc, slopeEZ, sigmaSfc, sigmaEZ,                &
 !!$                '("KFCuP has a big mterm for JFD. m=",1e15.6," sigmaSfc=",1e15.6," dslope=",1e15.6," slopeEZ=",1e15.6," slopeSfc=",1e15.6)') &
 !!$                m, sigmaSfc,dslope,slopeEZ,slopeSfc
 !!$           call wrf_debug(0,trim(message))
-!!$           call flush(0)
-!!$           call flush(6)
+!!$           flush(0)
+!!$           flush(6)
 !!$        end if
         if( abs(mterm) > bigcheck ) then
 
 print*,'bigcheck=',bigcheck
            write(message, &
                 '("KFCuP setting a bogus mterm for JFD. m=",1e15.6, &
-                  " sigmaSfc=",1e15.6)') &
+                & " sigmaSfc=",1e15.6)') &
                 m, sigmaSfc
            call wrf_debug(0,trim(message))
-           call flush(0)
-           call flush(6)
+           flush(0)
+           flush(6)
            mterm = sign(bigcheck,mterm)
         else
            mterm = mterm*mterm

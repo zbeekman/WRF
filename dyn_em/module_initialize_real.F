@@ -157,14 +157,13 @@ integer::oops1,oops2
       REAL :: t_start , t_end
       REAL , ALLOCATABLE , DIMENSION(:,:) :: clat_glob
 
-      !DJW 140626 added for multiple specified sets of eta_levels
+      ! multiple specified sets of eta_levels
       INTEGER :: ks, ke, id
-      LOGICAL :: vnest !DJW 140722 T if using vertical nesting, otherwise F
+      LOGICAL :: vnest ! T if using vertical nesting, otherwise F
 
       INTEGER :: j_save
 
       !  Dimension information stored in grid data structure.
-      print *,'DAVE ',grid%msft(1:10:2,1:10:2)
 
       CALL cpu_time(t_start)
       CALL get_ijk_from_grid (  grid ,                   &
@@ -1375,13 +1374,15 @@ print *,'j_save = ',j_save,grid%clat(ids,j_save),grid%mf_fft
              ENDIF
            ENDDO
            IF (vnest) THEN
-            !DJW 140627 Added code for specifying multiple domains' eta_levels.
+
+            !Added code for specifying multiple domains' eta_levels.
             !First check to make sure that we've not specified more
             !eta_levels than the dimensionality of eta_levels can handle! This
             !issue will most likely cause a break sometime before we real this
             !check, however it doesn't hurt to include it. To increase max_eta,
             !go to frame/module_driver_constants.F.
-             write(*,'(A)') "DJW[module_initialize_real]: using vertical nesting, reading in eta_levels specified in namelist.input"
+
+            CALL wrf_debug ( 0, "using vertical nesting, reading in eta_levels specified in namelist.input" )
             ks = 0
             DO id=1,grid%id
               ks = ks+model_config_rec%e_vert(id)
@@ -1420,16 +1421,12 @@ print *,'j_save = ',j_save,grid%clat(ids,j_save),grid%mf_fft
                 CALL wrf_error_fatal("eta_levels are not uniformly decreasing from 1.0 to 0.0")
               ENDIF
             ENDDO
-             !DJW print out eta_levels for debugging purposes
              DO k=1,kde
-               write(*,'(A,I3,A,F5.3)') "DJW[module_initialize_real]: eta_levels(",k,")=",eta_levels(k)
+               write(a_message,'(A,I3,A,F5.3)') "eta_levels(",k,")=",eta_levels(k)
+               CALL wrf_message ( a_message )
              ENDDO
-            !DJW 140627 End of added code for specifying eta_levels
            ELSE !We're not using vertical nesting
-            !DJW start of original code to set eta_levels
-             write(*,'(A)') "DJW[module_initialize_real]: vertical nesting is not enabled but eta_levels are set in namelist.input"
              eta_levels(1:kde) = model_config_rec%eta_levels(1:kde)
-            !DJW end of original code to set eta_levels
            ENDIF
 
             max_dz            = model_config_rec%max_dz
@@ -2176,6 +2173,9 @@ print *,'j_save = ',j_save,grid%clat(ids,j_save),grid%mf_fft
          CASE (SSIBSCHEME)
             IF ( num_st_levels_input .LT. 2 ) THEN
                CALL wrf_error_fatal ( 'Not enough soil temperature data for SSIB LSM scheme.')
+            END IF
+            IF ( eta_levels(2) .GT. 0.982 ) THEN
+               CALL wrf_error_fatal ( 'The first two eta levels are too shallow for SSIB LSM scheme.')
             END IF
 !--------------------------------------------------------
 
@@ -6410,6 +6410,7 @@ end program foo
       REAL(KIND=8) , DIMENSION(prac_levels) :: znw_prac , znu_prac , dnw_prac
       REAL(KIND=8) , DIMENSION(MAX(prac_levels,kde)) :: alb , phb
       REAL(KIND=8) :: alb_max, t_init_max, pb_max, phb_max
+      REAL(KIND=8) :: p00_r8, t00_r8, a_r8, tiso_r8
 
       CHARACTER(LEN=256) :: message
 
@@ -6475,9 +6476,13 @@ end program foo
             dnw_prac(k) = znw_prac(k+1) - znw_prac(k)
          END DO
 
+         tiso_r8    = tiso
+         t00_r8     = t00
+         a_r8       = a
+         p00_r8     = p00
          DO k = 1, prac_levels-1
             pb = znu_prac(k)*(p_surf - p_top) + p_top
-            temp = MAX ( tiso, t00 + A*LOG(pb/p00) )
+            temp = MAX ( tiso_r8, t00_r8 + A_r8*LOG(pb/p00_r8) )
             IF ( pb .LT. p_strat ) THEN
                 temp = tiso + A_strat*LOG(pb/p_strat)
             END IF
@@ -6533,7 +6538,7 @@ end program foo
 
             pb = 0.5*(eta_levels(k)+znw_prac(kk)) * (p_surf - p_top) + p_top
 
-            temp = MAX ( tiso, t00 + A*LOG(pb/p00) )
+            temp = MAX ( tiso_r8, t00_r8 + A_r8*LOG(pb/p00_r8) )
             IF ( pb .LT. p_strat ) THEN
                temp = tiso + A_strat * LOG ( pb/p_strat )
             END IF
@@ -6543,7 +6548,7 @@ end program foo
             eta_levels(k+1) = eta_levels(k) - dz*g / ( mub*alb(k) )
             pb = 0.5*(eta_levels(k)+eta_levels(k+1)) * (p_surf - p_top) + p_top
 
-            temp = MAX ( tiso, t00 + A*LOG(pb/p00) )
+            temp = MAX ( tiso_r8, t00_r8 + A_r8*LOG(pb/p00_r8) )
             IF ( pb .LT. p_strat ) THEN
                temp = tiso + A_strat * LOG ( pb/p_strat )
             END IF
@@ -6576,7 +6581,7 @@ end program foo
             DO loop = 1 , 10
                DO k = 8, kte-1-2-1
                   pb = (znw(k)+znw(k+1))*0.5 * (p_surf - p_top) + p_top
-                  temp = MAX ( tiso, t00 + A*LOG(pb/p00) )
+                  temp = MAX ( tiso_r8, t00_r8 + A_r8*LOG(pb/p00_r8) )
                   IF ( pb .LT. p_strat ) THEN
                      temp = tiso + A_strat * LOG ( pb/p_strat )
                   END IF
@@ -6598,7 +6603,7 @@ end program foo
 
             DO k = 1, kde-1-2
                pb = (znw(k)+znw(k+1))*0.5 * (p_surf - p_top) + p_top
-               temp = MAX ( tiso, t00 + A*LOG(pb/p00) )
+               temp = MAX ( tiso_r8, t00_r8 + A_r8*LOG(pb/p00_r8) )
                IF ( pb .LT. p_strat ) THEN
                   temp = tiso + A_strat * LOG ( pb/p_strat )
                END IF
@@ -6652,7 +6657,7 @@ print *,'namelist p_top (Pa) = ',p_top
 
          DO k = 8, kte-1
             pb = (znw(k)+znw(k+1))*0.5 * (p_surf - p_top) + p_top
-            temp = MAX ( tiso, t00 + A*LOG(pb/p00) )
+            temp = MAX ( tiso_r8, t00_r8 + A_r8*LOG(pb/p00_r8) )
             IF ( pb .LT. p_strat ) THEN
                temp = tiso + A_strat * LOG ( pb/p_strat )
             END IF

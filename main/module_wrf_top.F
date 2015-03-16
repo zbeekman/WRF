@@ -21,7 +21,7 @@ MODULE module_wrf_top
    USE module_nesting
 
 #ifdef DM_PARALLEL
-   USE module_dm, ONLY : wrf_dm_initialize, domain_active_this_task,mpi_comm_allcompute
+   USE module_dm, ONLY : wrf_dm_initialize,wrf_get_hostid,domain_active_this_task,mpi_comm_allcompute
 #endif
 
    USE module_cpl, ONLY : coupler_on, cpl_finalize, cpl_defdomain

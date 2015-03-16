@@ -241,7 +241,7 @@ RSL_FATAL(2) ;
 }
 
 rsl_free( p )
-   char ** p ;
+   char **p ;
 {
    if ( *p == zero_length_storage ) return ;    /* fix from ANU */
 

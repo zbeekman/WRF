@@ -45,7 +45,7 @@ CONTAINS
                          STEPBL,STEPRA,STEPCU,                   &
                          W0AVG, RAINNC, RAINC, RAINCV, RAINNCV,  &
                          SNOWNC, SNOWNCV, GRAUPELNC, GRAUPELNCV, &
-                         z_at_q, qnwfa2d, scalar, num_sc,    & ! G. Thompson
+                         z_at_q, qnwfa2d, scalar, num_sc,        & ! G. Thompson
                          re_cloud, re_ice, re_snow,              & ! G. Thompson
                          has_reqc, has_reqi, has_reqs,           & ! G. Thompson
                          NCA,swrad_scat,                         &
@@ -368,8 +368,8 @@ CONTAINS
    REAL,     DIMENSION( ims:ime , jms:jme ) , INTENT(OUT) ::           &
              RAINNC, RAINC, RAINCV, RAINNCV,  &
              SNOWNC, SNOWNCV, GRAUPELNC, GRAUPELNCV
-   REAL,     DIMENSION(ims:ime,kms:kme,jms:jme), INTENT(IN) :: z_at_q                          !  G. Thompson
-   REAL,     DIMENSION(ims:ime,jms:jme), INTENT(INOUT) :: qnwfa2d                    !  G. Thompson
+   REAL,     DIMENSION(ims:ime,kms:kme,jms:jme), INTENT(IN) :: z_at_q            !  G. Thompson
+   REAL,     DIMENSION(ims:ime,jms:jme), INTENT(INOUT) :: qnwfa2d                !  G. Thompson
    INTEGER,  INTENT(IN) :: num_sc                                                !  G. Thompson
    REAL,     DIMENSION(ims:ime,kms:kme,jms:jme,num_sc), INTENT(INOUT) :: scalar  !  G. Thompson
 
@@ -764,8 +764,12 @@ integer myproc
          config_flags%mp_physics  .eq. THOMPSONAERO         &
          .or. config_flags%mp_physics  .eq. NSSL_2MOM .or.       &
          config_flags%mp_physics  .eq. NSSL_2MOMG .or.      &
-         config_flags%mp_physics  .eq. NSSL_2MOMCCN         &
-         ) ) then
+         config_flags%mp_physics  .eq. NSSL_2MOMCCN .or.        &
+         config_flags%mp_physics  .eq. WSM3SCHEME .or.      & ! syb+
+         config_flags%mp_physics  .eq. WSM5SCHEME .or.      & ! syb+
+         config_flags%mp_physics  .eq. WSM6SCHEME .or.      & ! syb+
+         config_flags%mp_physics  .eq. WDM5SCHEME .or.      & ! syb+
+         config_flags%mp_physics  .eq. WDM6SCHEME ) ) then    ! syb+
       has_reqc = 1
       has_reqi = 1
       has_reqs = 1
@@ -830,6 +834,11 @@ integer myproc
          icloud_cu = 1
       END IF
    END IF
+#if (EM_CORE == 1)
+   IF ( config_flags%cu_physics == mskfscheme ) THEN
+        icloud_cu = 2
+   END IF
+#endif
    CALL nl_set_icloud_cu ( id , icloud_cu )
 
   IF(.not.restart)THEN
@@ -3557,7 +3566,6 @@ CALL lsm_mosaic_init(IVGTYP,config_flags%ISWATER,config_flags%ISURBAN,config_fla
    USE module_mp_wsm5
    USE module_mp_wsm6
    USE module_mp_etanew
-   USE module_mp_etaold
 #if (NMM_CORE == 1)
    USE module_mp_HWRF
 #endif
@@ -3647,7 +3655,7 @@ CALL lsm_mosaic_init(IVGTYP,config_flags%ISWATER,config_flags%ISURBAN,config_fla
      CASE (WSM5SCHEME)
           CALL wsm5init(rhoair0,rhowater,rhosnow,cliq,cpv, allowed_to_read )
      CASE (WSM6SCHEME)
-          CALL wsm6init(rhoair0,rhowater,rhosnow,cliq,cpv, allowed_to_read )
+          CALL wsm6init(rhoair0,rhowater,rhosnow,cliq,cpv, config_flags%hail_opt,allowed_to_read )
      CASE (ETAMPNEW)
          adv_moist_cond = .false.
          CALL etanewinit (MPDT,DT,DX,DY,LOWLYR,restart,           &
@@ -3727,16 +3735,6 @@ CALL lsm_mosaic_init(IVGTYP,config_flags%ISWATER,config_flags%ISURBAN,config_fla
              ,ims, ime, jms, jme, kms, kme                   &
              ,its, ite, jts, jte, kts, kte                   )
 #endif
-     CASE (ETAMPOLD)
-         adv_moist_cond = .false.
-         CALL etaoldinit (MPDT,DT,DX,DY,LOWLYR,restart,           &
-                          F_ICE_PHY,F_RAIN_PHY,F_RIMEF_PHY,       &
-                          mp_restart_state,tbpvs_state,tbpvs0_state,&
-                          allowed_to_read,                        &
-                          ids, ide, jds, jde, kds, kde,           &
-                          ims, ime, jms, jme, kms, kme,           &
-                          its, ite, jts, jte, kts, kte            )
-
 
      CASE DEFAULT
 
@@ -4271,9 +4269,10 @@ subroutine aerosol_in(aerodm,pina,alevsiz,no_months,no_src_types,XLAT,XLONG,   &
    REAL,  DIMENSION(alevsiz), INTENT(OUT )  ::                   pina
 
 ! Local
-!  data from Torn, computed from EC 6 types of aerosol data:
+!  Data from Ryan Torn, computed from EC 6 types of aerosol data:
 !    organic carbon, sea salt, dust, black carbon, sulfalte 
 !    and stratospheric aerosol (volcanic ashes)
+!  The data dimensions are 46 x 72 x 12 (pressure levels), and in unit of AOD per Pa
 
    INTEGER, PARAMETER :: latsiz = 46
    INTEGER, PARAMETER :: lonsiz = 72
