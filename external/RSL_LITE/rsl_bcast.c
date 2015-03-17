@@ -212,7 +212,7 @@ RSL_LITE_TO_CHILD_INFO ( msize_p,                        /* number of tasks in m
     offset = *offset_p ;
     alltasks = MAX( s_ntasks_nest_x*s_ntasks_nest_y + offset, s_ntasks_par_x*s_ntasks_par_y ) ;
 
-#if 1
+#if 0
 fprintf(stderr,"s_ntasks_par_x %d\n",s_ntasks_par_x)  ;
 fprintf(stderr,"s_ntasks_par_y %d\n",s_ntasks_par_y)  ;
 fprintf(stderr,"s_ntasks_nest_x %d\n",s_ntasks_nest_x)  ;
@@ -583,7 +583,7 @@ rsl_lite_allgather_msgs ( mytask_p, ntasks_par_p, ntasks_nest_p, offset_p, comm,
   mytask = 0 ;
   mytask_on_comm = 0 ;
 #endif
-#if 1
+#if 0
 fprintf(stderr,"inside rsl_lite_allgather_msgs  %d %d %d %d %d\n",mytask,ntasks_par,ntasks_nest,*offset_p, mytask_on_comm) ;
 
 fprintf(stderr,"%s %d : %d %d %d \n",__FILE__,__LINE__,mytask_on_comm,dir,*offset_p ) ;
@@ -604,7 +604,7 @@ fprintf(stderr,"%s %d : %d %d %d \n",__FILE__,__LINE__,mytask_on_comm,dir,*offse
  						    // everyone's list (not exactly scalable)
   for ( i = 0 ; i < ntasks*ntasks ; i++ ) Psize_all[i] = 0 ;
 
-#if 1
+#if 0
 fprintf(stderr,"%s %d : ntasks %d \n",__FILE__,__LINE__,ntasks) ;
 
   for ( j = 0 ; j < ntasks ; j++ ) 
@@ -625,7 +625,7 @@ fprintf(stderr,"(before MPI_Allgather) : Ssizes[%d] %d \n",j,Ssizes[j]) ;
   Psize_all[0] = Ssizes[0] ;
 #endif
 
-#if 1
+#if 0
 fprintf(stderr,"mytask_on_comm %d , ntasks %d \n",mytask_on_comm, ntasks ) ;
 #endif
 
@@ -634,7 +634,7 @@ fprintf(stderr,"mytask_on_comm %d , ntasks %d \n",mytask_on_comm, ntasks ) ;
     Rsizes[j] = 0 ;
   }
 
-#if 1
+#if 0
 for ( j = 0 ; j < ntasks ; j++ ) 
 {
 int jj ;
@@ -652,7 +652,7 @@ fprintf(stderr,"\n") ;
 
     Rsizes[j] += Psize_all[ INDEX_2( j, mytask_on_comm, ntasks ) ] ;
 
-#if 1
+#if 0
 fprintf(stderr,"j %d , mytask_on_comm %d,*offset_p %d \n",j,mytask_on_comm,*offset_p) ;
 fprintf(stderr,"Rsizes[%d]= %d; %d ; Psize_all[%d] = %d\n",
 j,
@@ -672,14 +672,14 @@ Psize_all[ INDEX_2( (mytask_on_comm-*offset_p+ntasks) % ntasks , j , ntasks ) ])
 
   /* this will be freed later */
 
-#if 1
+#if 0
 fprintf(stderr,"allocating Recvbuf %d bytes\n",Rbufsize + 3 * sizeof(int)) ;
 #endif
   Recvbuf = RSL_MALLOC( char , Rbufsize + 3 * sizeof(int) ) ; /* for sentinal record */
   Rbufcurs = 0 ;
   Rreclen = 0 ;
 
-#if 1
+#if 0
 fprintf(stderr,"%s %d before MPI_Alltoallv\n",__FILE__,__LINE__) ;
 fprintf(stderr,"before MPI_Alltoallv Ssizes %d %d %d %d %d %d \n",Ssizes[0],Ssizes[1],Ssizes[2],Ssizes[3],Ssizes[4],Ssizes[5]) ;
 fprintf(stderr,"before MPI_Alltoallv Sdisplacements %d %d %d %d %d %d \n",Sdisplacements[0],Sdisplacements[1],Sdisplacements[2],Sdisplacements[3],Sdisplacements[4],Sdisplacements[5]) ;
@@ -695,36 +695,36 @@ fprintf(stderr,"before MPI_Alltoallv Rdisplacements %d %d %d %d %d %d \n",Rdispl
   Sendbuf = Recvbuf ;
   Recvbuf = work ;
 #endif
-fprintf(stderr,"%s %d after MPI_Alltoallv\n",__FILE__,__LINE__) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv\n",__FILE__,__LINE__) ;
 
 /* add sentinel to the end of Recvbuf */
 
   r = (int *)&(Recvbuf[Rbufsize + 2 * sizeof(int)]) ;
-fprintf(stderr,"%s %d after MPI_Alltoallv\n",__FILE__,__LINE__) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv\n",__FILE__,__LINE__) ;
   *r = RSL_INVALID ;
-fprintf(stderr,"%s %d after MPI_Alltoallv Sendbuf %x\n",__FILE__,__LINE__, Sendbuf) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv Sendbuf %x\n",__FILE__,__LINE__, Sendbuf) ;
 
   if ( Sendbuf != NULL ) RSL_FREE( Sendbuf ) ; 
-fprintf(stderr,"%s %d after MPI_Alltoallv Sendbuf %x (should be NULL) \n",__FILE__,__LINE__,Sendbuf) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv Sendbuf %x (should be NULL) \n",__FILE__,__LINE__,Sendbuf) ;
   if ( Psize_all != NULL ) RSL_FREE( Psize_all ) ;
-fprintf(stderr,"%s %d after MPI_Alltoallv\n",__FILE__,__LINE__) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv\n",__FILE__,__LINE__) ;
 
-fprintf(stderr,"%s %d after MPI_Alltoallv Plist=%x\n",__FILE__,__LINE__,Plist) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv Plist=%x\n",__FILE__,__LINE__,Plist) ;
   if ( Plist != NULL ) {
     for ( j = 0 ; j < Plist_length ; j++ ) { 
-fprintf(stderr,"%s %d after MPI_Alltoallv j=%d \n",__FILE__,__LINE__,j) ;
-fprintf(stderr,"%s %d after MPI_Alltoallv Plist=%x\n",__FILE__,__LINE__,&(Plist[j])) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv j=%d \n",__FILE__,__LINE__,j) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv Plist=%x\n",__FILE__,__LINE__,&(Plist[j])) ;
       destroy_list ( &(Plist[j]), NULL ) ;
-fprintf(stderr,"%s %d after MPI_Alltoallv \n",__FILE__,__LINE__) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv \n",__FILE__,__LINE__) ;
     }
-fprintf(stderr,"%s %d after MPI_Alltoallv\n",__FILE__,__LINE__) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv\n",__FILE__,__LINE__) ;
     RSL_FREE( Plist ) ;
-fprintf(stderr,"%s %d after MPI_Alltoallv\n",__FILE__,__LINE__) ;
+//fprintf(stderr,"%s %d after MPI_Alltoallv\n",__FILE__,__LINE__) ;
     Plist = NULL ;
     Plist_length = 0 ;
   }
 
-fprintf(stderr,"%s %d returning rsl_lite_allgather_msgs\n",__FILE__,__LINE__) ;
+//fprintf(stderr,"%s %d returning rsl_lite_allgather_msgs\n",__FILE__,__LINE__) ;
 }
 
 /********************************************/

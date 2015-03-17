@@ -1870,7 +1870,7 @@ ENDIF
 #include <namelist_statements.inc>
 
       CALL MPI_INITIALIZED( mpi_inited, ierr )
-write(0,*)'mpi_inited ',mpi_inited
+!debug write(0,*)'mpi_inited ',mpi_inited
       IF ( .NOT. mpi_inited ) THEN
 #  if defined(_OPENMP) && defined(MPI2_THREAD_SUPPORT)
         thread_support_requested = MPI_THREAD_FUNNELED
@@ -1902,9 +1902,9 @@ write(0,*)'mpi_inited ',mpi_inited
       CALL MPI_Comm_rank ( mpi_comm_here, mytask, ierr ) ;
       CALL MPI_Comm_size ( mpi_comm_here, ntasks, ierr ) ;
       mpi_comm_allcompute = mpi_comm_here
-write(0,*)'mytask ',mytask
-write(0,*)'ntasks ',ntasks
-write(0,*)__LINE__,mpi_comm_here
+!debug write(0,*)'mytask ',mytask
+!debug write(0,*)'ntasks ',ntasks
+!debug write(0,*)__LINE__,mpi_comm_here
 
       IF ( mytask .EQ. 0 ) THEN
         OPEN ( unit=27, file="namelist.input", form="formatted", status="old" )
@@ -1922,9 +1922,9 @@ write(0,*)__LINE__,mpi_comm_here
         READ ( UNIT = 27 , NML = domains , IOSTAT=io_status )
         CLOSE ( 27 )
       ENDIF
-write(0,*)'before mpi_bcast'
+!debug write(0,*)'before mpi_bcast'
       CALL mpi_bcast( io_status, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
-write(0,*)'after mpi_bcast',io_status
+!debug write(0,*)'after mpi_bcast',io_status
       IF ( io_status .NE. 0 ) THEN
           RETURN ! just ignore and return, everybody's on the same communicator
       ENDIF
@@ -1937,22 +1937,20 @@ write(0,*)'after mpi_bcast',io_status
       CALL mpi_bcast( max_dom, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       nkids = 1
       which_kid = 0
-write(0,*)__LINE__,mpi_comm_here
+!debug write(0,*)__LINE__,mpi_comm_here
       DO i = 2, max_dom
         IF ( 1 .le. parent_id(i) .AND. parent_id(i) .LE. max_domains ) THEN
           which_kid(i) = nkids(parent_id(i))
-write(0,*)'which_kid i,parent_id(i),nkids(parent_id(i))',i,parent_id(i),nkids(parent_id(i))
+!debug write(0,*)'which_kid i,parent_id(i),nkids(parent_id(i))',i,parent_id(i),nkids(parent_id(i))
           nkids(parent_id(i)) = nkids(parent_id(i)) + 1
         ELSE
           WRITE(wrf_err_message,*)'invalid parent id for domain ',i
           CALL wrf_error_fatal(TRIM(wrf_err_message))
         ENDIF 
       ENDDO
-write(0,*)'which_kid ',which_kid(2:max_dom)
+!debug write(0,*)'which_kid ',which_kid(2:max_dom)
 
       DO nest_id = 1,max_dom
-!        nest_pes_x(nest_id) = nest_pes_x(comm_domain(nest_id))
-!        nest_pes_y(nest_id) = nest_pes_y(comm_domain(nest_id))
 #if 0
         nest_task_offsets(nest_id) = comm_start(nest_id)
         IF ( nest_id .EQ. 1 ) THEN
@@ -1976,15 +1974,13 @@ write(0,*)'which_kid ',which_kid(2:max_dom)
           ELSE
             nest_task_offsets(nest_id) = nest_pes_x(parent_id(nest_id))*nest_pes_y(parent_id(nest_id))
           ENDIF
-
         ENDIF
 #endif
-write(0,'(" nest_task_offsets(",i3,") = ", i3)')nest_id,nest_task_offsets(nest_id)
       ENDDO
 
-write(0,*)'max_dom ',max_dom
-write(0,*)'MPI_UNDEFINED ',MPI_UNDEFINED
-write(0,*)__LINE__,mpi_comm_here
+!debug write(0,*)'max_dom ',max_dom
+!debug write(0,*)'MPI_UNDEFINED ',MPI_UNDEFINED
+!debug write(0,*)__LINE__,mpi_comm_here
 
       IF ( max_dom .GT. 1 ) THEN
 !jm Additional code here to set up communicator for this domain and tables
@@ -2004,73 +2000,73 @@ write(0,*)__LINE__,mpi_comm_here
         ALLOCATE( icolor(ntasks) )
         ALLOCATE( icolor2(ntasks) )
         ALLOCATE( idomain(ntasks) )
-write(0,*)__LINE__,mpi_comm_here
+!debug write(0,*)__LINE__,mpi_comm_here
         k = 0
 ! split off the separate local communicators
-write(0,*)__LINE__,mpi_comm_here
+!debug write(0,*)__LINE__,mpi_comm_here
 
 ! construct list of local communicators my task is in
         comms_i_am_in = MPI_UNDEFINED
         DO i = 1, max_dom
-write(0,*)'i = ',i
+!debug write(0,*)'i = ',i
           inthisone = .FALSE.
           icolor = 0
           DO j = comm_start(i), comm_start(i)+nest_pes_x(i)*nest_pes_y(i)-1
-write(0,*)'setting icolor ',j+1
+!debug write(0,*)'setting icolor ',j+1
             IF ( j+1 .GT. ntasks ) THEN
               WRITE(wrf_err_message,*)"check comm_start, nest_pes_x, nest_pes_y settings in namelist for comm ",i
               CALL wrf_error_fatal(wrf_err_message)
             ENDIF
             icolor(j+1) = 1
           ENDDO
-write(0,*)icolor(1:ntasks)
+!debug write(0,*)icolor(1:ntasks)
           IF ( icolor(mytask+1) .EQ. 1 ) inthisone = .TRUE.
-write(0,*)__LINE__,mpi_comm_here
+!debug write(0,*)__LINE__,mpi_comm_here
           CALL MPI_Comm_dup(mpi_comm_here,comdup,ierr)
-write(0,*)'called MPI_Comm_dup ierr ', ierr
+!debug write(0,*)'called MPI_Comm_dup ierr ', ierr
           CALL MPI_Comm_split(comdup,icolor(mytask+1),mytask,mpi_comm_local,ierr)
-write(0,*)'called MPI_Comm_split ierr ', ierr
+!debug write(0,*)'called MPI_Comm_split ierr ', ierr
           IF ( inthisone ) THEN
             dims(1) = nest_pes_y(i) ! rows
             dims(2) = nest_pes_x(i)  ! columns
             isperiodic(1) = .false.
             isperiodic(2) = .false.
             CALL mpi_cart_create( mpi_comm_local, 2, dims, isperiodic, .false., comms_i_am_in(i), ierr )
-write(0,*)' CALL mpi_cart_create comm ', i, dims(1:2), comms_i_am_in(i)
+!debug write(0,*)' CALL mpi_cart_create comm ', i, dims(1:2), comms_i_am_in(i)
           ENDIF
         ENDDO
-write(0,*)'comms_i_am_in ',comms_i_am_in(1:max_dom)
+!debug write(0,*)'comms_i_am_in ',comms_i_am_in(1:max_dom)
 
 ! assign domains to communicators
         local_communicator = MPI_UNDEFINED
         DO i = 1, max_dom
           local_communicator_store(i) = comms_i_am_in(i)
           domain_active_this_task(i) = ( local_communicator_store(i) .NE. MPI_UNDEFINED )
-write(0,*)i,'local_communicator_store ',local_communicator_store(i)
+!debug write(0,*)i,'local_communicator_store ',local_communicator_store(i)
           IF ( local_communicator_store(i) .NE. MPI_UNDEFINED ) THEN
              CALL MPI_Comm_size( local_communicator_store(i), ntasks_store(i), ierr )
-write(0,*)'ntasks_store ',i,ntasks_store(i)
+!debug write(0,*)'ntasks_store ',i,ntasks_store(i)
              CALL MPI_Comm_rank( local_communicator_store(i), mytask_store(i), ierr )
-write(0,*)'mytask_store ',i,mytask_store(i)
+!debug write(0,*)'mytask_store ',i,mytask_store(i)
              CALL mpi_cart_coords( local_communicator_store(i), mytask_store(i), 2, coords, ierr )
              IF ( ierr .NE. 0 ) CALL wrf_error_fatal('MPI_cart_coords fails ')
              mytask_y_store(i) = coords(1)   ! col task (1)
              mytask_x_store(i) = coords(2)   ! col task (x)
-write(0,*)'mytask_x_store ',i,mytask_x_store(i)
-write(0,*)'mytask_y_store ',i,mytask_y_store(i)
+!debug write(0,*)'mytask_x_store ',i,mytask_x_store(i)
+!debug write(0,*)'mytask_y_store ',i,mytask_y_store(i)
              CALL MPI_Comm_dup( local_communicator_store(i), comdup2, ierr )
              IF ( ierr .NE. 0 ) CALL wrf_error_fatal('MPI_Comm_dup fails ')
 
              CALL MPI_Comm_split(comdup2,mytask_y_store(i),mytask_store(i),local_communicator_x_store(i),ierr)
              IF ( ierr .NE. 0 ) CALL wrf_error_fatal('MPI_Comm_split fails for y ')
-write(0,*)i,'local_communicator_y_store ',local_communicator_y_store(i)
+!debug write(0,*)i,'local_communicator_y_store ',local_communicator_y_store(i)
 
              CALL MPI_Comm_split(comdup2,mytask_x_store(i),mytask_store(i),local_communicator_y_store(i),ierr)
              IF ( ierr .NE. 0 ) CALL wrf_error_fatal('MPI_Comm_split fails for x ')
-write(0,*)i,'local_communicator_x_store ',local_communicator_x_store(i)
+!debug write(0,*)i,'local_communicator_x_store ',local_communicator_x_store(i)
 
              CALL MPI_Comm_size( local_communicator_x_store(i), ntasks_x_store(i), ierr )
-write(0,*)i,'local_communicator_x_store ',local_communicator_x_store(i),ntasks_x_store(i)
+!debug write(0,*)i,'local_communicator_x_store ',local_communicator_x_store(i),ntasks_x_store(i)
              CALL MPI_Comm_rank( local_communicator_x_store(i), mytask_x_store(i), ierr )
              CALL MPI_Comm_size( local_communicator_y_store(i), ntasks_y_store(i), ierr )
              CALL MPI_Comm_rank( local_communicator_y_store(i), mytask_y_store(i), ierr )
@@ -2087,7 +2083,7 @@ write(0,*)i,'local_communicator_x_store ',local_communicator_x_store(i),ntasks_x
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         DO nest_id = 2, max_dom
-write(0,*)'>>>>>>  nest_id = ',nest_id
+!debug write(0,*)'>>>>>>  nest_id = ',nest_id
            par_id  = parent_id(nest_id)
            icolor2 = 0
            DO j = 1,ntasks !iterate over all the tasks in the "big" communicator
@@ -2097,14 +2093,14 @@ write(0,*)'>>>>>>  nest_id = ',nest_id
            icolor2 = 0
            mytask_is_nest = .FALSE.
            mytask_is_par = .FALSE.
-write(0,*)'comm_start(nest_id) ',nest_id,comm_start(nest_id)
-write(0,*)'nest_pes_x(nest_id) ',nest_pes_x(nest_id)
-write(0,*)'nest_pes_y(nest_id) ',nest_pes_y(nest_id)
+!debug write(0,*)'comm_start(nest_id) ',nest_id,comm_start(nest_id)
+!debug write(0,*)'nest_pes_x(nest_id) ',nest_pes_x(nest_id)
+!debug write(0,*)'nest_pes_y(nest_id) ',nest_pes_y(nest_id)
            DO j = 1,ntasks
 
-write(0,*)'nest, par ',j-1,   &
-         comm_start(nest_id) .LE. j-1 .AND. j-1 .LT. comm_start(nest_id) + nest_pes_x(nest_id)*nest_pes_y(nest_id), &
-         comm_start(par_id)  .LE. j-1 .AND. j-1 .LT. comm_start(par_id)  + nest_pes_x(par_id) *nest_pes_y(par_id)
+!debug write(0,*)'nest, par ',j-1,   &
+!debug          comm_start(nest_id) .LE. j-1 .AND. j-1 .LT. comm_start(nest_id) + nest_pes_x(nest_id)*nest_pes_y(nest_id), &
+!debug          comm_start(par_id)  .LE. j-1 .AND. j-1 .LT. comm_start(par_id)  + nest_pes_x(par_id) *nest_pes_y(par_id)
 
              IF ( comm_start(nest_id) .LE. j-1 .AND. j-1 .LT. comm_start(nest_id) + nest_pes_x(nest_id)*nest_pes_y(nest_id) )  THEN
                icolor2(j)=1
@@ -2115,29 +2111,29 @@ write(0,*)'nest, par ',j-1,   &
                if ( j-1 .EQ. mytask ) mytask_is_par=.TRUE.
              ENDIF
            ENDDO
-write(0,*)nest_id,'mytask_is_par ',mytask_is_par
-write(0,*)nest_id,'mytask_is_nest ',mytask_is_nest
+!debug write(0,*)nest_id,'mytask_is_par ',mytask_is_par
+!debug write(0,*)nest_id,'mytask_is_nest ',mytask_is_nest
 
            i = icolor2(mytask+1)
            CALL MPI_Comm_dup(mpi_comm_here,comdup,ierr)
-write(0,*)'calling MPI_Comm_split comdup       ',comdup
-write(0,*)'calling MPI_Comm_split i            ',i
-write(0,*)'calling MPI_Comm_split origmytask   ',origmytask
+!debug write(0,*)'calling MPI_Comm_split comdup       ',comdup
+!debug write(0,*)'calling MPI_Comm_split i            ',i
+!debug write(0,*)'calling MPI_Comm_split origmytask   ',origmytask
            CALL MPI_Comm_split(comdup,i,origmytask,mpi_comm_me_and_mom,ierr)
-write(0,*)'calling MPI_Comm_split mpi_comm_me_and_mom ',mpi_comm_me_and_mom
-write(0,*)'calling MPI_Comm_split ierr         ',ierr
+!debug write(0,*)'calling MPI_Comm_split mpi_comm_me_and_mom ',mpi_comm_me_and_mom
+!debug write(0,*)'calling MPI_Comm_split ierr         ',ierr
 CALL MPI_Comm_size(mpi_comm_me_and_mom,iii,ierr) ; write(0,*)nest_id,'mpi_comm_me_and_mom sz',iii
 CALL MPI_Comm_rank(mpi_comm_me_and_mom,iii,ierr) ; write(0,*)nest_id,'mpi_comm_me_and_mom rk',iii
 
            IF ( mytask_is_nest  ) THEN
               intercomm_active(nest_id)  = .TRUE.
               mpi_comm_to_mom(nest_id)   =  mpi_comm_me_and_mom
-write(0,*)'setting mpi_comm_to_mom par_id ',par_id,mpi_comm_me_and_mom
+!debug write(0,*)'setting mpi_comm_to_mom par_id ',par_id,mpi_comm_me_and_mom
            ENDIF
            IF ( mytask_is_par ) THEN
               intercomm_active(par_id)              = .TRUE.
               mpi_comm_to_kid(which_kid(nest_id),par_id)  =  mpi_comm_me_and_mom
-write(0,*)'setting mpi_comm_to_kid which_kid(nest_id),nest_id ',which_kid(nest_id),par_id,mpi_comm_me_and_mom
+!debug write(0,*)'setting mpi_comm_to_kid which_kid(nest_id),nest_id ',which_kid(nest_id),par_id,mpi_comm_me_and_mom
            ENDIF
         ENDDO
 
@@ -2165,7 +2161,7 @@ write(0,*)'setting mpi_comm_to_kid which_kid(nest_id),nest_id ',which_kid(nest_i
       DEALLOCATE( icolor )
       DEALLOCATE( icolor2 )
       DEALLOCATE( idomain )
-write(0,*)'returning from split_communicator'
+!debug write(0,*)'returning from split_communicator'
 #endif
    END SUBROUTINE split_communicator
 
@@ -4213,32 +4209,32 @@ ENDIF
 
       IF ( grid%active_this_task ) THEN
 
-write(0,*)'ZAP grid%id ',grid%id
-write(0,*)'ZAP ngrid%id ',ngrid%id
-write(0,*)'ZAP intermediate_grid%id ',intermediate_grid%id
-write(0,*)'ZAP nest_pes_x(grid%id) ',nest_pes_x(grid%id)
-write(0,*)'ZAP nest_pes_y(grid%id) ',nest_pes_y(grid%id)
-write(0,*)'ZAP nest_pes_x(ngrid%id) ',nest_pes_x(ngrid%id)
-write(0,*)'ZAP nest_pes_y(ngrid%id) ',nest_pes_y(ngrid%id)
-write(0,*)'ZAP nest_pes_x(intermediate_grid%id) ',nest_pes_x(intermediate_grid%id)
-write(0,*)'ZAP nest_pes_y(intermediate_grid%id) ',nest_pes_y(intermediate_grid%id)
+!debug write(0,*)'ZAP grid%id ',grid%id
+!debug write(0,*)'ZAP ngrid%id ',ngrid%id
+!debug write(0,*)'ZAP intermediate_grid%id ',intermediate_grid%id
+!debug write(0,*)'ZAP nest_pes_x(grid%id) ',nest_pes_x(grid%id)
+!debug write(0,*)'ZAP nest_pes_y(grid%id) ',nest_pes_y(grid%id)
+!debug write(0,*)'ZAP nest_pes_x(ngrid%id) ',nest_pes_x(ngrid%id)
+!debug write(0,*)'ZAP nest_pes_y(ngrid%id) ',nest_pes_y(ngrid%id)
+!debug write(0,*)'ZAP nest_pes_x(intermediate_grid%id) ',nest_pes_x(intermediate_grid%id)
+!debug write(0,*)'ZAP nest_pes_y(intermediate_grid%id) ',nest_pes_y(intermediate_grid%id)
 
 #include "nest_interpdown_pack.inc"
       ENDIF 
 
-write(0,*)__FILE__,__LINE__,"nest_task_offsets ",nest_task_offsets(1:3)
+!debug write(0,*)__FILE__,__LINE__,"nest_task_offsets ",nest_task_offsets(1:3)
       ! determine which communicator and offset to use 
       IF ( intercomm_active( grid%id ) ) THEN        ! I am parent
         local_comm = mpi_comm_to_kid( which_kid(ngrid%id), grid%id ) 
         ioffset = nest_task_offsets(ngrid%id)
-write(0,*)__FILE__,__LINE__,"interp_domain_em_part1 ioffset ",ioffset
+!debug write(0,*)__FILE__,__LINE__,"interp_domain_em_part1 ioffset ",ioffset
       ELSE IF ( intercomm_active( ngrid%id ) ) THEN  ! I am nest 
         local_comm = mpi_comm_to_mom( ngrid%id )
         ioffset = nest_task_offsets(ngrid%id)
-write(0,*)__FILE__,__LINE__,"interp_domain_em_part1 ioffset ",ioffset
+!debug write(0,*)__FILE__,__LINE__,"interp_domain_em_part1 ioffset ",ioffset
       ENDIF
-write(0,*)__FILE__,__LINE__,"interp_domain_em_part1 nproc ",nproc
-write(0,*)__FILE__,__LINE__,"interp_domain_em_part1 myproc ",myproc
+!debug write(0,*)__FILE__,__LINE__,"interp_domain_em_part1 nproc ",nproc
+!debug write(0,*)__FILE__,__LINE__,"interp_domain_em_part1 myproc ",myproc
 
       IF ( grid%active_this_task .OR. ngrid%active_this_task ) THEN
         CALL mpi_comm_rank(local_comm,myproc,ierr)
@@ -5196,17 +5192,17 @@ ENDIF
       ENDIF
 
       ! determine which communicator and offset to use
-write(0,*)__FILE__,__LINE__,"grid%id ",grid%id
-write(0,*)__FILE__,__LINE__,"ngrid%id ",ngrid%id
-write(0,*)__FILE__,__LINE__,"intercomm_active ",intercomm_active(1:3)
+!debug write(0,*)__FILE__,__LINE__,"grid%id ",grid%id
+!debug write(0,*)__FILE__,__LINE__,"ngrid%id ",ngrid%id
+!debug write(0,*)__FILE__,__LINE__,"intercomm_active ",intercomm_active(1:3)
       IF ( intercomm_active( grid%id ) ) THEN        ! I am parent
         local_comm = mpi_comm_to_kid( which_kid(ngrid%id), grid%id )
         ioffset = nest_task_offsets(ngrid%id)
-write(0,*)__FILE__,__LINE__,"interp_domain_nmm_part1 ioffset ",ioffset,local_comm
+!debug write(0,*)__FILE__,__LINE__,"interp_domain_nmm_part1 ioffset ",ioffset,local_comm
       ELSE IF ( intercomm_active( ngrid%id ) ) THEN  ! I am nest
         local_comm = mpi_comm_to_mom( ngrid%id )
         ioffset = nest_task_offsets(ngrid%id)
-write(0,*)__FILE__,__LINE__,"interp_domain_nmm_part1 ioffset ",ioffset,local_comm
+!debug write(0,*)__FILE__,__LINE__,"interp_domain_nmm_part1 ioffset ",ioffset,local_comm
       ENDIF
 
       IF ( grid%active_this_task .OR. ngrid%active_this_task ) THEN
@@ -5281,12 +5277,12 @@ write(0,*)__FILE__,__LINE__,"interp_domain_nmm_part1 ioffset ",ioffset,local_com
 
         nlev  = ckde - ckds + 1 
 
- write(0,*)__FILE__,__LINE__,'shape(moist) ',shape(moist)
- write(0,'(7i8)') grid%sm31,grid%em31,grid%sm32,grid%em32,grid%sm33,grid%em33,num_moist
- write(0,*)__FILE__,__LINE__,'shape(grid%moist) ',shape(grid%moist)
- write(0,*)__FILE__,__LINE__,'shape(ngrid%moist) ',shape(ngrid%moist)
- write(0,*)__FILE__,__LINE__,'shape(grid%iinfo) ',shape(grid%iinfo)
- write(0,*)__FILE__,__LINE__,'shape(ngrid%iinfo) ',shape(ngrid%iinfo)
+!debug write(0,*)__FILE__,__LINE__,'shape(moist) ',shape(moist)
+!debug write(0,'(7i8)') grid%sm31,grid%em31,grid%sm32,grid%em32,grid%sm33,grid%em33,num_moist
+!debug write(0,*)__FILE__,__LINE__,'shape(grid%moist) ',shape(grid%moist)
+!debug write(0,*)__FILE__,__LINE__,'shape(ngrid%moist) ',shape(ngrid%moist)
+!debug write(0,*)__FILE__,__LINE__,'shape(grid%iinfo) ',shape(grid%iinfo)
+!debug write(0,*)__FILE__,__LINE__,'shape(ngrid%iinfo) ',shape(ngrid%iinfo)
 #include "nest_interpdown_unpack.inc"
 
         CALL get_ijk_from_grid (  grid ,              &
@@ -5303,11 +5299,10 @@ write(0,*)__FILE__,__LINE__,"interp_domain_nmm_part1 ioffset ",ioffset,local_com
 ! Grid is set to ngrid%intermediate_grid in the call from med_interp_domain
 ! (share/mediation_interp_domain.F) so if one is active_this_task, so is the other
         call store_interp_info(ngrid,grid)
-if (grid%id.eq.3) then
- write(0,*)__FILE__,__LINE__
- write(0,*)__FILE__,__LINE__,ngrid%pdtop
- write(0,*)__FILE__,__LINE__,shape(grid%pd)
- write(0,*)__FILE__,__LINE__,shape(grid%pint)
+!debug write(0,*)__FILE__,__LINE__
+!debug write(0,*)__FILE__,__LINE__,ngrid%pdtop
+!debug write(0,*)__FILE__,__LINE__,shape(grid%pd)
+!debug write(0,*)__FILE__,__LINE__,shape(grid%pint)
 write(110,*)ipe-ips+1,jpe-jps+1,' grid%pd '
 do j=jps,jpe
 do i=ips,ipe
@@ -5337,7 +5332,6 @@ write(50,*)'grid%pint ',ngrid%pint
 write(50,*)'grid%t ',ngrid%t
 write(50,*)'grid%pd ',ngrid%pd
 write(50,*)'grid%q ',ngrid%q
-endif
 
         call ext_c2n_fulldom(ngrid%IIH,ngrid%JJH,ngrid%HBWGT1, &
              ngrid%HBWGT2,ngrid%HBWGT3,ngrid%HBWGT4,         &
@@ -5350,11 +5344,11 @@ endif
              nids, nide, njds, njde, nkds, nkde,             &
              nims, nime, njms, njme, nkms, nkme,             &
              nips, nipe, njps, njpe, nkps, nkpe)
- write(0,*)__FILE__,__LINE__
+!debug write(0,*)__FILE__,__LINE__
 
 #include "nest_interpdown_interp.inc"
 
- write(0,*)__FILE__,__LINE__
+!debug write(0,*)__FILE__,__LINE__
 
         CALL pop_communicators_for_domain
 
@@ -5990,7 +5984,6 @@ integer myproc
       ipe_save = ngrid%i_parent_start + (xide-xids) / ngrid%parent_grid_ratio - 1
       jpe_save = ngrid%j_parent_start + (xjde-xjds) / ngrid%parent_grid_ratio - 1
 
-write(0,'("ips_save, ipe_save , jps_save, jpe_save ",4i7)')ips_save, ipe_save , jps_save, jpe_save
 
       nide = nide - 1   !dusan
       njde = njde - 1   !dusan

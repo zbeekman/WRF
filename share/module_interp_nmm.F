@@ -3116,9 +3116,7 @@ subroutine ext_c2n_fulldom  (II,JJ,W1,W2,W3,W4,&
   integer :: i,j,k
   logical :: badbad
 
-write(0,*)__FILE__,__LINE__
   call find_kpres(kpres,eta2,nkds,nkde,nkms,nkme)
-write(0,*)__FILE__,__LINE__
   call c2n_fulldom(II,JJ,W1,W2,W3,W4,&
        deta1,deta2, eta1,eta2, ptop,pdtop,   &
        parent_fis,cpint,ct,cpd,cq,           &
@@ -3129,7 +3127,6 @@ write(0,*)__FILE__,__LINE__
        nims, nime, njms, njme, nkms, nkme,   &
        nits, nite, njts, njte, nkts, nkte,   &
        kpres)
-write(0,*)__FILE__,__LINE__
 
 end subroutine ext_c2n_fulldom
 
