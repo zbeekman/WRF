@@ -183,6 +183,7 @@ SUBROUTINE med_interp_domain ( parent_grid , nested_grid )
 
 #  if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
 !  IF ( nested_grid%active_this_task ) THEN
+write(0,*)__FILE__,__LINE__
     CALL ensure_space_field &
                          ( grid, grid%id , 1 , 2 , .TRUE. , nested_grid%active_this_task,   &
                            grid%sd31, grid%ed31, grid%sd32, grid%ed32, grid%sd33, grid%ed33, &
@@ -193,6 +194,7 @@ SUBROUTINE med_interp_domain ( parent_grid , nested_grid )
                            grid%sm31x, grid%em31x, grid%sm32x, grid%em32x, grid%sm33x, grid%em33x, &   ! x-xpose
                            grid%sm31y, grid%em31y, grid%sm32y, grid%em32y, grid%sm33y, grid%em33y  &   ! y-xpose
       )
+write(0,*)__FILE__,__LINE__
 !  ENDIF
 #endif
   nested_grid%intermediate_grid%interp_mp=parent_grid%interp_mp .or. nested_grid%interp_mp
@@ -203,23 +205,28 @@ SUBROUTINE med_interp_domain ( parent_grid , nested_grid )
 
   grid => parent_grid
 
+write(0,*)__FILE__,__LINE__
   CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
+write(0,*)__FILE__,__LINE__
 
   CALL interp_domain_nmm_part1 ( grid , nested_grid%intermediate_grid, nested_grid, config_flags    &
 !
 #     include "actual_new_args.inc"
 !
                                 )
+write(0,*)__FILE__,__LINE__
 
   grid => nested_grid%intermediate_grid
   CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
   IF ( nested_grid%active_this_task ) THEN
 
+write(0,*)__FILE__,__LINE__
   CALL interp_domain_nmm_part2 ( grid, nested_grid, config_flags    &
 !
 #     include "actual_new_args.inc"
 !
                                 )
+write(0,*)__FILE__,__LINE__
 
   grid => nested_grid%intermediate_grid
   CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
@@ -231,6 +238,7 @@ SUBROUTINE med_interp_domain ( parent_grid , nested_grid )
 ! ------------------------------------------------------
 !    End of Interpolation calls for NMM.
 ! ------------------------------------------------------
+write(0,*)__FILE__,__LINE__
    RETURN
 END SUBROUTINE med_interp_domain
 
