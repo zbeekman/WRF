@@ -322,6 +322,8 @@ CHARACTER*512 mminlu_loc
    CALL alloc_and_configure_domain ( domain_id  = 1 ,                  &
 #ifdef DM_PARALLEL
                                active_this_task = domain_active_this_task(1), &
+#else
+                               active_this_task = .TRUE.               &
 #endif
                                      grid       = head_grid ,          &
                                      parent     = null_domain ,        &

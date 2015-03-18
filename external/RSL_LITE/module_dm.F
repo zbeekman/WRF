@@ -1937,7 +1937,6 @@ ENDIF
       CALL mpi_bcast( max_dom, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       nkids = 1
       which_kid = 0
-!debug write(0,*)__LINE__,mpi_comm_here
       DO i = 2, max_dom
         IF ( 1 .le. parent_id(i) .AND. parent_id(i) .LE. max_domains ) THEN
           which_kid(i) = nkids(parent_id(i))
@@ -1982,7 +1981,8 @@ ENDIF
 !debug write(0,*)'MPI_UNDEFINED ',MPI_UNDEFINED
 !debug write(0,*)__LINE__,mpi_comm_here
 
-      IF ( max_dom .GT. 1 ) THEN
+!      IF ( max_dom .GT. 1 ) THEN
+      IF ( .TRUE. ) THEN
 !jm Additional code here to set up communicator for this domain and tables
 !jm mapping individual domain task IDs to the original local communicator
 !jm that is unsplit over nest domains.  from now on what we are calling
@@ -2136,8 +2136,12 @@ CALL MPI_Comm_rank(mpi_comm_me_and_mom,iii,ierr) ; write(0,*)nest_id,'mpi_comm_m
 !debug write(0,*)'setting mpi_comm_to_kid which_kid(nest_id),nest_id ',which_kid(nest_id),par_id,mpi_comm_me_and_mom
            ENDIF
         ENDDO
+        DEALLOCATE( icolor )
+        DEALLOCATE( icolor2 )
+        DEALLOCATE( idomain )
 
       ELSE IF ( ( tasks_per_split .LE. ntasks .AND. tasks_per_split .LE. 0 ) ) THEN
+        domain_active_this_task(1) = .TRUE.
         IF ( mod( ntasks, tasks_per_split ) .NE. 0 ) THEN
           CALL wrf_message( 'WARNING: tasks_per_split does not evenly divide ntasks. Some tasks will be wasted.' )
         ENDIF
@@ -2154,14 +2158,17 @@ CALL MPI_Comm_rank(mpi_comm_me_and_mom,iii,ierr) ; write(0,*)nest_id,'mpi_comm_m
         CALL MPI_Comm_dup(mpi_comm_here,comdup,ierr)
         CALL MPI_Comm_split(comdup,icolor(mytask+1),mytask,mpi_comm_local,ierr)
         CALL wrf_set_dm_communicator( mpi_comm_local )
+        CALL store_communicators_for_domain(1)
+        DEALLOCATE( icolor )
+      ELSE
+        domain_active_this_task(1) = .TRUE.
+        mpi_comm_local = mpi_comm_here
+        CALL wrf_set_dm_communicator( mpi_comm_local )
+        CALL store_communicators_for_domain(1)
       ENDIF
 
       CALL instate_communicators_for_domain(1)
 
-      DEALLOCATE( icolor )
-      DEALLOCATE( icolor2 )
-      DEALLOCATE( idomain )
-!debug write(0,*)'returning from split_communicator'
 #endif
    END SUBROUTINE split_communicator
 
