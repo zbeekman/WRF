@@ -288,7 +288,9 @@ integer myproc,i,j
          CALL domain_clockprint ( 150, grid, 'DEBUG:  top of integrate(),' )
          DO WHILE ( .NOT. domain_clockisstopsubtime(grid) )
 !            IF ( wrf_dm_on_monitor() ) THEN
+IF ( grid%active_this_task ) THEN
                CALL start_timing
+ENDIF
 !            END IF
             CALL med_setup_step ( grid , config_flags )
             a_nest_was_opened = .false.
