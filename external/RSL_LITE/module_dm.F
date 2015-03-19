@@ -3439,22 +3439,22 @@ END
        IF ( ndim .GE. 2 .AND. wrf_dm_on_monitor() ) THEN
 
          IF      ( typesize .EQ. RWORDSIZE ) THEN
-	   CALL patch_2_outbuf_r ( tmpbuf FRSTELEM , globbuf ,             &
-				   DS1, DE1, DS2, DE2, DS3, DE3 , &
-				   GPATCH                         )
-	 ELSE IF ( typesize .EQ. IWORDSIZE ) THEN
-	   CALL patch_2_outbuf_i ( tmpbuf FRSTELEM , globbuf ,             &
-				   DS1, DE1, DS2, DE2, DS3, DE3 , &
-				   GPATCH                         )
-	 ELSE IF ( typesize .EQ. DWORDSIZE ) THEN
-	   CALL patch_2_outbuf_d ( tmpbuf FRSTELEM , globbuf ,             &
-				   DS1, DE1, DS2, DE2, DS3, DE3 , &
-				   GPATCH                         )
-	 ELSE IF ( typesize .EQ. LWORDSIZE ) THEN
-	   CALL patch_2_outbuf_l ( tmpbuf FRSTELEM , globbuf ,             &
-				   DS1, DE1, DS2, DE2, DS3, DE3 , &
-				   GPATCH                         )
-	 ENDIF
+           CALL patch_2_outbuf_r ( tmpbuf FRSTELEM , globbuf ,             &
+                                   DS1, DE1, DS2, DE2, DS3, DE3 , &
+                                   GPATCH                         )
+         ELSE IF ( typesize .EQ. IWORDSIZE ) THEN
+           CALL patch_2_outbuf_i ( tmpbuf FRSTELEM , globbuf ,             &
+                                   DS1, DE1, DS2, DE2, DS3, DE3 , &
+                                   GPATCH                         )
+         ELSE IF ( typesize .EQ. DWORDSIZE ) THEN
+           CALL patch_2_outbuf_d ( tmpbuf FRSTELEM , globbuf ,             &
+                                   DS1, DE1, DS2, DE2, DS3, DE3 , &
+                                   GPATCH                         )
+         ELSE IF ( typesize .EQ. LWORDSIZE ) THEN
+           CALL patch_2_outbuf_l ( tmpbuf FRSTELEM , globbuf ,             &
+                                   DS1, DE1, DS2, DE2, DS3, DE3 , &
+                                   GPATCH                         )
+         ENDIF
 
        ENDIF
 
@@ -3576,8 +3576,8 @@ END
           DO i = GPATCH( 1,1,n ), GPATCH( 1,2,n )
             outbuf( i, j, k ) = inbuf( icurs )
             icurs = icurs + 1
-	  ENDDO
-	ENDDO
+          ENDDO
+        ENDDO
       ENDDO
     ENDDO
 
