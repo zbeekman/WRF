@@ -53,7 +53,7 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
 
 
  CALL WRFU_ClockGet( grid%domain_clock, CurrTime=currTime, StartTime=startTime )
- 
+
  IF( WRFU_AlarmIsRinging( grid%alarms( HISTORY_ALARM ), rc=rc ) .AND. &
        (grid%dfi_write_dfi_history .OR. grid%dfi_stage == DFI_FST .OR. grid%dfi_opt == DFI_NODFI) ) THEN
      IF       ( ( config_flags%restart )                    .AND. &
@@ -462,7 +462,6 @@ integer myproc
 ! get the nest config flags
      CALL model_to_grid_config_rec ( nest%id , model_config_rec , nest_config_flags )
 
-write(0,*)__FILE__,__LINE__,'input_from_file',nest_config_flags%input_from_file
      IF ( nest_config_flags%input_from_file .OR. nest_config_flags%input_from_hires ) THEN
 
        WRITE(message,FMT='(A,I2,A)') '*** Initializing nest domain #',nest%id,&
@@ -581,16 +580,14 @@ write(0,*)__FILE__,__LINE__,'input_from_file',nest_config_flags%input_from_file
        nest%imask_xystag = 1
        nest%press_adj = .TRUE.
        CALL push_communicators_for_domain( nest%id )
-write(0,*)'calling start_domain for nest ',nest%id
        CALL start_domain ( nest , .TRUE. )
-write(0,*)'back from start_domain for ',nest%id
        CALL pop_communicators_for_domain
      ENDIF
 
      CALL push_communicators_for_domain( parent%id )
-write(0,*)'at MPI_Barrier nest%id, parent%id ',nest%id, parent%id
+!debug write(0,*)'at MPI_Barrier nest%id, parent%id ',nest%id, parent%id
      CALL MPI_Barrier( local_communicator, ierr )     
-write(0,*)'after MPI_Barrier nest%id, parent%id ',nest%id, parent%id
+!debug write(0,*)'after MPI_Barrier nest%id, parent%id ',nest%id, parent%id
      CALL pop_communicators_for_domain
 
      IF ( parent%active_this_task ) THEN
@@ -624,9 +621,7 @@ write(0,*)'after MPI_Barrier nest%id, parent%id ',nest%id, parent%id
      parent%imask_xystag = 1
 
      parent%press_adj = .FALSE.
-write(0,*)'calling start_domain for parent ',parent%id
      CALL start_domain ( parent , .TRUE. )
-write(0,*)'back from start_domain for ',parent%id
 
      parent%acsnow     = save_acsnow
      parent%acsnom     = save_acsnom
@@ -820,9 +815,7 @@ write(0,*)'back from start_domain for ',parent%id
    ! not use MOIST and SCALAR as prognostic variables (they are
    ! recalculated on the fly every timestep):
 !zhang's doing for analysis option
-write(0,*)__FILE__,__LINE__,nest%id,' nest%analysis ',nest%analysis
   IF(.not. nest%analysis .and. .not. config_flags%restart)THEN    ! initialize for cold-start
-write(0,*)__FILE__,__LINE__,' nest%active_this_task ',nest%active_this_task
 #endif
 
 !----------------------------------------------------------------------------
@@ -903,11 +896,9 @@ write(0,*)__FILE__,__LINE__,' nest%active_this_task ',nest%active_this_task
     KPE = nest%ep33
 
 
-write(0,*)__FILE__,__LINE__,' parent%active_this_task ',parent%active_this_task
     IF ( nest%active_this_task ) THEN
     CALL NEST_TERRAIN ( nest, config_flags )
     ENDIF
-write(0,*)__FILE__,__LINE__
 
 !   Initialize some more constants required especially for terrain adjustment processes
 
@@ -922,7 +913,6 @@ write(0,*)__FILE__,__LINE__
       ENDIF
     ENDIF
 
-write(0,*)__FILE__,__LINE__
     IF ( nest%active_this_task ) THEN
       nest%KZMAX=KME
       parent%KZMAX=KME  ! just for safety
@@ -946,9 +936,7 @@ write(0,*)__FILE__,__LINE__
     ENDIF
 
 #ifdef HWRF
-write(0,*)__FILE__,__LINE__
    CALL med_interp_domain( parent, nest )
-write(0,*)__FILE__,__LINE__
 #else
     CALL domain_clock_get( parent, start_time=strt_time, current_time=cur_time )
 
@@ -979,9 +967,7 @@ write(0,*)__FILE__,__LINE__
 !  set up constants (module_initialize_real.F for nested nmm domain)
 !-----------------------------------------------------------------------------
 
-write(0,*)__FILE__,__LINE__
     CALL med_init_domain_constants_nmm ( parent, nest )
-write(0,*)__FILE__,__LINE__
 
 !--------------------------------------------------------------------------------------
 ! set some other initial fields, fill out halos, etc. 
@@ -1019,24 +1005,17 @@ write(0,*)__FILE__,__LINE__
 !------------------------------------------------------------------------------------
 
 !zhang's doing
-write(0,*)__FILE__,__LINE__
   IF ( nest%active_this_task) THEN
-write(0,*)__FILE__,__LINE__
   IF( nest%analysis .and. .not. config_flags%restart)THEN
-write(0,*)__FILE__,__LINE__
    CALL push_communicators_for_domain( nest%id )
    CALL med_analysis_in ( nest, config_flags )
    CALL pop_communicators_for_domain
-write(0,*)__FILE__,__LINE__
   ELSE IF (config_flags%restart)THEN
-write(0,*)__FILE__,__LINE__
    CALL push_communicators_for_domain( nest%id )
    CALL med_restart_in ( nest, config_flags )
    CALL pop_communicators_for_domain
-write(0,*)__FILE__,__LINE__
   ENDIF
   ENDIF
-write(0,*)__FILE__,__LINE__
 !end of zhang's doing
 
 !----------------------------------------------------------------------------
@@ -1244,9 +1223,7 @@ SUBROUTINE med_nest_feedback ( parent , nest , config_flags )
 
 ! feedback nest to the parent
     IF ( config_flags%feedback .NE. 0 ) THEN
-write(0,*)'calling med_feedback_domain parent%id,nest%id ',parent%id,nest%id
       CALL med_feedback_domain( parent, nest )
-write(0,*)'back from med_feedback_domain parent%id,nest%id ',parent%id,nest%id
 #ifdef MOVE_NESTS
       IF ( parent%active_this_task) THEN
       CALL get_ijk_from_grid (  parent ,                         &
@@ -1692,7 +1669,7 @@ SUBROUTINE med_hist_out ( grid , stream, config_flags )
    CHARACTER (LEN=256)                    :: message
    INTEGER                                :: ierr
 
-   IF ( .NOT. intercomm_active(grid%id) ) RETURN
+   IF ( .NOT. grid%active_this_task ) RETURN
 
    IF ( wrf_dm_on_monitor() ) THEN
      CALL start_timing

@@ -270,7 +270,6 @@ CONTAINS
    DO J=jts,jte
 
       DO i=its,ite
-if ( i.eq.10.and.j.eq.10 ) write(0,*)__LINE__,qsfc(i,j)
         DDVEL(I)=0.
         RCL(i)=1.
         PRSL1(i)=P3D(i,kts,j)*.001
@@ -314,7 +313,6 @@ if ( i.eq.10.and.j.eq.10 ) write(0,*)__LINE__,qsfc(i,j)
       ENDDO
 
       DO i=its,ite
-if ( i.eq.10.and.j.eq.10 ) write(0,*)__LINE__,qsfc(i,j)
          PRSLKI(i)=(PS(I)/PRSL1(I))**ROVCP
          THGB(I)=TSKIN(i)*(100./PS(I))**ROVCP
          THX(I)=T1(i)*(100./PRSL1(I))**ROVCP
@@ -441,20 +439,13 @@ if ( i.eq.10.and.j.eq.10 ) write(0,*)__LINE__,qsfc(i,j)
         CPM(I,J)=CP*(1.+0.8*QV3D(i,kts,j))
         esat = fpvs(t1(i))
         QGH(I,J)=ep2*esat/(1000.*ps(i)-esat)
-if ( i.eq.10.and.j.eq.10) then
-        esat = fpvs_dbg(tskin(i))
-else
+!debug if ( i.eq.10.and.j.eq.10) then
+!debug         esat = fpvs_dbg(tskin(i))
+!debug else
         esat = fpvs(tskin(i))
-endif
+!debug endif
         qss(i) = ep2*esat/(1000.*ps(i)-esat)
-if ( i.eq.10.and.j.eq.10 ) write(0,*)__LINE__,'ps(i) ',ps(i)
-if ( i.eq.10.and.j.eq.10 ) write(0,*)__LINE__,'tskin(i) ',tskin(i)
-if ( i.eq.10.and.j.eq.10 ) write(0,*)__LINE__,'ep2 ',ep2
-if ( i.eq.10.and.j.eq.10 ) write(0,*)__LINE__,'esat ',esat
-if ( i.eq.10.and.j.eq.10 ) write(0,*)__LINE__,'qss ',qss(i)
-if ( i.eq.10.and.j.eq.10 ) write(0,*)__LINE__,'qsfc ',qsfc(i,j)
         QSFC(I,J)=qss(i)
-if ( i.eq.10.and.j.eq.10 ) write(0,*)__LINE__,'qsfc ',qsfc(i,j)
 !       PSIH(i,j)=PH(i)
 !       PSIM(i,j)=PM(i)
         UST(i,j)=ustar(i)
