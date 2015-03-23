@@ -95,6 +95,7 @@ MODULE module_dm
 
 CONTAINS
 
+#if 0
    SUBROUTINE push_communicators_for_domain( id )
       INTEGER, OPTIONAL, INTENT(IN) :: id   ! if specified also does an instate for grid id
       IF ( communicator_stack_cursor .GE. max_domains ) CALL wrf_error_fatal("push_communicators_for_domain would excede stacksize") 
@@ -117,7 +118,6 @@ CONTAINS
         CALL instate_communicators_for_domain( id )
       ENDIF
    END SUBROUTINE push_communicators_for_domain
-
    SUBROUTINE pop_communicators_for_domain
       IF ( communicator_stack_cursor .LT. 1 ) CALL wrf_error_fatal("pop_communicators_for_domain on empty stack") 
       current_id = id_stack(communicator_stack_cursor)
@@ -134,7 +134,6 @@ CONTAINS
       mytask_y = mytask_y_stack( communicator_stack_cursor )
       communicator_stack_cursor = communicator_stack_cursor - 1
    END SUBROUTINE pop_communicators_for_domain
-
    SUBROUTINE instate_communicators_for_domain( id )
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: id
@@ -158,7 +157,6 @@ CONTAINS
 !debug write(0,*)'instate: mytask_x           ',mytask_x
 !debug write(0,*)'instate: mytask_y           ',mytask_y
    END SUBROUTINE instate_communicators_for_domain
-
    SUBROUTINE store_communicators_for_domain( id )
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: id
@@ -174,6 +172,7 @@ CONTAINS
       mytask_x_store( id )      =    mytask_x
       mytask_y_store( id )      =    mytask_y
    END SUBROUTINE store_communicators_for_domain
+#endif
 
    SUBROUTINE MPASPECT( P, MINM, MINN, PROCMIN_M, PROCMIN_N )
       IMPLICIT NONE
@@ -2526,6 +2525,89 @@ CALL MPI_Comm_rank(mpi_comm_me_and_mom,iii,ierr) ; write(0,*)nest_id,'mpi_comm_m
 
 END MODULE module_dm
 
+
+   SUBROUTINE push_communicators_for_domain( id )
+      USE module_dm
+      INTEGER, OPTIONAL, INTENT(IN) :: id   ! if specified also does an instate for grid id
+      IF ( communicator_stack_cursor .GE. max_domains ) CALL wrf_error_fatal("push_communicators_for_domain would excede stacksize") 
+      communicator_stack_cursor = communicator_stack_cursor + 1
+
+      id_stack(communicator_stack_cursor) = current_id
+      local_communicator_stack( communicator_stack_cursor )    =    local_communicator
+      local_communicator_periodic_stack( communicator_stack_cursor )  =    local_communicator_periodic
+      local_iocommunicator_stack( communicator_stack_cursor )  =    local_iocommunicator
+      local_communicator_x_stack( communicator_stack_cursor )  =    local_communicator_x
+      local_communicator_y_stack( communicator_stack_cursor )  =    local_communicator_y
+      ntasks_stack( communicator_stack_cursor )        =    ntasks
+      ntasks_y_stack( communicator_stack_cursor )      =    ntasks_y
+      ntasks_x_stack( communicator_stack_cursor )      =    ntasks_x
+      mytask_stack( communicator_stack_cursor )        =    mytask
+      mytask_x_stack( communicator_stack_cursor )       =    mytask_x
+      mytask_y_stack( communicator_stack_cursor )       =    mytask_y
+
+      IF ( PRESENT( id ) ) THEN
+        CALL instate_communicators_for_domain( id )
+      ENDIF
+   END SUBROUTINE push_communicators_for_domain
+   SUBROUTINE pop_communicators_for_domain
+      USE module_dm
+      IMPLICIT NONE
+      IF ( communicator_stack_cursor .LT. 1 ) CALL wrf_error_fatal("pop_communicators_for_domain on empty stack") 
+      current_id = id_stack(communicator_stack_cursor)
+      local_communicator = local_communicator_stack( communicator_stack_cursor )
+      local_communicator_periodic = local_communicator_periodic_stack( communicator_stack_cursor )
+      local_iocommunicator = local_iocommunicator_stack( communicator_stack_cursor )
+      local_communicator_x = local_communicator_x_stack( communicator_stack_cursor )
+      local_communicator_y = local_communicator_y_stack( communicator_stack_cursor )
+      ntasks = ntasks_stack( communicator_stack_cursor )
+      ntasks_y = ntasks_y_stack( communicator_stack_cursor )
+      ntasks_x = ntasks_x_stack( communicator_stack_cursor )
+      mytask = mytask_stack( communicator_stack_cursor )
+      mytask_x = mytask_x_stack( communicator_stack_cursor )
+      mytask_y = mytask_y_stack( communicator_stack_cursor )
+      communicator_stack_cursor = communicator_stack_cursor - 1
+   END SUBROUTINE pop_communicators_for_domain
+   SUBROUTINE instate_communicators_for_domain( id )
+      USE module_dm
+      IMPLICIT NONE
+      INTEGER, INTENT(IN) :: id
+      INTEGER ierr
+      local_communicator          = local_communicator_store( id )
+      local_communicator_periodic = local_communicator_periodic_store( id )
+      local_iocommunicator        = local_iocommunicator_store( id )
+      local_communicator_x        = local_communicator_x_store( id )
+      local_communicator_y        = local_communicator_y_store( id )
+      ntasks         = ntasks_store( id )
+      mytask         = mytask_store( id )
+      ntasks_x       = ntasks_x_store( id )
+      ntasks_y       = ntasks_y_store( id )
+      mytask_x       = mytask_x_store( id )
+      mytask_y       = mytask_y_store( id )
+!debug write(0,*)'instate: id                 ',id
+!debug write(0,*)'instate: local_communicator ',local_communicator
+!debug write(0,*)'instate: ntasks             ',ntasks
+!debug write(0,*)'instate: ntasks_x           ',ntasks_x
+!debug write(0,*)'instate: ntasks_y           ',ntasks_y
+!debug write(0,*)'instate: mytask_x           ',mytask_x
+!debug write(0,*)'instate: mytask_y           ',mytask_y
+   END SUBROUTINE instate_communicators_for_domain
+   SUBROUTINE store_communicators_for_domain( id )
+      USE module_dm
+      IMPLICIT NONE
+      INTEGER, INTENT(IN) :: id
+      local_communicator_store( id )    =    local_communicator
+      local_communicator_periodic_store( id )  =    local_communicator_periodic
+      local_iocommunicator_store( id )  =    local_iocommunicator
+      local_communicator_x_store( id )  =    local_communicator_x
+      local_communicator_y_store( id )  =    local_communicator_y
+      ntasks_store( id )        =    ntasks
+      ntasks_x_store( id )      =    ntasks_x
+      ntasks_y_store( id )      =    ntasks_y
+      mytask_store( id )        =    mytask
+      mytask_x_store( id )      =    mytask_x
+      mytask_y_store( id )      =    mytask_y
+   END SUBROUTINE store_communicators_for_domain
+
 !=========================================================================
 ! wrf_dm_patch_domain has to be outside the module because it is called
 ! by a routine in module_domain but depends on module domain
@@ -2542,7 +2624,7 @@ SUBROUTINE wrf_dm_patch_domain ( id  , domdesc , parent_id , parent_domdesc , &
                                       sp3y , ep3y , sm3y , em3y , &
                           bdx , bdy )
    USE module_domain, ONLY : domain, head_grid, find_grid_by_id
-   USE module_dm, ONLY : patch_domain_rsl_lite, push_communicators_for_domain, pop_communicators_for_domain
+   USE module_dm, ONLY : patch_domain_rsl_lite  !, push_communicators_for_domain, pop_communicators_for_domain
    IMPLICIT NONE
 
    INTEGER, INTENT(IN)   :: sd1 , ed1 , sd2 , ed2 , sd3 , ed3 , bdx , bdy
@@ -4079,8 +4161,8 @@ END
       USE module_domain, ONLY : domain, get_ijk_from_grid
       USE module_configure, ONLY : grid_config_rec_type
       USE module_dm, ONLY : ntasks, ntasks_x, ntasks_y, local_communicator, mytask, &
-                            nest_pes_x, nest_pes_y,                                 &
-                            push_communicators_for_domain,pop_communicators_for_domain
+                            nest_pes_x, nest_pes_y ! ,                                 &
+                            !push_communicators_for_domain,pop_communicators_for_domain
       USE module_comm_nesting_dm, ONLY : halo_force_down_sub
       IMPLICIT NONE
 !
@@ -4265,8 +4347,8 @@ ENDIF
       USE module_domain, ONLY : domain, get_ijk_from_grid
       USE module_configure, ONLY : grid_config_rec_type
       USE module_dm, ONLY : ntasks, ntasks_x, ntasks_y, itrace, local_communicator, &
-                            mytask, get_dm_max_halo_width,                          &
-                            push_communicators_for_domain,pop_communicators_for_domain
+                            mytask, get_dm_max_halo_width !,                          &
+                            ! push_communicators_for_domain,pop_communicators_for_domain
       USE module_comm_nesting_dm, ONLY : halo_interp_down_sub
       IMPLICIT NONE
 !
@@ -4705,8 +4787,8 @@ ENDIF
       USE module_state_description
       USE module_domain, ONLY : domain, get_ijk_from_grid
       USE module_configure, ONLY : grid_config_rec_type
-      USE module_dm, ONLY : ntasks, ntasks_x, ntasks_y, itrace, local_communicator, mytask, &
-                            push_communicators_for_domain, pop_communicators_for_domain
+      USE module_dm, ONLY : ntasks, ntasks_x, ntasks_y, itrace, local_communicator, mytask !, &
+                             !push_communicators_for_domain, pop_communicators_for_domain
       USE module_comm_nesting_dm, ONLY : halo_interp_up_sub
       IMPLICIT NONE
 !
@@ -4872,8 +4954,8 @@ ENDIF
                             ipe_save, jpe_save, ips_save, jps_save, get_dm_max_halo_width,  &
                             nest_pes_x, nest_pes_y,                                         &
                             intercomm_active, nest_task_offsets,                    &
-                            mpi_comm_to_mom, mpi_comm_to_kid, which_kid,            &
-                            push_communicators_for_domain, pop_communicators_for_domain
+                            mpi_comm_to_mom, mpi_comm_to_kid, which_kid !,            &
+                             !push_communicators_for_domain, pop_communicators_for_domain
 
       USE module_comm_nesting_dm, ONLY : halo_interp_up_sub
       USE module_utility
@@ -5075,8 +5157,8 @@ ENDIF
       USE module_configure, ONLY : grid_config_rec_type
       USE module_dm, ONLY : ntasks, ntasks_x, ntasks_y, itrace, local_communicator, mytask, &
                             ipe_save, jpe_save, ips_save, jps_save, get_dm_max_halo_width,  &
-                            nest_pes_x, nest_pes_y,                                         &
-                            push_communicators_for_domain, pop_communicators_for_domain
+                            nest_pes_x, nest_pes_y !,                                         &
+                             !push_communicators_for_domain, pop_communicators_for_domain
       USE module_comm_dm, ONLY : HALO_NMM_WEIGHTS_sub
 
       IMPLICIT NONE
@@ -5129,8 +5211,8 @@ ENDIF
       USE module_dm, ONLY : ntasks, ntasks_x, ntasks_y, local_communicator, mytask, &
                             nest_pes_x, nest_pes_y,                                 &
                             intercomm_active, nest_task_offsets,                    &
-                            mpi_comm_to_mom, mpi_comm_to_kid, which_kid,            &
-                            push_communicators_for_domain,pop_communicators_for_domain
+                            mpi_comm_to_mom, mpi_comm_to_kid, which_kid !,            &
+                             !push_communicators_for_domain,pop_communicators_for_domain
 
       USE module_timing
       IMPLICIT NONE
@@ -5234,9 +5316,9 @@ ENDIF
       USE module_domain, ONLY : domain, get_ijk_from_grid
       USE module_configure, ONLY : grid_config_rec_type
       USE module_dm, ONLY : ntasks, ntasks_x, ntasks_y, itrace, local_communicator, mytask, &
-                            ipe_save, jpe_save, ips_save, jps_save, get_dm_max_halo_width,  &
-                            push_communicators_for_domain,pop_communicators_for_domain,     &
+                            ipe_save, jpe_save, ips_save, jps_save, get_dm_max_halo_width ,  &
                             nest_task_offsets
+                             !push_communicators_for_domain,pop_communicators_for_domain,     &
       USE module_comm_nesting_dm, ONLY : halo_interp_down_sub
       IMPLICIT NONE
 !
@@ -5378,8 +5460,8 @@ write(50,*)'grid%q ',ngrid%q
                             ipe_save, jpe_save, ips_save, jps_save, get_dm_max_halo_width,  &
                             nest_pes_x, nest_pes_y,                                 &
                             intercomm_active, nest_task_offsets,                    &
-                            mpi_comm_to_mom, mpi_comm_to_kid, which_kid,            &
-                            push_communicators_for_domain,pop_communicators_for_domain
+                            mpi_comm_to_mom, mpi_comm_to_kid, which_kid !,            &
+                            !push_communicators_for_domain,pop_communicators_for_domain
 
       USE module_timing
       IMPLICIT NONE
@@ -5480,8 +5562,8 @@ write(50,*)'grid%q ',ngrid%q
       USE module_configure, ONLY : grid_config_rec_type
       USE module_dm, ONLY : ntasks, ntasks_x, ntasks_y, itrace, local_communicator, mytask, &
                             ipe_save, jpe_save, ips_save, jps_save, get_dm_max_halo_width,  &
-                            nest_pes_x, nest_pes_y,                                         &
-                            push_communicators_for_domain,pop_communicators_for_domain
+                            nest_pes_x, nest_pes_y !,                                         &
+                             !push_communicators_for_domain,pop_communicators_for_domain
 
 #if (NMM_NEST == 1)
       USE module_comm_nesting_dm, ONLY : halo_force_down_sub
@@ -5629,8 +5711,8 @@ ENDIF
       USE module_configure, ONLY : grid_config_rec_type
       USE module_dm, ONLY : ntasks, ntasks_x, ntasks_y, itrace, local_communicator, mytask, &
                             ipe_save, jpe_save, ips_save, jps_save, get_dm_max_halo_width,  &
-                            push_communicators_for_domain, pop_communicators_for_domain,    &
                             nest_pes_x, nest_pes_y
+                            !push_communicators_for_domain, pop_communicators_for_domain,    &
       USE module_comm_dm, ONLY : HALO_NMM_WEIGHTS_sub
       USE module_comm_nesting_dm, ONLY : HALO_INTERP_UP_sub
 
@@ -5904,8 +5986,8 @@ integer myproc
                             local_communicator, itrace,                             &
                             nest_pes_x, nest_pes_y,                                 &
                             intercomm_active, nest_task_offsets,                    &
-                            mpi_comm_to_mom, mpi_comm_to_kid, which_kid,            &
-                            push_communicators_for_domain, pop_communicators_for_domain
+                            mpi_comm_to_mom, mpi_comm_to_kid, which_kid !  ,            &
+                            ! push_communicators_for_domain, pop_communicators_for_domain
 
       USE module_comm_nesting_dm, ONLY : halo_interp_up_sub
       USE module_utility

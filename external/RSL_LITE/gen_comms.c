@@ -162,6 +162,7 @@ int print_decl( FILE * fp , node_t *p, char * communicator,
                 int need_config_flags )
   {
   fprintf(fp,"  USE module_domain, ONLY:domain\n") ;
+//  fprintf(fp,"  USE module_dm, ONLY:push_communicators_for_domain,pop_communicators_for_domain\n") ;
   fprintf(fp,"  USE module_configure, ONLY:grid_config_rec_type,in_use_for_config\n") ;
   fprintf(fp,"  USE module_state_description, ONLY:PARAM_FIRST_SCALAR\n") ;
   fprintf(fp,"  USE module_driver_constants\n") ;
@@ -185,9 +186,11 @@ int print_decl( FILE * fp , node_t *p, char * communicator,
 int print_body( FILE * fp, char * commname )
   {
   fprintf(fp,"  \n") ;
+  fprintf(fp,"CALL push_communicators_for_domain( grid%%id )\n") ;
   fprintf(fp,"#ifdef DM_PARALLEL\n") ;
   fprintf(fp,"#include \"%s_inline.inc\"\n",commname) ;
   fprintf(fp,"#endif\n") ;
+  fprintf(fp,"CALL pop_communicators_for_domain\n") ;
   fprintf(fp,"  \n") ;
   fprintf(fp,"  END SUBROUTINE %s_sub\n",commname) ;
   return 0; /* SamT: bug fix: return a value */

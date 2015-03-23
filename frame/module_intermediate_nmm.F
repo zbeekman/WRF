@@ -27,8 +27,8 @@ contains
          ipe_save, jpe_save, ips_save, jps_save, get_dm_max_halo_width,                   &
          nest_pes_x, nest_pes_y,                                                          &
          intercomm_active, nest_task_offsets,                                             &
-         mpi_comm_to_mom, mpi_comm_to_kid, which_kid,                                     &
-         push_communicators_for_domain,pop_communicators_for_domain
+         mpi_comm_to_mom, mpi_comm_to_kid, which_kid!,                                     &
+         !push_communicators_for_domain,pop_communicators_for_domain
 
 
     USE module_timing
@@ -163,8 +163,8 @@ contains
     USE module_domain, ONLY : domain, get_ijk_from_grid
     USE module_configure, ONLY : grid_config_rec_type
     USE module_dm, ONLY : ntasks, ntasks_x, ntasks_y, itrace, local_communicator, mytask, &
-         ipe_save, jpe_save, ips_save, jps_save, get_dm_max_halo_width,                   &
-         push_communicators_for_domain,pop_communicators_for_domain
+         ipe_save, jpe_save, ips_save, jps_save, get_dm_max_halo_width!,                   &
+         !push_communicators_for_domain,pop_communicators_for_domain
 
     USE module_comm_dm, ONLY : HALO_NMM_INT_UP_sub
     IMPLICIT NONE

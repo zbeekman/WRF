@@ -6,7 +6,7 @@ SUBROUTINE med_feedback_domain ( parent_grid , nested_grid )
    USE module_domain
    USE module_configure
    USE module_intermediate_nmm
-   USE module_dm, only: local_communicator, intercomm_active,push_communicators_for_domain,pop_communicators_for_domain
+   USE module_dm, only: local_communicator, intercomm_active!,push_communicators_for_domain,pop_communicators_for_domain
    IMPLICIT NONE
    TYPE(domain), POINTER :: parent_grid , nested_grid
    TYPE(domain), POINTER :: grid

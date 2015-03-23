@@ -214,13 +214,16 @@ SUBROUTINE med_nest_move ( parent, nest )
       RETURN
    ENDIF
 
+write(0,*)__FILE__,__LINE__
 ! if the nest has stopped don't do all this
    IF ( WRFU_ClockIsStopTime(nest%domain_clock ,rc=ierr) ) RETURN
+write(0,*)__FILE__,__LINE__
 
 ! mask should be defined in nest domain
 
 #ifdef HWRF
   check_direction_of_move: IF ( direction_of_move ( parent , nest , dx, dy ) ) THEN
+write(0,*)__FILE__,__LINE__
 #else
   check_for_move: IF ( time_for_move ( parent , nest , dx, dy ) ) THEN
 #endif
@@ -1212,8 +1215,8 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
                   nips, nipe, njps, njpe, nkps, nkpe
    real :: dx,dy,kid_ic,kid_jc,my_ic,my_jc,pgr,pgrn,hr,two_dt,when,before,after
    real, parameter :: pmult=1.35
-   integer :: inew,jnew
-   logical :: abort
+   integer :: inew,jnew,ierr,comzilla,itmp
+   logical :: abort,mvnest_l
 
 ! PURPOSE: DECIDE THE DIRECTION OF MOVE
 !    Three modes:
@@ -1252,12 +1255,14 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
 
    ! Simplifying assumption: domains in moving nest simulations have
    ! only one parent and only one child.
+write(0,*)__FILE__,__LINE__,'parent%id, grid%id ',parent%id, grid%id
    if(grid%num_nests .gt. 1) then
       write(mess,'("d",I0,": not moving because it has more than one nest")') grid%id
       call WRF_MESSAGE(trim(mess))
       abort=.true.
    endif
 
+write(0,*)__FILE__,__LINE__
    ! Switch off nest motion if we're at the analysis time or 6hr forecast
    if(grid%nomove_freq_hr>0) then
       hr=(grid%ntsd*grid%dt)/3600.0
@@ -1276,6 +1281,7 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
    !  SWITCH OFF NEST MOTION IF TOO CLOSE TO ANY OF THE BOUNDARIES
 
    coral_dist=(grid%ed31+grid%parent_grid_ratio-1)/grid%parent_grid_ratio
+write(0,*)__FILE__,__LINE__,'coral_dist ',coral_dist
    IF(grid%i_parent_start .le. 5) then
       abort=.true.
       write(mess,'("d",I0,": cannot move: too close to parent d",I0," -X boundary")') grid%id,parent%id
@@ -1287,6 +1293,7 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
   ENDIF
 
    coral_dist=(grid%ed32+grid%parent_grid_ratio-1)/grid%parent_grid_ratio
+write(0,*)__FILE__,__LINE__,'coral_dist ',coral_dist
    IF(grid%j_parent_start .le. 5) THEN
       abort=.true.
       write(mess,'("d",I0,": cannot move: too close to parent d",I0," -Y boundary")') grid%id,parent%id
@@ -1299,7 +1306,23 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
    !
    !  DETERMINE AUTOMATICALLY THE DIRECTION OF GRID MOTION
    !
+
+write(0,*)__FILE__,__LINE__,'parent%active_this_task,grid%active_this_task ',parent%active_this_task,grid%active_this_task
+   IF ( (.NOT. (parent%active_this_task .AND. grid%active_this_task) ) .AND. (parent%active_this_task .OR. grid%active_this_task) ) THEN
+     IF ( parent%active_this_task ) THEN
+       comzilla = mpi_comm_to_kid( which_kid( grid%id ) , parent%id )
+     ELSE
+       comzilla = mpi_comm_to_mom( grid%id )
+     ENDIF
+write(0,*)__FILE__,__LINE__,'before MPI_Allreduce comzilla ',comzilla
+     CALL MPI_Allreduce( grid%mvnest , mvnest_l, 1, MPI_LOGICAL, MPI_LOR, comzilla, ierr )
+     grid%mvnest = mvnest_l
+   ENDIF
+
+
+write(0,*)__FILE__,__LINE__,'grid%num_moves , grid%mvnest , abort ',grid%num_moves , grid%mvnest , abort
    can_move: if(grid%num_moves.eq.-99 .and. grid%mvnest .and. .not. abort) then
+write(0,*)__FILE__,__LINE__
 
       if(wrf_dm_on_monitor() .and. .not. abort) then
          WRITE(mess,*)'vortex tracking: id,mvnest,num_moves,num_nests: ', &
@@ -1312,6 +1335,7 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
       endif
 
       nest_following: IF(grid%vortex_tracker==2)THEN
+write(0,*)__FILE__,__LINE__
          ! Follow child
          pgr=grid%parent_grid_ratio+0.01
          pgrn=grid%parent_grid_ratio-0.01
@@ -1385,6 +1409,7 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
          endif
       endif nest_following
       revised_nest_motion: if(grid%vortex_tracker>3) then
+write(0,*)__FILE__,__LINE__
          if((grid%XLOC_1-grid%XLOC_2) .GE. 3) then
             move_cd_x=-1
          elseif((grid%XLOC_2-grid%XLOC_1) .GE. 3) then
@@ -1408,6 +1433,7 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
          endif
       endif revised_nest_motion
       vortex_following: IF(grid%vortex_tracker==3 .or. grid%vortex_tracker==1)THEN
+write(0,*)__FILE__,__LINE__
          IF((grid%XLOC_1-grid%XLOC_2) .GE. 3)THEN 
             move_cd_x  = -1
             IF((grid%YLOC_2-grid%YLOC_1) .GE. 3)THEN
@@ -1439,6 +1465,7 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
       ENDIF vortex_following
    endif can_move
 
+write(0,*)__FILE__,__LINE__,'move_cd_x, move_cd_y ',move_cd_x, move_cd_y
    ! Abort motion if any child domain would end up within this
    ! domain's coral distance or outside of this domain.
    nest_safety: IF ( grid%num_nests .GT. 0 .and. ( move_cd_x/=0 .or. move_cd_y/=0 ) ) THEN
@@ -1483,6 +1510,16 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
      call wrf_message(mess)
   endif
   
+  IF ( (.NOT. (parent%active_this_task .AND. grid%active_this_task) ) .AND. (parent%active_this_task .OR. grid%active_this_task) ) THEN
+    CALL MPI_Allreduce( grid%mvnest , mvnest_l, 1, MPI_LOGICAL, MPI_LOR, comzilla, ierr )
+    grid%mvnest = mvnest_l
+    CALL MPI_Allreduce( move_cd_x , itmp, 1, MPI_LOGICAL, MPI_LOR, comzilla, ierr )
+    move_cd_x = itmp
+    CALL MPI_Allreduce( move_cd_y , itmp, 1, MPI_LOGICAL, MPI_LOR, comzilla, ierr )
+    move_cd_y = itmp
+  ENDIF
+
+write(0,*)__FILE__,__LINE__,'move_cd_x, move_cd_y ',move_cd_x, move_cd_y
   if(move_cd_x/=0 .or. move_cd_y/=0) then
      direction_of_move2 = .true.
      grid%moved = .true.

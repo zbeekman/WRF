@@ -296,7 +296,9 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
    USE module_io_domain
    USE module_configure , ONLY : grid_config_rec_type
    USE module_utility
-   USE module_dm, ONLY : push_communicators_for_domain, pop_communicators_for_domain, local_communicator, &
+!   USE module_dm, ONLY : push_communicators_for_domain, pop_communicators_for_domain, local_communicator, &
+!                         mpi_comm_to_mom, mpi_comm_to_kid, which_kid
+   USE module_dm, ONLY :                                                              local_communicator, &
                          mpi_comm_to_mom, mpi_comm_to_kid, which_kid
   ! Model layer
 

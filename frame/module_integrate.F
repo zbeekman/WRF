@@ -22,7 +22,7 @@ RECURSIVE SUBROUTINE integrate ( grid )
 ! is defined in module_domain, which uses module_dm.  If that weren't the case, we could have the
 ! alloc_and_configure_domain routine get this form the module_dm module itself, but as it stands there
 ! would be a circular use association.  jm 20140828
-   USE module_dm, ONLY:  domain_active_this_task, push_communicators_for_domain, pop_communicators_for_domain
+   USE module_dm, ONLY:  domain_active_this_task !, push_communicators_for_domain, pop_communicators_for_domain
 #endif
 
    IMPLICIT NONE

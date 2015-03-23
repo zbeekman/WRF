@@ -2893,7 +2893,7 @@ SUBROUTINE NEST_TERRAIN ( nest, config_flags )
  USE module_TERRAIN
  USE wrfsi_static
  USE module_SMOOTH_TERRAIN
- USE module_dm, ONLY : push_communicators_for_domain, pop_communicators_for_domain
+! USE module_dm, ONLY : push_communicators_for_domain, pop_communicators_for_domain
 
  IMPLICIT NONE
 
