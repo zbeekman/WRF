@@ -485,6 +485,7 @@
 !
       call wrf_get_nprocx(inpes)
       call wrf_get_nprocy(jnpes)
+write(0,*)__FILE__,__LINE__,' inpes, jnpes ',inpes,jnpes
 !
       allocate(itemp(inpes,jnpes),stat=istat)
       npe=0

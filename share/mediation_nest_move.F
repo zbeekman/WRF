@@ -396,7 +396,9 @@ write(0,*)__FILE__,__LINE__
 
 #endif
 
+write(0,*)__FILE__,__LINE__
      CALL med_interp_domain( parent, nest )
+write(0,*)__FILE__,__LINE__
 
 #if ( EM_CORE == 1 )
      CALL nl_get_input_from_hires( nest%id , input_from_hires ) 
@@ -478,7 +480,13 @@ write(0,*)__FILE__,__LINE__
 #if ( EM_CORE == 1 )
      nest%press_adj = .FALSE.
 #endif
-     CALL start_domain ( nest , .FALSE. )
+     IF ( nest%active_this_task ) THEN
+write(0,*)__FILE__,__LINE__,nest%id,' nest%active_this_task ',nest%active_this_task
+       CALL push_communicators_for_domain(nest%id)
+       CALL start_domain ( nest , .FALSE. )
+       CALL pop_communicators_for_domain
+write(0,*)__FILE__,__LINE__,nest%id,' nest%active_this_task ',nest%active_this_task
+     ENDIF
      config_flags%restart = saved_restart_value
      grid%restart = saved_restart_value
      CALL nl_set_restart ( 1,  saved_restart_value )
@@ -489,6 +497,7 @@ write(0,*)__FILE__,__LINE__
 ! this should be registry generated.
 !
 #if ( EM_CORE == 1 )
+     IF ( nest%active_this_task ) THEN
       do k = kms,kme
         where ( nest%imask_xstag  .EQ. 1 ) nest%u_1(:,k,:)   = nest%u_2(:,k,:)
         where ( nest%imask_ystag  .EQ. 1 ) nest%v_1(:,k,:)   = nest%v_2(:,k,:)
@@ -498,6 +507,7 @@ write(0,*)__FILE__,__LINE__
         where ( nest%imask_nostag .EQ. 1 ) nest%tke_1(:,k,:) = nest%tke_2(:,k,:)
       enddo
       where ( nest%imask_nostag .EQ. 1 ) nest%mu_1(:,:)  = nest%mu_2(:,:)
+     ENDIF
 #endif
 !
 #ifdef HWRF

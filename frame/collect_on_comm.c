@@ -32,9 +32,28 @@
 #      define INT_PACK_DATA  int_pack_data_
 #      define INT_GET_TI_HEADER_C  int_get_ti_header_c_
 #      define INT_GEN_TI_HEADER_C  int_gen_ti_header_c_
+#      define SHOW_BACKTRACE_C show_backtrace_c_
 #   endif
 # endif
 #endif
+
+void
+SHOW_BACKTRACE_C ()
+{
+//see: http://man7.org/linux/man-pages/man3/backtrace.3.html
+  void * buffer[100] ;
+  char ** strings ;
+  int nptrs,j ;
+  nptrs = backtrace(buffer,100) ;
+  fprintf(stderr,"backtrace returns %d addresses\n",nptrs) ;
+  strings = backtrace_symbols(buffer,nptrs) ;
+  if ( strings == NULL ) return ;
+  for ( j=0;j<nptrs;j++ )
+  {
+    fprintf(stderr,"backtrace %3d. %s\n",j,strings[j]) ;
+  }
+}
+
 
   
 int col_on_comm ( int *, int *, void *, int *, void *, int *, int);
