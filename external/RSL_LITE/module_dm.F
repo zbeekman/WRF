@@ -4328,11 +4328,9 @@ ENDIF
       IF ( grid%active_this_task .OR. ngrid%active_this_task ) THEN
         CALL mpi_comm_rank(local_comm,myproc,ierr)
         CALL mpi_comm_size(local_comm,nproc,ierr)
-write(0,*)__FILE__,__LINE__
         CALL rsl_lite_bcast_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
                                           nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       & 
                                           ioffset, local_comm )
-write(0,*)__FILE__,__LINE__
       ENDIF
 
       RETURN
@@ -4607,14 +4605,11 @@ ENDIF
 
 #if 0
 !call wrf_debug(0,'/external/RSL_LITE/module_dm.F, calling rsl_lite_bcast')
-write(0,*)__FILE__,__LINE__
       CALL rsl_lite_bcast_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
                                         nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       & 
                                         ioffset, local_comm )
-write(0,*)__FILE__,__LINE__
 !call wrf_debug(0,'/external/RSL_LITE/module_dm.F, back from rsl_lite_bcast')
 #else
-  write(0,*)__FILE__,__LINE__
   CALL wrf_error_fatal( "TODO" )
 #endif
 
@@ -5106,11 +5101,9 @@ ENDIF
         CALL mpi_comm_rank(local_comm,myproc,ierr)
         CALL mpi_comm_size(local_comm,nproc,ierr)
 !call tracebackqq()
-write(0,*)__FILE__,__LINE__
         CALL rsl_lite_merge_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
                                           nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       & 
                                           ioffset, local_comm )
-write(0,*)__FILE__,__LINE__
       ENDIF
 
 IF ( grid%active_this_task ) THEN
@@ -5283,12 +5276,9 @@ ENDIF
       ! get max_halo_width for parent. It may be smaller if it is moad
       CALL get_dm_max_halo_width ( ngrid%id , thisdomain_max_halo_width )
 
-write(0,*)__FILE__,__LINE__,'grid%active_this_task ',grid%active_this_task
       IF ( grid%active_this_task ) THEN
-write(0,*)__FILE__,__LINE__,'SIZE(grid%u) ',SIZE(grid%u)
 #include "nest_interpdown_pack.inc"
       ENDIF
-write(0,*)__FILE__,__LINE__
 
       ! determine which communicator and offset to use
 !debug write(0,*)__FILE__,__LINE__,"grid%id ",grid%id
@@ -5308,11 +5298,9 @@ write(0,*)__FILE__,__LINE__
         CALL mpi_comm_rank(local_comm,myproc,ierr)
         CALL mpi_comm_size(local_comm,nproc,ierr)
 !CALL tracebackqq()
-write(0,*)__FILE__,__LINE__
         CALL rsl_lite_bcast_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
                                         nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       & 
                                         ioffset, local_comm )
-write(0,*)__FILE__,__LINE__
       ENDIF
 
       RETURN
@@ -5556,11 +5544,9 @@ write(50,*)'grid%q ',ngrid%q
         CALL mpi_comm_rank(local_comm,myproc,ierr)
         CALL mpi_comm_size(local_comm,nproc,ierr)
 !call tracebackqq()
-write(0,*)__FILE__,__LINE__
         CALL rsl_lite_bcast_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
                                         nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       & 
                                         ioffset, local_comm )
-write(0,*)__FILE__,__LINE__
       ENDIF
 
       RETURN
@@ -6134,11 +6120,9 @@ ENDIF
         CALL mpi_comm_rank(local_comm,myproc,ierr)
         CALL mpi_comm_size(local_comm,nproc,ierr)
 !call tracebackqq()
-write(0,*)__FILE__,__LINE__
         CALL rsl_lite_merge_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
                                           nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       &
                                           ioffset, local_comm )
-write(0,*)__FILE__,__LINE__
       ENDIF
 
 !debug write(0,*)__FILE__,__LINE__,' grid%id ',grid%id

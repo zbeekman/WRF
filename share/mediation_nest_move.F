@@ -214,16 +214,13 @@ SUBROUTINE med_nest_move ( parent, nest )
       RETURN
    ENDIF
 
-write(*,*)__FILE__,__LINE__
 ! if the nest has stopped don't do all this
    IF ( WRFU_ClockIsStopTime(nest%domain_clock ,rc=ierr) ) RETURN
-write(*,*)__FILE__,__LINE__
 
 ! mask should be defined in nest domain
 
 #ifdef HWRF
   check_direction_of_move: IF ( direction_of_move ( parent , nest , dx, dy ) ) THEN
-write(*,*)__FILE__,__LINE__,' dx,dy ',dx,dy
 #else
   check_for_move: IF ( time_for_move ( parent , nest , dx, dy ) ) THEN
 #endif
@@ -236,7 +233,6 @@ write(*,*)__FILE__,__LINE__,' dx,dy ',dx,dy
      ENDIF
 #endif
 #if (NMM_CORE == 1 && NMM_NEST == 1)
-write(*,*)__FILE__,__LINE__,' dy = ',dy
      IF(MOD(dy,2) .NE. 0)THEN
        origdy = dy
        dy=dy+sign(1,dy)
@@ -400,9 +396,7 @@ write(*,*)__FILE__,__LINE__,' dy = ',dy
 
 #endif
 
-write(*,*)__FILE__,__LINE__
      CALL med_interp_domain( parent, nest )
-write(*,*)__FILE__,__LINE__
 
 #if ( EM_CORE == 1 )
      CALL nl_get_input_from_hires( nest%id , input_from_hires ) 
@@ -485,11 +479,9 @@ write(*,*)__FILE__,__LINE__
      nest%press_adj = .FALSE.
 #endif
      IF ( nest%active_this_task ) THEN
-write(*,*)__FILE__,__LINE__,nest%id,' nest%active_this_task ',nest%active_this_task
        CALL push_communicators_for_domain(nest%id)
        CALL start_domain ( nest , .FALSE. )
        CALL pop_communicators_for_domain
-write(*,*)__FILE__,__LINE__,nest%id,' nest%active_this_task ',nest%active_this_task
      ENDIF
      config_flags%restart = saved_restart_value
      grid%restart = saved_restart_value
@@ -1269,14 +1261,12 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
 
    ! Simplifying assumption: domains in moving nest simulations have
    ! only one parent and only one child.
-write(*,*)__FILE__,__LINE__,'parent%id, grid%id ',parent%id, grid%id
    if(grid%num_nests .gt. 1) then
       write(mess,'("d",I0,": not moving because it has more than one nest")') grid%id
       call WRF_MESSAGE(trim(mess))
       abort=.true.
    endif
 
-write(*,*)__FILE__,__LINE__
    ! Switch off nest motion if we're at the analysis time or 6hr forecast
    if(grid%nomove_freq_hr>0) then
       hr=(grid%ntsd*grid%dt)/3600.0
@@ -1295,7 +1285,6 @@ write(*,*)__FILE__,__LINE__
    !  SWITCH OFF NEST MOTION IF TOO CLOSE TO ANY OF THE BOUNDARIES
 
    coral_dist=(grid%ed31+grid%parent_grid_ratio-1)/grid%parent_grid_ratio
-write(*,*)__FILE__,__LINE__,'coral_dist ',coral_dist
    IF(grid%i_parent_start .le. 5) then
       abort=.true.
       write(mess,'("d",I0,": cannot move: too close to parent d",I0," -X boundary")') grid%id,parent%id
@@ -1307,7 +1296,6 @@ write(*,*)__FILE__,__LINE__,'coral_dist ',coral_dist
   ENDIF
 
    coral_dist=(grid%ed32+grid%parent_grid_ratio-1)/grid%parent_grid_ratio
-write(*,*)__FILE__,__LINE__,'coral_dist ',coral_dist
    IF(grid%j_parent_start .le. 5) THEN
       abort=.true.
       write(mess,'("d",I0,": cannot move: too close to parent d",I0," -Y boundary")') grid%id,parent%id
@@ -1321,7 +1309,6 @@ write(*,*)__FILE__,__LINE__,'coral_dist ',coral_dist
    !  DETERMINE AUTOMATICALLY THE DIRECTION OF GRID MOTION
    !
 
-write(*,*)__FILE__,__LINE__,'parent%active_this_task,grid%active_this_task ',parent%active_this_task,grid%active_this_task
 
    IF ( (.NOT. (parent%active_this_task .AND. grid%active_this_task) ) .AND. (parent%active_this_task .OR. grid%active_this_task) ) THEN
      IF ( parent%active_this_task ) THEN
@@ -1329,18 +1316,15 @@ write(*,*)__FILE__,__LINE__,'parent%active_this_task,grid%active_this_task ',par
      ELSE
        comzilla = mpi_comm_to_mom( grid%id )
      ENDIF
-write(*,*)__FILE__,__LINE__,'before MPI_Allreduce comzilla ',comzilla
      CALL MPI_Allreduce( grid%mvnest , mvnest_l, 1, MPI_LOGICAL, MPI_LOR, comzilla, ierr )
      grid%mvnest = mvnest_l
    ENDIF
 
    CALL push_communicators_for_domain(grid%id)
 
-write(*,*)__FILE__,__LINE__,'grid%num_moves , grid%mvnest , abort ',grid%num_moves , grid%mvnest , abort
 
    can_move: if(grid%num_moves.eq.-99 .and. grid%mvnest .and. .not. abort) then
 
-write(*,*)__FILE__,__LINE__
 
       if(wrf_dm_on_monitor() .and. .not. abort) then
          WRITE(mess,*)'vortex tracking: id,mvnest,num_moves,num_nests: ', &
@@ -1353,7 +1337,6 @@ write(*,*)__FILE__,__LINE__
       endif
 
       nest_following: IF(grid%vortex_tracker==2)THEN
-write(*,*)__FILE__,__LINE__
          ! Follow child
          pgr=grid%parent_grid_ratio+0.01
          pgrn=grid%parent_grid_ratio-0.01
@@ -1427,8 +1410,6 @@ write(*,*)__FILE__,__LINE__
          endif
       endif nest_following
       revised_nest_motion: if(grid%vortex_tracker>3) then
-write(0,*)__FILE__,__LINE__
-write(*,*)__FILE__,__LINE__
          if((grid%XLOC_1-grid%XLOC_2) .GE. 3) then
             move_cd_x=-1
          elseif((grid%XLOC_2-grid%XLOC_1) .GE. 3) then
@@ -1452,8 +1433,6 @@ write(*,*)__FILE__,__LINE__
          endif
       endif revised_nest_motion
       vortex_following: IF(grid%vortex_tracker==3 .or. grid%vortex_tracker==1)THEN
-write(0,*)__FILE__,__LINE__
-write(*,*)__FILE__,__LINE__
          IF((grid%XLOC_1-grid%XLOC_2) .GE. 3)THEN 
             move_cd_x  = -1
             IF((grid%YLOC_2-grid%YLOC_1) .GE. 3)THEN
@@ -1485,8 +1464,6 @@ write(*,*)__FILE__,__LINE__
       ENDIF vortex_following
    endif can_move
 
-write(*,*)__FILE__,__LINE__,'move_cd_x, move_cd_y ',move_cd_x, move_cd_y
-write(0,*)__FILE__,__LINE__,'move_cd_x, move_cd_y ',move_cd_x, move_cd_y
    ! Abort motion if any child domain would end up within this
    ! domain's coral distance or outside of this domain.
    nest_safety: IF ( grid%num_nests .GT. 0 .and. ( move_cd_x/=0 .or. move_cd_y/=0 ) ) THEN
@@ -1550,8 +1527,6 @@ write(0,*)__FILE__,__LINE__,'move_cd_x, move_cd_y ',move_cd_x, move_cd_y
     ENDIF
   ENDIF
 
-write(0,*)__FILE__,__LINE__,'move_cd_x, move_cd_y ',move_cd_x, move_cd_y
-write(*,*)__FILE__,__LINE__,'move_cd_x, move_cd_y ',move_cd_x, move_cd_y
   if(move_cd_x/=0 .or. move_cd_y/=0) then
      direction_of_move2 = .true.
      grid%moved = .true.

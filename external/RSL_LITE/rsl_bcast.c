@@ -270,7 +270,7 @@ fprintf(stderr,"%s %d a %d b %d\n",__FILE__,__LINE__,s_ntasks_nest_x*s_ntasks_ne
       TASK_FOR_POINT_MESSAGE () ;
     }
     Sendbuf = RSL_MALLOC( char , Sendbufsize ) ;
-fprintf(stderr,"%s %d allocating Sendbuf, Sendbufsize %d, Sendbuf %x\n",__FILE__,__LINE__,Sendbufsize,Sendbuf) ;
+//fprintf(stderr,"%s %d allocating Sendbuf, Sendbufsize %d, Sendbuf %x\n",__FILE__,__LINE__,Sendbufsize,Sendbuf) ;
     Sendbufcurs = 0 ;
     Recsizeindex = -1 ;
     Pcurs = -1 ;
@@ -307,8 +307,6 @@ fprintf(stderr,"%s %d allocating Sendbuf, Sendbufsize %d, Sendbuf %x\n",__FILE__
 //fprintf(stderr,"%s %d Pptr %x\n",__FILE__,__LINE__,Pptr ) ;
   *ig_p = Pptr->info1 ;
   *jg_p = Pptr->info2 ;
-
-fprintf(stderr,"RSL_LITE_TO_CHILD_INFO pig %d, pjg %d\n",*ig_p,*jg_p) ;
 
 //fprintf(stderr,"%s %d ig %d jg %d \n",__FILE__,__LINE__,*ig_p,*jg_p ) ;
   r = (int *) &(Sendbuf[Sendbufcurs]) ;
@@ -607,7 +605,7 @@ fprintf(stderr,"%s %d : %d %d %d \n",__FILE__,__LINE__,mytask_on_comm,dir,*offse
  						    // everyone's list (not exactly scalable)
   for ( i = 0 ; i < ntasks*ntasks ; i++ ) Psize_all[i] = 0 ;
 
-#if 1
+#if 0
 fprintf(stderr,"%s %d : ntasks %d \n",__FILE__,__LINE__,ntasks) ;
 
   for ( j = 0 ; j < ntasks ; j++ ) 
@@ -628,7 +626,7 @@ fprintf(stderr,"(before MPI_Allgather) : Ssizes[%d] %d \n",j,Ssizes[j]) ;
   Psize_all[0] = Ssizes[0] ;
 #endif
 
-#if 1
+#if 0
 fprintf(stderr,"mytask_on_comm %d , ntasks %d \n",mytask_on_comm, ntasks ) ;
 #endif
 
@@ -637,7 +635,7 @@ fprintf(stderr,"mytask_on_comm %d , ntasks %d \n",mytask_on_comm, ntasks ) ;
     Rsizes[j] = 0 ;
   }
 
-#if 1
+#if 0
 for ( j = 0 ; j < ntasks ; j++ ) 
 {
 int jj ;
@@ -675,14 +673,14 @@ Psize_all[ INDEX_2( (mytask_on_comm-*offset_p+ntasks) % ntasks , j , ntasks ) ])
 
   /* this will be freed later */
 
-#if 1
+#if 0
 fprintf(stderr,"allocating Recvbuf %d bytes\n",Rbufsize + 3 * sizeof(int)) ;
 #endif
   Recvbuf = RSL_MALLOC( char , Rbufsize + 3 * sizeof(int) ) ; /* for sentinal record */
   Rbufcurs = 0 ;
   Rreclen = 0 ;
 
-#if 1
+#if 0
 fprintf(stderr,"%s %d before MPI_Alltoallv\n",__FILE__,__LINE__) ;
 fprintf(stderr,"before MPI_Alltoallv Sendbuf %x \n",Sendbuf) ;
 //fprintf(stderr,"before MPI_Alltoallv Ssizes %d %d %d %d %d %d \n",Ssizes[0],Ssizes[1],Ssizes[2],Ssizes[3],Ssizes[4],Ssizes[5]) ;
