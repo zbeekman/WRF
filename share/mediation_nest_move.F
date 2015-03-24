@@ -9,7 +9,7 @@ SUBROUTINE med_nest_move ( parent, nest )
 !   USE module_io_domain
    USE module_dm, ONLY : wrf_dm_move_nest
    TYPE(domain) , POINTER                     :: parent, nest, grid
-   INTEGER dx, dy       ! number of parent domain points to move
+   INTEGER dx, dy, origdy       ! number of parent domain points to move
 #ifdef MOVE_NESTS
   ! Local 
    CHARACTER*256 mess
@@ -214,16 +214,16 @@ SUBROUTINE med_nest_move ( parent, nest )
       RETURN
    ENDIF
 
-write(0,*)__FILE__,__LINE__
+write(*,*)__FILE__,__LINE__
 ! if the nest has stopped don't do all this
    IF ( WRFU_ClockIsStopTime(nest%domain_clock ,rc=ierr) ) RETURN
-write(0,*)__FILE__,__LINE__
+write(*,*)__FILE__,__LINE__
 
 ! mask should be defined in nest domain
 
 #ifdef HWRF
   check_direction_of_move: IF ( direction_of_move ( parent , nest , dx, dy ) ) THEN
-write(0,*)__FILE__,__LINE__
+write(*,*)__FILE__,__LINE__,' dx,dy ',dx,dy
 #else
   check_for_move: IF ( time_for_move ( parent , nest , dx, dy ) ) THEN
 #endif
@@ -236,9 +236,11 @@ write(0,*)__FILE__,__LINE__
      ENDIF
 #endif
 #if (NMM_CORE == 1 && NMM_NEST == 1)
+write(*,*)__FILE__,__LINE__,' dy = ',dy
      IF(MOD(dy,2) .NE. 0)THEN
+       origdy = dy
        dy=dy+sign(1,dy)
-       WRITE(mess,*)'WARNING: DY REDEFINED FOR THE NMM CORE AND RE-SET TO MASS POINT dy=',dy
+       WRITE(mess,*)'WARNING: DY REDEFINED FOR THE NMM CORE AND RE-SET FROM ',origdy,' TO MASS POINT dy=',dy
        call wrf_debug(1,mess)
      ENDIF
 
@@ -293,11 +295,13 @@ write(0,*)__FILE__,__LINE__
      grid%j_parent_start = grid%j_parent_start + py / grid%parent_grid_ratio
      CALL nl_set_j_parent_start( grid%id, grid%j_parent_start )
 
+     CALL push_communicators_for_domain(grid%id)
      IF ( wrf_dm_on_monitor() ) THEN
        write(mess,*)  &
          'Grid ',grid%id,' New SW corner (in parent x and y):',grid%i_parent_start, grid%j_parent_start
        CALL wrf_message(TRIM(mess))
      ENDIF
+     CALL pop_communicators_for_domain(grid%id)
 
 #if (NMM_CORE == 1 && NMM_NEST == 1)
 
@@ -396,9 +400,9 @@ write(0,*)__FILE__,__LINE__
 
 #endif
 
-write(0,*)__FILE__,__LINE__
+write(*,*)__FILE__,__LINE__
      CALL med_interp_domain( parent, nest )
-write(0,*)__FILE__,__LINE__
+write(*,*)__FILE__,__LINE__
 
 #if ( EM_CORE == 1 )
      CALL nl_get_input_from_hires( nest%id , input_from_hires ) 
@@ -481,11 +485,11 @@ write(0,*)__FILE__,__LINE__
      nest%press_adj = .FALSE.
 #endif
      IF ( nest%active_this_task ) THEN
-write(0,*)__FILE__,__LINE__,nest%id,' nest%active_this_task ',nest%active_this_task
+write(*,*)__FILE__,__LINE__,nest%id,' nest%active_this_task ',nest%active_this_task
        CALL push_communicators_for_domain(nest%id)
        CALL start_domain ( nest , .FALSE. )
        CALL pop_communicators_for_domain
-write(0,*)__FILE__,__LINE__,nest%id,' nest%active_this_task ',nest%active_this_task
+write(*,*)__FILE__,__LINE__,nest%id,' nest%active_this_task ',nest%active_this_task
      ENDIF
      config_flags%restart = saved_restart_value
      grid%restart = saved_restart_value
@@ -1225,7 +1229,7 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
                   nips, nipe, njps, njpe, nkps, nkpe
    real :: dx,dy,kid_ic,kid_jc,my_ic,my_jc,pgr,pgrn,hr,two_dt,when,before,after
    real, parameter :: pmult=1.35
-   integer :: inew,jnew,ierr,comzilla,itmp
+   integer :: inew,jnew,ierr,comzilla,itmp_pos,itmp_neg
    logical :: abort,mvnest_l
 
 ! PURPOSE: DECIDE THE DIRECTION OF MOVE
@@ -1265,14 +1269,14 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
 
    ! Simplifying assumption: domains in moving nest simulations have
    ! only one parent and only one child.
-write(0,*)__FILE__,__LINE__,'parent%id, grid%id ',parent%id, grid%id
+write(*,*)__FILE__,__LINE__,'parent%id, grid%id ',parent%id, grid%id
    if(grid%num_nests .gt. 1) then
       write(mess,'("d",I0,": not moving because it has more than one nest")') grid%id
       call WRF_MESSAGE(trim(mess))
       abort=.true.
    endif
 
-write(0,*)__FILE__,__LINE__
+write(*,*)__FILE__,__LINE__
    ! Switch off nest motion if we're at the analysis time or 6hr forecast
    if(grid%nomove_freq_hr>0) then
       hr=(grid%ntsd*grid%dt)/3600.0
@@ -1291,7 +1295,7 @@ write(0,*)__FILE__,__LINE__
    !  SWITCH OFF NEST MOTION IF TOO CLOSE TO ANY OF THE BOUNDARIES
 
    coral_dist=(grid%ed31+grid%parent_grid_ratio-1)/grid%parent_grid_ratio
-write(0,*)__FILE__,__LINE__,'coral_dist ',coral_dist
+write(*,*)__FILE__,__LINE__,'coral_dist ',coral_dist
    IF(grid%i_parent_start .le. 5) then
       abort=.true.
       write(mess,'("d",I0,": cannot move: too close to parent d",I0," -X boundary")') grid%id,parent%id
@@ -1303,7 +1307,7 @@ write(0,*)__FILE__,__LINE__,'coral_dist ',coral_dist
   ENDIF
 
    coral_dist=(grid%ed32+grid%parent_grid_ratio-1)/grid%parent_grid_ratio
-write(0,*)__FILE__,__LINE__,'coral_dist ',coral_dist
+write(*,*)__FILE__,__LINE__,'coral_dist ',coral_dist
    IF(grid%j_parent_start .le. 5) THEN
       abort=.true.
       write(mess,'("d",I0,": cannot move: too close to parent d",I0," -Y boundary")') grid%id,parent%id
@@ -1317,22 +1321,26 @@ write(0,*)__FILE__,__LINE__,'coral_dist ',coral_dist
    !  DETERMINE AUTOMATICALLY THE DIRECTION OF GRID MOTION
    !
 
-write(0,*)__FILE__,__LINE__,'parent%active_this_task,grid%active_this_task ',parent%active_this_task,grid%active_this_task
+write(*,*)__FILE__,__LINE__,'parent%active_this_task,grid%active_this_task ',parent%active_this_task,grid%active_this_task
+
    IF ( (.NOT. (parent%active_this_task .AND. grid%active_this_task) ) .AND. (parent%active_this_task .OR. grid%active_this_task) ) THEN
      IF ( parent%active_this_task ) THEN
        comzilla = mpi_comm_to_kid( which_kid( grid%id ) , parent%id )
      ELSE
        comzilla = mpi_comm_to_mom( grid%id )
      ENDIF
-write(0,*)__FILE__,__LINE__,'before MPI_Allreduce comzilla ',comzilla
+write(*,*)__FILE__,__LINE__,'before MPI_Allreduce comzilla ',comzilla
      CALL MPI_Allreduce( grid%mvnest , mvnest_l, 1, MPI_LOGICAL, MPI_LOR, comzilla, ierr )
      grid%mvnest = mvnest_l
    ENDIF
 
+   CALL push_communicators_for_domain(grid%id)
 
-write(0,*)__FILE__,__LINE__,'grid%num_moves , grid%mvnest , abort ',grid%num_moves , grid%mvnest , abort
+write(*,*)__FILE__,__LINE__,'grid%num_moves , grid%mvnest , abort ',grid%num_moves , grid%mvnest , abort
+
    can_move: if(grid%num_moves.eq.-99 .and. grid%mvnest .and. .not. abort) then
-write(0,*)__FILE__,__LINE__
+
+write(*,*)__FILE__,__LINE__
 
       if(wrf_dm_on_monitor() .and. .not. abort) then
          WRITE(mess,*)'vortex tracking: id,mvnest,num_moves,num_nests: ', &
@@ -1345,7 +1353,7 @@ write(0,*)__FILE__,__LINE__
       endif
 
       nest_following: IF(grid%vortex_tracker==2)THEN
-write(0,*)__FILE__,__LINE__
+write(*,*)__FILE__,__LINE__
          ! Follow child
          pgr=grid%parent_grid_ratio+0.01
          pgrn=grid%parent_grid_ratio-0.01
@@ -1420,6 +1428,7 @@ write(0,*)__FILE__,__LINE__
       endif nest_following
       revised_nest_motion: if(grid%vortex_tracker>3) then
 write(0,*)__FILE__,__LINE__
+write(*,*)__FILE__,__LINE__
          if((grid%XLOC_1-grid%XLOC_2) .GE. 3) then
             move_cd_x=-1
          elseif((grid%XLOC_2-grid%XLOC_1) .GE. 3) then
@@ -1444,6 +1453,7 @@ write(0,*)__FILE__,__LINE__
       endif revised_nest_motion
       vortex_following: IF(grid%vortex_tracker==3 .or. grid%vortex_tracker==1)THEN
 write(0,*)__FILE__,__LINE__
+write(*,*)__FILE__,__LINE__
          IF((grid%XLOC_1-grid%XLOC_2) .GE. 3)THEN 
             move_cd_x  = -1
             IF((grid%YLOC_2-grid%YLOC_1) .GE. 3)THEN
@@ -1475,6 +1485,7 @@ write(0,*)__FILE__,__LINE__
       ENDIF vortex_following
    endif can_move
 
+write(*,*)__FILE__,__LINE__,'move_cd_x, move_cd_y ',move_cd_x, move_cd_y
 write(0,*)__FILE__,__LINE__,'move_cd_x, move_cd_y ',move_cd_x, move_cd_y
    ! Abort motion if any child domain would end up within this
    ! domain's coral distance or outside of this domain.
@@ -1523,13 +1534,24 @@ write(0,*)__FILE__,__LINE__,'move_cd_x, move_cd_y ',move_cd_x, move_cd_y
   IF ( (.NOT. (parent%active_this_task .AND. grid%active_this_task) ) .AND. (parent%active_this_task .OR. grid%active_this_task) ) THEN
     CALL MPI_Allreduce( grid%mvnest , mvnest_l, 1, MPI_LOGICAL, MPI_LOR, comzilla, ierr )
     grid%mvnest = mvnest_l
-    CALL MPI_Allreduce( move_cd_x , itmp, 1, MPI_LOGICAL, MPI_LOR, comzilla, ierr )
-    move_cd_x = itmp
-    CALL MPI_Allreduce( move_cd_y , itmp, 1, MPI_LOGICAL, MPI_LOR, comzilla, ierr )
-    move_cd_y = itmp
+    CALL MPI_Allreduce( move_cd_x , itmp_pos, 1, MPI_INTEGER, MPI_MAX, comzilla, ierr )
+    CALL MPI_Allreduce( move_cd_x , itmp_neg, 1, MPI_INTEGER, MPI_MIN, comzilla, ierr )
+    IF ( itmp_pos .NE. 0 ) THEN
+      move_cd_x = itmp_pos
+    ELSE 
+      move_cd_x = itmp_neg
+    ENDIF
+    CALL MPI_Allreduce( move_cd_y , itmp_pos, 1, MPI_INTEGER, MPI_MAX, comzilla, ierr )
+    CALL MPI_Allreduce( move_cd_y , itmp_neg, 1, MPI_INTEGER, MPI_MIN, comzilla, ierr )
+    IF ( itmp_pos .NE. 0 ) THEN
+      move_cd_y = itmp_pos
+    ELSE 
+      move_cd_y = itmp_neg
+    ENDIF
   ENDIF
 
 write(0,*)__FILE__,__LINE__,'move_cd_x, move_cd_y ',move_cd_x, move_cd_y
+write(*,*)__FILE__,__LINE__,'move_cd_x, move_cd_y ',move_cd_x, move_cd_y
   if(move_cd_x/=0 .or. move_cd_y/=0) then
      direction_of_move2 = .true.
      grid%moved = .true.
@@ -1539,6 +1561,8 @@ write(0,*)__FILE__,__LINE__,'move_cd_x, move_cd_y ',move_cd_x, move_cd_y
         ! other vortex trackers set NTIME0 in STATS_FOR_MOVE
      endif
   endif
+
+   CALL pop_communicators_for_domain(grid%id)
   
   RETURN
 
