@@ -818,6 +818,10 @@ integer myproc
    CALL nl_get_isurban(id,isurban)
 !jm   CALL nl_get_mminlu( 1, mminlu_loc )
    CALL nl_get_mminlu( id, mminlu_loc )
+IF ( trim(mminlu_loc) .eq. "" ) THEN
+  CALL wrf_message('WARNING:   MMINLU NOT SET, USING USGS')
+  MMINLU_LOC = 'USGS'
+ENDIF
    CALL wrf_debug(100,'after nl_get_iswater, nl_get_isice, nl_get_mminlu_loc')
 !-- temporary fix by ww
    landuse_ISICE = isice
@@ -999,6 +1003,7 @@ integer myproc
                 ids, ide, jds, jde, kds, kde,                       &
                 ims, ime, jms, jme, kms, kme,                       &
                 its, ite, jts, jte, kts, kte                       )
+
    ENDIF
 
   ENDIF

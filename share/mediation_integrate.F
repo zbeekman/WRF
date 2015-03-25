@@ -1030,6 +1030,7 @@ integer myproc
 !  initialize lat-lons and determine weights (overwrite for safety)
 !-------------------------------------------------------------------------
 
+
    CALL med_construct_egrid_weights ( parent, nest )
 
    nest%imask_nostag = 0
@@ -1041,6 +1042,7 @@ integer myproc
 !  set up constants (module_initialize_real.F for nested nmm domain)
 !-----------------------------------------------------------------------------
 
+
     CALL med_init_domain_constants_nmm ( parent, nest )
 
 !--------------------------------------------------------------------------------------
@@ -1048,6 +1050,7 @@ integer myproc
 ! Also, in order to accomodate some physics initialization after nest move, set
 ! analysis back to false for future use
 !--------------------------------------------------------------------------------------
+
 
   IF ( nest%active_this_task) THEN
     CALL push_communicators_for_domain( nest%id )
