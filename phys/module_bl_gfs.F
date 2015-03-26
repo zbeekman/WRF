@@ -347,6 +347,24 @@ CONTAINS
         ENDDO
       ENDDO
 !
+if ( j .eq. 54 ) then
+write(0,"(a20,i10,' ZAPP U1 ',e20.8)")__FILE__,__LINE__,U1(3,1)
+write(0,"(a20,i10,' ZAPP V1 ',e20.8)")__FILE__,__LINE__,V1(3,1)
+write(0,"(a20,i10,' ZAPP T1 ',e20.8)")__FILE__,__LINE__,T1(3,1)
+write(0,"(a20,i10,' ZAPP Q1 1',e20.8)")__FILE__,__LINE__,Q1(3,1,1)
+write(0,"(a20,i10,' ZAPP Q1 2',e20.8)")__FILE__,__LINE__,Q1(3,1,2)
+write(0,"(a20,i10,' ZAPP Q1 3',e20.8)")__FILE__,__LINE__,Q1(3,1,3)
+write(0,"(a20,i10,' ZAPP PSK ',e20.8)")__FILE__,__LINE__,PSK(3)
+write(0,"(a20,i10,' ZAPP RBSOIL ',e20.8)")__FILE__,__LINE__,RBSOIL(3)
+write(0,"(a20,i10,' ZAPP FM ',e20.8)")__FILE__,__LINE__,FM(3)
+write(0,"(a20,i10,' ZAPP FH ',e20.8)")__FILE__,__LINE__,FH(3)
+write(0,"(a20,i10,' ZAPP TSEA ',e20.8)")__FILE__,__LINE__,TSEA(3)
+write(0,"(a20,i10,' ZAPP QSS ',e20.8)")__FILE__,__LINE__,QSS(3)
+write(0,"(a20,i10,' ZAPP HEAT ',e20.8)")__FILE__,__LINE__,HEAT(3)
+write(0,"(a20,i10,' ZAPP EVAP ',e20.8)")__FILE__,__LINE__,EVAP(3)
+write(0,"(a20,i10,' ZAPP STRESS ',e20.8)")__FILE__,__LINE__,STRESS(3)
+write(0,"(a20,i10,' ZAPP SPD1 ',e20.8)")__FILE__,__LINE__,SPD1(3)
+endif
       CALL MONINP(IM,IM,KX,NTRAC,DV,DU,TAU,RTG,U1,V1,T1,Q1,             &
                   PSK,RBSOIL,FM,FH,TSEA,QSS,HEAT,EVAP,STRESS,           &
                   SPD1,KPBL,PRSI,DEL,PRSL,PRSLK,PHII,PHIL,RCL,          &
@@ -378,6 +396,17 @@ CONTAINS
 !=============================================================================
 
 
+if ( j .eq. 54 ) then
+write(0,*)__FILE__,__LINE__,'DISHEAT ',DISHEAT
+write(0,"(a20,i10,' ZAPP RTHBLTEN ',e20.8)")__FILE__,__LINE__,RTHBLTEN(3,1,54)
+write(0,"(a20,i10,' ZAPP U1 ',e20.8)")__FILE__,__LINE__,U1(3,1)
+write(0,"(a20,i10,' ZAPP DU ',e20.8)")__FILE__,__LINE__,DU(3,1)
+write(0,"(a20,i10,' ZAPP V1 ',e20.8)")__FILE__,__LINE__,V1(3,1)
+write(0,"(a20,i10,' ZAPP DV ',e20.8)")__FILE__,__LINE__,DV(3,1)
+write(0,"(a20,i10,' ZAPP TAU ',e20.8)")__FILE__,__LINE__,TAU(3,1)
+write(0,"(a20,i10,' ZAPP PI3D ',e20.8)")__FILE__,__LINE__,PI3D(3,1,54)
+endif
+
       DO k=kts,kte
         DO i=its,ite
           RVBLTEN(I,K,J)=DV(I,K)
@@ -387,6 +416,10 @@ CONTAINS
           RQCBLTEN(I,K,J)=RTG(I,K,2)/(1.-Q1(I,K,2))**2
         ENDDO
       ENDDO
+
+if ( j .eq. 54 ) then
+write(0,"(a20,i10,' ZAPP RTHBLTEN ',e20.8)")__FILE__,__LINE__,RTHBLTEN(3,1,54)
+endif
 
       IF (P_QI.ge.P_FIRST_SCALAR) THEN
         DO k=kts,kte

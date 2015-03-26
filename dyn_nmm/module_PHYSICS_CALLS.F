@@ -297,6 +297,9 @@
 !
       ENDDO
       ENDDO
+
+write(0,"(a20,i10,' ZAPP t_phy ',e20.8)")__FILE__,__LINE__,t_phy(3,54,1)
+
 !
       GMT=REAL(IHRST)
 !
@@ -1337,6 +1340,8 @@
 !
       CALL SET_TILES(GRID,IDS,IDE-1,JDS+1,JDE-1,ITS,ITE,JTS,JTE)
 
+write(0,"(a20,i10,' ZAPP t_phy ',e20.8)")__FILE__,__LINE__,t_phy(3,54,1)
+
 !
       CALL SURFACE_DRIVER(                                              &
      &           HYDRO_dt=-1.0,  SFCHEADRT=SFCHEADRT,                   &
@@ -1493,6 +1498,7 @@
 
      &                                                          )
 !
+write(0,"(a20,i10,' ZAPP t_phy ',e20.8)")__FILE__,__LINE__,t_phy(3,54,1)
 !-----------------------------------------------------------------------
 !
 !***  CALL FREE ATMOSPHERE TURBULENCE
@@ -1547,6 +1553,7 @@
 !      write(0,*) 'var_ric & coef_ric_s l from namelist Kwon  ',var_ric,coef_ric_s,coef_ric_l
 #endif
 !
+write(0,"(a20,i10,' ZAPP t_phy ',e20.8)")__FILE__,__LINE__,t_phy(3,54,1)
       CALL PBL_DRIVER(                                                &
      &                ITIMESTEP=NTSD,DT=DT                            &
      &               ,U_FRAME=U_FRAME,V_FRAME=V_FRAME                 &
@@ -1615,6 +1622,7 @@
      &               ,IS_CAMMGMP_USED=IS_CAMMGMP_USED                 &
      &               ,wstar=wstar_ysu,delta=delta_ysu                 &
      &               ,sf_urban_physics=CONFIG_FLAGS%SF_URBAN_PHYSICS)
+write(0,"(a20,i10,' ZAPP t_phy ',e20.8)")__FILE__,__LINE__,t_phy(3,54,1)
 !
 !***  NOTE THAT THE EXCHANGE COEFFICIENTS FOR HEAT EXCH_H COMING OUT OF
 !***  PBL_DRIVER ARE DEFINED AT THE TOPS OF THE LAYERS KTS TO KTE-1
@@ -1807,6 +1815,8 @@
 
         CALL wrf_message("GWD usage currently may be problematic for some cases - use at own risk")
 
+write(0,"(a20,i10,' ZAPP t_phy ',e20.8)")__FILE__,__LINE__,t_phy(3,54,1)
+
       CALL GWD_driver(U=U_PHY,V=V_PHY,T=T_PHY                           &
      &               ,Q=MOIST_TRANS(IMS,KMS,JMS,P_QV)                   &
      &               ,Z=Z,DP=DELP,PINT=P8W,PMID=P_PHY,EXNR=PI_PHY       &
@@ -1821,6 +1831,8 @@
      &               ,IDS=IDS,IDE=IDE,JDS=JDS,JDE=JDE,KDS=KDS,KDE=KDE   &
      &               ,IMS=IMS,IME=IME,JMS=JMS,JME=JME,KMS=KMS,KME=KME   &
      &               ,ITS=IGS,ITE=IGE,JTS=JGS,JTE=JGE,KTS=KTS,KTE=KTE )
+
+write(0,"(a20,i10,' ZAPP t_phy ',e20.8)")__FILE__,__LINE__,t_phy(3,54,1)
 
 !=======================================================================
 !=====  End gravity wave drag (GWD) and mountain blocking (MB)  ========
@@ -1909,6 +1921,9 @@
 !
       ETAMP_PHYSICS=ETAMP_Regional
       IF (CONFIG_FLAGS%MP_PHYSICS==ETAMP_HWRF) ETAMP_PHYSICS=.TRUE.
+write(0,"(a20,i10,' ZAPP t ',e20.8)")__FILE__,__LINE__,t(3,54,1)
+write(0,"(a20,i10,' ZAPP RTHBLTEN ',e20.8)")__FILE__,__LINE__,RTHBLTEN(3,1,54)
+write(0,"(a20,i10,' ZAPP PI_PHY ',e20.8)")__FILE__,__LINE__,PI_PHY(3,1,54)
 !
 !$omp parallel do                                                       &
 !$omp& private(dqdt,dtdt,i,iend,j,k,qi,qold,qr,qw,ratiomx,i_m)
@@ -1921,6 +1936,13 @@
           DTDT=RTHBLTEN(I,K,J)*PI_PHY(I,K,J)
           DQDT=RQVBLTEN(I,K,J)         !Mixing ratio tendency
           T(I,J,K)=T(I,J,K)+DTDT*DTPHS
+if ( i.eq.3 .and. j.eq.54.and.k.eq.1)then
+write(0,"(a20,i10,' ZAPP t ',e20.8)")__FILE__,__LINE__,t(3,54,1)
+write(0,"(a20,i10,' ZAPP DTDT ',e20.8)")__FILE__,__LINE__,DTDT
+write(0,"(a20,i10,' ZAPP DTPHS ',e20.8)")__FILE__,__LINE__,DTPHS
+write(0,"(a20,i10,' ZAPP DTDT*DTPHS ',e20.8)")__FILE__,__LINE__,DTDT*DTPHS
+endif
+
           QOLD=Q(I,J,K)
           RATIOMX=QOLD/(1.-QOLD)+DQDT*DTPHS
           Q(I,J,K)=RATIOMX/(1.+RATIOMX)
@@ -1984,6 +2006,7 @@
         ENDDO
 !
       ENDDO
+write(0,"(a20,i10,' ZAPP t ',e20.8)")__FILE__,__LINE__,t(3,54,1)
 !
 !-----------------------------------------------------------------------
 !***
@@ -2029,6 +2052,7 @@
       ARDLW =ARDLW +1.
       ASRFC =ASRFC +1.
 !-----------------------------------------------------------------------
+write(0,"(a20,i10,' ZAPP t ',e20.8)")__FILE__,__LINE__,t(3,54,1)
 !
       END SUBROUTINE TURBL
 !

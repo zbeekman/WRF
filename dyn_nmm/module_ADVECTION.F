@@ -847,6 +847,14 @@
               TTB=EN       *VST(I,J)
               PP=-TTA-TTB
               QP=TTA-TTB
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE ust   ',2i5,e20.8)")__FILE__,__LINE__,i,j,ust(i,j)
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE em_loc   ',2i5,e20.8)")__FILE__,__LINE__,i,j,em_loc(j)
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE tta   ',2i5,e20.8)")__FILE__,__LINE__,i,j,tta
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE vst   ',2i5,e20.8)")__FILE__,__LINE__,i,j,vst(i,j)
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE en   ',2i5,e20.8)")__FILE__,__LINE__,i,j,en
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE ttb   ',2i5,e20.8)")__FILE__,__LINE__,i,j,ttb
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE pp   ',2i5,e20.8)")__FILE__,__LINE__,i,j,pp
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE qp   ',2i5,e20.8)")__FILE__,__LINE__,i,j,qp
 !
               IF(PP<0.)THEN
                 ISP=-1
@@ -874,6 +882,15 @@
      &                +F1*U(I+IVE(J)+IFP,J+ISP,K)                       &
      &                +F2*U(I+IVE(J)+IFQ,J+ISQ,K)                       &
      &                +F3*U(I+IPQ,J+ISP+ISQ,K)
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE adu   ',2i5,e20.8)")__FILE__,__LINE__,i,j,adu(i,j)
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE f0   ',2i5,e20.8)")__FILE__,__LINE__,i,j,f0
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE f1   ',2i5,e20.8)")__FILE__,__LINE__,i,j,f1
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE f2   ',2i5,e20.8)")__FILE__,__LINE__,i,j,f2
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE f3   ',2i5,e20.8)")__FILE__,__LINE__,i,j,f3
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE u(i,j,k)   ',2i5,e20.8)")__FILE__,__LINE__,i,j,u(i,j,k)
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE U(I+IVE(J)+IFP,J+ISP,K)',2i5,e20.8)")__FILE__,__LINE__,i,j,U(I+IVE(J)+IFP,J+ISP,K)
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE U(I+IVE(J)+IFQ,J+ISQ,K)',2i5,e20.8)")__FILE__,__LINE__,i,j,U(I+IVE(J)+IFQ,J+ISQ,K)
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE U(I+IPQ,J+ISP+ISQ,K)',2i5,e20.8)")__FILE__,__LINE__,i,j,U(I+IPQ,J+ISP+ISQ,K)
 !
               ADV(I,J)=F0*V(I,J,K)                                      &
      &                +F1*V(I+IVE(J)+IFP,J+ISP,K)                       &
@@ -907,6 +924,13 @@
 !
           FPP=CURV(I,J)*2.*UST(I,J)+F(I,J)*2.
           ADU(I,J)=(VAD_TEND_U(I,J,K)+2.*ADU(I,J)+VST(I,J)*FPP)*VM
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE adu   ',2i5,e20.8)")__FILE__,__LINE__,i,j,adu(i,j)
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE vst   ',2i5,e20.8)")__FILE__,__LINE__,i,j,vst(i,j)
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE ust   ',2i5,e20.8)")__FILE__,__LINE__,i,j,ust(i,j)
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE curv  ',2i5,e20.8)")__FILE__,__LINE__,i,j,curv(i,j)
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE f     ',2i5,e20.8)")__FILE__,__LINE__,i,j,f(i,j)
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE hbm2  ',2i5,e20.8)")__FILE__,__LINE__,i,j,hbm2(i,j)
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE vad_tend_u  ',2i5,e20.8)")__FILE__,__LINE__,i,j,vad_tend_u(i,j,k)
           ADV(I,J)=(VAD_TEND_V(I,J,K)+2.*ADV(I,J)-UST(I,J)*FPP)*VM
         ENDDO
         ENDDO
@@ -931,9 +955,12 @@
         DO I=MYIS1,MYIE1
           T(I,J,K)=ADT(I,J)+T(I,J,K)
           U(I,J,K)=ADU(I,J)+U(I,J,K)
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE adu   ',2i5,e20.8)")__FILE__,__LINE__,i,j,adu(i,j)
+if (k.eq.1.and.i.le.4) write(0,"(a20,i10,' ZADVE u     ',2i5,e20.8)")__FILE__,__LINE__,i,j,u(i,j,k)
           V(I,J,K)=ADV(I,J)+V(I,J,K)
         ENDDO
         ENDDO
+
 !
 !-----------------------------------------------------------------------
 !

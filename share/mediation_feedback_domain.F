@@ -257,6 +257,13 @@ write(0,*)"back from feedback_domain_em_part2",grid%id
 #      include "actual_new_args.inc"
 !
                                    )
+
+if ( grid%id .eq. 1 ) then
+write(0,"(a20,i10,' ZAPP t ',e20.8)")__FILE__,__LINE__,grid%t(19,41,1)
+write(0,"(a20,i10,' ZAPP u ',e20.8)")__FILE__,__LINE__,grid%u(19,41,1)
+write(0,"(a20,i10,' ZAPP v ',e20.8)")__FILE__,__LINE__,grid%v(19,41,1)
+endif
+
 #endif
 ! ------------------------------------------------------
 !    End of Feedback calls for NMM.

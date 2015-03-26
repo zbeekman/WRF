@@ -383,6 +383,7 @@ RSL_LITE_TO_PARENT_INFO ( msize_p,
 #ifndef STUBMPI
 	  TASK_FOR_POINT ( &i, &j, cids_p, cide_p, cjds_p, cjde_p, &s_ntasks_par_x, &s_ntasks_par_y, &Px, &Py, 
                            min_subdomain, min_subdomain, &ierr ) ;
+fprintf(stderr,"tfp toparent %d %d %d %d : %d %d\n",i,j,s_ntasks_par_x,s_ntasks_par_y,Px,Py) ;
           P = Px + Py * *ntasks_par_x_p ;  // we are computing parent task numbers, so no offset
 //          coords[1] = Px ; coords[0] = Py ;
 //          MPI_Cart_rank( *comm, coords, &P ) ;
@@ -626,7 +627,7 @@ fprintf(stderr,"(before MPI_Allgather) : Ssizes[%d] %d \n",j,Ssizes[j]) ;
   Psize_all[0] = Ssizes[0] ;
 #endif
 
-#if 0
+#if 1
 fprintf(stderr,"mytask_on_comm %d , ntasks %d \n",mytask_on_comm, ntasks ) ;
 #endif
 
@@ -635,7 +636,7 @@ fprintf(stderr,"mytask_on_comm %d , ntasks %d \n",mytask_on_comm, ntasks ) ;
     Rsizes[j] = 0 ;
   }
 
-#if 0
+#if 1
 for ( j = 0 ; j < ntasks ; j++ ) 
 {
 int jj ;
@@ -653,7 +654,7 @@ fprintf(stderr,"\n") ;
 
     Rsizes[j] += Psize_all[ INDEX_2( j, mytask_on_comm, ntasks ) ] ;
 
-#if 0
+#if 1
 fprintf(stderr,"j %d , mytask_on_comm %d,*offset_p %d \n",j,mytask_on_comm,*offset_p) ;
 fprintf(stderr,"Rsizes[%d]= %d; %d ; Psize_all[%d] = %d\n",
 j,

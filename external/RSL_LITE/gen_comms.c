@@ -1996,6 +1996,7 @@ gen_nest_pack ( char * dirname )
   int down_path[] = { INTERP_DOWN , FORCE_DOWN , INTERP_UP } ;
   int ipath ;
   char ** fnp ; char * fn ;
+  char * parent ;
   char * shw_str ;
   char fname[NAMELEN] ;
   node_t *node, *p, *dim ;
@@ -2031,6 +2032,8 @@ gen_nest_pack ( char * dirname )
 #else
       count_fields ( node , &d2 , &d3 , fourd_names, down_path[ipath] ,0,0) ;
 #endif
+      parent= "" ;
+      if ( !strcmp(fn,"nest_feedbackup_pack.inc") ) parent="parent_" ; 
 
       if ( d2 + d3 > 0 ) {
         if ( down_path[ipath] == INTERP_UP )
@@ -2059,8 +2062,8 @@ if (sw) fprintf(fp,"                        ,iids,iide,ijds,ijde                
         fprintf(fp,"                        ,nids,nide,njds,njde                               &\n") ;
 if (sw) fprintf(fp,"                        ,pgr , sw                                          &\n") ;
         fprintf(fp,"                        ,nest_task_offsets(ngrid%%id)                      &\n") ;
-        fprintf(fp,"                        ,nest_pes_x(grid%%id)                              &\n") ;
-        fprintf(fp,"                        ,nest_pes_y(grid%%id)                              &\n") ; 
+        fprintf(fp,"                        ,nest_pes_x(%sgrid%%id)                            &\n",parent) ;
+        fprintf(fp,"                        ,nest_pes_y(%sgrid%%id)                            &\n",parent) ; 
         fprintf(fp,"                        ,nest_pes_x(intermediate_grid%%id)                 &\n") ;
         fprintf(fp,"                        ,nest_pes_y(intermediate_grid%%id)                 &\n") ; 
         fprintf(fp,"                        ,thisdomain_max_halo_width                         &\n") ;
@@ -2079,8 +2082,8 @@ if (sw) fprintf(fp,"                        ,iids,iide,ijds,ijde                
         fprintf(fp,"                        ,nids,nide,njds,njde                               &\n") ;
 if (sw) fprintf(fp,"                        ,pgr , sw                                          &\n") ;
         fprintf(fp,"                        ,nest_task_offsets(ngrid%%id)                      &\n") ;
-        fprintf(fp,"                        ,nest_pes_x(grid%%id)                              &\n") ;
-        fprintf(fp,"                        ,nest_pes_y(grid%%id)                              &\n") ; 
+        fprintf(fp,"                        ,nest_pes_x(%sgrid%%id)                            &\n",parent) ;
+        fprintf(fp,"                        ,nest_pes_y(%sgrid%%id)                            &\n",parent) ; 
         fprintf(fp,"                        ,nest_pes_x(intermediate_grid%%id)                 &\n") ;
         fprintf(fp,"                        ,nest_pes_y(intermediate_grid%%id)                 &\n") ; 
         fprintf(fp,"                        ,thisdomain_max_halo_width                         &\n") ;

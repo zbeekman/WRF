@@ -4964,7 +4964,7 @@ ENDIF
       TYPE(domain), POINTER :: grid          ! name of the grid being dereferenced (must be "grid")
       TYPE(domain), POINTER :: intermediate_grid
       TYPE(domain), POINTER :: ngrid
-      TYPE(domain), POINTER :: xgrid
+      TYPE(domain), POINTER :: parent_grid
 
 #include <dummy_new_decl.inc>
       INTEGER nlev, msize
@@ -5076,10 +5076,10 @@ IF ( ngrid%active_this_task ) THEN
 
       CALL get_dm_max_halo_width ( grid%id , thisdomain_max_halo_width )
 
-      xgrid => grid
+      parent_grid => grid
       grid => ngrid
 #include "nest_feedbackup_pack.inc"
-      grid => xgrid
+      grid => parent_grid
     CALL pop_communicators_for_domain
 
 ENDIF
@@ -5999,7 +5999,7 @@ integer myproc
       TYPE(domain), POINTER :: grid          ! name of the grid being dereferenced (must be "grid")
       TYPE(domain), POINTER :: intermediate_grid
       TYPE(domain), POINTER :: ngrid
-      TYPE(domain), POINTER :: xgrid
+      TYPE(domain), POINTER :: parent_grid
 
 #include <dummy_new_decl.inc>
       INTEGER nlev, msize
@@ -6092,12 +6092,12 @@ IF ( ngrid%active_this_task ) THEN
       nlev  = ckde - ckds + 1
 
       CALL get_dm_max_halo_width ( ngrid%id , thisdomain_max_halo_width )
-      xgrid => grid
+      parent_grid => grid
       grid => ngrid
 !debug write(0,*)'ZAP calling "nest_feedbackup_pack.inc" ',grid%id,SIZE(grid%tg_updhel25),config_flags%tg_option
 #include "nest_feedbackup_pack.inc"
 !debug write(0,*)'ZAP back from "nest_feedbackup_pack.inc" ',grid%id
-      grid => xgrid
+      grid => parent_grid
     CALL pop_communicators_for_domain
 ENDIF
 

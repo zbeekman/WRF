@@ -862,6 +862,9 @@
 #    include "HALO_NMM_F1.inc"
 #endif
 !-----------------
+
+!endif
+
       exch_tim=exch_tim+now_time()-btimx
 #ifdef NMM_FIND_LOAD_IMBALANCE
       call blockf(loadimbal_tim,'after halo F & F1')
@@ -890,6 +893,11 @@
      &         ,IDS,IDF,JDS,JDF,KDS,KDE                                 &
      &         ,IMS,IME,JMS,JME,KMS,KME                                 &
      &         ,ITS,ITE,JTS,JTE,KTS,KTE)
+      call check_grid(grid,config_flags,'after ADVE', &
+            ids,ide,jds,jde,kds,kde, &
+            ims,ime,jms,jme,kms,kme, &
+            its,ite,jts,jte,kts,kte)
+!endif
 !
       adve_tim=adve_tim+now_time()-btimx
 !
@@ -1136,6 +1144,7 @@
 
 
 
+!endif
       call check_grid(grid,config_flags,'before VADZ', &
             ids,ide,jds,jde,kds,kde, &
             ims,ime,jms,jme,kms,kme, &
@@ -1148,6 +1157,10 @@
      &         ,IDS,IDF,JDS,JDF,KDS,KDE                                 &
      &         ,IMS,IME,JMS,JME,KMS,KME                                 &
      &         ,ITS,ITE,JTS,JTE,KTS,KTE)
+      call check_grid(grid,config_flags,'after VADZ', &
+            ids,ide,jds,jde,kds,kde, &
+            ims,ime,jms,jme,kms,kme, &
+            its,ite,jts,jte,kts,kte)
 
       vadz_tim=vadz_tim+now_time()-btimx
 !
@@ -3467,6 +3480,20 @@
         ! - locals - !
         character(len=255) :: message
         integer :: i,j,k
+integer idebug,jdebug,kdebug
+
+idebug = 19
+jdebug = 41
+kdebug = 1
+
+if ( grid%id .eq. 1 .and. &
+     its .le. idebug .and. idebug .le. ite .and. &
+     jts .le. jdebug .and. jdebug .le. jte       &
+   )then
+write(0,"('check_grid t ',a20,i5,e20.8)")TRIM(where),grid%ntsd,grid%t(idebug,jdebug,kdebug)
+write(0,"('check_grid u ',a20,i5,e20.8)")TRIM(where),grid%ntsd,grid%u(idebug,jdebug,kdebug)
+write(0,"('check_grid v ',a20,i5,e20.8)")TRIM(where),grid%ntsd,grid%v(idebug,jdebug,kdebug)
+endif
 
         if(config_flags%halo_debug/=2 .and. config_flags%halo_debug/=3) then
            return
