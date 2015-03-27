@@ -3732,25 +3732,21 @@ IF ( grid%active_this_task ) THEN
           JA=JA+1
           KVLA(JA)=2
           KVHA(JA)=(IDE-1)-1-MOD(J,2)
-write(0,*)__FILE__,' a grid%em ',ja,emj(j)
  171      grid%em(JA)=EMJ(J)
           DO 172 J=(JDE-1)-4,(JDE-2)-2
           JA=JA+1
           KVLA(JA)=2
           KVHA(JA)=(IDE-1)-1-MOD(J,2)
-write(0,*)__FILE__,' b grid%em ',ja,emj(j)
  172      grid%em(JA)=EMJ(J)
           DO 173 J=6,(JDE-1)-5
           JA=JA+1
           KVLA(JA)=2
           KVHA(JA)=2+MOD(J+1,2)
-write(0,*)__FILE__,' c grid%em ',ja,emj(j)
  173      grid%em(JA)=EMJ(J)
           DO 174 J=6,(JDE-1)-5
           JA=JA+1
           KVLA(JA)=(IDE-1)-2
           KVHA(JA)=(IDE-1)-1-MOD(J,2)
-write(0,*)__FILE__,' d grid%em ',ja,emj(j)
  174      grid%em(JA)=EMJ(J)
 
 !        ENDIF ! wrf_dm_on_monitor
@@ -3986,8 +3982,6 @@ LOGICAL FUNCTION cd_feedback_mask_v( pig, ips_save, ipe_save , pjg, jps_save, jp
                             pjg .ge. jps_save+3 .and. &
                             pig .le. ipe_save-2-mod(pjg-jps_save+1,2) .and. &
                             pjg .le. jpe_save-3 )
-
-write(0,'("cd_feedback_mask_v ",2i9,l )')pig,pjg,cd_feedback_mask_v
 
 END FUNCTION cd_feedback_mask_v
 

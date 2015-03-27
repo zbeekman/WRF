@@ -1250,7 +1250,6 @@ CONTAINS
                 PRESENT( rqvblten ) .AND. PRESENT( rqcblten ) .AND. &
                                                         .TRUE.  ) THEN
              CALL wrf_debug(100,'in GFS')
-write(0,"(a20,i10,' ZAPP RTHBLTEN ',e20.8)")__FILE__,__LINE__,RTHBLTEN(3,1,54)
              CALL bl_gfs(                                           &
                U3D=u_phytmp,V3D=v_phytmp                            &
               ,TH3D=th_phy,T3D=t_phy                                &
@@ -1281,7 +1280,6 @@ write(0,"(a20,i10,' ZAPP RTHBLTEN ',e20.8)")__FILE__,__LINE__,RTHBLTEN(3,1,54)
               ,IMS=ims,IME=ime,JMS=jms,JME=jme,KMS=kms,KME=kme      &
               ,ITS=its,ITE=ite,JTS=jts,JTE=jte,KTS=kts,KTE=kte      &
                                                                     )
-write(0,"(a20,i10,' ZAPP RTHBLTEN ',e20.8)")__FILE__,__LINE__,RTHBLTEN(3,1,54)
            ELSE
                WRITE ( message , FMT = '(A,4(L1,1X))' )             &
                  'present: '//                                      &

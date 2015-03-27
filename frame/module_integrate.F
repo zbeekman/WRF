@@ -333,21 +333,7 @@ ENDIF ! active_this_task
 IF ( grid_ptr%active_this_task ) THEN
                   CALL set_current_grid_ptr( grid_ptr )
                   CALL wrf_debug( 100 , 'module_integrate: calling solve interface ' )
-
-if ( grid_ptr%id .eq. 1 ) then
-write(0,"(a20,i10,' ZAPP t ',e20.8)")__FILE__,__LINE__,grid_ptr%t(3,54,1)
-write(0,"(a20,i10,' ZAPP u ',e20.8)")__FILE__,__LINE__,grid_ptr%u(3,54,1)
-write(0,"(a20,i10,' ZAPP v ',e20.8)")__FILE__,__LINE__,grid_ptr%v(3,54,1)
-endif
-
                   CALL solve_interface ( grid_ptr ) 
-
-if ( grid_ptr%id .eq. 1 ) then
-write(0,"(a20,i10,' ZAPP t ',e20.8)")__FILE__,__LINE__,grid_ptr%t(3,54,1)
-write(0,"(a20,i10,' ZAPP u ',e20.8)")__FILE__,__LINE__,grid_ptr%u(3,54,1)
-write(0,"(a20,i10,' ZAPP v ',e20.8)")__FILE__,__LINE__,grid_ptr%v(3,54,1)
-endif
-
 ENDIF
                CALL domain_clockadvance ( grid_ptr )
                CALL wrf_debug( 100 , 'module_integrate: back from solve interface ' )
@@ -393,20 +379,7 @@ ENDIF
                                 domain_clockisstoptime(grid                   ) .OR. &
                                 domain_clockisstoptime(grid_ptr%nests(kid)%ptr) ) )  THEN
                      CALL wrf_debug( 100 , 'module_integrate: calling med_nest_feedback ' )
-
-if ( grid_ptr%id .eq. 1 ) then
-write(0,"(a20,i10,' ZAPP t ',e20.8)")__FILE__,__LINE__,grid_ptr%t(19,41,1)
-write(0,"(a20,i10,' ZAPP u ',e20.8)")__FILE__,__LINE__,grid_ptr%u(19,41,1)
-write(0,"(a20,i10,' ZAPP v ',e20.8)")__FILE__,__LINE__,grid_ptr%v(19,41,1)
-endif
-
                      CALL med_nest_feedback ( grid_ptr , grid_ptr%nests(kid)%ptr , config_flags )
-
-if ( grid_ptr%id .eq. 1 ) then
-write(0,"(a20,i10,' ZAPP t ',e20.8)")__FILE__,__LINE__,grid_ptr%t(19,41,1)
-write(0,"(a20,i10,' ZAPP u ',e20.8)")__FILE__,__LINE__,grid_ptr%u(19,41,1)
-write(0,"(a20,i10,' ZAPP v ',e20.8)")__FILE__,__LINE__,grid_ptr%v(19,41,1)
-endif
                      CALL wrf_debug( 100 , 'module_integrate: back from med_nest_feedback ' )
                    END IF
 #ifdef MOVE_NESTS
@@ -459,17 +432,7 @@ ENDIF ! active_this_task
             ENDDO
             IF ( should_do_last_io ) THEN 
                grid_ptr => grid 
-if ( grid_ptr%parents(1)%ptr%id .eq. 1 ) then
-write(0,"(a20,i10,' ZAPP t ',e20.8)")__FILE__,__LINE__,grid_ptr%parents(1)%ptr%t(19,41,1)
-write(0,"(a20,i10,' ZAPP u ',e20.8)")__FILE__,__LINE__,grid_ptr%parents(1)%ptr%u(19,41,1)
-write(0,"(a20,i10,' ZAPP v ',e20.8)")__FILE__,__LINE__,grid_ptr%parents(1)%ptr%v(19,41,1)
-endif
                CALL med_nest_feedback ( grid_ptr%parents(1)%ptr, grid , config_flags )
-if ( grid_ptr%parents(1)%ptr%id .eq. 1 ) then
-write(0,"(a20,i10,' ZAPP t ',e20.8)")__FILE__,__LINE__,grid_ptr%parents(1)%ptr%t(19,41,1)
-write(0,"(a20,i10,' ZAPP u ',e20.8)")__FILE__,__LINE__,grid_ptr%parents(1)%ptr%u(19,41,1)
-write(0,"(a20,i10,' ZAPP v ',e20.8)")__FILE__,__LINE__,grid_ptr%parents(1)%ptr%v(19,41,1)
-endif
                IF ( grid%active_this_task ) CALL med_last_solve_io ( grid , config_flags )
             ENDIF
          ENDIF

@@ -4815,9 +4815,7 @@ ENDIF
       CALL push_communicators_for_domain( grid%id )
 
 #ifdef DM_PARALLEL
-!debug write(0,*)__FILE__,__LINE__
 #include "HALO_INTERP_UP.inc"
-!debug write(0,*)__FILE__,__LINE__
 #endif
 
       CALL pop_communicators_for_domain
@@ -5393,35 +5391,35 @@ ENDIF
 !debug write(0,*)__FILE__,__LINE__,ngrid%pdtop
 !debug write(0,*)__FILE__,__LINE__,shape(grid%pd)
 !debug write(0,*)__FILE__,__LINE__,shape(grid%pint)
-write(110,*)ipe-ips+1,jpe-jps+1,' grid%pd '
-do j=jps,jpe
-do i=ips,ipe
-write(110,*)grid%pd(i,j)
-enddo
-enddo
-write(110,*)ipe-ips+1,jpe-jps+1,' grid%pint '
-do j=jps,jpe
-do i=ips,ipe
-write(110,*)grid%pint(i,j,10)
-enddo
-enddo
+!write(110,*)ipe-ips+1,jpe-jps+1,' grid%pd '
+!do j=jps,jpe
+!do i=ips,ipe
+!write(110,*)grid%pd(i,j)
+!enddo
+!enddo
+!write(110,*)ipe-ips+1,jpe-jps+1,' grid%pint '
+!do j=jps,jpe
+!do i=ips,ipe
+!write(110,*)grid%pint(i,j,10)
+!enddo
+!enddo
 
-write(50,*)'ngrid%IIH ',ngrid%IIH
-write(50,*)'ngrid%JJH ',ngrid%JJH
-write(50,*)'ngrid%HBWGT1 ',ngrid%HBWGT1
-write(50,*)'ngrid%HBWGT2 ',ngrid%HBWGT2
-write(50,*)'ngrid%HBWGT3 ',ngrid%HBWGT3
-write(50,*)'ngrid%HBWGT4 ',ngrid%HBWGT4
-write(50,*)'ngrid%deta1 ',ngrid%deta1
-write(50,*)'ngrid%deta2 ',ngrid%deta2
-write(50,*)'ngrid%eta1 ',ngrid%eta1
-write(50,*)'ngrid%eta2 ',ngrid%eta2
-write(50,*)'ngrid%pt ',ngrid%pt
-write(50,*)'ngrid%pdtop ',ngrid%pdtop
-write(50,*)'grid%pint ',ngrid%pint
-write(50,*)'grid%t ',ngrid%t
-write(50,*)'grid%pd ',ngrid%pd
-write(50,*)'grid%q ',ngrid%q
+!write(50,*)'ngrid%IIH ',ngrid%IIH
+!write(50,*)'ngrid%JJH ',ngrid%JJH
+!write(50,*)'ngrid%HBWGT1 ',ngrid%HBWGT1
+!write(50,*)'ngrid%HBWGT2 ',ngrid%HBWGT2
+!write(50,*)'ngrid%HBWGT3 ',ngrid%HBWGT3
+!write(50,*)'ngrid%HBWGT4 ',ngrid%HBWGT4
+!write(50,*)'ngrid%deta1 ',ngrid%deta1
+!write(50,*)'ngrid%deta2 ',ngrid%deta2
+!write(50,*)'ngrid%eta1 ',ngrid%eta1
+!write(50,*)'ngrid%eta2 ',ngrid%eta2
+!write(50,*)'ngrid%pt ',ngrid%pt
+!write(50,*)'ngrid%pdtop ',ngrid%pdtop
+!write(50,*)'grid%pint ',ngrid%pint
+!write(50,*)'grid%t ',ngrid%t
+!write(50,*)'grid%pd ',ngrid%pd
+!write(50,*)'grid%q ',ngrid%q
 
         call ext_c2n_fulldom(ngrid%IIH,ngrid%JJH,ngrid%HBWGT1, &
              ngrid%HBWGT2,ngrid%HBWGT3,ngrid%HBWGT4,         &
@@ -5745,11 +5743,8 @@ ENDIF
     IF ( grid%active_this_task ) THEN
       CALL push_communicators_for_domain( grid%id )
 #ifdef DM_PARALLEL
-!debug write(0,*)__FILE__,__LINE__
 #include "HALO_INTERP_UP.inc"
-!debug write(0,*)__FILE__,__LINE__
 #include "HALO_NMM_WEIGHTS.inc"
-!debug write(0,*)__FILE__,__LINE__
 #endif
       CALL pop_communicators_for_domain
     ENDIF
@@ -6094,9 +6089,7 @@ IF ( ngrid%active_this_task ) THEN
       CALL get_dm_max_halo_width ( ngrid%id , thisdomain_max_halo_width )
       parent_grid => grid
       grid => ngrid
-!debug write(0,*)'ZAP calling "nest_feedbackup_pack.inc" ',grid%id,SIZE(grid%tg_updhel25),config_flags%tg_option
 #include "nest_feedbackup_pack.inc"
-!debug write(0,*)'ZAP back from "nest_feedbackup_pack.inc" ',grid%id
       grid => parent_grid
     CALL pop_communicators_for_domain
 ENDIF
@@ -6119,7 +6112,6 @@ ENDIF
       IF ( grid%active_this_task .OR. ngrid%active_this_task ) THEN
         CALL mpi_comm_rank(local_comm,myproc,ierr)
         CALL mpi_comm_size(local_comm,nproc,ierr)
-!call tracebackqq()
         CALL rsl_lite_merge_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
                                           nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       &
                                           ioffset, local_comm )
@@ -6146,9 +6138,7 @@ IF ( grid%active_this_task ) THEN
                                 ims, ime, jms, jme, kms, kme,    &
                                 ips, ipe, jps, jpe, kps, kpe    )
 
-!debug write(0,*)__FILE__,__LINE__
 #include "HALO_INTERP_UP.inc"
-!debug write(0,*)__FILE__,__LINE__
 
       CALL get_ijk_from_grid (  grid ,                   &
                                 cids, cide, cjds, cjde, ckds, ckde,    &

@@ -3480,20 +3480,19 @@
         ! - locals - !
         character(len=255) :: message
         integer :: i,j,k
-integer idebug,jdebug,kdebug
 
-idebug = 19
-jdebug = 41
-kdebug = 1
-
-if ( grid%id .eq. 1 .and. &
-     its .le. idebug .and. idebug .le. ite .and. &
-     jts .le. jdebug .and. jdebug .le. jte       &
-   )then
-write(0,"('check_grid t ',a20,i5,e20.8)")TRIM(where),grid%ntsd,grid%t(idebug,jdebug,kdebug)
-write(0,"('check_grid u ',a20,i5,e20.8)")TRIM(where),grid%ntsd,grid%u(idebug,jdebug,kdebug)
-write(0,"('check_grid v ',a20,i5,e20.8)")TRIM(where),grid%ntsd,grid%v(idebug,jdebug,kdebug)
-endif
+!integer idebug,jdebug,kdebug
+!idebug = 19
+!jdebug = 41
+!kdebug = 1
+!if ( grid%id .eq. 1 .and. &
+!     its .le. idebug .and. idebug .le. ite .and. &
+!     jts .le. jdebug .and. jdebug .le. jte       &
+!   )then
+!write(0,"('check_grid t ',a20,i5,e20.8)")TRIM(where),grid%ntsd,grid%t(idebug,jdebug,kdebug)
+!write(0,"('check_grid u ',a20,i5,e20.8)")TRIM(where),grid%ntsd,grid%u(idebug,jdebug,kdebug)
+!write(0,"('check_grid v ',a20,i5,e20.8)")TRIM(where),grid%ntsd,grid%v(idebug,jdebug,kdebug)
+!endif
 
         if(config_flags%halo_debug/=2 .and. config_flags%halo_debug/=3) then
            return

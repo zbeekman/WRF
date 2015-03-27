@@ -153,26 +153,22 @@ integer myproc,i,j
    CALL wrf_dm_nestexchange_init
   IF ( nested_grid%active_this_task ) THEN
    grid => nested_grid%intermediate_grid
-write(0,*)"calling feedback_domain_em_part1 grid%id, nested_grid%id ",grid%id, nested_grid%id
    CALL feedback_domain_em_part1 ( grid, nested_grid, config_flags   &
 !
 #      include "actual_new_args.inc"
 !
                                    )
-write(0,*)"back from feedback_domain_em_part1"
   ENDIF
    grid => parent_grid
 
    grid%nest_mask = 0.
 
-write(0,*)"calling feedback_domain_em_part2 grid%id, intermediate_grid%id, nested_grid%id ",grid%id, nested_grid%intermediate_grid%id, nested_grid%id
    CALL feedback_domain_em_part2 ( grid , nested_grid%intermediate_grid, nested_grid , config_flags   &
 !
 #      include "actual_new_args.inc"
 
                                    )
 
-write(0,*)"back from feedback_domain_em_part2",grid%id
    WHERE   ( grid%nest_pos .NE. 9021000.  ) grid%ht = grid%ht_coarse
    CALL push_communicators_for_domain(grid%id)
    CALL update_after_feedback_em ( grid  &
@@ -257,12 +253,6 @@ write(0,*)"back from feedback_domain_em_part2",grid%id
 #      include "actual_new_args.inc"
 !
                                    )
-
-if ( grid%id .eq. 1 ) then
-write(0,"(a20,i10,' ZAPP t ',e20.8)")__FILE__,__LINE__,grid%t(19,41,1)
-write(0,"(a20,i10,' ZAPP u ',e20.8)")__FILE__,__LINE__,grid%u(19,41,1)
-write(0,"(a20,i10,' ZAPP v ',e20.8)")__FILE__,__LINE__,grid%v(19,41,1)
-endif
 
 #endif
 ! ------------------------------------------------------
