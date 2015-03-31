@@ -973,7 +973,10 @@ CONTAINS
 #endif
 
 #if ( NMM_CORE==1 )
-      grid%interp_mp = .not. ( size(grid%f_ice)>1 .or. size(grid%f_rain)>1 .or. size(grid%f_rimef)>1 )
+!      grid%interp_mp = .not. ( size(grid%f_ice)>1 .or. size(grid%f_rain)>1 .or. size(grid%f_rimef)>1 )
+      grid%interp_mp = .not. (in_use_for_config(grid%id,'f_ice')   .or.&
+                              in_use_for_config(grid%id,'f_rain')  .or. & 
+                              in_use_for_config(grid%id,'f_rimef') )
 #else
       grid%interp_mp = .true.
 #endif
