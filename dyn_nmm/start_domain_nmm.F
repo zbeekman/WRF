@@ -1278,14 +1278,12 @@ write(0,*)__FILE__,__LINE__,' inpes, jnpes ',inpes,jnpes
 !
       DO J=MYJS_P5,MYJE_P5
         grid%em_loc(J)=-9.E9
-if (grid%id .eq. 2 ) write(0,*)__FILE__,' a grid%em_loc(',j,') = ',grid%em_loc(j)
         grid%emt_loc(J)=-9.E9
       ENDDO
 !!!   IF(IBROW==1)THEN
       IF(S_BDY)THEN
         DO J=3,5
           grid%em_loc(J)=grid%em(J-2)
-if (grid%id .eq. 2 ) write(0,*)__FILE__,' b grid%em_loc(',j,') = ',grid%em_loc(j)
           grid%emt_loc(J)=grid%emt(J-2)
         ENDDO
       ENDIF
@@ -1296,7 +1294,6 @@ if (grid%id .eq. 2 ) write(0,*)__FILE__,' b grid%em_loc(',j,') = ',grid%em_loc(j
           KNT=KNT+1
           J=JJ      ! -MY_JS_GLB+1
           grid%em_loc(J)=grid%em(KNT)
-if (grid%id .eq. 2 ) write(0,*)__FILE__,' c grid%em_loc(',j,') = ',grid%em_loc(j)
           grid%emt_loc(J)=grid%emt(KNT)
         ENDDO
       ENDIF
@@ -1308,7 +1305,6 @@ if (grid%id .eq. 2 ) write(0,*)__FILE__,' c grid%em_loc(',j,') = ',grid%em_loc(j
           IF(JJ>=MY_JS_GLB-2.AND.JJ<=MY_JE_GLB+2)THEN
             J=JJ      ! -MY_JS_GLB+1
             grid%em_loc(J)=grid%em(KNT)
-if (grid%id .eq. 2 ) write(0,*)__FILE__,' d grid%em_loc(',j,') = ',grid%em_loc(j)
             grid%emt_loc(J)=grid%emt(KNT)
           ENDIF
         ENDDO
@@ -1321,18 +1317,10 @@ if (grid%id .eq. 2 ) write(0,*)__FILE__,' d grid%em_loc(',j,') = ',grid%em_loc(j
           IF(JJ>=MY_JS_GLB-2.AND.JJ<=MY_JE_GLB+2)THEN
             J=JJ      ! -MY_JS_GLB+1
             grid%em_loc(J)=grid%em(KNT)
-if (grid%id .eq. 2 ) write(0,*)__FILE__,' e j,knt = ',j,knt
-if (grid%id .eq. 2 ) write(0,*)__FILE__,' e grid%em_loc(',j,') = ',grid%em_loc(j)
             grid%emt_loc(J)=grid%emt(KNT)
           ENDIF
         ENDDO
       ENDIF
-
-if (grid%id .eq. 2 ) then
-do jj=1,62
-write(0,*)__FILE__,'grid%em_loc(',jj,') = ',grid%em_loc(jj)
-enddo
-endif
 
 #else
       CALL wrf_message( 'start_domain_nmm: upstream advection commented out')

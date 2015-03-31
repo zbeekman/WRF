@@ -3109,6 +3109,7 @@
 !
       CALL SET_TILES(GRID,IDS+1,IDE-1,JDS+2,JDE-2,ITS,ITE,JTS,JTE)
 !
+
       CALL MICROPHYSICS_DRIVER(                                         &
      &                  TH=TH_PHY,RHO=RR,PI_PHY=PI_PHY,P=P_PHY          &
      &                 ,RAINNC=RAINNC,RAINNCV=RAINNCV                   &
