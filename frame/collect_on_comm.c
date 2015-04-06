@@ -226,7 +226,7 @@ extern int outy ;
 extern int maxstug, nouty, maxouty ;
 #endif
 
-#if 0
+#if 1
 #include <unistd.h>
 #include <sys/times.h>
 /*  used internally for chasing memory leaks on ibm  */
@@ -246,12 +246,41 @@ rlim_ ()
    getrusage ( RUSAGE_SELF, &r_usage ) ;
    if ( tock != 0 ) {
 #ifndef _WIN32
+#if 0
+           struct rusage {
+               struct timeval ru_utime; /* user time used */
+               struct timeval ru_stime; /* system time used */
+               long   ru_maxrss;        /* maximum resident set size */
+               long   ru_ixrss;         /* integral shared memory size */
+               long   ru_idrss;         /* integral unshared data size */
+               long   ru_isrss;         /* integral unshared stack size */
+               long   ru_minflt;        /* page reclaims */
+               long   ru_majflt;        /* page faults */
+               long   ru_nswap;         /* swaps */
+               long   ru_inblock;       /* block input operations */
+               long   ru_oublock;       /* block output operations */
+               long   ru_msgsnd;        /* messages sent */
+               long   ru_msgrcv;        /* messages received */
+               long   ru_nsignals;      /* signals received */
+               long   ru_nvcsw;         /* voluntary context switches */
+               long   ru_nivcsw;        /* involuntary context switches */
+           };
+# endif
      fprintf(stderr,"sm %ld d %ld s %ld maxrss %ld %d %d %ld\n",r_usage.ru_ixrss/tock,r_usage.ru_idrss/tock,r_usage.ru_isrss/tock, r_usage.ru_maxrss,tick,tock,r_usage.ru_ixrss) ;
+     fprintf(stdout,"sm %ld d %ld s %ld maxrss %ld %d %d %ld\n",
+                        r_usage.ru_ixrss/tock,
+                              r_usage.ru_idrss/tock,
+                                    r_usage.ru_isrss/tock, 
+                                                r_usage.ru_maxrss,
+                                                   tick,
+                                                      tock,
+                                                          r_usage.ru_ixrss) ;
 #endif
    }
    minf = mallinfo() ;
 #ifndef _WIN32
    fprintf(stderr,"a %ld usm %ld fsm %ld uord %ld ford %ld hblkhd %d\n",minf.arena,minf.usmblks,minf.fsmblks,minf.uordblks,minf.fordblks,minf.hblkhd) ;
+   fprintf(stdout,"a %ld usm %ld fsm %ld uord %ld ford %ld hblkhd %d\n",minf.arena,minf.usmblks,minf.fsmblks,minf.uordblks,minf.fordblks,minf.hblkhd) ;
 #endif
 # if 0
    fprintf(stderr," outy %d  nouty %d  maxstug %d maxouty %d \n", outy, nouty, maxstug, maxouty ) ;

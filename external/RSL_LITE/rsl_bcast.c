@@ -243,6 +243,7 @@ fprintf(stderr,"%s %d a %d b %d\n",__FILE__,__LINE__,s_ntasks_nest_x*s_ntasks_ne
            nj = ( j - (*jcoord_p + *shw_p) ) * *pgr_p + 1 + 1 ;
 
 #ifndef STUBMPI
+//fprintf(stderr,"after tfp ni %d icoord %d jcoord %d nj %d Px %d Py %d P %d ntx %d nty %d\n",ni,nj,*icoord_p,*jcoord_p,Px,Py,P,*ntasks_nest_x_p,*ntasks_nest_y_p) ;
 	   TASK_FOR_POINT ( &ni, &nj, nids_p, nide_p, njds_p, njde_p, &s_ntasks_nest_x, &s_ntasks_nest_y, &Px, &Py, 
                             min_subdomain, min_subdomain, &ierr ) ;
            P = Px + Py * *ntasks_nest_x_p + offset ; 
@@ -584,11 +585,13 @@ rsl_lite_allgather_msgs ( mytask_p, ntasks_par_p, ntasks_nest_p, offset_p, comm,
   mytask = 0 ;
   mytask_on_comm = 0 ;
 #endif
-#if 0
+#if 1
 fprintf(stderr,"inside rsl_lite_allgather_msgs  %d %d %d %d %d\n",mytask,ntasks_par,ntasks_nest,*offset_p, mytask_on_comm) ;
-
 fprintf(stderr,"%s %d : %d %d %d \n",__FILE__,__LINE__,mytask_on_comm,dir,*offset_p ) ;
+fprintf(stdout,"inside rsl_lite_allgather_msgs  %d %d %d %d %d\n",mytask,ntasks_par,ntasks_nest,*offset_p, mytask_on_comm) ;
+fprintf(stdout,"%s %d : %d %d %d \n",__FILE__,__LINE__,mytask_on_comm,dir,*offset_p ) ;
 #endif
+
   if ( ( mytask_on_comm <  ntasks_par  && dir == 0 )   /* parent in parent->child */
     || ( mytask_on_comm >= *offset_p && 
          mytask_on_comm < *offset_p + ntasks_nest && dir == 1 )) { /* child  in child->parent */
@@ -635,15 +638,18 @@ fprintf(stderr,"mytask_on_comm %d , ntasks %d \n",mytask_on_comm, ntasks ) ;
     Rsizes[j] = 0 ;
   }
 
-#if 0
+#if 1
 for ( j = 0 ; j < ntasks ; j++ ) 
 {
 int jj ;
 fprintf(stderr,"zap %4d. ",j) ;
+fprintf(stdout,"zap %4d. ",j) ;
 for ( jj = 0 ; jj < ntasks ; jj++ ) {
 fprintf(stderr,"%9d",Psize_all[INDEX_2(j,jj,ntasks)])  ;
+fprintf(stdout,"%9d",Psize_all[INDEX_2(j,jj,ntasks)])  ;
 }
 fprintf(stderr,"\n") ;
+fprintf(stdout,"\n") ;
 }
 #endif
 
@@ -653,19 +659,25 @@ fprintf(stderr,"\n") ;
 
     Rsizes[j] += Psize_all[ INDEX_2( j, mytask_on_comm, ntasks ) ] ;
 
-#if 0
+#if 1
 fprintf(stderr,"j %d , mytask_on_comm %d,*offset_p %d \n",j,mytask_on_comm,*offset_p) ;
-fprintf(stderr,"Rsizes[%d]= %d; %d ; Psize_all[%d] = %d\n",
-j,
-Rsizes[j],
-(mytask_on_comm-*offset_p+ntasks) % ntasks,
-INDEX_2( (mytask_on_comm-*offset_p+ntasks) % ntasks , j , ntasks ),
-Psize_all[ INDEX_2( (mytask_on_comm-*offset_p+ntasks) % ntasks , j , ntasks ) ]) ;
+fprintf(stdout,"j %d , mytask_on_comm %d,*offset_p %d \n",j,mytask_on_comm,*offset_p) ;
+fprintf(stderr,"Rsizes[%d]= %d\n", j, Rsizes[j]) ;
+
+//fprintf(stderr,"Rsizes[%d]= %d; %d ; Psize_all[%d] = %d\n",
+//j,
+//Rsizes[j],
+//(mytask_on_comm-*offset_p+ntasks) % ntasks,
+//INDEX_2( (mytask_on_comm-*offset_p+ntasks) % ntasks , j , ntasks ),
+//Psize_all[ INDEX_2( (mytask_on_comm-*offset_p+ntasks) % ntasks , j , ntasks ) ]) ;
 #endif
   }
 
   for ( Rbufsize = 0, P = 0, Rdisplacements[0] = 0 ; P < ntasks ; P++ )
   {
+#if 1
+fprintf(stderr,"P=%d Rdisplacements=%d Rsizes=%d Sdisplacements=%d Ssizes=%d\n",P,Rdisplacements[P],Rsizes[P],Sdisplacements[P],Ssizes[P]) ;
+#endif
     Rdisplacements[P+1] = Rsizes[P] + Rdisplacements[P] ;
 
     Rbufsize += Rsizes[P] ;
@@ -673,16 +685,18 @@ Psize_all[ INDEX_2( (mytask_on_comm-*offset_p+ntasks) % ntasks , j , ntasks ) ])
 
   /* this will be freed later */
 
-#if 0
+#if 1
 fprintf(stderr,"allocating Recvbuf %d bytes\n",Rbufsize + 3 * sizeof(int)) ;
 #endif
   Recvbuf = RSL_MALLOC( char , Rbufsize + 3 * sizeof(int) ) ; /* for sentinal record */
   Rbufcurs = 0 ;
   Rreclen = 0 ;
 
-#if 0
+#if 1
 fprintf(stderr,"%s %d before MPI_Alltoallv\n",__FILE__,__LINE__) ;
 fprintf(stderr,"before MPI_Alltoallv Sendbuf %x \n",Sendbuf) ;
+fprintf(stderr,"before MPI_Alltoallv Recvbuf %x \n",Recvbuf) ;
+fprintf(stderr,"before MPI_Alltoallv comm %d \n",comm) ;
 //fprintf(stderr,"before MPI_Alltoallv Ssizes %d %d %d %d %d %d \n",Ssizes[0],Ssizes[1],Ssizes[2],Ssizes[3],Ssizes[4],Ssizes[5]) ;
 //fprintf(stderr,"before MPI_Alltoallv Sdisplacements %d %d %d %d %d %d \n",Sdisplacements[0],Sdisplacements[1],Sdisplacements[2],Sdisplacements[3],Sdisplacements[4],Sdisplacements[5]) ;
 //fprintf(stderr,"before MPI_Alltoallv Rsizes %d %d %d %d %d %d \n",Rsizes[0],Rsizes[1],Rsizes[2],Rsizes[3],Rsizes[4],Rsizes[5]) ;
@@ -697,7 +711,6 @@ fprintf(stderr,"before MPI_Alltoallv Sendbuf %x \n",Sendbuf) ;
   Sendbuf = Recvbuf ;
   Recvbuf = work ;
 #endif
-//fprintf(stderr,"%s %d after MPI_Alltoallv\n",__FILE__,__LINE__) ;
 
 /* add sentinel to the end of Recvbuf */
 

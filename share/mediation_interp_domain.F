@@ -206,18 +206,18 @@ SUBROUTINE med_interp_domain ( parent_grid , nested_grid )
 
   CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
 
-write(0,*)__FILE__,__LINE__
+write(0,"(a34,i5,' part1> ',3i9)")__FILE__,__LINE__,grid%id,nested_grid%intermediate_grid%id,nested_grid%id
   CALL interp_domain_nmm_part1 ( grid , nested_grid%intermediate_grid, nested_grid, config_flags    &
 !
 #     include "actual_new_args.inc"
 !
                                 )
-write(0,*)__FILE__,__LINE__
 
   grid => nested_grid%intermediate_grid
   CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
   IF ( nested_grid%active_this_task ) THEN
 
+write(0,"(a34,i5,' part1> ',3i9)")__FILE__,__LINE__,grid%id, nested_grid%id
   CALL interp_domain_nmm_part2 ( grid, nested_grid, config_flags    &
 !
 #     include "actual_new_args.inc"

@@ -54,8 +54,6 @@ RECURSIVE SUBROUTINE integrate ( grid )
 ! The lower-level time library and the type declarations for the times
 ! and time intervals used are defined either in 
 ! external/esmf_time_f90/module_utility.F90 or in 
-! external/io_esmf/module_utility.F90 depending on a build-time decision to 
-! incorporate either the embedded ESMF subset implementation contained in 
 ! external/esmf_time_f90 or to use a site-specific installation of the ESMF 
 ! library.  This decision is made during the configuration step of the WRF 
 ! build process.  Note that arithmetic and comparison is performed on these 
@@ -164,6 +162,7 @@ RECURSIVE SUBROUTINE integrate ( grid )
    LOGICAL , EXTERNAL                     :: wrf_dm_on_monitor
    INTEGER                                :: idum1 , idum2 , ierr , open_status
    LOGICAL                                :: should_do_last_io
+TYPE(domain) , POINTER                 :: mook
 
 integer myproc,i,j
 
@@ -309,6 +308,7 @@ ENDIF
                                                  parent     = grid ,     &
                                                  kid        = kid        )
                CALL Setup_Timekeeping (new_nest)
+write(0,*)__FILE__,__LINE__,'initial ',grid%id , ' > ', new_nest%id
                CALL med_nest_initial ( grid , new_nest , config_flags )
 IF ( grid%active_this_task ) THEN
                IF ( grid%dfi_stage == DFI_STARTFWD ) THEN
@@ -327,13 +327,34 @@ IF ( grid%active_this_task ) THEN
 
               CALL med_before_solve_io ( grid , config_flags )
 ENDIF ! active_this_task
+
+IF ( grid%id .eq. 2 ) THEN
+IF ( grid%nests(1)%ptr%active_this_task ) THEN
+mook => grid%nests(1)%ptr
+write(0,*)__FILE__,__LINE__,'mook%id ',mook%id
+write(0,*)__FILE__,__LINE__,'size sst ',size(mook%sst)
+write(0,*)__FILE__,__LINE__,'shape sst ',shape(mook%sst)
+CALL push_communicators_for_domain(mook%id)
+call wrf_get_myproc(myproc)
+write(130+myproc,*)mook%ep31-mook%sp31+1,mook%ep32-mook%sp32+1,'before solve d02',mook%ntsd
+do j=mook%sp32,mook%ep32
+do i=mook%sp31,mook%ep31
+write(130+myproc,*)mook%sst(i,j)
+enddo
+enddo
+CALL pop_communicators_for_domain
+ENDIF
+ENDIF
+
             grid_ptr => grid
             DO WHILE ( ASSOCIATED( grid_ptr ) )
                   grid_ptr%mvnest = .FALSE.
 IF ( grid_ptr%active_this_task ) THEN
                   CALL set_current_grid_ptr( grid_ptr )
                   CALL wrf_debug( 100 , 'module_integrate: calling solve interface ' )
+
                   CALL solve_interface ( grid_ptr ) 
+
 ENDIF
                CALL domain_clockadvance ( grid_ptr )
                CALL wrf_debug( 100 , 'module_integrate: back from solve interface ' )
@@ -342,6 +363,8 @@ ENDIF
                CALL domain_time_test( grid_ptr, 'domain_clockadvance' )
                grid_ptr => grid_ptr%sibling
             END DO
+
+
             CALL set_current_grid_ptr( grid )
             CALL med_calc_model_time ( grid , config_flags )
 IF ( grid%active_this_task ) THEN
@@ -349,11 +372,31 @@ IF ( grid%active_this_task ) THEN
 ENDIF
             grid_ptr => grid
             DO WHILE ( ASSOCIATED( grid_ptr ) )
+
+IF ( grid%id .eq. 2 ) THEN
+IF ( grid%nests(1)%ptr%active_this_task ) THEN
+mook => grid%nests(1)%ptr
+write(0,*)__FILE__,__LINE__,'mook%id ',mook%id
+write(0,*)__FILE__,__LINE__,'size sst ',size(mook%sst)
+write(0,*)__FILE__,__LINE__,'shape sst ',shape(mook%sst)
+CALL push_communicators_for_domain(mook%id)
+call wrf_get_myproc(myproc)
+write(130+myproc,*)mook%ep31-mook%sp31+1,mook%ep32-mook%sp32+1,'before force',mook%ntsd
+do j=mook%sp32,mook%ep32
+do i=mook%sp31,mook%ep31
+write(130+myproc,*)mook%sst(i,j)
+enddo
+enddo
+CALL pop_communicators_for_domain
+ENDIF
+ENDIF
+
                DO kid = 1, max_nests
                  IF ( ASSOCIATED( grid_ptr%nests(kid)%ptr ) ) THEN
                    CALL set_current_grid_ptr( grid_ptr%nests(kid)%ptr )
                    ! Recursive -- advance nests from previous time level to this time level.
                    CALL wrf_debug( 100 , 'module_integrate: calling med_nest_force ' )
+write(0,*)__FILE__,__LINE__,'force ',grid_ptr%id , ' > ', grid_ptr%nests(kid)%ptr%id
                    CALL med_nest_force ( grid_ptr , grid_ptr%nests(kid)%ptr )
                    CALL wrf_debug( 100 , 'module_integrate: back from med_nest_force ' )
                    grid_ptr%nests(kid)%ptr%start_subtime = &
@@ -362,6 +405,26 @@ ENDIF
                      domain_get_current_time(grid)
                  ENDIF
                ENDDO
+
+
+IF ( grid%id .eq. 2 ) THEN
+IF ( grid%nests(1)%ptr%active_this_task ) THEN
+mook => grid%nests(1)%ptr
+write(0,*)__FILE__,__LINE__,'mook%id ',mook%id
+write(0,*)__FILE__,__LINE__,'size sst ',size(mook%sst)
+write(0,*)__FILE__,__LINE__,'shape sst ',shape(mook%sst)
+CALL push_communicators_for_domain(mook%id)
+call wrf_get_myproc(myproc)
+write(130+myproc,*)mook%ep31-mook%sp31+1,mook%ep32-mook%sp32+1,'after force',mook%ntsd
+do j=mook%sp32,mook%ep32
+do i=mook%sp31,mook%ep31
+write(130+myproc,*)mook%sst(i,j)
+enddo
+enddo
+CALL pop_communicators_for_domain
+ENDIF
+ENDIF
+
                DO kid = 1, max_nests
                  IF ( ASSOCIATED( grid_ptr%nests(kid)%ptr ) ) THEN
                    CALL set_current_grid_ptr( grid_ptr%nests(kid)%ptr )
@@ -379,6 +442,7 @@ ENDIF
                                 domain_clockisstoptime(grid                   ) .OR. &
                                 domain_clockisstoptime(grid_ptr%nests(kid)%ptr) ) )  THEN
                      CALL wrf_debug( 100 , 'module_integrate: calling med_nest_feedback ' )
+write(0,*)__FILE__,__LINE__,'fbck ',grid_ptr%id , ' < ', grid_ptr%nests(kid)%ptr%id
                      CALL med_nest_feedback ( grid_ptr , grid_ptr%nests(kid)%ptr , config_flags )
                      CALL wrf_debug( 100 , 'module_integrate: back from med_nest_feedback ' )
                    END IF
@@ -432,6 +496,7 @@ ENDIF ! active_this_task
             ENDDO
             IF ( should_do_last_io ) THEN 
                grid_ptr => grid 
+write(0,*)__FILE__,__LINE__,'fbck ',grid_ptr%parents(1)%ptr%id , ' < ', grid%id
                CALL med_nest_feedback ( grid_ptr%parents(1)%ptr, grid , config_flags )
                IF ( grid%active_this_task ) CALL med_last_solve_io ( grid , config_flags )
             ENDIF

@@ -51,11 +51,23 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
 
    CHARACTER*256          :: message
 
+!jm zap
+CHARACTER*256          :: timestr
+logical :: doitanyway = .false.
+CALL domain_clock_get( grid, current_timestr=timestr )
+write(0,*)"TIMESTR ",trim(timestr)
+! 2012-10-26_12:15:00
+!IF (trim(timestr).eq.'2012-10-28_09:00:00')THEN
+IF (trim(timestr).eq.'2012-10-28_02:45:00')THEN
+doitanyway=.true.
+ENDIF
+!jm zap
+
 
  CALL WRFU_ClockGet( grid%domain_clock, CurrTime=currTime, StartTime=startTime )
 
- IF( WRFU_AlarmIsRinging( grid%alarms( HISTORY_ALARM ), rc=rc ) .AND. &
-       (grid%dfi_write_dfi_history .OR. grid%dfi_stage == DFI_FST .OR. grid%dfi_opt == DFI_NODFI) ) THEN
+ IF( doitanyway.or.(WRFU_AlarmIsRinging( grid%alarms( HISTORY_ALARM ), rc=rc ) .AND. &
+       (grid%dfi_write_dfi_history .OR. grid%dfi_stage == DFI_FST .OR. grid%dfi_opt == DFI_NODFI) )) THEN
      IF       ( ( config_flags%restart )                    .AND. &
                 ( config_flags%write_hist_at_0h_rst )       .AND. &
                 ( currTime .EQ. startTime )                       ) THEN

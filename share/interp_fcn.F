@@ -4560,8 +4560,8 @@ ENDIF
         !write(0,*) '  reason: n_age=',n_age,' c_age=',c_age
         return
      end if
+write(0,*)__FILE__,'Storing pdyn_smooth n_age, c_age '
      n_age=c_age
-     !write(0,*) 'Storing grid ',parent_grid_id,' pdyn_smooth in grid ',grid_id,' pdyn_parent'
 
      call c2n_copy2d_nomask(IIH,JJH,HBWGT1,HBWGT2,HBWGT3,HBWGT4,  &
           cfld,nfld,                &
@@ -4606,6 +4606,7 @@ ENDIF
 
      if(nactivate(1)/=1) return
 
+write(0,*)__FILE__,'something creepy with SST grid nactivate(1)',nactivate(1)
      call c2n_sst(hnear_i,hnear_j,          &
           cfld,nfld,                &
           cims, cime, cjms, cjme,   &

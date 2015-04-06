@@ -2,13 +2,17 @@
 SUBROUTINE med_nest_move ( parent, nest )
   ! Driver layer
    USE module_domain, ONLY : domain, get_ijk_from_grid, adjust_domain_dims_for_move
+   USE module_driver_constants, ONLY : max_nests
    USE module_utility
    USE module_timing
    USE module_configure, ONLY : grid_config_rec_type, model_config_rec, model_to_grid_config_rec
    USE module_state_description
 !   USE module_io_domain
-   USE module_dm, ONLY : wrf_dm_move_nest
+   USE module_dm, ONLY : wrf_dm_move_nest,nest_task_offsets,mpi_comm_to_kid,mpi_comm_to_mom, which_kid
+   IMPLICIT NONE
    TYPE(domain) , POINTER                     :: parent, nest, grid
+TYPE(domain) , POINTER                     :: mook
+integer myproc
    INTEGER dx, dy, origdy       ! number of parent domain points to move
 #ifdef MOVE_NESTS
   ! Local 
@@ -18,7 +22,7 @@ SUBROUTINE med_nest_move ( parent, nest )
    INTEGER                         :: ids , ide , jds , jde , kds , kde , &
                                       ims , ime , jms , jme , kms , kme , &
                                       ips , ipe , jps , jpe , kps , kpe
-   INTEGER ierr, fid
+   INTEGER ierr, fid, comzilla, kid
 #ifdef HWRF
    REAL,PARAMETER           :: con_g       =9.80665e+0! gravity             (m/s2)
    REAL,PARAMETER           :: con_rd      =2.8705e+2 ! gas constant air    (J/kg/K)
@@ -33,6 +37,7 @@ SUBROUTINE med_nest_move ( parent, nest )
 !XUEJIN added for HWRFx
    INTEGER                  :: k,idum1,idum2 
    INTEGER                  :: ITS,ITE,JTS,JTE,KTS,KTE
+   logical shamove
 #else
 !
 #endif
@@ -219,11 +224,50 @@ SUBROUTINE med_nest_move ( parent, nest )
 
 ! mask should be defined in nest domain
 
+!called on d03 when d02 is being considered for move
+IF ( nest%id .eq. 2 .and. nest%nests(1)%ptr%active_this_task ) THEN
+mook => nest%nests(1)%ptr
+write(0,*)__FILE__,__LINE__,'mook%id ',mook%id
+write(0,*)__FILE__,__LINE__,'size sst ',size(mook%sst)
+write(0,*)__FILE__,__LINE__,'shape sst ',shape(mook%sst)
+CALL push_communicators_for_domain(mook%id)
+call wrf_get_myproc(myproc)
+write(100+myproc,*)mook%ep31-mook%sp31+1,mook%ep32-mook%sp32+1,'top of nest_move',mook%ntsd
+do j=mook%sp32,mook%ep32
+do i=mook%sp31,mook%ep31
+write(100+myproc,*)mook%sst(i,j)
+enddo
+enddo
+CALL pop_communicators_for_domain
+ENDIF
+
+IF ( nest%id .eq. 3 .and. nest%active_this_task ) THEN
+mook => nest
+write(0,*)__FILE__,__LINE__,'mook%id ',mook%id
+write(0,*)__FILE__,__LINE__,'size sst ',size(mook%sst)
+write(0,*)__FILE__,__LINE__,'shape sst ',shape(mook%sst)
+CALL push_communicators_for_domain(mook%id)
+call wrf_get_myproc(myproc)
+write(120+myproc,*)mook%ep31-mook%sp31+1,mook%ep32-mook%sp32+1,'top of nest_move',mook%ntsd
+do j=mook%sp32,mook%ep32
+do i=mook%sp31,mook%ep31
+write(120+myproc,*)mook%sst(i,j)
+enddo
+enddo
+CALL pop_communicators_for_domain
+ENDIF
+
+
+  shamove = .false.
+
 #ifdef HWRF
   check_direction_of_move: IF ( direction_of_move ( parent , nest , dx, dy ) ) THEN
 #else
   check_for_move: IF ( time_for_move ( parent , nest , dx, dy ) ) THEN
 #endif
+
+     shamove = .true.
+
 
 #if ( EM_CORE == 1 )
      IF ( (dx .gt. 1 .or. dx .lt. -1 ) .or.  &
@@ -247,10 +291,10 @@ SUBROUTINE med_nest_move ( parent, nest )
      ENDIF
 #endif
 
-     IF (  wrf_dm_on_monitor() ) THEN
+!jm zap     IF (  wrf_dm_on_monitor() ) THEN
        WRITE(mess,*)' moving ',grid%id,dx,dy
        CALL wrf_message(mess)
-     ENDIF
+!jm zap     ENDIF
 
      CALL get_ijk_from_grid (  grid ,                   &
                                ids, ide, jds, jde, kds, kde,    &
@@ -276,19 +320,39 @@ SUBROUTINE med_nest_move ( parent, nest )
                            )
 #endif
 #if (NMM_CORE == 1 && NMM_NEST == 1)
+write(0,*)'calling shift_domain_nmm on ',grid%id
      CALL shift_domain_nmm( grid, dx, dy &
 !
 # include <actual_new_args.inc>
 !
                           )
+write(0,*)'back from shift_domain_nmm on ',grid%id
 #endif
 
      px = grid%parent_grid_ratio*dx
      py = grid%parent_grid_ratio*dy
 
+write(0,*)__FILE__,__LINE__,'before i_parent_start ',grid%id, grid%i_parent_start
+write(0,*)__FILE__,__LINE__,'before j_parent_start ',grid%id, grid%j_parent_start
+
      grid%i_parent_start = grid%i_parent_start + px / grid%parent_grid_ratio 
-     CALL nl_set_i_parent_start( grid%id, grid%i_parent_start )
      grid%j_parent_start = grid%j_parent_start + py / grid%parent_grid_ratio
+
+     IF ( (.NOT. (parent%active_this_task .AND. grid%active_this_task) ) .AND. (parent%active_this_task .OR. grid%active_this_task) ) THEN
+       IF ( parent%active_this_task ) THEN
+         comzilla = mpi_comm_to_kid( which_kid( grid%id ) , parent%id )
+       ELSE
+         comzilla = mpi_comm_to_mom( grid%id )
+       ENDIF
+write(0,*)__FILE__,__LINE__,nest%id,nest_task_offsets(nest%id),comzilla
+       CALL BYTE_BCAST_FROM_ROOT( grid%i_parent_start, IWORDSIZE, nest_task_offsets(nest%id), comzilla )  !
+       CALL BYTE_BCAST_FROM_ROOT( grid%j_parent_start, IWORDSIZE, nest_task_offsets(nest%id), comzilla )  !
+     ENDIF
+
+write(0,*)__FILE__,__LINE__,'after i_parent_start ',grid%id, grid%i_parent_start
+write(0,*)__FILE__,__LINE__,'after j_parent_start ',grid%id, grid%j_parent_start
+
+     CALL nl_set_i_parent_start( grid%id, grid%i_parent_start )
      CALL nl_set_j_parent_start( grid%id, grid%j_parent_start )
 
      CALL push_communicators_for_domain(grid%id)
@@ -327,6 +391,7 @@ SUBROUTINE med_nest_move ( parent, nest )
                              ims, ime, jms, jme, kms, kme,    &
                              ips, ipe, jps, jpe, kps, kpe    )
 
+    IF ( nest%active_this_task ) THEN
 #ifdef HWRF
 !   adjust pint & pressure depth due to height change in nest_terrain
 !     assume lapse rate of 6.1K/1km
@@ -354,6 +419,86 @@ SUBROUTINE med_nest_move ( parent, nest )
        nest%fis(I,J)=nest%hres_fis(I,J)
      ENDDO
     ENDDO
+    ENDIF
+
+#ifdef HWRF
+write(*,*)__FILE__,__LINE__ ; write(0,*)__FILE__,__LINE__
+   ENDIF check_direction_of_move
+
+!called on d03 when d02 is being considered for move
+IF ( nest%id .eq. 2 .and. nest%nests(1)%ptr%active_this_task ) THEN
+mook => nest%nests(1)%ptr
+CALL push_communicators_for_domain(mook%id)
+call wrf_get_myproc(myproc)
+write(100+myproc,*)mook%ep31-mook%sp31+1,mook%ep32-mook%sp32+1,'bottom of nest_move',mook%ntsd
+do j=mook%sp32,mook%ep32
+do i=mook%sp31,mook%ep31
+write(100+myproc,*)mook%sst(i,j)
+enddo
+enddo
+CALL pop_communicators_for_domain
+ENDIF
+
+IF ( nest%id .eq. 3 .and. nest%active_this_task ) THEN
+mook => nest
+write(0,*)__FILE__,__LINE__,'mook%id ',mook%id
+write(0,*)__FILE__,__LINE__,'size sst ',size(mook%sst)
+write(0,*)__FILE__,__LINE__,'shape sst ',shape(mook%sst)
+CALL push_communicators_for_domain(mook%id)
+call wrf_get_myproc(myproc)
+write(120+myproc,*)mook%ep31-mook%sp31+1,mook%ep32-mook%sp32+1,'bottom of nest_move',mook%ntsd
+do j=mook%sp32,mook%ep32
+do i=mook%sp31,mook%ep31
+write(120+myproc,*)mook%sst(i,j)
+enddo
+enddo
+CALL pop_communicators_for_domain
+ENDIF
+
+     DO kid = 1, max_nests
+       IF ( ASSOCIATED( grid%nests(kid)%ptr ) ) THEN
+         IF ( (.NOT. (grid%active_this_task .AND. grid%nests(kid)%ptr%active_this_task) ) .AND. &
+                     (grid%active_this_task .OR.  grid%nests(kid)%ptr%active_this_task) ) THEN
+write(0,*)'kid ',kid
+write(0,*)'grid%id ',grid%id
+write(0,*)'grid%active_this_task ',grid%active_this_task
+           IF ( grid%active_this_task ) THEN
+write(0,*)'a grid%nests(kid)%ptr%id,grid%id ',grid%nests(kid)%ptr%id,grid%id
+write(0,*)'a mpi_comm_to_kid(:,1) ',mpi_comm_to_kid(1:3,1)
+write(0,*)'a mpi_comm_to_kid(:,2) ',mpi_comm_to_kid(1:3,2)
+write(0,*)'a mpi_comm_to_kid(:,3) ',mpi_comm_to_kid(1:3,3)
+             comzilla = mpi_comm_to_kid( kid , grid%id )
+           ELSE
+write(0,*)'b grid%nests(kid)%ptr%id ',grid%nests(kid)%ptr%id
+write(0,*)'a mpi_comm_to_kid ',mpi_comm_to_mom(1:3)
+             comzilla = mpi_comm_to_mom( grid%nests(kid)%ptr%id )
+           ENDIF
+write(0,*)'calling BYTE_BCAST for kid ',kid
+write(0,*)'calling BYTE_BCAST comzilla ',comzilla
+           CALL BYTE_BCAST( grid%nests(kid)%ptr%i_parent_start, IWORDSIZE, comzilla )  !
+           CALL BYTE_BCAST( grid%nests(kid)%ptr%j_parent_start, IWORDSIZE, comzilla )  !
+           CALL BYTE_BCAST( dx, IWORDSIZE, comzilla )  !
+           CALL BYTE_BCAST( dy, IWORDSIZE, comzilla )  !
+write(0,'(a34,i9," i_parent_start for kid ",i3," kidid ",i3," set to ",i5)')__FILE__,__LINE__,kid,grid%nests(kid)%ptr%id,grid%nests(kid)%ptr%i_parent_start
+write(0,'(a34,i9," j_parent_start for kid ",i3," kidid ",i3," set to ",i5)')__FILE__,__LINE__,kid,grid%nests(kid)%ptr%id,grid%nests(kid)%ptr%j_parent_start
+           CALL nl_set_i_parent_start( grid%nests(kid)%ptr%id, grid%nests(kid)%ptr%i_parent_start )
+           CALL nl_set_j_parent_start( grid%nests(kid)%ptr%id, grid%nests(kid)%ptr%j_parent_start )
+
+CALL get_ijk_from_grid ( grid%nests(kid)%ptr , ids, ide, jds, jde, kds, kde, ims, ime, jms, jme, kms, kme, ips, ipe, jps, jpe, kps, kpe    )
+write(0,'(a34,i9," before adjst_domain_dims_for_move on id ",i3,"  ",4i9)')__FILE__,__LINE__,ips, ipe, jps, jpe
+
+write(0,'(a34,i9," calling adjst_domain_dims_for_move on id ",i3," dx dy ",2i9)')__FILE__,__LINE__,grid%nests(kid)%ptr%id,-grid%nests(kid)%ptr%parent_grid_ratio*dx,-grid%nests(kid)%ptr%parent_grid_ratio*dy
+           CALL adjust_domain_dims_for_move(  grid%nests(kid)%ptr%intermediate_grid , -grid%nests(kid)%ptr%parent_grid_ratio*dx, -grid%nests(kid)%ptr%parent_grid_ratio*dy )
+
+CALL get_ijk_from_grid ( grid%nests(kid)%ptr , ids, ide, jds, jde, kds, kde, ims, ime, jms, jme, kms, kme, ips, ipe, jps, jpe, kps, kpe    )
+write(0,'(a34,i9," after adjst_domain_dims_for_move on id ",i3,"  ",4i9)')__FILE__,__LINE__,ips, ipe, jps, jpe
+
+         ENDIF
+       ENDIF
+     ENDDO
+
+   movepart2 : IF ( shamove ) THEN
+#endif
 
 !
 !  De-reference dimension information stored in the grid data structure.
@@ -396,12 +541,18 @@ SUBROUTINE med_nest_move ( parent, nest )
 
 #endif
 
+write(*,*)__FILE__,__LINE__ ; write(0,*)__FILE__,__LINE__
+write(0,*)__FILE__,__LINE__,'interp ',parent%id , ' > ', nest%id
+
      CALL med_interp_domain( parent, nest )
+
+write(*,*)__FILE__,__LINE__ ; write(0,*)__FILE__,__LINE__
 
 #if ( EM_CORE == 1 )
      CALL nl_get_input_from_hires( nest%id , input_from_hires ) 
      IF ( input_from_hires ) THEN
 
+       IF ( nest%active_this_task ) THEN
 ! store horizontally interpolated terrain in temp location
        CALL  copy_3d_field ( nest%ht_fine , nest%ht , &
                              ids , ide , jds , jde , 1   , 1   , &
@@ -416,10 +567,12 @@ SUBROUTINE med_nest_move ( parent, nest )
                              ims , ime , jms , jme , kms , kme , &
                              ips , ipe , jps , jpe , kps , kpe )
 
+404 write(*,*)__FILE__,__LINE__ ; write(0,*)__FILE__,__LINE__ ; CALL rlim
        CALL  input_terrain_rsmas ( nest,                               &
                                    ids , ide , jds , jde , 1   , 1   , &
                                    ims , ime , jms , jme , 1   , 1   , &
                                    ips , ipe , jps , jpe , 1   , 1   )
+404 write(*,*)__FILE__,__LINE__ ; write(0,*)__FILE__,__LINE__ ; CALL rlim
 
        CALL  blend_terrain ( nest%ht_fine , nest%ht , &
                              ids , ide , jds , jde , 1   , 1   , &
@@ -433,9 +586,11 @@ SUBROUTINE med_nest_move ( parent, nest )
                              ids , ide , jds , jde , kds , kde , &
                              ims , ime , jms , jme , kms , kme , &
                              ips , ipe , jps , jpe , kps , kpe )
+       ENDIF
 !
        CALL model_to_grid_config_rec ( parent%id , model_config_rec , config_flags )
 
+write(0,*)__FILE__,__LINE__,'fbck ',grid%id , ' < ', nest%id
        CALL med_nest_feedback ( parent , nest , config_flags )
        parent%imask_nostag = 1
        parent%imask_xstag = 1
@@ -462,7 +617,9 @@ SUBROUTINE med_nest_move ( parent, nest )
 !  set up constants (module_initialize_real.F for the shifted nmm domain)
 !-----------------------------------------------------------------------------
 
+write(*,*)__FILE__,__LINE__ ; write(0,*)__FILE__,__LINE__ ; CALL rlim
     CALL med_init_domain_constants_nmm ( parent, nest )
+write(*,*)__FILE__,__LINE__ ; write(0,*)__FILE__,__LINE__ ; CALL rlim
 
 #endif
 
@@ -478,9 +635,12 @@ SUBROUTINE med_nest_move ( parent, nest )
 #if ( EM_CORE == 1 )
      nest%press_adj = .FALSE.
 #endif
+
      IF ( nest%active_this_task ) THEN
        CALL push_communicators_for_domain(nest%id)
+write(*,*)__FILE__,__LINE__ ; write(0,*)__FILE__,__LINE__ ; CALL rlim
        CALL start_domain ( nest , .FALSE. )
+write(*,*)__FILE__,__LINE__ ; write(0,*)__FILE__,__LINE__ ; CALL rlim
        CALL pop_communicators_for_domain
      ENDIF
      config_flags%restart = saved_restart_value
@@ -507,7 +667,9 @@ SUBROUTINE med_nest_move ( parent, nest )
 #endif
 !
 #ifdef HWRF
-   ENDIF check_direction_of_move
+write(*,*)__FILE__,__LINE__ ; write(0,*)__FILE__,__LINE__
+   ENDIF movepart2
+
 #else
    ENDIF check_for_move
 #endif
@@ -1133,8 +1295,23 @@ USE module_timing
          CALL wrf_dm_move_nest ( grid , grid%nests(kid)%ptr%intermediate_grid , -move_cd_x*pgr, -move_cd_y*pgr )
          CALL adjust_domain_dims_for_move( grid%nests(kid)%ptr%intermediate_grid , -move_cd_x*pgr, -move_cd_y*pgr )
          grid%nests(kid)%ptr%i_parent_start = grid%nests(kid)%ptr%i_parent_start - move_cd_x*pgr
-         CALL nl_set_i_parent_start( grid%nests(kid)%ptr%id, grid%nests(kid)%ptr%i_parent_start )
          grid%nests(kid)%ptr%j_parent_start = grid%nests(kid)%ptr%j_parent_start - move_cd_y*pgr
+
+#if  0
+!jm zap this needs to be fixed for em core; don't worry, it will fail to compile the first time 
+         IF ( (.NOT. (parent%active_this_task .AND. grid%active_this_task) ) .AND. (parent%active_this_task .OR. grid%active_this_task) ) THEN
+           IF ( parent%active_this_task ) THEN
+             comzilla = mpi_comm_to_kid( which_kid( grid%id ) , parent%id )
+           ELSE
+             comzilla = mpi_comm_to_mom( grid%id )
+           ENDIF
+  write(0,*)__FILE__,__LINE__,nest%id,nest_task_offsets(nest%id),comzilla
+           CALL BYTE_BCAST_FROM_ROOT( grid%i_parent_start, IWORDSIZE, nest_task_offsets(nest%id), comzilla )  !
+           CALL BYTE_BCAST_FROM_ROOT( grid%j_parent_start, IWORDSIZE, nest_task_offsets(nest%id), comzilla )  !
+         ENDIF
+#endif
+
+         CALL nl_set_i_parent_start( grid%nests(kid)%ptr%id, grid%nests(kid)%ptr%i_parent_start )
          CALL nl_set_j_parent_start( grid%nests(kid)%ptr%id, grid%nests(kid)%ptr%j_parent_start )
 
        ENDIF
@@ -1355,11 +1532,11 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
          dx=kid_ic-my_ic
          dy=kid_jc-my_jc
 
-         if(wrf_dm_on_monitor()) then
+!jm         if(wrf_dm_on_monitor()) then
             write(mess,'("d",I0," following nest d",I0,": parent ",F0.1,"x",F0.1," nest ",F0.1,"x",F0.1," move ",F0.1,"x",F0.1)') &
                  grid%id,kid%id,my_ic,my_jc,kid_ic,kid_jc,dx,dy
             call wrf_debug(1,trim(mess))
-         endif
+!jm         endif
 
          ! Now decide where to move based on relative center locations.
          if(dx<-pgr) then
@@ -1401,13 +1578,13 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
          endif
 
          ! Inform the user.
-         if(wrf_dm_on_monitor()) then
+!jm zap         if(wrf_dm_on_monitor()) then
             if(move_cd_x/=0 .or. move_cd_y/=0) then
                write(mess,'("d",I0," moving x",SP,I0," y",I0,SS," to follow d",I0)') &
                     grid%id,move_cd_x,move_cd_y,kid%id
                call wrf_debug(1,trim(mess))
             endif
-         endif
+!jm zap         endif
       endif nest_following
       revised_nest_motion: if(grid%vortex_tracker>3) then
          if((grid%XLOC_1-grid%XLOC_2) .GE. 3) then
@@ -1424,13 +1601,13 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
          else
             move_cd_y=0
          endif
-         if(wrf_dm_on_monitor()) then
+!jm zap         if(wrf_dm_on_monitor()) then
             if(move_cd_x/=0 .or. move_cd_y/=0) then
                write(mess,'("d",I0," moving x",SP,I0," y",I0,SS," to follow vortex")') &
                     grid%id,move_cd_x,move_cd_y
                call wrf_debug(1,trim(mess))
             endif
-         endif
+!jm zap         endif
       endif revised_nest_motion
       vortex_following: IF(grid%vortex_tracker==3 .or. grid%vortex_tracker==1)THEN
          IF((grid%XLOC_1-grid%XLOC_2) .GE. 3)THEN 
@@ -1454,13 +1631,13 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
             move_cd_y  = -2 
          ENDIF
 
-         if(wrf_dm_on_monitor()) then
+!jm zap         if(wrf_dm_on_monitor()) then
             if(move_cd_x/=0 .or. move_cd_y/=0) then
                write(mess,'("d",I0," moving x",SP,I0," y",I0,SS," to follow vortex")') &
                     grid%id,move_cd_x,move_cd_y
                call wrf_debug(1,trim(mess))
             endif
-         endif
+!jm zap         endif
       ENDIF vortex_following
    endif can_move
 
@@ -1686,14 +1863,23 @@ LOGICAL FUNCTION direction_of_move ( parent , grid , move_cd_x, move_cd_y )
 
          CALL wrf_dm_move_nest ( grid , grid%nests(kid)%ptr%intermediate_grid , -move_cd_x*pgr, -move_cd_y*pgr )
          CALL adjust_domain_dims_for_move( grid%nests(kid)%ptr%intermediate_grid , -move_cd_x*pgr, -move_cd_y*pgr )
+
+write(0,"(a34,i6,' before updating, i_parent_start ',2i9)")__FILE__,__LINE__,grid%nests(kid)%ptr%id, grid%nests(kid)%ptr%i_parent_start
+write(0,"(a34,i6,' before updating, j_parent_start ',2i9)")__FILE__,__LINE__,grid%nests(kid)%ptr%id, grid%nests(kid)%ptr%j_parent_start
+
          grid%nests(kid)%ptr%i_parent_start = grid%nests(kid)%ptr%i_parent_start - move_cd_x*pgr
          write(message,*)'grid%nests(kid)%ptr%i_parent_start =',grid%nests(kid)%ptr%i_parent_start,grid%nests(kid)%ptr%id
          call wrf_debug(1,message)
-         CALL nl_set_i_parent_start( grid%nests(kid)%ptr%id, grid%nests(kid)%ptr%i_parent_start )
          grid%nests(kid)%ptr%j_parent_start = grid%nests(kid)%ptr%j_parent_start - move_cd_y*pgr
          write(message,*)'grid%nests(kid)%ptr%j_parent_start =',grid%nests(kid)%ptr%j_parent_start,grid%nests(kid)%ptr%id
          call wrf_debug(1,message)
+
+write(0,"(a34,i6,' after updating CALL nl_set_i_parent_start( ',i4,' , ',i5,' )')")__FILE__,__LINE__,grid%nests(kid)%ptr%id, grid%nests(kid)%ptr%i_parent_start
+write(0,"(a34,i6,' after updating CALL nl_set_j_parent_start( ',i4,' , ',i5,' )')")__FILE__,__LINE__,grid%nests(kid)%ptr%id, grid%nests(kid)%ptr%j_parent_start
+
+         CALL nl_set_i_parent_start( grid%nests(kid)%ptr%id, grid%nests(kid)%ptr%i_parent_start )
          CALL nl_set_j_parent_start( grid%nests(kid)%ptr%id, grid%nests(kid)%ptr%j_parent_start )
+
          IDS = grid%nests(kid)%ptr%sd31
          IDE = grid%nests(kid)%ptr%ed31
          JDS = grid%nests(kid)%ptr%sd32

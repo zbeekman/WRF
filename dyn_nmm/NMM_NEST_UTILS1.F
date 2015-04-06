@@ -90,17 +90,16 @@ SUBROUTINE med_nest_egrid_configure ( parent , nest )
        parent%sbd0var = parent%sbd0
     end if
     nest%wbd0   = parent%wbd0 + (nest%i_parent_start-1)*2.*parent%dx + mod(nest%j_parent_start+1,2)*parent%dx
-write(0,*)' nest%i_parent_start ',nest%i_parent_start
-write(0,*)' nest%j_parent_start ',nest%j_parent_start
-write(0,*)' parent%dx ',parent%dx
-write(0,*)' parent%wbd0 ',parent%wbd0
-write(0,*)' nest%wbd0 ',nest%wbd0
     nest%sbd0   = parent%sbd0 + (nest%j_parent_start-1)*parent%dy
     nest%wbd0var = nest%wbd0
     nest%sbd0var = nest%sbd0
     nest%dx     = parent%dx/nest%parent_grid_ratio
     nest%dy     = parent%dy/nest%parent_grid_ratio
 
+    write(message,*)" -     nest%id    = ",nest%id
+    CALL wrf_message(trim(message))
+    write(message,*)" -   parent%id    = ",nest%id
+    CALL wrf_message(trim(message))
     write(message,*)" - i_parent_start = ",nest%i_parent_start
     CALL wrf_message(trim(message))
     write(message,*)" - j_parent_start = ",nest%j_parent_start
