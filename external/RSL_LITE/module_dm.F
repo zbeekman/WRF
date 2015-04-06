@@ -5520,6 +5520,14 @@ ENDIF
       jdim_cd = ijde - ijds + 1
 write(0,*)__FILE__,__LINE__,'ngrid%id ',ngrid%id
 write(0,*)__FILE__,__LINE__,'intermediate_grid%id ',intermediate_grid%id
+write(0,*)__FILE__,__LINE__,'  iips ',iips
+write(0,*)__FILE__,__LINE__,'  iipe ',iipe
+write(0,*)__FILE__,__LINE__,'  ijps ',ijps
+write(0,*)__FILE__,__LINE__,'  ijpe ',ijpe
+write(0,*)__FILE__,__LINE__,'  iims ',iims
+write(0,*)__FILE__,__LINE__,'  iime ',iime
+write(0,*)__FILE__,__LINE__,'  ijms ',ijms
+write(0,*)__FILE__,__LINE__,'  ijme ',ijme
 write(0,*)__FILE__,__LINE__,'pgr ',pgr
 write(0,*)__FILE__,__LINE__,'sw ',sw
 write(0,*)__FILE__,__LINE__,'iparstrt ',iparstrt

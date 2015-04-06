@@ -663,3 +663,9 @@ print *,'for parent domain id #',grid%id,', found child domain #',nestid_loc
    END SUBROUTINE alloc_doms_for_dfi
 
 END MODULE module_wrf_top
+
+SUBROUTINE failbadly( a , b )
+real a,b
+b = a/a
+
+END SUBROUTINE failbadly
