@@ -585,7 +585,7 @@ rsl_lite_allgather_msgs ( mytask_p, ntasks_par_p, ntasks_nest_p, offset_p, comm,
   mytask = 0 ;
   mytask_on_comm = 0 ;
 #endif
-#if 1
+#if 0
 fprintf(stderr,"inside rsl_lite_allgather_msgs  %d %d %d %d %d\n",mytask,ntasks_par,ntasks_nest,*offset_p, mytask_on_comm) ;
 fprintf(stderr,"%s %d : %d %d %d \n",__FILE__,__LINE__,mytask_on_comm,dir,*offset_p ) ;
 fprintf(stdout,"inside rsl_lite_allgather_msgs  %d %d %d %d %d\n",mytask,ntasks_par,ntasks_nest,*offset_p, mytask_on_comm) ;
@@ -638,7 +638,7 @@ fprintf(stderr,"mytask_on_comm %d , ntasks %d \n",mytask_on_comm, ntasks ) ;
     Rsizes[j] = 0 ;
   }
 
-#if 1
+#if 0
 for ( j = 0 ; j < ntasks ; j++ ) 
 {
 int jj ;
@@ -659,23 +659,16 @@ fprintf(stdout,"\n") ;
 
     Rsizes[j] += Psize_all[ INDEX_2( j, mytask_on_comm, ntasks ) ] ;
 
-#if 1
+#if 0
 fprintf(stderr,"j %d , mytask_on_comm %d,*offset_p %d \n",j,mytask_on_comm,*offset_p) ;
 fprintf(stdout,"j %d , mytask_on_comm %d,*offset_p %d \n",j,mytask_on_comm,*offset_p) ;
 fprintf(stderr,"Rsizes[%d]= %d\n", j, Rsizes[j]) ;
-
-//fprintf(stderr,"Rsizes[%d]= %d; %d ; Psize_all[%d] = %d\n",
-//j,
-//Rsizes[j],
-//(mytask_on_comm-*offset_p+ntasks) % ntasks,
-//INDEX_2( (mytask_on_comm-*offset_p+ntasks) % ntasks , j , ntasks ),
-//Psize_all[ INDEX_2( (mytask_on_comm-*offset_p+ntasks) % ntasks , j , ntasks ) ]) ;
 #endif
   }
 
   for ( Rbufsize = 0, P = 0, Rdisplacements[0] = 0 ; P < ntasks ; P++ )
   {
-#if 1
+#if 0
 fprintf(stderr,"P=%d Rdisplacements=%d Rsizes=%d Sdisplacements=%d Ssizes=%d\n",P,Rdisplacements[P],Rsizes[P],Sdisplacements[P],Ssizes[P]) ;
 #endif
     Rdisplacements[P+1] = Rsizes[P] + Rdisplacements[P] ;
@@ -685,22 +678,18 @@ fprintf(stderr,"P=%d Rdisplacements=%d Rsizes=%d Sdisplacements=%d Ssizes=%d\n",
 
   /* this will be freed later */
 
-#if 1
+#if 0
 fprintf(stderr,"allocating Recvbuf %d bytes\n",Rbufsize + 3 * sizeof(int)) ;
 #endif
   Recvbuf = RSL_MALLOC( char , Rbufsize + 3 * sizeof(int) ) ; /* for sentinal record */
   Rbufcurs = 0 ;
   Rreclen = 0 ;
 
-#if 1
+#if 0
 fprintf(stderr,"%s %d before MPI_Alltoallv\n",__FILE__,__LINE__) ;
 fprintf(stderr,"before MPI_Alltoallv Sendbuf %x \n",Sendbuf) ;
 fprintf(stderr,"before MPI_Alltoallv Recvbuf %x \n",Recvbuf) ;
 fprintf(stderr,"before MPI_Alltoallv comm %d \n",comm) ;
-//fprintf(stderr,"before MPI_Alltoallv Ssizes %d %d %d %d %d %d \n",Ssizes[0],Ssizes[1],Ssizes[2],Ssizes[3],Ssizes[4],Ssizes[5]) ;
-//fprintf(stderr,"before MPI_Alltoallv Sdisplacements %d %d %d %d %d %d \n",Sdisplacements[0],Sdisplacements[1],Sdisplacements[2],Sdisplacements[3],Sdisplacements[4],Sdisplacements[5]) ;
-//fprintf(stderr,"before MPI_Alltoallv Rsizes %d %d %d %d %d %d \n",Rsizes[0],Rsizes[1],Rsizes[2],Rsizes[3],Rsizes[4],Rsizes[5]) ;
-//fprintf(stderr,"before MPI_Alltoallv Rdisplacements %d %d %d %d %d %d \n",Rdisplacements[0],Rdisplacements[1],Rdisplacements[2],Rdisplacements[3],Rdisplacements[4],Rdisplacements[5]) ;
 #endif
 
 #ifndef STUBMPI

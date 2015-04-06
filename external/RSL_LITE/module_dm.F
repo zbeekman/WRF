@@ -5518,24 +5518,6 @@ ENDIF
       jcoord =    jparstrt - sw
       idim_cd = iide - iids + 1
       jdim_cd = ijde - ijds + 1
-write(0,*)__FILE__,__LINE__,'ngrid%id ',ngrid%id
-write(0,*)__FILE__,__LINE__,'intermediate_grid%id ',intermediate_grid%id
-write(0,*)__FILE__,__LINE__,'  iips ',iips
-write(0,*)__FILE__,__LINE__,'  iipe ',iipe
-write(0,*)__FILE__,__LINE__,'  ijps ',ijps
-write(0,*)__FILE__,__LINE__,'  ijpe ',ijpe
-write(0,*)__FILE__,__LINE__,'  iims ',iims
-write(0,*)__FILE__,__LINE__,'  iime ',iime
-write(0,*)__FILE__,__LINE__,'  ijms ',ijms
-write(0,*)__FILE__,__LINE__,'  ijme ',ijme
-write(0,*)__FILE__,__LINE__,'pgr ',pgr
-write(0,*)__FILE__,__LINE__,'sw ',sw
-write(0,*)__FILE__,__LINE__,'iparstrt ',iparstrt
-write(0,*)__FILE__,__LINE__,'jparstrt ',jparstrt
-write(0,*)__FILE__,__LINE__,'icoord ',icoord
-write(0,*)__FILE__,__LINE__,'jcoord ',jcoord
-write(0,*)__FILE__,__LINE__,'idim_cd ',idim_cd
-write(0,*)__FILE__,__LINE__,'jdim_cd ',jdim_cd
 
       nlev  = ckde - ckds + 1
 
@@ -5612,8 +5594,6 @@ write(0,*)__FILE__,__LINE__,'jdim_cd ',jdim_cd
       INTEGER idim1,idim2,idim3,idim4,idim5,idim6,idim7
       REAL  dummy_xs, dummy_xe, dummy_ys, dummy_ye
       LOGICAL feedback_flag, feedback_flag_v
-
-integer myproc
 
       LOGICAL interp_mp
       integer, parameter :: EConst=0, ECopy=1, EExtrap=2 ! MUST match module_interp_nmm
@@ -5700,7 +5680,6 @@ IF ( ngrid%active_this_task ) THEN
 
       ! code here to interpolate the data into the nested domain
       CALL push_communicators_for_domain( grid%id )
-call wrf_get_myproc(myproc)
 #include "nest_forcedown_interp.inc"
       CALL pop_communicators_for_domain
 
