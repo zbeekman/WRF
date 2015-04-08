@@ -326,7 +326,7 @@ CONTAINS
         END DO
       END IF
       IF ( check_count .gt. 1 ) then
-         iant=iant+(check_count-1)*checkpoint_interval*60/scaleant_frq
+         iant=iant+(check_count-1)*checkpoint_interval/scaleant_frq
       ENDIF
     END IF
     IF (iant .GT. num_ant_steps .OR. iant .LE. 0) THEN
@@ -349,7 +349,7 @@ CONTAINS
         END DO
       END IF
       IF ( check_count .gt. 1 ) then
-         ibb=ibb+(check_count-1)*checkpoint_interval*60/scalebb_frq
+         ibb=ibb+(check_count-1)*checkpoint_interval/scalebb_frq
       ENDIF
     END IF
     IF (ibb .GT. num_bb_steps .OR. ibb .LE. 0) THEN

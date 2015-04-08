@@ -57,6 +57,7 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
 #if ( WRF_CHEM == 1 )
    INTEGER :: auxinput_step
    REAL :: real_time
+   TYPE(WRFU_Alarm), POINTER :: alarm
 #endif
    TYPE(WRFU_Time) :: currTime, startTime
 #ifdef HWRF
@@ -64,7 +65,7 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
    REAL :: GMT
 #endif
 
-   CHARACTER*256          :: message
+  CHARACTER*256          :: message
    INTEGER                :: ids , ide , jds , jde , kds , kde , &
                              ims , ime , jms , jme , kms , kme , &
                              ips , ipe , jps , jpe , kps , kpe, ij, im
@@ -181,12 +182,14 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
 #if ( WRF_CHEM == 1 )
 ! - Get chemistry data
      ELSE IF( ialarm .EQ. AUXINPUT5_ALARM .AND. config_flags%chem_opt > 0 ) THEN
+       alarm => grid%alarms( ialarm )
        IF( config_flags%emiss_inpt_opt /= 0 ) THEN
-         IF( WRFU_AlarmIsRinging( grid%alarms( ialarm ), rc=rc ) .OR.  &
-         ((config_flags%restart) .AND. ( currTime .EQ. startTime ))) THEN
+         CALL WRFU_TimeIntervalGet( grid%io_intervals( ialarm ), S=auxinput_step, rc=rc )
+         IF( WRFU_AlarmIsRinging( alarm, rc=rc ) .OR.  &
+         ( (config_flags%restart) .AND. ( currTime .EQ. startTime ) .AND. &
+           alarm%alarmint%Enabled ) ) THEN
            call wrf_debug(15,' CALL med_read_wrf_chem_emiss ')
            IF ( config_flags%dyn_opt .EQ. dyn_em_ad ) THEN
-             auxinput_step = INT( real_time ( grid%io_intervals (ialarm) ))
              CALL domain_clock_set( grid, time_step_seconds=-1*auxinput_step )
              grid%domain_clock%clockint%CurrTime = ESMF_TimeInc (grid%domain_clock%clockint%CurrTime, &
                                 grid%domain_clock%clockint%TimeStep )
@@ -198,21 +201,23 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
                                 grid%domain_clock%clockint%TimeStep )
              CALL domain_clock_set( grid, time_step_seconds=-1*model_config_rec%time_step )
            ENDIF
-           CALL WRFU_AlarmRingerOff( grid%alarms( ialarm ), rc=rc )
+           CALL WRFU_AlarmRingerOff( alarm, rc=rc )
            call wrf_debug(15,' Back from CALL med_read_wrf_chem_emiss ')
          ENDIF
        ELSE
-         IF( WRFU_AlarmIsRinging( grid%alarms( ialarm ), rc=rc ) ) THEN
+         IF( WRFU_AlarmIsRinging( alarm, rc=rc ) ) THEN
            CALL med_auxinput_in ( grid, ialarm, config_flags )
-           CALL WRFU_AlarmRingerOff( grid%alarms( ialarm ), rc=rc )
+           CALL WRFU_AlarmRingerOff( alarm, rc=rc )
          ENDIF
        ENDIF
      ELSE IF( ialarm .EQ. AUXINPUT7_ALARM .AND. config_flags%chem_opt > 0 ) THEN
+       alarm => grid%alarms( ialarm )
        IF( config_flags%biomass_burn_opt /= 0 ) THEN
-         IF( WRFU_AlarmIsRinging( grid%alarms( ialarm ), rc=rc ) .OR.  &
-         ((config_flags%restart) .AND. ( currTime .EQ. startTime ))) THEN
+         CALL WRFU_TimeIntervalGet( grid%io_intervals( ialarm ), S=auxinput_step, rc=rc )
+         IF( WRFU_AlarmIsRinging( alarm, rc=rc ) .OR.  &
+         ((config_flags%restart) .AND. ( currTime .EQ. startTime ) .AND. &
+           alarm%alarmint%Enabled ) ) THEN
            IF ( config_flags%dyn_opt .EQ. dyn_em_ad ) THEN
-             auxinput_step = INT( real_time ( grid%io_intervals (ialarm) ))
              CALL domain_clock_set( grid, time_step_seconds=-1*auxinput_step )
              grid%domain_clock%clockint%CurrTime = ESMF_TimeInc (grid%domain_clock%clockint%CurrTime, &
                                 grid%domain_clock%clockint%TimeStep )
@@ -227,12 +232,12 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
            WRITE ( message , FMT='(A,i3,A,i3)') 'Input data processed for aux input ',&
                   ialarm - first_auxinput + 1, ' for domain ',grid%id
            CALL wrf_debug ( 15 , message )
-           CALL WRFU_AlarmRingerOff( grid%alarms( ialarm ), rc=rc )
+           CALL WRFU_AlarmRingerOff( alarm, rc=rc )
          ENDIF
        ELSE
-        IF( WRFU_AlarmIsRinging( grid%alarms( ialarm ), rc=rc ) ) THEN
+        IF( WRFU_AlarmIsRinging( alarm, rc=rc ) ) THEN
           CALL med_auxinput_in ( grid, ialarm, config_flags )
-          CALL WRFU_AlarmRingerOff( grid%alarms( ialarm ), rc=rc )
+          CALL WRFU_AlarmRingerOff( alarm, rc=rc )
         ENDIF
        ENDIF
      ELSE IF( ialarm .EQ. AUXINPUT13_ALARM .AND. config_flags%chem_opt > 0 ) THEN

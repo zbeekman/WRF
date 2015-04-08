@@ -267,7 +267,7 @@ SUBROUTINE solve_em ( grid , config_flags  &
    curr_secs2 = real_time(tmpTimeInterval2)
 #if ( WRFPLUS == 1 )
   if(grid%checkpoint_interval .gt. 0 .and. config_flags%dyn_opt .eq. dyn_em_ad) then
-     curr_secs = curr_secs - REAL(grid%dt, 8) + REAL( 3600*grid%check_count*grid%checkpoint_interval, 8 )
+     curr_secs = curr_secs - REAL(grid%dt, 8) + REAL( 60*grid%check_count*grid%checkpoint_interval, 8 )
   endif
   write(message,*)'solve_em,itimestep,check_count,checkpoint_interval,curr_secs = ',grid%itimestep,grid%check_count,grid%checkpoint_interval,curr_secs
   CALL wrf_debug(50,TRIM(message))
@@ -308,7 +308,7 @@ endif
 
 #if ( WRFPLUS == 1 )
    temp_itimestep = grid%itimestep
-   grid%itimestep = grid%itimestep + (grid%check_count-1)*grid%checkpoint_interval*3600/grid%dt
+   grid%itimestep = grid%itimestep + (grid%check_count-1)*grid%checkpoint_interval*60/grid%dt
 #endif
 
    IF( coupler_on ) CALL cpl_store_input( grid, config_flags )

@@ -269,7 +269,7 @@
      write(msg,*)'ktau,check_count,checkpoint_interval = ',ktau,grid%check_count,grid%checkpoint_interval
      CALL wrf_debug(16,TRIM(msg))
 
-!     curr_secs = curr_secs - REAL( 3600*(grid%check_count-1)*grid%checkpoint_interval, 8 )
+!     curr_secs = curr_secs - REAL( 60*(grid%check_count-1)*grid%checkpoint_interval, 8 )
   endif
 #endif
   write(msg,*)'curr_secs = ',curr_secs

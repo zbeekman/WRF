@@ -306,7 +306,7 @@ SUBROUTINE solve_em_ad ( grid , config_flags  &
    CALL WRFU_TimeIntervalGet( run_interval, S=runad, rc=rc )
    runad = abs(runad)
    curr_secs = REAL( runad, 8 ) + curr_secs - REAL(grid%dt, 8)
-   curr_secs = curr_secs + REAL( 3600*(grid%check_count-1)*grid%checkpoint_interval, 8 )
+   curr_secs = curr_secs + REAL( 60*(grid%check_count-1)*grid%checkpoint_interval, 8 )
 !   write(message,*)'curr_secs = ',curr_secs
    write(message,*)'solve_em_ad,itimestep,check_count,runad,curr_secs = ',grid%itimestep,grid%check_count,runad,curr_secs
 
@@ -343,7 +343,7 @@ SUBROUTINE solve_em_ad ( grid , config_flags  &
    ENDIF
 
    temp_itimestep = grid%itimestep
-   grid%itimestep = grid%itimestep + (grid%check_count-1)*grid%checkpoint_interval*3600/grid%dt
+   grid%itimestep = grid%itimestep + (grid%check_count-1)*grid%checkpoint_interval*60/grid%dt
 
    IF (config_flags%polar) dclat = 90./REAL(jde-jds) !(0.5 * 180/ny)
 

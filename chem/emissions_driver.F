@@ -669,7 +669,7 @@ CONTAINS
             enddo
          ENDIF
          IF ( check_count .gt. 1 ) then
-            iant=iant+(check_count-1)*checkpoint_interval*60/scaleant_frq
+            iant=iant+(check_count-1)*checkpoint_interval/scaleant_frq
          ENDIF
       ENDIF
       IF(iant .GT. num_ant_steps .OR. iant .LE. 0) THEN
@@ -688,14 +688,14 @@ CONTAINS
             enddo
          ENDIF
          IF ( check_count .gt. 1 ) then
-            ibb=ibb+(check_count-1)*checkpoint_interval*60/scalebb_frq
+            ibb=ibb+(check_count-1)*checkpoint_interval/scalebb_frq
          ENDIF
       ENDIF
       IF(ibb .GT. num_bb_steps .OR. ibb .LE. 0) THEN
          write(message,*)'emissions_driver: need to increase num_bb_steps, ktauc,ibb = ',ktau,ibb
 !         CALL wrf_error_fatal( trim(message) )
          CALL wrf_message(TRIM(message))
-         ibb=(check_count-1)*checkpoint_interval*60/scalebb_frq
+         ibb=(check_count-1)*checkpoint_interval/scalebb_frq
 
 
       ENDIF

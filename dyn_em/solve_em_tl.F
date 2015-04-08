@@ -278,7 +278,7 @@ SUBROUTINE solve_em_tl ( grid , config_flags  &
 
 !  IF(grid%check_count .GT. 1) THEN
 
-     curr_secs = curr_secs + REAL( 3600*(grid%check_count-1)*grid%checkpoint_interval, 8 )
+     curr_secs = curr_secs + REAL( 60*(grid%check_count-1)*grid%checkpoint_interval, 8 )
 
      write(message,*)'curr_secs = ',curr_secs
      CALL wrf_debug(50,TRIM(message))
@@ -312,7 +312,7 @@ SUBROUTINE solve_em_tl ( grid , config_flags  &
    grid%itimestep = grid%itimestep + 1
 
    temp_itimestep = grid%itimestep
-   grid%itimestep = grid%itimestep + (grid%check_count-1)*grid%checkpoint_interval*3600/grid%dt
+   grid%itimestep = grid%itimestep + (grid%check_count-1)*grid%checkpoint_interval*60/grid%dt
   
    IF (config_flags%enable_identity) RETURN
 
