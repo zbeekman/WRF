@@ -62,12 +62,15 @@ IF ( phase == 1 ) THEN
  CALL init_module_ext_internal  !! must be called before quilt
 #endif
 #ifdef DM_PARALLEL
- CALL split_communicator
-CALL disable_quilting
+!CALL disable_quilting
+write(0,*)__FILE__,__LINE__,'calling init_module_wrf_quilt'
  CALL init_module_wrf_quilt    !! this *must* be called before init_module_dm
 
  ! We must never reach this line or phase 2 in an I/O server.
 
+write(0,*)__FILE__,__LINE__,'calling split_communicator '
+ CALL split_communicator
+write(0,*)__FILE__,__LINE__,'back from split_communicator '
  CALL init_module_dm
 #endif
 ELSE

@@ -61,6 +61,7 @@ MODULE module_dm
    LOGICAL intercomm_active( max_domains )
    LOGICAL domain_active_this_task( max_domains )
 ! see comments below (search for "Communicator definition")
+   INTEGER tasks_per_split
    INTEGER comm_start(max_domains)   ! set in namelist_split
 !   INTEGER comm_pes  (max_domains)   ! either this may be set in namelist_split
 !   INTEGER comm_pes_x(max_domains)   ! or these may be set in namelist_split
@@ -70,6 +71,7 @@ MODULE module_dm
    INTEGER nest_pes_y(max_domains)   ! set in namelist_split
    INTEGER comms_i_am_in (max_domains)  ! list of local communicators this task is a member of
    INTEGER loc_comm(max_domains)
+   NAMELIST /namelist_split/ tasks_per_split, comm_start, nest_pes_x, nest_pes_y
 
 #if (DA_CORE == 1)
    integer :: c_ipsy, c_ipey, c_kpsy, c_kpey, c_kpsx, c_kpex, c_ipex, c_ipsx, c_jpex, c_jpsx, c_jpey, c_jpsy 
@@ -94,85 +96,6 @@ MODULE module_dm
    END INTERFACE
 
 CONTAINS
-
-#if 0
-   SUBROUTINE push_communicators_for_domain( id )
-      INTEGER, OPTIONAL, INTENT(IN) :: id   ! if specified also does an instate for grid id
-      IF ( communicator_stack_cursor .GE. max_domains ) CALL wrf_error_fatal("push_communicators_for_domain would excede stacksize") 
-      communicator_stack_cursor = communicator_stack_cursor + 1
-
-      id_stack(communicator_stack_cursor) = current_id
-      local_communicator_stack( communicator_stack_cursor )    =    local_communicator
-      local_communicator_periodic_stack( communicator_stack_cursor )  =    local_communicator_periodic
-      local_iocommunicator_stack( communicator_stack_cursor )  =    local_iocommunicator
-      local_communicator_x_stack( communicator_stack_cursor )  =    local_communicator_x
-      local_communicator_y_stack( communicator_stack_cursor )  =    local_communicator_y
-      ntasks_stack( communicator_stack_cursor )        =    ntasks
-      ntasks_y_stack( communicator_stack_cursor )      =    ntasks_y
-      ntasks_x_stack( communicator_stack_cursor )      =    ntasks_x
-      mytask_stack( communicator_stack_cursor )        =    mytask
-      mytask_x_stack( communicator_stack_cursor )       =    mytask_x
-      mytask_y_stack( communicator_stack_cursor )       =    mytask_y
-
-      IF ( PRESENT( id ) ) THEN
-        CALL instate_communicators_for_domain( id )
-      ENDIF
-   END SUBROUTINE push_communicators_for_domain
-   SUBROUTINE pop_communicators_for_domain
-      IF ( communicator_stack_cursor .LT. 1 ) CALL wrf_error_fatal("pop_communicators_for_domain on empty stack") 
-      current_id = id_stack(communicator_stack_cursor)
-      local_communicator = local_communicator_stack( communicator_stack_cursor )
-      local_communicator_periodic = local_communicator_periodic_stack( communicator_stack_cursor )
-      local_iocommunicator = local_iocommunicator_stack( communicator_stack_cursor )
-      local_communicator_x = local_communicator_x_stack( communicator_stack_cursor )
-      local_communicator_y = local_communicator_y_stack( communicator_stack_cursor )
-      ntasks = ntasks_stack( communicator_stack_cursor )
-      ntasks_y = ntasks_y_stack( communicator_stack_cursor )
-      ntasks_x = ntasks_x_stack( communicator_stack_cursor )
-      mytask = mytask_stack( communicator_stack_cursor )
-      mytask_x = mytask_x_stack( communicator_stack_cursor )
-      mytask_y = mytask_y_stack( communicator_stack_cursor )
-      communicator_stack_cursor = communicator_stack_cursor - 1
-   END SUBROUTINE pop_communicators_for_domain
-   SUBROUTINE instate_communicators_for_domain( id )
-      IMPLICIT NONE
-      INTEGER, INTENT(IN) :: id
-      INTEGER ierr
-      local_communicator          = local_communicator_store( id )
-      local_communicator_periodic = local_communicator_periodic_store( id )
-      local_iocommunicator        = local_iocommunicator_store( id )
-      local_communicator_x        = local_communicator_x_store( id )
-      local_communicator_y        = local_communicator_y_store( id )
-      ntasks         = ntasks_store( id )
-      mytask         = mytask_store( id )
-      ntasks_x       = ntasks_x_store( id )
-      ntasks_y       = ntasks_y_store( id )
-      mytask_x       = mytask_x_store( id )
-      mytask_y       = mytask_y_store( id )
-!debug write(0,*)'instate: id                 ',id
-!debug write(0,*)'instate: local_communicator ',local_communicator
-!debug write(0,*)'instate: ntasks             ',ntasks
-!debug write(0,*)'instate: ntasks_x           ',ntasks_x
-!debug write(0,*)'instate: ntasks_y           ',ntasks_y
-!debug write(0,*)'instate: mytask_x           ',mytask_x
-!debug write(0,*)'instate: mytask_y           ',mytask_y
-   END SUBROUTINE instate_communicators_for_domain
-   SUBROUTINE store_communicators_for_domain( id )
-      IMPLICIT NONE
-      INTEGER, INTENT(IN) :: id
-      local_communicator_store( id )    =    local_communicator
-      local_communicator_periodic_store( id )  =    local_communicator_periodic
-      local_iocommunicator_store( id )  =    local_iocommunicator
-      local_communicator_x_store( id )  =    local_communicator_x
-      local_communicator_y_store( id )  =    local_communicator_y
-      ntasks_store( id )        =    ntasks
-      ntasks_x_store( id )      =    ntasks_x
-      ntasks_y_store( id )      =    ntasks_y
-      mytask_store( id )        =    mytask
-      mytask_x_store( id )      =    mytask_x
-      mytask_y_store( id )      =    mytask_y
-   END SUBROUTINE store_communicators_for_domain
-#endif
 
    SUBROUTINE MPASPECT( P, MINM, MINN, PROCMIN_M, PROCMIN_N )
       IMPLICIT NONE
@@ -1802,14 +1725,13 @@ ENDIF
       INTEGER mpi_comm_here, mpi_comm_local, comdup, comdup2, origmytask,  mytask, ntasks, ierr, io_status
       INTEGER mpi_comm_me_and_mom
       INTEGER coords(3)
-      INTEGER mype_local,ntasks_local
+      INTEGER mype_local,ntasks_local,num_compute_tasks
 #  if defined(_OPENMP) && defined(MPI2_THREAD_SUPPORT)
       INTEGER thread_support_provided, thread_support_requested
 #endif
       INTEGER i, j, k, x, y
       INTEGER iii
       INTEGER, ALLOCATABLE :: icolor(:),icolor2(:),idomain(:)
-      INTEGER tasks_per_split
       INTEGER comm_id
 ! 
 ! Communicator definition                       Domains
@@ -1852,7 +1774,6 @@ ENDIF
 !!   [* nest_pes_x is comm_pes_x(comm_domain(domain_id))]
 !
 
-      NAMELIST /namelist_split/ tasks_per_split, comm_start, nest_pes_x, nest_pes_y
       INTEGER dims(3)
 ! for parallel nesting, 201408, jm
       INTEGER :: intercomm 
@@ -1894,16 +1815,17 @@ ENDIF
         CALL atm_cmp_start( mpi_comm_here )   ! atmospheric side of HWRF coupler will split MPI_COMM_WORLD and return communicator as argument
 #endif
         CALL wrf_set_dm_communicator( mpi_comm_here )
+        CALL wrf_termio_dup( mpi_comm_here )
       ENDIF
+! this should have been reset by init_module_wrf_quilt to be just the compute tasks
       CALL wrf_get_dm_communicator( mpi_comm_here )
-      CALL wrf_termio_dup( mpi_comm_here )
 
       CALL MPI_Comm_rank ( mpi_comm_here, mytask, ierr ) ;
       CALL MPI_Comm_size ( mpi_comm_here, ntasks, ierr ) ;
       mpi_comm_allcompute = mpi_comm_here
-!debug write(0,*)'mytask ',mytask
-!debug write(0,*)'ntasks ',ntasks
-!debug write(0,*)__LINE__,mpi_comm_here
+write(0,*)__FILE__,__LINE__,' mytask ',mytask
+write(0,*)__FILE__,__LINE__,' ntasks ',ntasks
+write(0,*)__FILE__,__LINE__,' mpi_comm_here ', mpi_comm_here
 
       IF ( mytask .EQ. 0 ) THEN
         OPEN ( unit=27, file="namelist.input", form="formatted", status="old" )
@@ -1934,6 +1856,7 @@ ENDIF
       CALL mpi_bcast( nest_pes_y, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( parent_id, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( max_dom, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+      CALL nl_set_max_dom(1,max_dom)  ! quilting wants to see this too
       nkids = 1
       which_kid = 0
       DO i = 2, max_dom
@@ -1948,15 +1871,8 @@ ENDIF
       ENDDO
 !debug write(0,*)'which_kid ',which_kid(2:max_dom)
 
+      num_compute_tasks = -99
       DO nest_id = 1,max_dom
-#if 0
-        nest_task_offsets(nest_id) = comm_start(nest_id)
-        IF ( nest_id .EQ. 1 ) THEN
-          nest_task_offsets(nest_id) = comm_start(nest_id)
-        ELSE
-          nest_task_offsets(nest_id) = comm_start(nest_id)-comm_start(parent_id(nest_id))  ! needs bulletproofing
-        ENDIF
-#else
         IF ( nest_id .EQ. 1 ) THEN
           nest_task_offsets(nest_id) = comm_start(nest_id)
         ELSE
@@ -1973,7 +1889,13 @@ ENDIF
             nest_task_offsets(nest_id) = nest_pes_x(parent_id(nest_id))*nest_pes_y(parent_id(nest_id))
           ENDIF
         ENDIF
-#endif
+        IF ((comm_start(nest_id)+nest_pes_x(nest_id)*nest_pes_y(nest_id)) .GT. num_compute_tasks ) THEN
+          num_compute_tasks = (comm_start(nest_id)+nest_pes_x(nest_id)*nest_pes_y(nest_id))
+        ENDIF
+write(0,*)'num_compute_tasks ',nest_id,num_compute_tasks
+write(0,*)'comm_start         ',nest_id,comm_start(nest_id)
+write(0,*)'nest_pes_x        ',nest_id,nest_pes_x(nest_id)
+write(0,*)'nest_pes_y        ',nest_id,nest_pes_y(nest_id)
       ENDDO
 
 !debug write(0,*)'max_dom ',max_dom
@@ -1996,6 +1918,7 @@ ENDIF
         CALL MPI_Comm_rank ( mpi_comm_here, mytask, ierr ) ;
         CALL MPI_Comm_rank ( mpi_comm_here, origmytask, ierr ) ;
         CALL mpi_comm_size ( mpi_comm_here, ntasks, ierr ) ;
+write(0,*)__FILE__,__LINE__,' ntasks ',ntasks
         ALLOCATE( icolor(ntasks) )
         ALLOCATE( icolor2(ntasks) )
         ALLOCATE( idomain(ntasks) )
@@ -2018,54 +1941,40 @@ ENDIF
             ENDIF
             icolor(j+1) = 1
           ENDDO
-!debug write(0,*)icolor(1:ntasks)
           IF ( icolor(mytask+1) .EQ. 1 ) inthisone = .TRUE.
-!debug write(0,*)__LINE__,mpi_comm_here
           CALL MPI_Comm_dup(mpi_comm_here,comdup,ierr)
-!debug write(0,*)'called MPI_Comm_dup ierr ', ierr
           CALL MPI_Comm_split(comdup,icolor(mytask+1),mytask,mpi_comm_local,ierr)
-!debug write(0,*)'called MPI_Comm_split ierr ', ierr
           IF ( inthisone ) THEN
             dims(1) = nest_pes_y(i) ! rows
             dims(2) = nest_pes_x(i)  ! columns
             isperiodic(1) = .false.
             isperiodic(2) = .false.
             CALL mpi_cart_create( mpi_comm_local, 2, dims, isperiodic, .false., comms_i_am_in(i), ierr )
-!debug write(0,*)' CALL mpi_cart_create comm ', i, dims(1:2), comms_i_am_in(i)
           ENDIF
         ENDDO
-!debug write(0,*)'comms_i_am_in ',comms_i_am_in(1:max_dom)
 
 ! assign domains to communicators
         local_communicator = MPI_UNDEFINED
         DO i = 1, max_dom
           local_communicator_store(i) = comms_i_am_in(i)
           domain_active_this_task(i) = ( local_communicator_store(i) .NE. MPI_UNDEFINED )
-!debug write(0,*)i,'local_communicator_store ',local_communicator_store(i)
           IF ( local_communicator_store(i) .NE. MPI_UNDEFINED ) THEN
              CALL MPI_Comm_size( local_communicator_store(i), ntasks_store(i), ierr )
-!debug write(0,*)'ntasks_store ',i,ntasks_store(i)
              CALL MPI_Comm_rank( local_communicator_store(i), mytask_store(i), ierr )
-!debug write(0,*)'mytask_store ',i,mytask_store(i)
              CALL mpi_cart_coords( local_communicator_store(i), mytask_store(i), 2, coords, ierr )
              IF ( ierr .NE. 0 ) CALL wrf_error_fatal('MPI_cart_coords fails ')
              mytask_y_store(i) = coords(1)   ! col task (1)
              mytask_x_store(i) = coords(2)   ! col task (x)
-!debug write(0,*)'mytask_x_store ',i,mytask_x_store(i)
-!debug write(0,*)'mytask_y_store ',i,mytask_y_store(i)
              CALL MPI_Comm_dup( local_communicator_store(i), comdup2, ierr )
              IF ( ierr .NE. 0 ) CALL wrf_error_fatal('MPI_Comm_dup fails ')
 
              CALL MPI_Comm_split(comdup2,mytask_y_store(i),mytask_store(i),local_communicator_x_store(i),ierr)
              IF ( ierr .NE. 0 ) CALL wrf_error_fatal('MPI_Comm_split fails for y ')
-!debug write(0,*)i,'local_communicator_y_store ',local_communicator_y_store(i)
 
              CALL MPI_Comm_split(comdup2,mytask_x_store(i),mytask_store(i),local_communicator_y_store(i),ierr)
              IF ( ierr .NE. 0 ) CALL wrf_error_fatal('MPI_Comm_split fails for x ')
-!debug write(0,*)i,'local_communicator_x_store ',local_communicator_x_store(i)
 
              CALL MPI_Comm_size( local_communicator_x_store(i), ntasks_x_store(i), ierr )
-!debug write(0,*)i,'local_communicator_x_store ',local_communicator_x_store(i),ntasks_x_store(i)
              CALL MPI_Comm_rank( local_communicator_x_store(i), mytask_x_store(i), ierr )
              CALL MPI_Comm_size( local_communicator_y_store(i), ntasks_y_store(i), ierr )
              CALL MPI_Comm_rank( local_communicator_y_store(i), mytask_y_store(i), ierr )
@@ -2081,8 +1990,8 @@ ENDIF
         ! (in that case, the offset would be the first task of the parent-nest communicator and that communicator)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        ntasks = num_compute_tasks
         DO nest_id = 2, max_dom
-!debug write(0,*)'>>>>>>  nest_id = ',nest_id
            par_id  = parent_id(nest_id)
            icolor2 = 0
            DO j = 1,ntasks !iterate over all the tasks in the "big" communicator
@@ -2092,14 +2001,7 @@ ENDIF
            icolor2 = 0
            mytask_is_nest = .FALSE.
            mytask_is_par = .FALSE.
-!debug write(0,*)'comm_start(nest_id) ',nest_id,comm_start(nest_id)
-!debug write(0,*)'nest_pes_x(nest_id) ',nest_pes_x(nest_id)
-!debug write(0,*)'nest_pes_y(nest_id) ',nest_pes_y(nest_id)
            DO j = 1,ntasks
-
-!debug write(0,*)'nest, par ',j-1,   &
-!debug          comm_start(nest_id) .LE. j-1 .AND. j-1 .LT. comm_start(nest_id) + nest_pes_x(nest_id)*nest_pes_y(nest_id), &
-!debug          comm_start(par_id)  .LE. j-1 .AND. j-1 .LT. comm_start(par_id)  + nest_pes_x(par_id) *nest_pes_y(par_id)
 
              IF ( comm_start(nest_id) .LE. j-1 .AND. j-1 .LT. comm_start(nest_id) + nest_pes_x(nest_id)*nest_pes_y(nest_id) )  THEN
                icolor2(j)=1
@@ -2110,17 +2012,10 @@ ENDIF
                if ( j-1 .EQ. mytask ) mytask_is_par=.TRUE.
              ENDIF
            ENDDO
-!debug write(0,*)nest_id,'mytask_is_par ',mytask_is_par
-!debug write(0,*)nest_id,'mytask_is_nest ',mytask_is_nest
 
            i = icolor2(mytask+1)
            CALL MPI_Comm_dup(mpi_comm_here,comdup,ierr)
-!debug write(0,*)'calling MPI_Comm_split comdup       ',comdup
-!debug write(0,*)'calling MPI_Comm_split i            ',i
-!debug write(0,*)'calling MPI_Comm_split origmytask   ',origmytask
            CALL MPI_Comm_split(comdup,i,origmytask,mpi_comm_me_and_mom,ierr)
-!debug write(0,*)'calling MPI_Comm_split mpi_comm_me_and_mom ',mpi_comm_me_and_mom
-!debug write(0,*)'calling MPI_Comm_split ierr         ',ierr
 CALL MPI_Comm_size(mpi_comm_me_and_mom,iii,ierr) ; write(0,*)nest_id,'mpi_comm_me_and_mom sz',iii
 CALL MPI_Comm_rank(mpi_comm_me_and_mom,iii,ierr) ; write(0,*)nest_id,'mpi_comm_me_and_mom rk',iii
 
@@ -2572,6 +2467,7 @@ END MODULE module_dm
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: id
       INTEGER ierr
+      current_id = id 
       local_communicator          = local_communicator_store( id )
       local_communicator_periodic = local_communicator_periodic_store( id )
       local_iocommunicator        = local_iocommunicator_store( id )
@@ -3235,12 +3131,17 @@ END
       RETURN
    END FUNCTION wrf_dm_monitor_rank
 
+! return the global communicator if id <= 0
    SUBROUTINE wrf_get_dm_communicator_for_id ( id, communicator )
-      USE module_dm , ONLY : local_communicator_store
+      USE module_dm , ONLY : local_communicator_store, mpi_comm_allcompute
       IMPLICIT NONE
       INTEGER , INTENT(IN) :: id
       INTEGER , INTENT(OUT) :: communicator
-      communicator = local_communicator_store(id)
+      IF ( id .le. 0 ) THEN
+        communicator = mpi_comm_allcompute
+      ELSE
+        communicator = local_communicator_store(id)
+      ENDIF
       RETURN
    END SUBROUTINE wrf_get_dm_communicator_for_id
 
