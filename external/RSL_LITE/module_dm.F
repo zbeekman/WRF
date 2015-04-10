@@ -1823,9 +1823,9 @@ ENDIF
       CALL MPI_Comm_rank ( mpi_comm_here, mytask, ierr ) ;
       CALL MPI_Comm_size ( mpi_comm_here, ntasks, ierr ) ;
       mpi_comm_allcompute = mpi_comm_here
-write(0,*)__FILE__,__LINE__,' mytask ',mytask
-write(0,*)__FILE__,__LINE__,' ntasks ',ntasks
-write(0,*)__FILE__,__LINE__,' mpi_comm_here ', mpi_comm_here
+!write(0,*)__FILE__,__LINE__,' mytask ',mytask
+!write(0,*)__FILE__,__LINE__,' ntasks ',ntasks
+!write(0,*)__FILE__,__LINE__,' mpi_comm_here ', mpi_comm_here
 
       IF ( mytask .EQ. 0 ) THEN
         OPEN ( unit=27, file="namelist.input", form="formatted", status="old" )
@@ -1892,10 +1892,10 @@ write(0,*)__FILE__,__LINE__,' mpi_comm_here ', mpi_comm_here
         IF ((comm_start(nest_id)+nest_pes_x(nest_id)*nest_pes_y(nest_id)) .GT. num_compute_tasks ) THEN
           num_compute_tasks = (comm_start(nest_id)+nest_pes_x(nest_id)*nest_pes_y(nest_id))
         ENDIF
-write(0,*)'num_compute_tasks ',nest_id,num_compute_tasks
-write(0,*)'comm_start         ',nest_id,comm_start(nest_id)
-write(0,*)'nest_pes_x        ',nest_id,nest_pes_x(nest_id)
-write(0,*)'nest_pes_y        ',nest_id,nest_pes_y(nest_id)
+!write(0,*)'num_compute_tasks ',nest_id,num_compute_tasks
+!write(0,*)'comm_start         ',nest_id,comm_start(nest_id)
+!write(0,*)'nest_pes_x        ',nest_id,nest_pes_x(nest_id)
+!write(0,*)'nest_pes_y        ',nest_id,nest_pes_y(nest_id)
       ENDDO
 
 !debug write(0,*)'max_dom ',max_dom
@@ -1918,7 +1918,7 @@ write(0,*)'nest_pes_y        ',nest_id,nest_pes_y(nest_id)
         CALL MPI_Comm_rank ( mpi_comm_here, mytask, ierr ) ;
         CALL MPI_Comm_rank ( mpi_comm_here, origmytask, ierr ) ;
         CALL mpi_comm_size ( mpi_comm_here, ntasks, ierr ) ;
-write(0,*)__FILE__,__LINE__,' ntasks ',ntasks
+!write(0,*)__FILE__,__LINE__,' ntasks ',ntasks
         ALLOCATE( icolor(ntasks) )
         ALLOCATE( icolor2(ntasks) )
         ALLOCATE( idomain(ntasks) )
@@ -2016,8 +2016,8 @@ write(0,*)__FILE__,__LINE__,' ntasks ',ntasks
            i = icolor2(mytask+1)
            CALL MPI_Comm_dup(mpi_comm_here,comdup,ierr)
            CALL MPI_Comm_split(comdup,i,origmytask,mpi_comm_me_and_mom,ierr)
-CALL MPI_Comm_size(mpi_comm_me_and_mom,iii,ierr) ; write(0,*)nest_id,'mpi_comm_me_and_mom sz',iii
-CALL MPI_Comm_rank(mpi_comm_me_and_mom,iii,ierr) ; write(0,*)nest_id,'mpi_comm_me_and_mom rk',iii
+!CALL MPI_Comm_size(mpi_comm_me_and_mom,iii,ierr) ; write(0,*)nest_id,'mpi_comm_me_and_mom sz',iii
+!CALL MPI_Comm_rank(mpi_comm_me_and_mom,iii,ierr) ; write(0,*)nest_id,'mpi_comm_me_and_mom rk',iii
 
            IF ( mytask_is_nest  ) THEN
               intercomm_active(nest_id)  = .TRUE.

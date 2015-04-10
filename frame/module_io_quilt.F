@@ -1,7 +1,6 @@
 !WRF:DRIVER_LAYER:IO
 !
 #define DEBUG_LVL 50
-!#define mpi_x_comm_size(i,j,k)  Mpi_Comm_Size ( i,j,k ) ; write(0,*) __LINE__
 #define mpi_x_comm_size(i,j,k)  Mpi_Comm_Size ( i,j,k )
 
 ! Workaround for bug in the IBM MPI implementation.  Look near the
@@ -285,8 +284,6 @@ MODULE module_wrf_quilt
       INTEGER :: k, m, nprocx, nprocy, found, found_io
       LOGICAL :: reorder_mesh
       CHARACTER*256 message
-integer sizeann,rankann
-
 !check the namelist and make sure there are no output forms specified
 !that cannot be quilted
       CALL nl_get_io_form_history(1,   io_form_setting) ; call sokay( 'history', io_form_setting )
@@ -325,7 +322,6 @@ integer sizeann,rankann
         RETURN
       ENDIF
       found = comm_start(id)
-write(0,*)__LINE__,' found ', found
       found_io = -99
       DO i=1,ntasks
          IF ( role_for_task(i) .EQ. id ) THEN
@@ -333,7 +329,6 @@ write(0,*)__LINE__,' found ', found
            exit
          ENDIF
       ENDDO
-write(0,*)__LINE__,' found_io ', found_io
       IF ( found_io .eq. -99 ) THEN
         CALL wrf_error_fatal('setup_quilt_servers: found_io not found, should not happen (but there it is)')
       ENDIF
@@ -372,12 +367,6 @@ write(0,*)__LINE__,' found_io ', found_io
       ENDDO
 
 ! ... and add the io servers as the last task in each group
-write(0,*)__FILE__,__LINE__,id,' ncompute_tasks ',ncompute_tasks
-write(0,*)__FILE__,__LINE__,id,' ntasks ',ntasks
-write(0,*)__FILE__,__LINE__,id,' mytask ',mytask
-write(0,*)__FILE__,__LINE__,id,' nio ',nio
-write(0,*)__FILE__,__LINE__,id,' n_groups ',n_groups
-write(0,*)__FILE__,__LINE__,id,' found_io ',found_io
       DO j = 1, n_groups
         DO i = found_io+1,ntasks
           icolor(i) = -99
@@ -387,7 +376,6 @@ write(0,*)__FILE__,__LINE__,id,' found_io ',found_io
           icolor(i) = ii
           ii = ii+1
         ENDDO
-write(0,*)__FILE__,__LINE__,j,' icolor ',icolor
         CALL MPI_Comm_dup(mpi_comm_wrld,comdup,ierr)
         CALL MPI_Comm_split(comdup,icolor(mytask+1),mytask, &
                             mpi_comm_io_groups(j,id),ierr)
@@ -461,11 +449,6 @@ write(0,*)__FILE__,__LINE__,j,' icolor ',icolor
 
       DO j = 1, n_groups
 
-write(0,*)__LINE__,' j ',j
-write(0,*)__LINE__,' found,found_io ',found,found_io
-write(0,*)__LINE__,' ntasks ', ntasks
-write(0,*)__LINE__,' mytask ', mytask
-write(0,*)__LINE__,' ncompute_tasks ', ncompute_tasks
 
         IF ((found .LE. mytask .AND. mytask .LT.  found +ncompute_tasks ).OR. &    ! I am a compute task
              (found_io+(j-1)*nio .LE. mytask .AND. mytask .LT. found_io+j*nio) &    ! I am the I/O server for this group
@@ -480,14 +463,8 @@ write(0,*)__LINE__,' ncompute_tasks ', ncompute_tasks
          ! communicator the first element in the mpi_comm_io_groups array 
          ! (I will ignore all of the other elements).
 
-write(0,*)__LINE__,'j ',j
-write(0,*)__LINE__,'found_io+(j-1)*nio ',found_io+(j-1)*nio
-write(0,*)__LINE__,'found_io+( j )*nio ',found_io+( j )*nio
-write(0,*)__LINE__,'mytask ',mytask
-write(0,*)__LINE__,'result ',ntasks+(j-1)*nio .LE. mytask .AND. mytask .LT. ntasks+j*nio
 
          IF ( (found .LE. mytask .AND. mytask .LT.  ncompute_tasks ) ) THEN
-write(0,*)__LINE__,'setting compute_node to .TRUE. '
 
             compute_node = .TRUE.
             ! If I am a compute task, check whether I am the member of my 
@@ -497,9 +474,6 @@ write(0,*)__LINE__,'setting compute_node to .TRUE. '
          ELSE
            IF (found_io+(j-1)*nio .LE. mytask .AND. mytask .LT. found_io+j*nio) THEN
              mpi_comm_io_groups(1,1) = mpi_comm_io_groups(j,id)
-write(0,*)__FILE__,__LINE__,' mpi_comm_io_groups(1,1) ',mpi_comm_io_groups(1,1)
-call mpi_comm_size(mpi_comm_io_groups(1,1),sizeann,ierr);write(0,*)__FILE__,__LINE__,' woo size  ',sizeann
-call mpi_comm_rank(mpi_comm_io_groups(1,1),rankann,ierr);write(0,*)__FILE__,__LINE__,' woo rank  ',rankann
            ENDIF
          ENDIF
         ENDIF
@@ -587,7 +561,6 @@ call mpi_comm_rank(mpi_comm_io_groups(1,1),rankann,ierr);write(0,*)__FILE__,__LI
       INTEGER iii, jjj, vid, dom_id
       LOGICAL           :: call_server_ready
 
-integer sizeann,rankann
 logical okay_to_w
 character*120 sysline
 
@@ -690,13 +663,8 @@ okay_to_w = .false.
         ! if needed (currently needed only for ioclose).
         reduced_dummy = 0
 
-write(0,*)__FILE__,__LINE__,'waiting always waiting'
-write(0,*)__FILE__,__LINE__,'communicator ',mpi_comm_io_groups(1,1)
-call mpi_comm_size(mpi_comm_io_groups(1,1),sizeann,ierr) ; write(0,*)__FILE__,__LINE__,' sizeann ',sizeann
-call mpi_comm_rank(mpi_comm_io_groups(1,1),rankann,ierr) ; write(0,*)__FILE__,__LINE__,' rankann ',rankann
         CALL mpi_x_reduce( reduced_dummy, reduced, 2, MPI_INTEGER, MPI_SUM, mytask_io_group, mpi_comm_io_groups(1,1), ierr )
         obufsize = reduced(1)
-write(0,*)__FILE__,__LINE__,'got one ', obufsize
 !CALL end_timing("MPI_Reduce at top of forever loop") 
 !JMDEBUGwrite(0,*)'obufsize = ',obufsize
 ! Negative obufsize will trigger I/O server exit.  
@@ -747,7 +715,6 @@ write(0,*)__FILE__,__LINE__,'got one ', obufsize
 ! will send.  Note: obuf is size in *bytes* so we need to pare this 
 ! down, since the buffer is INTEGER.  
         IF ( obufsize .GT. 0 ) THEN
-write(0,*)__FILE__,__LINE__,' obufsize ',obufsize
           ALLOCATE( obuf( (obufsize+1)/itypesize ) )
 
 ! let's roll; get the data from the compute procs and put in obuf
@@ -755,7 +722,6 @@ write(0,*)__FILE__,__LINE__,' obufsize ',obufsize
                                 onebyte,                      &
                                 dummy, 0,                     &
                                 obuf, obufsize )
-write(0,*)__FILE__,__LINE__,' back from collect_on_comm_debug ', mpi_comm_io_groups(1,1)
 !          CALL end_timing( "quilt on server: collecting data from compute procs" )
         ELSE
           ! Necessarily, the compute processes send the ioclose signal,
@@ -962,11 +928,10 @@ write(0,*)__FILE__,__LINE__,' back from collect_on_comm_debug ', mpi_comm_io_gro
 ! Retrieve header and all patches for the first field from the internal 
 ! buffers.  
         CALL retrieve_pieces_of_field ( obuf , VarName, obufsize, sz, retval )
-write(0,*)__FILE__,__LINE__,'varname ',trim(varname)
 ! Sum sizes of all headers and patches (data) for this field from all I/O 
 ! servers in this I/O server group onto the I/O server "root".
         CALL mpi_x_reduce( sz, bigbufsize, 1, MPI_INTEGER, MPI_SUM, ntasks_local_group-1, mpi_comm_local, ierr )
-write(0,*)'seed: sz ',sz,' bigbufsize ',bigbufsize,' VarName ', TRIM(VarName),' retval ',retval
+!write(0,*)'seed: sz ',sz,' bigbufsize ',bigbufsize,' VarName ', TRIM(VarName),' retval ',retval
 
 ! Loop until there are no more fields to retrieve from the internal buffers.
         DO WHILE ( retval ) !{
@@ -983,17 +948,12 @@ write(0,*)'seed: sz ',sz,' bigbufsize ',bigbufsize,' VarName ', TRIM(VarName),' 
 
 ! Collect buffers and fields from all I/O servers in this I/O server group
 ! onto the I/O server "root"
-write(0,*)__FILE__,__LINE__,'mpi_comm_local ',mpi_comm_local
-write(0,*)__FILE__,__LINE__,'varname ',trim(varname)
-call mpi_comm_size(mpi_comm_local,sizeann,ierr);write(0,*)__FILE__,__LINE__,' sizeann ',sizeann
           CALL collect_on_comm_debug2(__FILE__,__LINE__,Trim(VarName),        &
                                 get_hdr_tag(obuf),sz,get_hdr_rec_size(obuf),  &
                                 mpi_comm_local,                               &
                                 onebyte,                                      &
                                 obuf, sz,                                     &
                                 bigbuf, bigbufsize )
-write(0,*)__FILE__,__LINE__,'back from collect_on_comm_debug2 ',trim(varname)
-write(0,*)__FILE__,__LINE__,'mytask_local ',mytask_local, ntasks_local_group-1
 ! The I/O server "root" now handles collected requests from all compute 
 ! tasks served by this I/O server group (i.e. all compute tasks).  
           IF ( mytask_local .EQ. ntasks_local_group-1 ) THEN
@@ -1015,20 +975,17 @@ write(0,*)__FILE__,__LINE__,'mytask_local ',mytask_local, ntasks_local_group-1
 ! The I/O server "root" gets the request out of the next header and
 ! handles it by, in most cases, calling the appropriate external I/O package
 ! interface.
-write(0,*)__FILE__,__LINE__,' tag ',get_hdr_tag( bigbuf(icurs/itypesize) )
               SELECT CASE ( get_hdr_tag( bigbuf(icurs/itypesize) ) )
 ! The I/O server "root" handles the "noop" (do nothing) request.  This is 
 ! actually quite easy.  "Noop" requests exist to help avoid race conditions.  
 ! In some cases, only one compute task will everything about a request so 
 ! other compute tasks send "noop" requests.  
                 CASE ( int_noop )
-write(0,*)__FILE__,__LINE__
                   CALL int_get_noop_header( bigbuf(icurs/itypesize), hdrbufsize, itypesize )
                   icurs = icurs + hdrbufsize
 
 ! The I/O server "root" handles the "put_dom_td_real" request.
                 CASE ( int_dom_td_real )
-write(0,*)__FILE__,__LINE__
                   CALL mpi_type_size( MPI_REAL, ftypesize, ierr )
                   ALLOCATE( RData( bigbuf(icurs/itypesize + 4 ) ) )      ! 5 is the count of data items for this record ; defined in collect_on_comm.c
                   CALL int_get_td_header( bigbuf(icurs/itypesize:), hdrbufsize, itypesize, ftypesize, &
@@ -1063,8 +1020,7 @@ write(0,*)__FILE__,__LINE__
                   DEALLOCATE( RData )
 ! The I/O server "root" handles the "put_dom_ti_real" request.
                 CASE ( int_dom_ti_real )
-write(0,*)__FILE__,__LINE__
-write(0,*)' int_dom_ti_real '
+!write(0,*)' int_dom_ti_real '
                   CALL mpi_type_size( MPI_REAL, ftypesize, ierr )
                   ALLOCATE( RData( bigbuf(icurs/itypesize + 4 ) ) )      ! 5 is the count of data items for this record ; defined in collect_on_comm.c
                   CALL int_get_ti_header( bigbuf(icurs/itypesize:), hdrbufsize, itypesize, ftypesize, &
@@ -1101,8 +1057,7 @@ write(0,*)' int_dom_ti_real '
 
 ! The I/O server "root" handles the "put_dom_td_integer" request.
                 CASE ( int_dom_td_integer )
-write(0,*)__FILE__,__LINE__
-write(0,*)' int_dom_td_integer '
+!write(0,*)' int_dom_td_integer '
                   CALL mpi_type_size( MPI_INTEGER, ftypesize, ierr )
                   ALLOCATE( IData( bigbuf(icurs/itypesize + 4 ) ) )      ! 5 is the count of data items for this record ; defined in collect_on_comm.c
                   CALL int_get_td_header( bigbuf(icurs/itypesize:), hdrbufsize, itypesize, ftypesize, &
@@ -1138,8 +1093,7 @@ write(0,*)' int_dom_td_integer '
 
 ! The I/O server "root" handles the "put_dom_ti_integer" request.
                 CASE ( int_dom_ti_integer )
-write(0,*)__FILE__,__LINE__
-write(0,*)' int_dom_ti_integer '
+!write(0,*)' int_dom_ti_integer '
 
                   CALL mpi_type_size( MPI_INTEGER, ftypesize, ierr )
                   ALLOCATE( IData( bigbuf(icurs/itypesize + 4 ) ) )      ! 5 is the count of data items for this record ; defined in collect_on_comm.c
@@ -1177,8 +1131,7 @@ write(0,*)' int_dom_ti_integer '
  
 ! The I/O server "root" handles the "set_time" request.
                 CASE ( int_set_time )
-write(0,*)__FILE__,__LINE__
-write(0,*)' int_set_time '
+!write(0,*)' int_set_time '
                   CALL int_get_ti_header_char( bigbuf(icurs/itypesize), hdrbufsize, itypesize, &
                                                DataHandle, Element, VarName, CData, code )
                   SELECT CASE (use_package(io_form(DataHandle)))
@@ -1194,8 +1147,7 @@ write(0,*)' int_set_time '
 
 ! The I/O server "root" handles the "put_dom_ti_char" request.
                 CASE ( int_dom_ti_char )
-write(0,*)__FILE__,__LINE__
-write(0,*)' before int_get_ti_header_char '
+!write(0,*)' before int_get_ti_header_char '
                   CALL int_get_ti_header_char( bigbuf(icurs/itypesize), hdrbufsize, itypesize, &
                                                DataHandle, Element, VarName, CData, code )
 !write(0,*)' after int_get_ti_header_char ',VarName
@@ -1229,8 +1181,7 @@ write(0,*)' before int_get_ti_header_char '
 
 ! The I/O server "root" handles the "put_var_ti_char" request.
                 CASE ( int_var_ti_char )
-write(0,*)__FILE__,__LINE__
-write(0,*)' int_var_ti_char '
+!write(0,*)' int_var_ti_char '
                   CALL int_get_ti_header_char( bigbuf(icurs/itypesize), hdrbufsize, itypesize, &
                                                DataHandle, Element, VarName, CData, code )
 
@@ -1262,13 +1213,11 @@ write(0,*)' int_var_ti_char '
                   icurs = icurs + hdrbufsize
 
                 CASE ( int_ioexit )
-write(0,*)__FILE__,__LINE__
 ! ioexit is now handled by sending negative message length to server
                   CALL wrf_error_fatal( &
                          "quilt: should have handled int_ioexit already")
 ! The I/O server "root" handles the "ioclose" request.
                 CASE ( int_ioclose )
-write(0,*)__FILE__,__LINE__
                   CALL int_get_handle_header( bigbuf(icurs/itypesize), hdrbufsize, itypesize, &
                                               DataHandle , code )
                   icurs = icurs + hdrbufsize
@@ -1337,21 +1286,21 @@ write(0,*)__FILE__,__LINE__
                   CALL int_get_ofwb_header( bigbuf(icurs/itypesize), hdrbufsize, itypesize, &
                                             FileName,SysDepInfo,io_form_arg,DataHandle )
 
-write(0,*)' int_open_for_write_begin itypesize ',itypesize,' itypesize ',itypesize
-write(0,*)' int_open_for_write_begin icurs ', icurs, hdrbufsize
-write(0,*)' int_open_for_write_begin FileName ',TRIM(FileName) , ' DataHandle ', DataHandle
-write(0,*)' int_open_for_write_begin SysDepInfo ',TRIM(SysDepInfo) 
+!write(0,*)' int_open_for_write_begin itypesize ',itypesize,' itypesize ',itypesize
+!write(0,*)' int_open_for_write_begin icurs ', icurs, hdrbufsize
+!write(0,*)' int_open_for_write_begin FileName ',TRIM(FileName) , ' DataHandle ', DataHandle
+!write(0,*)' int_open_for_write_begin SysDepInfo ',TRIM(SysDepInfo) 
                   icurs = icurs + hdrbufsize
-write(0,*)' int_open_for_write_begin new icurs,tag,size ', icurs, get_hdr_tag( bigbuf(icurs/itypesize) ),get_hdr_rec_size( bigbuf(icurs/itypesize) )
+!write(0,*)' int_open_for_write_begin new icurs,tag,size ', icurs, get_hdr_tag( bigbuf(icurs/itypesize) ),get_hdr_rec_size( bigbuf(icurs/itypesize) )
                 
                   io_form(DataHandle) = io_form_arg
-write(0,*)'io_form(DataHandle) ',io_form(DataHandle)
+!write(0,*)'io_form(DataHandle) ',io_form(DataHandle)
 
                   SELECT CASE (use_package(io_form(DataHandle)))
 #ifdef NETCDF
                     CASE ( IO_NETCDF   )
                       CALL ext_ncd_open_for_write_begin(FileName,Comm,IOComm,SysDepInfo,handle(DataHandle),Status)
-write(0,*)'ext_ncd_open_for_write_begin ',Trim(FileName),DataHandle,handle(DataHandle),Status
+!write(0,*)'ext_ncd_open_for_write_begin ',Trim(FileName),DataHandle,handle(DataHandle),Status
 #endif
 #ifdef INTIO
                     CASE ( IO_INTIO   )
@@ -1380,7 +1329,6 @@ write(0,*)'ext_ncd_open_for_write_begin ',Trim(FileName),DataHandle,handle(DataH
 ! requests will initiate writes to disk.  Actual commit will be done after
 ! all requests in this batch have been handled.
                 CASE ( int_open_for_write_commit )
-write(0,*)__FILE__,__LINE__,' int_open_for_write_commit '
 
                   CALL int_get_handle_header( bigbuf(icurs/itypesize), hdrbufsize, itypesize, &
                                               DataHandle , code )
@@ -1472,12 +1420,10 @@ write(0,*)__FILE__,__LINE__,' int_open_for_write_commit '
                     END SELECT
                   ENDIF
                 CASE ( int_iosync )
-write(0,*)__FILE__,__LINE__,' int_iosync '
                   CALL int_get_handle_header( bigbuf(icurs/itypesize), hdrbufsize, itypesize, &
                                             DataHandle , code )
                   icurs = icurs + hdrbufsize
                 CASE DEFAULT
-write(0,*)__FILE__,__LINE__,' gnarly '
                   WRITE(mess,*)'quilt: bad tag: ',get_hdr_tag( bigbuf(icurs/itypesize) ),' icurs ',icurs/itypesize
                   CALL wrf_error_fatal( mess )
               END SELECT
@@ -1486,7 +1432,6 @@ write(0,*)__FILE__,__LINE__,' gnarly '
 ! Now, the I/O server "root" has finshed handling all commands from the latest
 ! call to retrieve_pieces_of_field().
 
-write(0,*)__FILE__,__LINE__
             IF (stored_write_record) THEN
 ! If any fields have been stored in a globally-sized internal output buffer
 ! (via a call to store_patch_in_outbuf()) then call write_outbuf() to write
@@ -1495,18 +1440,14 @@ write(0,*)__FILE__,__LINE__
 ! store_patch_in_outbuf() when handling write_field (int_field)
 ! commands which only arrive AFTER an "iosync" command.
 !              CALL start_timing
-write(0,*)__FILE__,__LINE__
               CALL write_outbuf ( handle(DataHandle), use_package(io_form(DataHandle))) 
-write(0,*)__FILE__,__LINE__
 !              CALL end_timing( "quilt: call to write_outbuf" ) 
             ENDIF
 
 ! If one or more "open_for_write_commit" commands were encountered from the
 ! latest call to retrieve_pieces_of_field() then call the package-specific
 ! routine to do the commit.
-write(0,*)__FILE__,__LINE__
             IF (okay_to_commit(DataHandle)) THEN
-write(0,*)__FILE__,__LINE__
 
               SELECT CASE (use_package(io_form(DataHandle)))
 #ifdef NETCDF
@@ -1562,14 +1503,10 @@ write(0,*)__FILE__,__LINE__
         if(allocated(bigbuf)) deallocate(bigbuf)
 ! Retrieve header and all patches for the next field from the internal 
 ! buffers.  
-write(0,*)__FILE__,__LINE__
         CALL retrieve_pieces_of_field ( obuf , VarName, obufsize, sz, retval )
-write(0,*)__FILE__,__LINE__
 ! Sum sizes of all headers and patches (data) for this field from all I/O 
 ! servers in this I/O server group onto the I/O server "root".
-write(0,*)__FILE__,__LINE__
         CALL mpi_x_reduce( sz, bigbufsize, 1, MPI_INTEGER,MPI_SUM, ntasks_local_group-1,mpi_comm_local, ierr )
-write(0,*)__FILE__,__LINE__
 ! Then, return to the top of the loop to collect headers and data from all 
 ! I/O servers in this I/O server group onto the I/O server "root" and handle 
 ! the next batch of commands.  
@@ -1578,9 +1515,7 @@ write(0,*)__FILE__,__LINE__
       DEALLOCATE( obuf )
 
       ! flush output files if needed
-write(0,*)__FILE__,__LINE__,' stored_write_record ',stored_write_record
       IF (stored_write_record) THEN
-write(0,*)__FILE__,__LINE__
 !         CALL start_timing()
         SELECT CASE ( use_package(io_form) )
 #ifdef NETCDF
@@ -1616,7 +1551,6 @@ write(0,*)__FILE__,__LINE__
         END SELECT
 !CALL end_timing( "quilt: flush" )
       ENDIF
-write(0,*)__FILE__,__LINE__,' end of big quilt loop '
 
       END DO ! }
 
@@ -1997,7 +1931,6 @@ write(0,*)__FILE__,__LINE__,' end of big quilt loop '
 ! The I/O server gets the request out of the next header and
 ! handles it by, in most cases, calling the appropriate external I/O package
 ! interface.
-!write(0,*)__FILE__,__LINE__,'get_hdr_tag ',icurs,sz,get_hdr_tag( obuf(icurs/itypesize) )
               SELECT CASE ( get_hdr_tag( obuf(icurs/itypesize) ) )
 ! The I/O server handles the "noop" (do nothing) request.  This is 
 ! actually quite easy.  "Noop" requests exist to help avoid race conditions.  
@@ -2701,9 +2634,6 @@ write(0,*)__FILE__,__LINE__,' end of big quilt loop '
 
       CALL MPI_Comm_rank ( mpi_comm_here, mytask, ierr ) ;
       CALL MPI_Comm_size ( mpi_comm_here, ntasks, ierr ) ;
-write(0,*)__FILE__,__LINE__,'mytask ',mytask
-write(0,*)__FILE__,__LINE__,'ntasks ',ntasks
-write(0,*)__FILE__,__LINE__,mpi_comm_here
 
       IF ( mytask .EQ. 0 ) THEN
         OPEN ( unit=27, file="namelist.input", form="formatted", status="old" )
@@ -2737,8 +2667,6 @@ write(0,*)__FILE__,__LINE__,mpi_comm_here
 
       CALL MPI_Comm_rank ( mpi_comm_here, mytask, ierr ) ;
       CALL mpi_x_comm_size( mpi_comm_here, ntasks, ierr ) ;
-write(0,*)__FILE__,__LINE__,' mytask ',mytask
-write(0,*)__FILE__,__LINE__,' ntasks ',ntasks
 
       IF ( mytask .EQ. 0 ) THEN
         OPEN ( unit=27, file="namelist.input", form="formatted", status="old" )
@@ -2778,12 +2706,10 @@ write(0,*)__FILE__,__LINE__,' ntasks ',ntasks
               ncompute_tasks = comm_start(id)+nest_pes_x(id)*nest_pes_y(id)
          ENDIF
       ENDDO
-write(0,*)__FILE__,__LINE__,' ncompute_tasks ', ncompute_tasks
       num_io_tasks = 0
       DO id = 1, max_dom
         num_io_tasks = num_io_tasks + nio_tasks_per_group(id)*nio_groups
       ENDDO
-write(0,*)__FILE__,__LINE__,' num_io_tasks ', num_io_tasks
       IF ( ncompute_tasks + num_io_tasks .NE. ntasks ) THEN
         WRITE(message,"('ncompute_tasks(',i9,')+num_io_tasks(',i9,') .NE. ntasks(',i9,')')")ncompute_tasks,num_io_tasks,ntasks
         CALL wrf_error_fatal(TRIM(message))
@@ -2799,9 +2725,9 @@ write(0,*)__FILE__,__LINE__,' num_io_tasks ', num_io_tasks
         ENDDO
       ENDDO
       ntasks = itask - 1
-do i = 1, ntasks
-write(0,*)'role_for_task ',i,role_for_task(i)
-enddo
+!do i = 1, ntasks
+!write(0,*)'role_for_task ',i,role_for_task(i)
+!enddo
 ! end set up of role_for_task array
 
       poll_servers = (temp_poll == 1)
@@ -2817,11 +2743,6 @@ DO id = 1, max_dom
 !                     ntasks will be the number of tasks described in role_for_task
 !                     mpi_comm_here will be passed in as all the tasks described in role_for_task
 
-write(0,*)__FILE__,__LINE__,id,' calling setup_quilt_servers '
-write(0,*)__FILE__,__LINE__,id,' nio_tasks_per_group(id) ',nio_tasks_per_group(id)
-write(0,*)__FILE__,__LINE__,id,' mytask ',mytask
-write(0,*)__FILE__,__LINE__,id,' ntasks ',ntasks
-write(0,*)__FILE__,__LINE__,id,' nio_groups ',nio_groups
 
       CALL setup_quilt_servers( id, nio_tasks_per_group,  &
                                 role_for_task,            &  ! this is the "color" array used to split coms
@@ -2835,7 +2756,6 @@ write(0,*)__FILE__,__LINE__,id,' nio_groups ',nio_groups
                                 mpi_comm_io_groups,       &
                                 compute_node      )
 
-write(0,*)__FILE__,__LINE__,id,' compute_node ',compute_node
 
 ENDDO
 
@@ -2845,12 +2765,9 @@ ENDDO
 #if 0
       ALLOCATE(icolor(ntasks))
       icolor = 0
-write(0,*)__FILE__,__LINE__,' ntasks:  ',ntasks
-write(0,*)__FILE__,__LINE__,' ncompute_tasks:  ',ncompute_tasks
       DO i = 1, ncompute_tasks
          icolor(i) = 1
       ENDDO
-write(0,*)__FILE__,__LINE__,' icolor ',icolor(1:ntasks)
       CALL MPI_Comm_dup( mpi_comm_here, comdup, ierr )
       ! throw away the I/O server tasks; mpi_comm_local will now be only all the compute tasks for all domains
       CALL MPI_Comm_split(comdup,icolor(mytask+1),mytask,mpi_comm_local, ierr )
@@ -2860,8 +2777,6 @@ write(0,*)__FILE__,__LINE__,' icolor ',icolor(1:ntasks)
       CALL MPI_Comm_split(comdup,role_for_task(mytask+1),mytask,mpi_comm_local, ierr )
 #endif
 
-call mpi_comm_size( mpi_comm_local , i , ierr ) ;write(0,*)__FILE__,__LINE__,' size matters ',i
-write(0,*)__FILE__,__LINE__,' mpi_comm_local ',mpi_comm_local
 
       CALL wrf_set_dm_communicator( mpi_comm_local ) ! split_communicators will see this 
       IF ( compute_node ) THEN
@@ -2881,7 +2796,6 @@ write(0,*)__FILE__,__LINE__,' mpi_comm_local ',mpi_comm_local
 #if ( DA_CORE != 1 )
           IF (coupler_on) CALL cpl_set_dm_communicator( MPI_COMM_NULL )
 #endif
-write(0,*)__FILE__,__LINE__,'calling quilt, never to return... '
           CALL quilt    ! will not return on io server tasks
        ENDIF
 #endif
@@ -3457,9 +3371,6 @@ CALL mpi_comm_rank(comm_io_group, rank, ierr)
 #else
     IF ( wrf_dm_on_monitor() )  reduced(2) = DataHandle
 #endif
-write(0,*)__FILE__,__LINE__,' before mpi_x_reduce tasks_in_group ',tasks_in_group
-write(0,*)__FILE__,__LINE__,' before mpi_x_reduce rank  ',rank
-write(0,*)__FILE__,__LINE__,' before mpi_x_reduce comm_io_group  ',comm_io_group
     CALL mpi_x_reduce( reduced, reduced_dummy, 2, MPI_INTEGER, MPI_SUM, tasks_in_group-1, comm_io_group, ierr )
 !    CALL end_timing("MPI_Reduce in wrf_quilt_iosync")
 
@@ -3477,7 +3388,6 @@ write(0,*)__FILE__,__LINE__,' before mpi_x_reduce comm_io_group  ',comm_io_group
 #endif
 
 
-write(0,*)__FILE__,__LINE__,' after collect_on_comm_debug comm_io_group ',comm_io_group
     int_local_output_cursor = 1
 !    int_num_bytes_to_write(DataHandle) = 0
     DEALLOCATE ( int_local_output_buffer )
@@ -5319,11 +5229,7 @@ SUBROUTINE get_mpi_comm_io_groups( retval, isrvr )
       IMPLICIT NONE
       INTEGER, INTENT(IN ) :: isrvr
       INTEGER, INTENT(OUT) :: retval
-integer sizeann, ierr
       retval = mpi_comm_io_groups(isrvr,current_id)
-write(0,*)__FILE__,__LINE__,' isrvr,current_id ',isrvr,current_id
-!call mpi_comm_size( retval, sizeann, ierr ) ; write(0,*)__FILE__,__LINE__,' size ann ',sizeann
-!write(0,*)__FILE__,__LINE__,' retval ',retval
 #endif
       RETURN
 END SUBROUTINE get_mpi_comm_io_groups

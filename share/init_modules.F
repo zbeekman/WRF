@@ -68,9 +68,7 @@ write(0,*)__FILE__,__LINE__,'calling init_module_wrf_quilt'
 
  ! We must never reach this line or phase 2 in an I/O server.
 
-write(0,*)__FILE__,__LINE__,'calling split_communicator '
  CALL split_communicator
-write(0,*)__FILE__,__LINE__,'back from split_communicator '
  CALL init_module_dm
 #endif
 ELSE
