@@ -317,6 +317,7 @@ MODULE module_wrf_quilt
       ENDIF
       IF ( nio .EQ. 0 ) THEN
         quilting_enabled = .FALSE.
+        compute_node = .TRUE.
         mpi_comm_local = mpi_comm_wrld
         mpi_comm_io_groups(:,id) = mpi_comm_wrld
         RETURN
@@ -410,15 +411,9 @@ MODULE module_wrf_quilt
          icolor=-99
          in_avail=.false.
 
-#if 0
-         if(wrf_dm_on_monitor()) then
-            in_avail=.true. ! monitor process is in mpi_comm_avail
-         endif
-#else
          IF ( found .eq. me ) THEN  ! found is the first task id for this domain, used below too
            in_avail=.true.
          ENDIF
-#endif
          icolor(1)=1
 
          do j=1,n_groups
@@ -449,7 +444,6 @@ MODULE module_wrf_quilt
 
       DO j = 1, n_groups
 
-
         IF ((found .LE. mytask .AND. mytask .LT.  found +ncompute_tasks ).OR. &    ! I am a compute task
              (found_io+(j-1)*nio .LE. mytask .AND. mytask .LT. found_io+j*nio) &    ! I am the I/O server for this group
             ) THEN
@@ -463,9 +457,7 @@ MODULE module_wrf_quilt
          ! communicator the first element in the mpi_comm_io_groups array 
          ! (I will ignore all of the other elements).
 
-
          IF ( (found .LE. mytask .AND. mytask .LT.  ncompute_tasks ) ) THEN
-
             compute_node = .TRUE.
             ! If I am a compute task, check whether I am the member of my 
             ! group that will communicate things that should be sent just 
@@ -1401,19 +1393,6 @@ okay_to_w = .false.
                                    DomainStart , DomainEnd ,                                    &
                                    DomainStart , DomainEnd ,                                    &
                                    Status )
-#endif
-#if 0
-! since this is training and the grib output doesn't need training, disable this branch.
-#ifdef YYY
-                 CASE ( IO_YYY )
-                      CALL ext_YYY_write_field ( handle(DataHandle) , TRIM(DateStr) ,         &
-                                 TRIM(VarName) , dummy , FieldType , Comm , IOComm,           &
-                                 DomainDesc , TRIM(MemoryOrder) , TRIM(Stagger) , DimNames ,  &
-                                 DomainStart , DomainEnd ,                                    &
-                                 DomainStart , DomainEnd ,                                    &
-                                 DomainStart , DomainEnd ,                                    &
-                                 Status )
-#endif
 #endif
                       CASE DEFAULT
                         Status = 0
@@ -2420,19 +2399,6 @@ okay_to_w = .false.
                                    DomainStart , DomainEnd ,                                    &
                                    Status )
 #endif
-#if 0
-! since this is training and the grib output doesn't need training, disable this branch.
-#ifdef YYY
-                 CASE ( IO_YYY )
-                      CALL ext_YYY_write_field ( handle(DataHandle) , TRIM(DateStr) ,         &
-                                 TRIM(VarName) , dummy , FieldType , Comm , IOComm,           &
-                                 DomainDesc , TRIM(MemoryOrder) , TRIM(Stagger) , DimNames ,  &
-                                 DomainStart , DomainEnd ,                                    &
-                                 DomainStart , DomainEnd ,                                    &
-                                 DomainStart , DomainEnd ,                                    &
-                                 Status )
-#endif
-#endif
                       CASE DEFAULT
                         Status = 0
                     END SELECT
@@ -2743,6 +2709,7 @@ DO id = 1, max_dom
 !                     ntasks will be the number of tasks described in role_for_task
 !                     mpi_comm_here will be passed in as all the tasks described in role_for_task
 
+write(0,*)__FILE__,__LINE__,id,' quilting_enabled ',quilting_enabled
 
       CALL setup_quilt_servers( id, nio_tasks_per_group,  &
                                 role_for_task,            &  ! this is the "color" array used to split coms
@@ -2756,26 +2723,16 @@ DO id = 1, max_dom
                                 mpi_comm_io_groups,       &
                                 compute_node      )
 
+write(0,*)__FILE__,__LINE__,id,' quilting_enabled ',quilting_enabled
 
 ENDDO
 
       call init_module_wrf_error(on_io_server=.true.)
 
 ! compute node should be true for any compute node and false for every server node
-#if 0
-      ALLOCATE(icolor(ntasks))
-      icolor = 0
-      DO i = 1, ncompute_tasks
-         icolor(i) = 1
-      ENDDO
-      CALL MPI_Comm_dup( mpi_comm_here, comdup, ierr )
-      ! throw away the I/O server tasks; mpi_comm_local will now be only all the compute tasks for all domains
-      CALL MPI_Comm_split(comdup,icolor(mytask+1),mytask,mpi_comm_local, ierr )
-#else
       CALL MPI_Comm_dup( mpi_comm_here, comdup, ierr )
       ! throw away the I/O server tasks; mpi_comm_local will now be only all the compute tasks for all domains
       CALL MPI_Comm_split(comdup,role_for_task(mytask+1),mytask,mpi_comm_local, ierr )
-#endif
 
 
       CALL wrf_set_dm_communicator( mpi_comm_local ) ! split_communicators will see this 
@@ -2785,9 +2742,6 @@ ENDDO
 #endif
 #ifdef HWRF
           call ATM_SET_COMM(mpi_comm_local)
-#endif
-#if 0
-          DEALLOCATE(icolor)
 #endif
        ELSE
 #ifdef HWRF
