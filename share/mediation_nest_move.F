@@ -1334,7 +1334,8 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
    !
 
 
-   IF ( (.NOT. (parent%active_this_task .AND. grid%active_this_task) ) .AND. (parent%active_this_task .OR. grid%active_this_task) ) THEN
+   IF ( .NOT. grid%active_this_task ) grid%mvnest = .FALSE.   ! prevent inactive grids from turning on movement
+   IF ( (parent%active_this_task .OR. grid%active_this_task) ) THEN
      IF ( parent%active_this_task ) THEN
        comzilla = mpi_comm_to_kid( which_kid( grid%id ) , parent%id )
      ELSE
@@ -1348,7 +1349,6 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
 
 
    can_move: if(grid%num_moves.eq.-99 .and. grid%mvnest .and. .not. abort) then
-
 
       if(wrf_dm_on_monitor() .and. .not. abort) then
          WRITE(mess,*)'vortex tracking: id,mvnest,num_moves,num_nests: ', &
@@ -1532,7 +1532,13 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
      call wrf_message(mess)
   endif
   
-  IF ( (.NOT. (parent%active_this_task .AND. grid%active_this_task) ) .AND. (parent%active_this_task .OR. grid%active_this_task) ) THEN
+  IF ( .NOT. grid%active_this_task ) THEN
+    grid%mvnest = .FALSE.   ! prevent inactive grids from turning on movement
+    grid%move_cd_x = 0
+    grid%move_cd_y = 0
+  ENDIF
+ 
+  IF ( (parent%active_this_task .OR. grid%active_this_task) ) THEN
     CALL MPI_Allreduce( grid%mvnest , mvnest_l, 1, MPI_LOGICAL, MPI_LOR, comzilla, ierr )
     grid%mvnest = mvnest_l
     CALL MPI_Allreduce( move_cd_x , itmp_pos, 1, MPI_INTEGER, MPI_MAX, comzilla, ierr )
