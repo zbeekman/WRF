@@ -90,7 +90,7 @@ MODULE module_wrf_quilt
   INTEGER, ALLOCATABLE :: role_for_task(:)
   INTEGER nio_groups
 #ifdef DM_PARALLEL
-  INTEGER :: mpi_comm_local
+  INTEGER :: mpi_comm_local, mpi_comm_local_io_server_tmp
   LOGICAL :: compute_group_master(max_servers,max_domains)
   INTEGER :: mpi_comm_io_groups(max_servers,max_domains)
   INTEGER :: nio_tasks_per_group(max_domains)
@@ -346,6 +346,9 @@ MODULE module_wrf_quilt
       ENDDO
       CALL MPI_Comm_dup(mpi_comm_wrld,comdup,ierr)
       CALL MPI_Comm_split(comdup,icolor(mytask+1),mytask,mpi_comm_local,ierr)
+      IF ( icolor(mytask+1) .NE. -99 ) THEN
+          mpi_comm_local_io_server_tmp = mpi_comm_local
+      ENDIF
 
 ! At this point, mpi_comm_local will be the local communicator for the server group associated with this domain
 !   the mpi_comm_local on the other tasks is a throwaway
@@ -2709,8 +2712,6 @@ DO id = 1, max_dom
 !                     ntasks will be the number of tasks described in role_for_task
 !                     mpi_comm_here will be passed in as all the tasks described in role_for_task
 
-write(0,*)__FILE__,__LINE__,id,' quilting_enabled ',quilting_enabled
-
       CALL setup_quilt_servers( id, nio_tasks_per_group,  &
                                 role_for_task,            &  ! this is the "color" array used to split coms
                                 num_io_tasks,             &
@@ -2722,8 +2723,6 @@ write(0,*)__FILE__,__LINE__,id,' quilting_enabled ',quilting_enabled
                                 mpi_comm_local,           &  ! only important on i/o servers
                                 mpi_comm_io_groups,       &
                                 compute_node      )
-
-write(0,*)__FILE__,__LINE__,id,' quilting_enabled ',quilting_enabled
 
 ENDDO
 
@@ -2750,6 +2749,7 @@ ENDDO
 #if ( DA_CORE != 1 )
           IF (coupler_on) CALL cpl_set_dm_communicator( MPI_COMM_NULL )
 #endif
+          mpi_comm_local = mpi_comm_local_io_server_tmp  
           CALL quilt    ! will not return on io server tasks
        ENDIF
 #endif
@@ -3311,7 +3311,6 @@ SUBROUTINE wrf_quilt_iosync ( DataHandle, Status )
     CALL get_mpi_comm_io_groups( comm_io_group , iserver )
 
     CALL mpi_x_comm_size( comm_io_group , tasks_in_group , ierr )
-CALL mpi_comm_rank(comm_io_group, rank, ierr)
 
     locsize = int_num_bytes_to_write(DataHandle)
 
@@ -3340,7 +3339,6 @@ CALL mpi_comm_rank(comm_io_group, rank, ierr)
                           int_local_output_buffer, locsize , &
                           dummy, 0 )
 #endif
-
 
     int_local_output_cursor = 1
 !    int_num_bytes_to_write(DataHandle) = 0
@@ -4985,7 +4983,6 @@ SUBROUTINE wrf_quilt_write_field ( DataHandle , DateStr , VarName , Field , Fiel
       ! Send the hdr for the write in case the interface is calling the I/O API in "learn" mode
 
       iserver = get_server_id ( DataHandle )
-!JMDEBUGwrite(0,*)'wrf_quilt_write_field (dryrun) ',iserver
       CALL get_mpi_comm_io_groups( comm_io_group , iserver )
       ! send the size of my local buffer to the i/o task (obufsize doesnt mean anything here)
 
@@ -5026,7 +5023,6 @@ SUBROUTINE wrf_quilt_write_field ( DataHandle , DateStr , VarName , Field , Fiel
       int_local_output_cursor = 1
     ENDIF
       iserver = get_server_id ( DataHandle )
-!JMDEBUGwrite(0,*)'wrf_quilt_write_field (writing) ',iserver
 
     ! This is NOT a "training" write.  It is OK to write now.
     CALL int_gen_write_field_header ( hdrbuf, hdrbufsize, itypesize, typesize,           &
