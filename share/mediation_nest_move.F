@@ -295,7 +295,7 @@ integer myproc
      grid%i_parent_start = grid%i_parent_start + px / grid%parent_grid_ratio 
      grid%j_parent_start = grid%j_parent_start + py / grid%parent_grid_ratio
 
-     IF ( (.NOT. (parent%active_this_task .AND. grid%active_this_task) ) .AND. (parent%active_this_task .OR. grid%active_this_task) ) THEN
+     IF ( (parent%active_this_task .OR. grid%active_this_task) ) THEN
        IF ( parent%active_this_task ) THEN
          comzilla = mpi_comm_to_kid( which_kid( grid%id ) , parent%id )
        ELSE
