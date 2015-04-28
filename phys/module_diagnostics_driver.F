@@ -286,6 +286,8 @@ CONTAINS
                 ,WSPD10MAX=grid%wspd10max                            &
                 ,UP_HELI_MAX=grid%up_heli_max                        &
                 ,UP_HELI_MIN=grid%up_heli_min                        &
+                ,UP_HELI_MAX03=grid%up_heli_max03                    &
+                ,RVORT1_MAX=grid%rvort1_max                          &
                 ,C_PBLH=grid%c_pblh                                  &
                 ,T=grid%t_2,QV_CURR=moist(ims,kms,jms,P_QV)          &
                 ,P=grid%p,PB=grid%pb                                 &
@@ -373,6 +375,8 @@ CONTAINS
                 ,WSPD10MAX=grid%wspd10max                            &
                 ,UP_HELI_MAX=grid%up_heli_max                        &
                 ,UP_HELI_MIN=grid%up_heli_min                        &
+                ,UP_HELI_MAX03=grid%up_heli_max03                    &
+                ,RVORT1_MAX=grid%rvort1_max                          &
                 ,C_PBLH=grid%c_pblh                                  &
                 ,T=grid%t_2,QV_CURR=moist(ims,kms,jms,P_QV)          &
                 ,P=grid%p,PB=grid%pb                                 &
@@ -462,6 +466,8 @@ CONTAINS
                 ,WSPD10MAX=grid%wspd10max                            &
                 ,UP_HELI_MAX=grid%up_heli_max                        &
                 ,UP_HELI_MIN=grid%up_heli_min                        &
+                ,UP_HELI_MAX03=grid%up_heli_max03                    &
+                ,RVORT1_MAX=grid%rvort1_max                          &
                 ,C_PBLH=grid%c_pblh                                  &
                 ,T=grid%t_2,QV_CURR=moist(ims,kms,jms,P_QV)          &
                 ,P=grid%p,PB=grid%pb                                 &
@@ -550,6 +556,8 @@ CONTAINS
                 ,WSPD10MAX=grid%wspd10max                            &
                 ,UP_HELI_MAX=grid%up_heli_max                        &
                 ,UP_HELI_MIN=grid%up_heli_min                        &
+                ,UP_HELI_MAX03=grid%up_heli_max03                    &
+                ,RVORT1_MAX=grid%rvort1_max                          &
                 ,C_PBLH=grid%c_pblh                                  &
                 ,T=grid%t_2,QV_CURR=moist(ims,kms,jms,P_QV)          &
                 ,P=grid%p,PB=grid%pb                                 &
@@ -638,6 +646,8 @@ CONTAINS
                 ,WSPD10MAX=grid%wspd10max                            &
                 ,UP_HELI_MAX=grid%up_heli_max                        &
                 ,UP_HELI_MIN=grid%up_heli_min                        &
+                ,UP_HELI_MAX03=grid%up_heli_max03                    &
+                ,RVORT1_MAX=grid%rvort1_max                          &
                 ,C_PBLH=grid%c_pblh                                  &
                 ,T=grid%t_2,QV_CURR=moist(ims,kms,jms,P_QV)          &
                 ,P=grid%p,PB=grid%pb                                 &
@@ -759,6 +769,8 @@ CONTAINS
                 ,WSPD10MAX=grid%wspd10max                            &
                 ,UP_HELI_MAX=grid%up_heli_max                        &
                 ,UP_HELI_MIN=grid%up_heli_min                        &
+                ,UP_HELI_MAX03=grid%up_heli_max03                    &
+                ,RVORT1_MAX=grid%rvort1_max                          &
                 ,C_PBLH=grid%c_pblh                                  &
                 ,T=grid%t_2,QV_CURR=moist(ims,kms,jms,P_QV)          &
                 ,P=grid%p,PB=grid%pb                                 &

@@ -49,6 +49,8 @@ CONTAINS
                      ,wspd10max                                       &
                      ,up_heli_max                                     &
                      ,up_heli_min                                     &
+                     ,up_heli_max03                                   &
+                     ,rvort1_max                                      &
                      ,c_pblh,t,qv_curr,p,pb,ht,th2,q2,psfc            & ! NY PBL
                      ,w_up_max,w_dn_max                               &
                      ,znw,w_colmean                                   &
@@ -243,6 +245,8 @@ CONTAINS
                                                       wspd10max  &
                                                    ,up_heli_max  &
                                                    ,up_heli_min  &
+                                                 ,up_heli_max03  &
+                                                   ,rvort1_max   &
                                              ,w_up_max,w_dn_max  &
                                     ,w_colmean,numcolpts,w_mean  &
                                           ,grpl_max,grpl_colint  &
@@ -288,7 +292,9 @@ CONTAINS
    REAL, DIMENSION( ims:ime , jms:jme ) :: totice_colint,ltg1_calc
 
       DOUBLE PRECISION:: hail_max
-      DOUBLE PRECISION, PARAMETER:: thresh_conc = 0.01d0                 ! number conc. of graupel/hail per cubic meter
+      DOUBLE PRECISION, PARAMETER:: thresh_conc = 0.001d0  ! number conc. of graupel/hail per cubic meter
+                                    !KRF: Edited per GSR and G.Thompson
+                                    ! 28 April. Old value 0.01d0
       LOGICAL:: scheme_has_graupel
       INTEGER, PARAMETER:: ngbins=50
       DOUBLE PRECISION, DIMENSION(ngbins+1):: xxDx
@@ -499,6 +505,8 @@ CONTAINS
          wspd10max(i,j)   = 0.
          up_heli_max(i,j) = 0.
          up_heli_min(i,j) = 0.
+         up_heli_max03(i,j) = 0.
+         rvort1_max(i,j)  = 0.
          w_up_max(i,j)    = 0.
          w_dn_max(i,j)    = 0.
          w_mean(i,j)      = 0.
