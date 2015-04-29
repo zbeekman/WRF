@@ -275,7 +275,7 @@ CONTAINS
 
 ! Constants used in ltg threat calculations
 
-   REAL, PARAMETER    :: coef1=0.042*1000.*1.22*100.0 !GSR an extra *100.0
+   REAL, PARAMETER    :: coef1=0.042*1000.*1.22*20.0 ! 29 April change from 100.0 to 20.0 !GSR extra 100.0
    REAL, PARAMETER    :: coef2=0.20*1.22
 ! McCAUL/CASE (3/8/2012) -- Change clim1 to reduce false alarms in threat1.
 !   REAL, PARAMETER    :: clim1=0.01*1.22
