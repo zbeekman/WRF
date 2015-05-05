@@ -300,7 +300,7 @@ SUBROUTINE wrf_error_fatal3( file_str, line, str )
 # endif
   flush(0)
 
-call failbadly(0.0,1.0)
+!call failbadly(0.0,1.0)
 
 #ifdef ESMFIO
 ! 5.2.0r  CALL esmf_finalize(terminationflag=ESMF_ABORT)

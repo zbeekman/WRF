@@ -109,8 +109,11 @@ if ( q->mark == 0 ) {
   }
   strcat(moredims,",") ;
 
-fprintf(fp,"  %s, INTENT(INOUT) :: %s ( grid%%sm31:grid%%em31,grid%%sm32:grid%%em32,grid%%sm33:grid%%em33%snum_%s)\n",
-                     q->type->name , varref , moredims, q->name ) ;
+              dimspec=dimension_with_ranges( "grid%","",-1,tmp3,q,"","" ) ;
+fprintf(fp,"  %s, INTENT(INOUT) :: %s ( %s %snum_%s)\n",
+                     q->type->name , varref , dimspec, moredims, q->name ) ;
+//fprintf(fp,"  %s, INTENT(INOUT) :: %s ( grid%%sm31:grid%%em31,grid%%sm32:grid%%em32,grid%%sm33:grid%%em33%snum_%s)\n",
+//                     q->type->name , varref , moredims, q->name ) ;
                 }
               }
               else

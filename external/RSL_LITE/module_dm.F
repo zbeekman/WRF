@@ -62,16 +62,19 @@ MODULE module_dm
    LOGICAL domain_active_this_task( max_domains )
 ! see comments below (search for "Communicator definition")
    INTEGER tasks_per_split
-   INTEGER comm_start(max_domains)   ! set in namelist_split
-!   INTEGER comm_pes  (max_domains)   ! either this may be set in namelist_split
-!   INTEGER comm_pes_x(max_domains)   ! or these may be set in namelist_split
-!   INTEGER comm_pes_y(max_domains)   ! "    "   may be set in namelist_split
-!   INTEGER comm_domain(max_domains)  ! set in namelist_split
-   INTEGER nest_pes_x(max_domains)   ! set in namelist_split
-   INTEGER nest_pes_y(max_domains)   ! set in namelist_split
+   INTEGER comm_start(max_domains)   ! set in dm_task_split
+!   INTEGER comm_pes  (max_domains)   ! either this may be set in dm_task_split
+!   INTEGER comm_pes_x(max_domains)   ! or these may be set in dm_task_split
+!   INTEGER comm_pes_y(max_domains)   ! "    "   may be set in dm_task_split
+!   INTEGER comm_domain(max_domains)  ! set in dm_task_split
+   INTEGER nest_pes_x(max_domains)   ! set in dm_task_split
+   INTEGER nest_pes_y(max_domains)   ! set in dm_task_split
    INTEGER comms_i_am_in (max_domains)  ! list of local communicators this task is a member of
    INTEGER loc_comm(max_domains)
-   NAMELIST /namelist_split/ tasks_per_split, comm_start, nest_pes_x, nest_pes_y
+   INTEGER nio_tasks_per_group(max_domains), nio_groups, poll_servers, num_io_tasks
+   NAMELIST /dm_task_split/ tasks_per_split, comm_start, nest_pes_x, nest_pes_y
+   NAMELIST /namelist_quilt/ nio_tasks_per_group, nio_groups, poll_servers
+
 
 #if (DA_CORE == 1)
    integer :: c_ipsy, c_ipey, c_kpsy, c_kpey, c_kpsx, c_kpex, c_ipex, c_ipsx, c_jpex, c_jpsx, c_jpey, c_jpsy 
@@ -176,7 +179,6 @@ CONTAINS
        CALL mpaspect ( ntasks, ntasks_x, ntasks_y, 1, 1 )
      ENDIF
      ntasks_store(1) = ntasks
-!debug write(0,*)'in compute_mesh ntasks_x_store(1) ', ntasks_x_store(1)
      ntasks_x_store(1) = ntasks_x
      ntasks_y_store(1) = ntasks_y
    END SUBROUTINE compute_mesh
@@ -239,9 +241,6 @@ IF ( local_comm .EQ. MPI_UNDEFINED ) THEN
       CALL mpi_comm_size( local_comm, itmp, ierr )
       CALL mpi_cart_coords( local_comm, mytask, 2, coords, ierr )
 !        write(0,*)'non periodic coords ',mytask, coords
-!debug write(0,*)'wrf_dm_initialize ntasks_y ',ntasks_y
-!debug write(0,*)'wrf_dm_initialize ntasks_x ',ntasks_x
-!debug write(0,*)'wrf_dm_initialize coords after mpi_cart_coords ',coords(1:2)
 
       mytask_x = coords(2)   ! col task (x)
       mytask_y = coords(1)   ! row task (y)
@@ -1729,7 +1728,7 @@ ENDIF
 #  if defined(_OPENMP) && defined(MPI2_THREAD_SUPPORT)
       INTEGER thread_support_provided, thread_support_requested
 #endif
-      INTEGER i, j, k, x, y
+      INTEGER i, j, k, x, y, n_x, n_y
       INTEGER iii
       INTEGER, ALLOCATABLE :: icolor(:),icolor2(:),idomain(:)
       INTEGER comm_id
@@ -1776,6 +1775,7 @@ ENDIF
 
       INTEGER dims(3)
 ! for parallel nesting, 201408, jm
+      INTEGER :: id
       INTEGER :: intercomm 
       INTEGER :: domain_id,par_id,nest_id,kid_id
       INTEGER :: mytask_me_and_mom, ntasks_me_and_mom, remote_leader
@@ -1829,47 +1829,58 @@ ENDIF
 
       IF ( mytask .EQ. 0 ) THEN
         OPEN ( unit=27, file="namelist.input", form="formatted", status="old" )
+        READ ( UNIT = 27 , NML = domains , IOSTAT=io_status )
+        REWIND(27)
+        nio_groups = 1
+        nio_tasks_per_group  = 0
+        poll_servers = .false.
+        READ ( 27 , NML = namelist_quilt, IOSTAT=io_status )
+        CLOSE(27)
+      ENDIF
+      CALL mpi_bcast( nio_tasks_per_group  , max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+      CALL mpi_bcast( nio_groups , 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+      CALL mpi_bcast( max_dom, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+      CALL mpi_bcast( parent_id, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+      num_io_tasks = 0
+      DO id = 1, max_dom
+        num_io_tasks = num_io_tasks + nio_tasks_per_group(id)*nio_groups
+      ENDDO
+      CALL nl_set_max_dom(1,max_dom)  ! quilting wants to see this too
+
+      IF ( mytask .EQ. 0 ) THEN
+        OPEN ( unit=27, file="namelist.input", form="formatted", status="old" )
         tasks_per_split = ntasks
-!        comm_domain = -1   ! by default, domain is always on communicator 1
-!        comm_domain(1) = 1   ! by default, domain is always on communicator 1
-        comm_start = -1   ! use this to find how many communicators have actually been defined
-        nest_pes_x = 0    ! dimensions of communicator in X and y
-        nest_pes_y = 0
-        READ ( 27 , NML = namelist_split, IOSTAT=io_status )
 ! we need to sneak-peak the parent_id namelist setting, ,which is in the "domains" section
 ! of the namelist.  That namelist is registry generated, so the registry-generated information
 ! is #included above.
-        REWIND(27)
-        READ ( UNIT = 27 , NML = domains , IOSTAT=io_status )
+        nest_pes_x = 0    ! dimensions of communicator in X and y
+        nest_pes_y = 0
+        CALL compute_mesh( ntasks-num_io_tasks, n_x, n_y )
+        comm_start = 0   ! make it so everyone will use same communicator if the dm_task_split namelist is not specified or is empty
+        nest_pes_x(1:max_dom) = n_x
+        nest_pes_y(1:max_dom) = n_y
+        READ ( 27 , NML = dm_task_split, IOSTAT=io_status )
         CLOSE ( 27 )
       ENDIF
-!debug write(0,*)'before mpi_bcast'
       CALL mpi_bcast( io_status, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
-!debug write(0,*)'after mpi_bcast',io_status
       IF ( io_status .NE. 0 ) THEN
-          RETURN ! just ignore and return, everybody's on the same communicator
+! or if  dm_task_split was read but was emptly, do nothing: dm_task_split not specified, everyone uses same communicator (see above)
       ENDIF
       CALL mpi_bcast( tasks_per_split, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( comm_start, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
-!      CALL mpi_bcast( comm_domain, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( nest_pes_x, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( nest_pes_y, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
-      CALL mpi_bcast( parent_id, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
-      CALL mpi_bcast( max_dom, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
-      CALL nl_set_max_dom(1,max_dom)  ! quilting wants to see this too
       nkids = 1
       which_kid = 0
       DO i = 2, max_dom
         IF ( 1 .le. parent_id(i) .AND. parent_id(i) .LE. max_domains ) THEN
           which_kid(i) = nkids(parent_id(i))
-!debug write(0,*)'which_kid i,parent_id(i),nkids(parent_id(i))',i,parent_id(i),nkids(parent_id(i))
           nkids(parent_id(i)) = nkids(parent_id(i)) + 1
         ELSE
           WRITE(wrf_err_message,*)'invalid parent id for domain ',i
           CALL wrf_error_fatal(TRIM(wrf_err_message))
         ENDIF 
       ENDDO
-!debug write(0,*)'which_kid ',which_kid(2:max_dom)
 
       num_compute_tasks = -99
       DO nest_id = 1,max_dom
@@ -1898,11 +1909,6 @@ ENDIF
 !write(0,*)'nest_pes_y        ',nest_id,nest_pes_y(nest_id)
       ENDDO
 
-!debug write(0,*)'max_dom ',max_dom
-!debug write(0,*)'MPI_UNDEFINED ',MPI_UNDEFINED
-!debug write(0,*)__LINE__,mpi_comm_here
-
-!      IF ( max_dom .GT. 1 ) THEN
       IF ( .TRUE. ) THEN
 !jm Additional code here to set up communicator for this domain and tables
 !jm mapping individual domain task IDs to the original local communicator
@@ -1914,27 +1920,21 @@ ENDIF
 !jm only work in pairs so we'd have a lot of intercommunicators to set up 
 !jm and keep around. We'd also have to have additional communicator arguments 
 !jm to all the nesting routines in and around the RSL nesting parts.
-! mpi_comm_here is the MOAD's communicator
         CALL MPI_Comm_rank ( mpi_comm_here, mytask, ierr ) ;
         CALL MPI_Comm_rank ( mpi_comm_here, origmytask, ierr ) ;
         CALL mpi_comm_size ( mpi_comm_here, ntasks, ierr ) ;
-!write(0,*)__FILE__,__LINE__,' ntasks ',ntasks
         ALLOCATE( icolor(ntasks) )
         ALLOCATE( icolor2(ntasks) )
         ALLOCATE( idomain(ntasks) )
-!debug write(0,*)__LINE__,mpi_comm_here
         k = 0
 ! split off the separate local communicators
-!debug write(0,*)__LINE__,mpi_comm_here
 
 ! construct list of local communicators my task is in
         comms_i_am_in = MPI_UNDEFINED
         DO i = 1, max_dom
-!debug write(0,*)'i = ',i
           inthisone = .FALSE.
           icolor = 0
           DO j = comm_start(i), comm_start(i)+nest_pes_x(i)*nest_pes_y(i)-1
-!debug write(0,*)'setting icolor ',j+1
             IF ( j+1 .GT. ntasks ) THEN
               WRITE(wrf_err_message,*)"check comm_start, nest_pes_x, nest_pes_y settings in namelist for comm ",i
               CALL wrf_error_fatal(wrf_err_message)
@@ -2016,18 +2016,14 @@ ENDIF
            i = icolor2(mytask+1)
            CALL MPI_Comm_dup(mpi_comm_here,comdup,ierr)
            CALL MPI_Comm_split(comdup,i,origmytask,mpi_comm_me_and_mom,ierr)
-!CALL MPI_Comm_size(mpi_comm_me_and_mom,iii,ierr) ; write(0,*)nest_id,'mpi_comm_me_and_mom sz',iii
-!CALL MPI_Comm_rank(mpi_comm_me_and_mom,iii,ierr) ; write(0,*)nest_id,'mpi_comm_me_and_mom rk',iii
 
            IF ( mytask_is_nest  ) THEN
               intercomm_active(nest_id)  = .TRUE.
               mpi_comm_to_mom(nest_id)   =  mpi_comm_me_and_mom
-!debug write(0,*)'setting mpi_comm_to_mom par_id ',par_id,mpi_comm_me_and_mom
            ENDIF
            IF ( mytask_is_par ) THEN
               intercomm_active(par_id)              = .TRUE.
               mpi_comm_to_kid(which_kid(nest_id),par_id)  =  mpi_comm_me_and_mom
-!debug write(0,*)'setting mpi_comm_to_kid which_kid(nest_id),nest_id ',which_kid(nest_id),par_id,mpi_comm_me_and_mom
            ENDIF
         ENDDO
         DEALLOCATE( icolor )

@@ -264,7 +264,7 @@ MODULE module_wrf_quilt
       USE module_configure
 #ifdef DM_PARALLEL
       USE module_dm, ONLY : compute_mesh,nest_pes_x,nest_pes_y,domain_active_this_task,&
-                            tasks_per_split,comm_start,namelist_split
+                            tasks_per_split,comm_start,dm_task_split
 #endif
       IMPLICIT NONE
       INCLUDE 'mpif.h'
@@ -2545,7 +2545,7 @@ okay_to_w = .false.
 !</DESCRIPTION>
 #if defined( DM_PARALLEL ) && !defined( STUBMPI )
       USE module_dm, ONLY : compute_mesh,nest_pes_x,nest_pes_y,domain_active_this_task,&
-                            tasks_per_split,comm_start,namelist_split
+                            tasks_per_split,comm_start,dm_task_split
       IMPLICIT NONE
       INCLUDE 'mpif.h'
       INTEGER i
@@ -2555,6 +2555,7 @@ okay_to_w = .false.
       INTEGER thread_support_provided, thread_support_requested
 #endif
       INTEGER num_io_tasks, ncompute_tasks
+      INTEGER n_x, n_y
       INTEGER mpi_comm_here, temp_poll, comdup
       INTEGER, ALLOCATABLE ::  icolor(:)
       LOGICAL mpi_inited
@@ -2609,36 +2610,8 @@ okay_to_w = .false.
         tasks_per_split = ntasks
 !        comm_domain = -1   ! by default, domain is always on communicator 1
 !        comm_domain(1) = 1   ! by default, domain is always on communicator 1
-        comm_start = -1   ! use this to find how many communicators have actually been defined
-        nest_pes_x = 0    ! dimensions of communicator in X and y
-        nest_pes_y = 0
-        READ ( 27 , NML = namelist_split, IOSTAT=io_status )
-! we need to sneak-peak the parent_id namelist setting, ,which is in the "domains" section
-! of the namelist.  That namelist is registry generated, so the registry-generated information
-! is #included above.
-        REWIND(27)
         READ ( UNIT = 27 , NML = domains , IOSTAT=io_status )
-        CLOSE ( 27 )
-      ENDIF
-!debug write(0,*)'before mpi_bcast'
-      CALL mpi_bcast( io_status, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
-!debug write(0,*)'after mpi_bcast',io_status
-      IF ( io_status .NE. 0 ) THEN
-          RETURN ! just ignore and return, everybody's on the same communicator
-      ENDIF
-      CALL mpi_bcast( tasks_per_split, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
-      CALL mpi_bcast( comm_start, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
-      CALL mpi_bcast( nest_pes_x, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
-      CALL mpi_bcast( nest_pes_y, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
-      CALL mpi_bcast( parent_id, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
-      CALL mpi_bcast( max_dom, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
-      CALL nl_set_max_dom(1,max_dom)
-
-      CALL MPI_Comm_rank ( mpi_comm_here, mytask, ierr ) ;
-      CALL mpi_x_comm_size( mpi_comm_here, ntasks, ierr ) ;
-
-      IF ( mytask .EQ. 0 ) THEN
-        OPEN ( unit=27, file="namelist.input", form="formatted", status="old" )
+        REWIND(27)
         nio_groups = 1
         nio_tasks_per_group  = 0
         poll_servers = .false.
@@ -2659,10 +2632,45 @@ okay_to_w = .false.
            temp_poll=0
         endif
       ENDIF
-
+      CALL mpi_bcast( parent_id, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+      CALL mpi_bcast( max_dom, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+      CALL nl_set_max_dom(1,max_dom)
       CALL mpi_bcast( nio_tasks_per_group  , max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( nio_groups , 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( temp_poll , 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+      num_io_tasks = 0
+      DO id = 1, max_dom
+        num_io_tasks = num_io_tasks + nio_tasks_per_group(id)*nio_groups
+      ENDDO
+      IF ( mytask .EQ. 0 ) THEN
+        OPEN ( unit=27, file="namelist.input", form="formatted", status="old" )
+        comm_start = -1   ! use this to find how many communicators have actually been defined
+        nest_pes_x = 0    ! dimensions of communicator in X and y
+        nest_pes_y = 0
+        CALL compute_mesh( ntasks-num_io_tasks, n_x, n_y )
+        comm_start = 0   ! make it so everyone will use same communicator if the dm_task_split namelist is not specified or is empty
+        nest_pes_x(1:max_dom) = n_x
+        nest_pes_y(1:max_dom) = n_y
+        READ ( 27 , NML = dm_task_split, IOSTAT=io_status )
+! we need to sneak-peak the parent_id namelist setting, ,which is in the "domains" section
+! of the namelist.  That namelist is registry generated, so the registry-generated information
+! is #included above.
+        CLOSE ( 27 )
+      ENDIF
+!debug write(0,*)'before mpi_bcast'
+      CALL mpi_bcast( io_status, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+!debug write(0,*)'after mpi_bcast',io_status
+      IF ( io_status .NE. 0 ) THEN
+      ENDIF
+      CALL mpi_bcast( tasks_per_split, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+      CALL mpi_bcast( comm_start, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+      CALL mpi_bcast( nest_pes_x, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+      CALL mpi_bcast( nest_pes_y, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+
+      CALL MPI_Comm_rank ( mpi_comm_here, mytask, ierr ) ;
+      CALL mpi_x_comm_size( mpi_comm_here, ntasks, ierr ) ;
+
+
 !!!!! end of needed to sneak-peak the namelist
 
 ! set up the arrays associating quilt tasks to domains and check to make sure it will work
