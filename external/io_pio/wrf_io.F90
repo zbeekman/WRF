@@ -13,10 +13,7 @@ subroutine ext_pio_open_for_read(DatasetName, grid, SysDepInfo, DataHandle, Stat
   character *(*), INTENT(IN)   :: SysDepInfo
   integer       , INTENT(OUT)  :: DataHandle
   integer       , INTENT(OUT)  :: Status
-!-integer(PIO_OFFSET_KIND), parameter :: limit = 33554432
-! integer(PIO_OFFSET_KIND), parameter :: limit = 536870912
   DataHandle = 0   ! dummy setting to quiet warning message
-! call pio_set_buffer_size_limit(limit)  
   CALL ext_pio_open_for_read_begin( DatasetName, grid, SysDepInfo, DataHandle, Status )
   IF ( Status .EQ. WRF_NO_ERR ) THEN
     CALL ext_pio_open_for_read_commit( DataHandle, Status )
@@ -92,8 +89,6 @@ subroutine ext_pio_open_for_read_begin( FileName, grid, SysDepInfo, DataHandle, 
   integer                                :: i
   integer                                :: ndims, unlimitedDimID
   character(PIO_MAX_NAME)                :: Name
-!-integer(PIO_OFFSET_KIND), parameter :: limit = 33554432
-! integer(PIO_OFFSET_KIND), parameter :: limit = 536870912
 
   call upgrade_filename(FileName)
 
@@ -116,7 +111,6 @@ subroutine ext_pio_open_for_read_begin( FileName, grid, SysDepInfo, DataHandle, 
      DH%first_operation = .false.
   end if
 
-! call pio_set_buffer_size_limit(limit)  
   stat = pio_openfile(DH%iosystem, DH%file_handle, pio_iotype_pnetcdf, FileName)
   call netcdf_err(stat,Status)
   if(Status /= WRF_NO_ERR) then
@@ -264,9 +258,9 @@ subroutine ext_pio_open_for_update( FileName, grid, SysDepInfo, DataHandle, Stat
   integer                                :: i
   integer                                :: ndims, unlimitedDimID
   character(PIO_MAX_NAME)                :: Name
-!-integer(PIO_OFFSET_KIND), parameter :: limit = 33554432
+  integer(PIO_OFFSET_KIND), parameter :: limit = 33554432
 ! integer(PIO_OFFSET_KIND), parameter :: limit = 536870912
-  integer(PIO_OFFSET_KIND), parameter :: limit = 1073741824
+! integer(PIO_OFFSET_KIND), parameter :: limit = 1073741824
 
   call upgrade_filename(FileName)
 
@@ -409,9 +403,6 @@ SUBROUTINE ext_pio_open_for_write_begin(FileName,grid,SysDepInfo,DataHandle,Stat
   integer                           :: gridid
   integer local_communicator_x, ntasks_x
 
-!-integer(PIO_OFFSET_KIND), parameter :: limit = 33554432
-! integer(PIO_OFFSET_KIND), parameter :: limit = 536870912
-
   call upgrade_filename(FileName)
 
   if(WrfIOnotInitialized) then
@@ -435,7 +426,6 @@ SUBROUTINE ext_pio_open_for_write_begin(FileName,grid,SysDepInfo,DataHandle,Stat
      DH%first_operation = .false.
   end if
 
-! call pio_set_buffer_size_limit(limit)  
   stat = pio_CreateFile(DH%iosystem, DH%file_handle, &
                         pio_iotype_pnetcdf, FileName, PIO_64BIT_OFFSET)
 
@@ -7884,8 +7874,8 @@ subroutine ext_pio_write_field(DataHandle,DateStr,Var,Field,FieldType,grid, &
   integer, dimension(1,1)                      :: tmp0dint
   integer, dimension(:,:,:), allocatable       :: tmp2dint
 
-  write(unit=0, fmt='(3a,i6)') 'file: ', __FILE__, ', line: ', __LINE__
-  write(unit=0, fmt='(5a)') ' Write var: <', trim(var), '>, at <', trim(DateStr), '>'
+ !write(unit=0, fmt='(3a,i6)') 'file: ', __FILE__, ', line: ', __LINE__
+ !write(unit=0, fmt='(5a)') ' Write var: <', trim(var), '>, at <', trim(DateStr), '>'
 
  !Local, possibly adjusted, copies of MemoryStart and MemoryEnd
   MemoryOrder = trim(adjustl(MemoryOrdIn))
@@ -8177,14 +8167,14 @@ subroutine ext_pio_write_field(DataHandle,DateStr,Var,Field,FieldType,grid, &
                       Stagger,FieldType,Field,Status)
       endif
     else
-        write(unit=0, fmt='(3a,i6)') 'file: ', __FILE__, ', line: ', __LINE__
-        write(unit=0, fmt='(6x,5a)') ' Write var: <', trim(var), '>, at <', trim(DateStr), '>'
-        write(unit=0, fmt='(6x,a,6I6)') 'Length_global = ', Length_global(1:NDim)
-        write(unit=0, fmt='(6x,a,6I6)') 'VStart = ', VStart(1:NDim)
-        write(unit=0, fmt='(6x,a,6I6)') 'VCount = ', VCount(1:NDim)
-        write(unit=0, fmt='(6x,a,6I6)') 'Length = ', Length(1:NDim)
-        write(unit=0, fmt='(6x,3a)') 'MemoryOrder = <', trim(MemoryOrder), '>'
-        write(unit=0, fmt='(6x,3a)') 'Stagger = <', trim(Stagger), '>'
+       !write(unit=0, fmt='(3a,i6)') 'file: ', __FILE__, ', line: ', __LINE__
+       !write(unit=0, fmt='(6x,5a)') ' Write var: <', trim(var), '>, at <', trim(DateStr), '>'
+       !write(unit=0, fmt='(6x,a,6I6)') 'Length_global = ', Length_global(1:NDim)
+       !write(unit=0, fmt='(6x,a,6I6)') 'VStart = ', VStart(1:NDim)
+       !write(unit=0, fmt='(6x,a,6I6)') 'VCount = ', VCount(1:NDim)
+       !write(unit=0, fmt='(6x,a,6I6)') 'Length = ', Length(1:NDim)
+       !write(unit=0, fmt='(6x,3a)') 'MemoryOrder = <', trim(MemoryOrder), '>'
+       !write(unit=0, fmt='(6x,3a)') 'Stagger = <', trim(Stagger), '>'
 
        call FieldIO('write',DataHandle,DateStr,Length_global,VStart,VCount,Length,MemoryOrder, &
                      Stagger,FieldType,Field,Status)

@@ -2,7 +2,7 @@
 !$Id$
 !------------------------------------------------------------------
 
-subroutine ext_pio_RealFieldIO(whole,IO,DH,Starts,Counts,fldsize,datasize,Data,Status)
+subroutine ext_pio_RealFieldIO(whole,IO,DH,Starts,Counts,Ndim,fldsize,datasize,Data,Status)
   use pio
   use pio_kinds
   use wrf_data_pio
@@ -14,7 +14,7 @@ subroutine ext_pio_RealFieldIO(whole,IO,DH,Starts,Counts,fldsize,datasize,Data,S
   type(wrf_data_handle)                      :: DH
   integer,dimension(NVarDims) ,intent(in)    :: Starts
   integer,dimension(NVarDims) ,intent(in)    :: Counts
-  integer                     ,intent(in)    :: fldsize, datasize
+  integer                     ,intent(in)    :: Ndim, fldsize, datasize
   real, dimension(1:fldsize)  ,intent(inout) :: Data
   integer                     ,intent(out)   :: Status
   integer                                    :: stat
@@ -23,7 +23,7 @@ subroutine ext_pio_RealFieldIO(whole,IO,DH,Starts,Counts,fldsize,datasize,Data,S
   if(IO == 'write') then
     if(whole)then
        stat = pio_put_var(DH%file_handle,DH%descVar(DH%CurrentVariable), &
-                          Starts,Counts,Data(1:datasize))
+                          Starts(1:Ndim+1),Counts(1:Ndim+1),Data(1:datasize))
     else
       call pio_write_darray(DH%file_handle, DH%descVar(DH%CurrentVariable), &
                             DH%ioVar(DH%CurrentVariable), Data, stat, fillvalue)
@@ -45,7 +45,7 @@ subroutine ext_pio_RealFieldIO(whole,IO,DH,Starts,Counts,fldsize,datasize,Data,S
   return
 end subroutine ext_pio_RealFieldIO
 
-subroutine ext_pio_DoubleFieldIO(whole,IO,DH,Starts,Counts,fldsize,datasize,Data,Status)
+subroutine ext_pio_DoubleFieldIO(whole,IO,DH,Starts,Counts,NDim,fldsize,datasize,Data,Status)
   use pio
   use pio_kinds
   use wrf_data_pio
@@ -57,7 +57,7 @@ subroutine ext_pio_DoubleFieldIO(whole,IO,DH,Starts,Counts,fldsize,datasize,Data
   type(wrf_data_handle)       ,pointer       :: DH
   integer,dimension(NVarDims) ,intent(in)    :: Starts
   integer,dimension(NVarDims) ,intent(in)    :: Counts
-  integer                     ,intent(in)    :: fldsize, datasize
+  integer                     ,intent(in)    :: NDim, fldsize, datasize
   real*8,dimension(1:fldsize), intent(inout) :: Data
   integer                     ,intent(out)   :: Status
   integer                                    :: stat
@@ -65,7 +65,7 @@ subroutine ext_pio_DoubleFieldIO(whole,IO,DH,Starts,Counts,fldsize,datasize,Data
   if(IO == 'write') then
     if(whole)then
       stat = pio_put_var(DH%file_handle,DH%descVar(DH%CurrentVariable), &
-                         Starts,Counts,Data(1:datasize))
+                         Starts(1:Ndim+1),Counts(1:Ndim+1),Data(1:datasize))
     else
       call pio_write_darray(DH%file_handle, DH%descVar(DH%CurrentVariable), &
                             DH%ioVar(DH%CurrentVariable), Data, stat)
@@ -86,7 +86,7 @@ subroutine ext_pio_DoubleFieldIO(whole,IO,DH,Starts,Counts,fldsize,datasize,Data
   return
 end subroutine ext_pio_DoubleFieldIO
 
-subroutine ext_pio_IntFieldIO(whole,IO,DH,Starts,Counts,fldsize,datasize,Data,Status)
+subroutine ext_pio_IntFieldIO(whole,IO,DH,Starts,Counts,NDim,fldsize,datasize,Data,Status)
   use pio
   use pio_kinds
   use wrf_data_pio
@@ -98,7 +98,7 @@ subroutine ext_pio_IntFieldIO(whole,IO,DH,Starts,Counts,fldsize,datasize,Data,St
   type(wrf_data_handle)       ,pointer       :: DH
   integer,dimension(NVarDims) ,intent(in)    :: Starts
   integer,dimension(NVarDims) ,intent(in)    :: Counts
-  integer                     ,intent(in)    :: fldsize, datasize
+  integer                     ,intent(in)    :: NDim, fldsize, datasize
   integer,dimension(1:fldsize),intent(inout) :: Data
   integer                     ,intent(out)   :: Status
   integer                                    :: stat
@@ -110,7 +110,7 @@ subroutine ext_pio_IntFieldIO(whole,IO,DH,Starts,Counts,fldsize,datasize,Data,St
   if(IO == 'write') then
     if(whole)then
       stat = pio_put_var(DH%file_handle,DH%descVar(DH%CurrentVariable), &
-                         Starts,Counts,Data(1:datasize))
+                         Starts(1:Ndim+1),Counts(1:Ndim+1),Data(1:datasize))
     else
       call pio_write_darray(DH%file_handle, DH%descVar(DH%CurrentVariable), &
                             DH%ioVar(DH%CurrentVariable), Data, stat, fillvalue)
@@ -136,7 +136,7 @@ subroutine ext_pio_IntFieldIO(whole,IO,DH,Starts,Counts,fldsize,datasize,Data,St
   return
 end subroutine ext_pio_IntFieldIO
 
-subroutine ext_pio_LogicalFieldIO(whole,IO,DH,Starts,Counts,fldsize,datasize,Data,Status)
+subroutine ext_pio_LogicalFieldIO(whole,IO,DH,Starts,Counts,NDim,fldsize,datasize,Data,Status)
   use pio
   use pio_kinds
   use wrf_data_pio
@@ -148,7 +148,7 @@ subroutine ext_pio_LogicalFieldIO(whole,IO,DH,Starts,Counts,fldsize,datasize,Dat
   type(wrf_data_handle)       ,pointer       :: DH
   integer,dimension(NVarDims) ,intent(in)    :: Starts
   integer,dimension(NVarDims) ,intent(in)    :: Counts
-  integer                     ,intent(in)    :: fldsize, datasize
+  integer                     ,intent(in)    :: NDim, fldsize, datasize
   logical,dimension(1:fldsize),intent(inout) :: Data
   integer                     ,intent(out)   :: Status
   integer,dimension(1:fldsize)               :: Buffer
@@ -165,7 +165,7 @@ subroutine ext_pio_LogicalFieldIO(whole,IO,DH,Starts,Counts,fldsize,datasize,Dat
     enddo
     if(whole)then
       stat = pio_put_var(DH%file_handle,DH%descVar(DH%CurrentVariable), &
-                         Starts,Counts,Buffer(1:datasize))
+                         Starts(1:Ndim+1),Counts(1:Ndim+1),Buffer(1:datasize))
     else
       call pio_write_darray(DH%file_handle, DH%descVar(DH%CurrentVariable), &
                             DH%ioVar(DH%CurrentVariable), Buffer, stat)

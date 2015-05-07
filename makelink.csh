@@ -19,11 +19,11 @@
  endif
 
  set dirlist = ( \
-	/glade/apps/opt/pnetcdf/1.4.1/intel/13.1.2 \
+	/glade/apps/opt/pnetcdf/1.6.0/intel/14.0.2 \
 	/glade/apps/opt/netcdf/4.3.0/intel/13.1.2 \
 	/glade/apps/opt/hdf5-mpi/1.8.11/intel/13.1.2 \
 	/glade/apps/opt/zlib/1.2.7/intel/12.1.4 \
-	/glade/p/work/huangwei/lib/pio/1.8.12 \
+	/glade/apps/opt/pio/2.0.17/intel/12.1.5 \
 	)
 
  cd netcdf_links/include

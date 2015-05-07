@@ -1053,19 +1053,19 @@ subroutine FieldIO(IO,DataHandle,DateStr,Dimens,Starts,Counts,Length,MemoryOrder
         Dimens(NDim+1) = TimeIndex
         call read_bdy_RealFieldIO(DH,NDim,Dimens,Starts,Counts,Field,Status)
       else
-        call ext_pio_RealFieldIO(whole,IO,DH,Starts,Counts,fldsize,datasize,Field,Status)
+        call ext_pio_RealFieldIO(whole,IO,DH,Starts,Counts,NDim,fldsize,datasize,Field,Status)
       endif
     case (WRF_DOUBLE)
       if(isbdy .and. (IO == 'read')) then
         Dimens(NDim+1) = TimeIndex
         call read_bdy_DoubleFieldIO(DH,NDim,Dimens,Starts,Counts,Field,Status)
       else
-        call ext_pio_DoubleFieldIO(whole,IO,DH,Starts,Counts,fldsize,datasize,Field,Status)
+        call ext_pio_DoubleFieldIO(whole,IO,DH,Starts,Counts,NDim,fldsize,datasize,Field,Status)
       endif
     case (WRF_INTEGER)
-      call ext_pio_IntFieldIO(whole,IO,DH,Starts,Counts,fldsize,datasize,Field,Status)
+      call ext_pio_IntFieldIO(whole,IO,DH,Starts,Counts,NDim,fldsize,datasize,Field,Status)
     case (WRF_LOGICAL)
-      call ext_pio_LogicalFieldIO(whole,IO,DH,Starts,Counts,fldsize,datasize,Field,Status)
+      call ext_pio_LogicalFieldIO(whole,IO,DH,Starts,Counts,NDim,fldsize,datasize,Field,Status)
     case default
       Status = WRF_WARN_DATA_TYPE_NOT_FOUND
       write(msg,*) 'Warning DATA TYPE NOT FOUND in ',__FILE__,', line', __LINE__
