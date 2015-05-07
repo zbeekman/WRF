@@ -13,7 +13,10 @@ subroutine ext_pio_open_for_read(DatasetName, grid, SysDepInfo, DataHandle, Stat
   character *(*), INTENT(IN)   :: SysDepInfo
   integer       , INTENT(OUT)  :: DataHandle
   integer       , INTENT(OUT)  :: Status
+!-integer(PIO_OFFSET_KIND), parameter :: limit = 33554432
+! integer(PIO_OFFSET_KIND), parameter :: limit = 536870912
   DataHandle = 0   ! dummy setting to quiet warning message
+! call pio_set_buffer_size_limit(limit)  
   CALL ext_pio_open_for_read_begin( DatasetName, grid, SysDepInfo, DataHandle, Status )
   IF ( Status .EQ. WRF_NO_ERR ) THEN
     CALL ext_pio_open_for_read_commit( DataHandle, Status )
@@ -89,6 +92,8 @@ subroutine ext_pio_open_for_read_begin( FileName, grid, SysDepInfo, DataHandle, 
   integer                                :: i
   integer                                :: ndims, unlimitedDimID
   character(PIO_MAX_NAME)                :: Name
+!-integer(PIO_OFFSET_KIND), parameter :: limit = 33554432
+! integer(PIO_OFFSET_KIND), parameter :: limit = 536870912
 
   call upgrade_filename(FileName)
 
@@ -111,6 +116,7 @@ subroutine ext_pio_open_for_read_begin( FileName, grid, SysDepInfo, DataHandle, 
      DH%first_operation = .false.
   end if
 
+! call pio_set_buffer_size_limit(limit)  
   stat = pio_openfile(DH%iosystem, DH%file_handle, pio_iotype_pnetcdf, FileName)
   call netcdf_err(stat,Status)
   if(Status /= WRF_NO_ERR) then
@@ -118,6 +124,14 @@ subroutine ext_pio_open_for_read_begin( FileName, grid, SysDepInfo, DataHandle, 
      call wrf_debug ( WARN , TRIM(msg))
      return
   endif
+
+!-PIO_INTERNAL_ERROR : abort on error from any task
+!-PIO_BCAST_ERROR : broadcast an error from io_rank 0 to all tasks in comm
+!-PIO_RETURN_ERROR : do nothing - allow the user to handle it
+
+!-call pio_seterrorhandling(DH%file_handle, PIO_RETURN_ERROR)
+  call pio_seterrorhandling(DH%file_handle, PIO_BCAST_ERROR)
+!-call pio_seterrorhandling(DH%file_handle, PIO_INTERNAL_ERROR)
 
   stat = pio_inq_varid(DH%file_handle, DH%TimesName, DH%vtime)
   call netcdf_err(stat,Status)
@@ -250,6 +264,9 @@ subroutine ext_pio_open_for_update( FileName, grid, SysDepInfo, DataHandle, Stat
   integer                                :: i
   integer                                :: ndims, unlimitedDimID
   character(PIO_MAX_NAME)                :: Name
+!-integer(PIO_OFFSET_KIND), parameter :: limit = 33554432
+! integer(PIO_OFFSET_KIND), parameter :: limit = 536870912
+  integer(PIO_OFFSET_KIND), parameter :: limit = 1073741824
 
   call upgrade_filename(FileName)
 
@@ -272,6 +289,7 @@ subroutine ext_pio_open_for_update( FileName, grid, SysDepInfo, DataHandle, Stat
      DH%first_operation = .false.
   end if
 
+  call pio_set_buffer_size_limit(limit)  
   stat = pio_openfile(DH%iosystem, DH%file_handle, pio_iotype_pnetcdf, FileName)
   call netcdf_err(stat,Status)
   if(Status /= WRF_NO_ERR) then
@@ -370,7 +388,7 @@ end subroutine ext_pio_open_for_update
 
 SUBROUTINE ext_pio_open_for_write_begin(FileName,grid,SysDepInfo,DataHandle,Status)
   use pio_types
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   use module_domain
@@ -390,6 +408,9 @@ SUBROUTINE ext_pio_open_for_write_begin(FileName,grid,SysDepInfo,DataHandle,Stat
   character*128                     :: idstr,ntasks_x_str,loccomm_str
   integer                           :: gridid
   integer local_communicator_x, ntasks_x
+
+!-integer(PIO_OFFSET_KIND), parameter :: limit = 33554432
+! integer(PIO_OFFSET_KIND), parameter :: limit = 536870912
 
   call upgrade_filename(FileName)
 
@@ -414,13 +435,11 @@ SUBROUTINE ext_pio_open_for_write_begin(FileName,grid,SysDepInfo,DataHandle,Stat
      DH%first_operation = .false.
   end if
 
- !call mpi_info_create( info, ierr )
+! call pio_set_buffer_size_limit(limit)  
   stat = pio_CreateFile(DH%iosystem, DH%file_handle, &
                         pio_iotype_pnetcdf, FileName, PIO_64BIT_OFFSET)
- !call mpi_info_free( info, ierr)
 
   call netcdf_err(stat,Status)
-
   if(Status /= WRF_NO_ERR) then
     write(msg,*) 'NetCDF error in ext_pio_open_for_write_begin ',__FILE__,', line', __LINE__
     call wrf_debug ( WARN , TRIM(msg))
@@ -429,6 +448,8 @@ SUBROUTINE ext_pio_open_for_write_begin(FileName,grid,SysDepInfo,DataHandle,Stat
 
  !JPE added for performance
  !stat = nf90_set_fill(DH%file_handle, NF90_NOFILL, i)
+
+ !call pio_set_buffer_size_limit(limit)  
 
   DH%FileStatus  = WRF_FILE_OPENED_NOT_COMMITTED
   DH%FileName    = trim(FileName)
@@ -529,7 +550,7 @@ end subroutine ext_pio_open_for_write_commit
 subroutine ext_pio_ioclose(DataHandle, Status)
   use wrf_data_pio
   use pio_routines
-  use pio
+  use pio_nf
   use pio_kinds
   implicit none
   include 'wrf_status_codes.h'
@@ -573,7 +594,7 @@ end subroutine ext_pio_ioclose
 
 subroutine ext_pio_iosync( DataHandle, Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -682,7 +703,7 @@ end subroutine ext_pio_ioexit
 
 subroutine ext_pio_get_dom_ti_real_arr(DataHandle,Element,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
 
@@ -697,7 +718,7 @@ subroutine ext_pio_get_dom_ti_real_arr(DataHandle,Element,Data,Count,OutCount,St
   integer               ,intent(out)    :: Status
   type(wrf_data_handle) ,pointer        :: DH
   integer                               :: XType
-  integer                               :: Len
+  integer(kind=PIO_OFFSET_KIND)         :: Len
   integer                               :: stat
   real,                  allocatable    :: Buffer(:)
 
@@ -784,7 +805,7 @@ end subroutine ext_pio_get_dom_ti_real_arr
 
 subroutine ext_pio_get_dom_ti_real_sca(DataHandle,Element,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
 
@@ -799,7 +820,7 @@ subroutine ext_pio_get_dom_ti_real_sca(DataHandle,Element,Data,Count,OutCount,St
   integer               ,intent(out)    :: Status
   type(wrf_data_handle) ,pointer        :: DH
   integer                               :: XType
-  integer                               :: Len
+  integer(kind=PIO_OFFSET_KIND)         :: Len
   integer                               :: stat
   real,                  allocatable    :: Buffer(:)
 
@@ -886,7 +907,7 @@ end subroutine ext_pio_get_dom_ti_real_sca
 
 subroutine ext_pio_get_dom_ti_integer_arr(DataHandle,Element,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
 
@@ -901,7 +922,7 @@ subroutine ext_pio_get_dom_ti_integer_arr(DataHandle,Element,Data,Count,OutCount
   integer               ,intent(out)    :: Status
   type(wrf_data_handle) ,pointer        :: DH
   integer                               :: XType
-  integer                               :: Len
+  integer(kind=PIO_OFFSET_KIND)         :: Len
   integer                               :: stat
   integer,               allocatable    :: Buffer(:)
 
@@ -988,7 +1009,7 @@ end subroutine ext_pio_get_dom_ti_integer_arr
 
 subroutine ext_pio_get_dom_ti_integer_sca(DataHandle,Element,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
 
@@ -1003,7 +1024,7 @@ subroutine ext_pio_get_dom_ti_integer_sca(DataHandle,Element,Data,Count,OutCount
   integer               ,intent(out)    :: Status
   type(wrf_data_handle) ,pointer        :: DH
   integer                               :: XType
-  integer                               :: Len
+  integer(kind=PIO_OFFSET_KIND)         :: Len
   integer                               :: stat
   integer,               allocatable    :: Buffer(:)
 
@@ -1090,7 +1111,7 @@ end subroutine ext_pio_get_dom_ti_integer_sca
 
 subroutine ext_pio_get_dom_ti_double_arr(DataHandle,Element,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
 
@@ -1105,7 +1126,7 @@ subroutine ext_pio_get_dom_ti_double_arr(DataHandle,Element,Data,Count,OutCount,
   integer               ,intent(out)    :: Status
   type(wrf_data_handle) ,pointer        :: DH
   integer                               :: XType
-  integer                               :: Len
+  integer(kind=PIO_OFFSET_KIND)         :: Len
   integer                               :: stat
   real*8,                allocatable    :: Buffer(:)
 
@@ -1192,7 +1213,7 @@ end subroutine ext_pio_get_dom_ti_double_arr
 
 subroutine ext_pio_get_dom_ti_double_sca(DataHandle,Element,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
 
@@ -1207,7 +1228,7 @@ subroutine ext_pio_get_dom_ti_double_sca(DataHandle,Element,Data,Count,OutCount,
   integer               ,intent(out)    :: Status
   type(wrf_data_handle) ,pointer        :: DH
   integer                               :: XType
-  integer                               :: Len
+  integer(kind=PIO_OFFSET_KIND)         :: Len
   integer                               :: stat
   real*8,                allocatable    :: Buffer(:)
 
@@ -1294,7 +1315,7 @@ end subroutine ext_pio_get_dom_ti_double_sca
 
 subroutine ext_pio_get_dom_ti_logical_arr(DataHandle,Element,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
 
@@ -1309,7 +1330,7 @@ subroutine ext_pio_get_dom_ti_logical_arr(DataHandle,Element,Data,Count,OutCount
   integer               ,intent(out)    :: Status
   type(wrf_data_handle) ,pointer        :: DH
   integer                               :: XType
-  integer                               :: Len
+  integer(kind=PIO_OFFSET_KIND)         :: Len
   integer                               :: stat
   integer,               allocatable    :: Buffer(:)
 
@@ -1405,7 +1426,7 @@ end subroutine ext_pio_get_dom_ti_logical_arr
 
 subroutine ext_pio_get_dom_ti_logical_sca(DataHandle,Element,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
 
@@ -1420,7 +1441,7 @@ subroutine ext_pio_get_dom_ti_logical_sca(DataHandle,Element,Data,Count,OutCount
   integer               ,intent(out)    :: Status
   type(wrf_data_handle) ,pointer        :: DH
   integer                               :: XType
-  integer                               :: Len
+  integer(kind=PIO_OFFSET_KIND)         :: Len
   integer                               :: stat
   integer,               allocatable    :: Buffer(:)
 
@@ -1516,7 +1537,7 @@ end subroutine ext_pio_get_dom_ti_logical_sca
 
 subroutine ext_pio_get_dom_ti_char_arr(DataHandle,Element,Data,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
 
@@ -1531,7 +1552,7 @@ subroutine ext_pio_get_dom_ti_char_arr(DataHandle,Element,Data,Status)
   integer               ,intent(out)    :: Status
   type(wrf_data_handle) ,pointer        :: DH
   integer                               :: XType
-  integer                               :: Len
+  integer(kind=PIO_OFFSET_KIND)         :: Len
   integer                               :: stat
   
 
@@ -1564,8 +1585,8 @@ subroutine ext_pio_get_dom_ti_char_arr(DataHandle,Element,Data,Status)
 !---PIO_BCAST_ERROR : broadcast an error from io_rank 0 to all tasks in comm
 !---PIO_RETURN_ERROR : do nothing - allow the user to handle it
 
-    call pio_seterrorhandling(DH%file_handle, PIO_RETURN_ERROR)
-!---call pio_seterrorhandling(DH%file_handle, PIO_BCAST_ERROR)
+!---call pio_seterrorhandling(DH%file_handle, PIO_RETURN_ERROR)
+    call pio_seterrorhandling(DH%file_handle, PIO_BCAST_ERROR)
 !---call pio_seterrorhandling(DH%file_handle, PIO_INTERNAL_ERROR)
 
     stat = pio_inq_att(DH%file_handle, PIO_GLOBAL, Element, XType, Len)
@@ -1602,7 +1623,7 @@ end subroutine ext_pio_get_dom_ti_char_arr
 
 subroutine ext_pio_get_dom_ti_char_sca(DataHandle,Element,Data,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
 
@@ -1617,7 +1638,7 @@ subroutine ext_pio_get_dom_ti_char_sca(DataHandle,Element,Data,Status)
   integer               ,intent(out)    :: Status
   type(wrf_data_handle) ,pointer        :: DH
   integer                               :: XType
-  integer                               :: Len
+  integer(kind=PIO_OFFSET_KIND)         :: Len
   integer                               :: stat
   
 
@@ -1677,7 +1698,7 @@ end subroutine ext_pio_get_dom_ti_char_sca
 
 subroutine ext_pio_put_dom_ti_real_arr(DataHandle,Element,Data,Count,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -1758,7 +1779,7 @@ end subroutine ext_pio_put_dom_ti_real_arr
 
 subroutine ext_pio_put_dom_ti_real_sca(DataHandle,Element,Data,Count,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -1826,7 +1847,7 @@ end subroutine ext_pio_put_dom_ti_real_sca
 
 subroutine ext_pio_put_dom_ti_integer_arr(DataHandle,Element,Data,Count,Status)
   use pio_kinds
-  use pio
+  use pio_nf
 
   use wrf_data_pio
   use pio_routines
@@ -1903,7 +1924,7 @@ end subroutine ext_pio_put_dom_ti_integer_arr
 
 subroutine ext_pio_put_dom_ti_integer_sca(DataHandle,Element,Data,Count,Status)
   use pio_kinds
-  use pio
+  use pio_nf
 
   use wrf_data_pio
   use pio_routines
@@ -1974,7 +1995,7 @@ end subroutine ext_pio_put_dom_ti_integer_sca
 
 subroutine ext_pio_put_dom_ti_double_arr(DataHandle,Element,Data,Count,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -2054,7 +2075,7 @@ end subroutine ext_pio_put_dom_ti_double_arr
 
 subroutine ext_pio_put_dom_ti_double_sca(DataHandle,Element,Data,Count,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -2130,7 +2151,7 @@ subroutine ext_pio_put_dom_ti_double_sca(DataHandle,Element,Data,Count,Status)
 end subroutine ext_pio_put_dom_ti_double_sca
 
 subroutine ext_pio_put_dom_ti_logical_arr(DataHandle,Element,Data,Count,Status)
-  use pio
+  use pio_nf
   use pio_kinds
 
   use wrf_data_pio
@@ -2251,7 +2272,7 @@ subroutine ext_pio_put_dom_ti_logical_arr(DataHandle,Element,Data,Count,Status)
 end subroutine ext_pio_put_dom_ti_logical_arr
 
 subroutine ext_pio_put_dom_ti_logical_sca(DataHandle,Element,Data,Count,Status)
-  use pio
+  use pio_nf
   use pio_kinds
 
   use wrf_data_pio
@@ -2367,7 +2388,7 @@ subroutine ext_pio_put_dom_ti_logical_sca(DataHandle,Element,Data,Count,Status)
 end subroutine ext_pio_put_dom_ti_logical_sca
 
 subroutine ext_pio_put_dom_ti_char_arr(DataHandle,Element,Data,Status)
-  use pio
+  use pio_nf
   use pio_kinds
 
   use wrf_data_pio
@@ -2438,7 +2459,7 @@ subroutine ext_pio_put_dom_ti_char_arr(DataHandle,Element,Data,Status)
 end subroutine ext_pio_put_dom_ti_char_arr
 
 subroutine ext_pio_put_dom_ti_char_sca(DataHandle,Element,Data,Status)
-  use pio
+  use pio_nf
   use pio_kinds
 
   use wrf_data_pio
@@ -2515,7 +2536,7 @@ subroutine ext_pio_put_dom_ti_char_sca(DataHandle,Element,Data,Status)
 end subroutine ext_pio_put_dom_ti_char_sca
 
 subroutine ext_pio_put_var_ti_real_arr(DataHandle,Element,Var,Data,Count,Status)
-  use pio
+  use pio_nf
   use pio_kinds
 
   use wrf_data_pio
@@ -2591,7 +2612,7 @@ subroutine ext_pio_put_var_ti_real_arr(DataHandle,Element,Var,Data,Count,Status)
 end subroutine ext_pio_put_var_ti_real_arr
 
 subroutine ext_pio_put_var_ti_real_sca(DataHandle,Element,Var,Data,Count,Status)
-  use pio
+  use pio_nf
   use pio_kinds
 
   use wrf_data_pio
@@ -2667,7 +2688,7 @@ subroutine ext_pio_put_var_ti_real_sca(DataHandle,Element,Var,Data,Count,Status)
 end subroutine ext_pio_put_var_ti_real_sca
 
 subroutine ext_pio_put_var_td_real_arr(DataHandle,Element,DateStr,Var,Data,Count,Status)
-  use pio
+  use pio_nf
   use pio_kinds
 
   use wrf_data_pio
@@ -2832,7 +2853,7 @@ subroutine ext_pio_put_var_td_real_arr(DataHandle,Element,DateStr,Var,Data,Count
 end subroutine ext_pio_put_var_td_real_arr
 
 subroutine ext_pio_put_var_td_real_sca(DataHandle,Element,DateStr,Var,Data,Count,Status)
-  use pio
+  use pio_nf
   use pio_kinds
 
   use wrf_data_pio
@@ -3000,7 +3021,7 @@ end subroutine ext_pio_put_var_td_real_sca
 
 subroutine ext_pio_put_var_ti_double_arr(DataHandle,Element,Var,Data,Count,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -3069,7 +3090,7 @@ end subroutine ext_pio_put_var_ti_double_arr
 
 subroutine ext_pio_put_var_ti_double_sca(DataHandle,Element,Var,Data,Count,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -3140,7 +3161,7 @@ end subroutine ext_pio_put_var_ti_double_sca
 
 subroutine ext_pio_put_var_td_double_arr(DataHandle,Element,DateStr,Var,Data,Count,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -3303,7 +3324,7 @@ end subroutine ext_pio_put_var_td_double_arr
 
 subroutine ext_pio_put_var_td_double_sca(DataHandle,Element,DateStr,Var,Data,Count,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -3468,7 +3489,7 @@ end subroutine ext_pio_put_var_td_double_sca
 
 subroutine ext_pio_put_var_ti_integer_arr(DataHandle,Element,Var,Data,Count,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -3542,7 +3563,7 @@ end subroutine ext_pio_put_var_ti_integer_arr
 
 subroutine ext_pio_put_var_ti_integer_sca(DataHandle,Element,Var,Data,Count,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -3618,7 +3639,7 @@ end subroutine ext_pio_put_var_ti_integer_sca
 
 subroutine ext_pio_put_var_td_integer_arr(DataHandle,Element,DateStr,Var,Data,Count,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -3781,7 +3802,7 @@ end subroutine ext_pio_put_var_td_integer_arr
 
 subroutine ext_pio_put_var_td_integer_sca(DataHandle,Element,DateStr,Var,Data,Count,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -3946,7 +3967,7 @@ end subroutine ext_pio_put_var_td_integer_sca
 
 subroutine ext_pio_put_var_ti_logical_arr(DataHandle,Element,Var,Data,Count,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -4043,7 +4064,7 @@ end subroutine ext_pio_put_var_ti_logical_arr
 
 subroutine ext_pio_put_var_ti_logical_sca(DataHandle,Element,Var,Data,Count,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -4130,7 +4151,7 @@ end subroutine ext_pio_put_var_ti_logical_sca
 
 subroutine ext_pio_put_var_td_logical_arr(DataHandle,Element,DateStr,Var,Data,Count,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -4315,7 +4336,7 @@ end subroutine ext_pio_put_var_td_logical_arr
 
 subroutine ext_pio_put_var_td_logical_sca(DataHandle,Element,DateStr,Var,Data,Count,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -4484,7 +4505,7 @@ end subroutine ext_pio_put_var_td_logical_sca
 
 subroutine ext_pio_put_var_ti_char_arr(DataHandle,Element,Var,Data,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -4596,7 +4617,7 @@ end subroutine ext_pio_put_var_ti_char_arr
 
 subroutine ext_pio_put_var_ti_char_sca(DataHandle,Element,Var,Data,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -4675,7 +4696,7 @@ end subroutine ext_pio_put_var_ti_char_sca
 
 subroutine ext_pio_put_var_td_char_arr(DataHandle,Element,DateStr,Var,Data,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -4848,7 +4869,7 @@ end subroutine ext_pio_put_var_td_char_arr
 
 subroutine ext_pio_put_var_td_char_sca(DataHandle,Element,DateStr,Var,Data,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -5031,7 +5052,7 @@ end subroutine ext_pio_put_var_td_char_sca
 
 subroutine ext_pio_get_var_ti_real_arr(DataHandle,Element,Var,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -5044,7 +5065,7 @@ subroutine ext_pio_get_var_ti_real_arr(DataHandle,Element,Var,Data,Count,OutCoun
   integer,               intent(out)    :: OutCount
   integer               ,intent(out)    :: Status
   type(wrf_data_handle) ,pointer        :: DH
-  integer                               :: XLen
+  integer(kind=PIO_OFFSET_KIND)         :: XLen
   real,                     allocatable :: Buffer(:)
   character (VarNameLen)                :: VarName
   integer                               :: stat
@@ -5138,7 +5159,7 @@ end subroutine ext_pio_get_var_ti_real_arr
 
 subroutine ext_pio_get_var_ti_real_sca(DataHandle,Element,Var,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -5151,7 +5172,7 @@ subroutine ext_pio_get_var_ti_real_sca(DataHandle,Element,Var,Data,Count,OutCoun
   integer,               intent(out)    :: OutCount
   integer               ,intent(out)    :: Status
   type(wrf_data_handle) ,pointer        :: DH
-  integer                               :: XLen
+  integer(kind=PIO_OFFSET_KIND)         :: XLen
   real,                     allocatable :: Buffer(:)
   character (VarNameLen)                :: VarName
   integer                               :: stat
@@ -5245,7 +5266,7 @@ end subroutine ext_pio_get_var_ti_real_sca
 
 subroutine ext_pio_get_var_td_real_arr(DataHandle,Element,DateStr,Var,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -5398,7 +5419,7 @@ end subroutine ext_pio_get_var_td_real_arr
 
 subroutine ext_pio_get_var_td_real_sca(DataHandle,Element,DateStr,Var,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -5551,7 +5572,7 @@ end subroutine ext_pio_get_var_td_real_sca
 
 subroutine ext_pio_get_var_ti_double_arr(DataHandle,Element,Var,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -5564,7 +5585,7 @@ subroutine ext_pio_get_var_ti_double_arr(DataHandle,Element,Var,Data,Count,OutCo
   integer,               intent(out)    :: OutCount
   integer               ,intent(out)    :: Status
   type(wrf_data_handle) ,pointer        :: DH
-  integer                               :: XLen
+  integer(kind=PIO_OFFSET_KIND)         :: XLen
   real*8,                allocatable    :: Buffer(:)
   character (VarNameLen)                :: VarName
   integer                               :: stat
@@ -5658,7 +5679,7 @@ end subroutine ext_pio_get_var_ti_double_arr
 
 subroutine ext_pio_get_var_ti_double_sca(DataHandle,Element,Var,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -5671,7 +5692,7 @@ subroutine ext_pio_get_var_ti_double_sca(DataHandle,Element,Var,Data,Count,OutCo
   integer,               intent(out)    :: OutCount
   integer               ,intent(out)    :: Status
   type(wrf_data_handle) ,pointer        :: DH
-  integer                               :: XLen
+  integer(kind=PIO_OFFSET_KIND)         :: XLen
   real*8,                allocatable    :: Buffer(:)
   character (VarNameLen)                :: VarName
   integer                               :: stat
@@ -5765,7 +5786,7 @@ end subroutine ext_pio_get_var_ti_double_sca
 
 subroutine ext_pio_get_var_td_double_arr(DataHandle,Element,DateStr,Var,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -5918,7 +5939,7 @@ end subroutine ext_pio_get_var_td_double_arr
 
 subroutine ext_pio_get_var_td_double_sca(DataHandle,Element,DateStr,Var,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -6071,7 +6092,7 @@ end subroutine ext_pio_get_var_td_double_sca
 
 subroutine ext_pio_get_var_ti_integer_arr(DataHandle,Element,Var,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -6084,7 +6105,7 @@ subroutine ext_pio_get_var_ti_integer_arr(DataHandle,Element,Var,Data,Count,OutC
   integer,               intent(out)    :: OutCount
   integer               ,intent(out)    :: Status
   type(wrf_data_handle) ,pointer        :: DH
-  integer                               :: XLen
+  integer(kind=PIO_OFFSET_KIND)         :: XLen
   integer,               allocatable    :: Buffer(:)
   character (VarNameLen)                :: VarName
   integer                               :: stat
@@ -6178,7 +6199,7 @@ end subroutine ext_pio_get_var_ti_integer_arr
 
 subroutine ext_pio_get_var_ti_integer_sca(DataHandle,Element,Var,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -6191,7 +6212,7 @@ subroutine ext_pio_get_var_ti_integer_sca(DataHandle,Element,Var,Data,Count,OutC
   integer,               intent(out)    :: OutCount
   integer               ,intent(out)    :: Status
   type(wrf_data_handle) ,pointer        :: DH
-  integer                               :: XLen
+  integer(kind=PIO_OFFSET_KIND)         :: XLen
   integer,               allocatable    :: Buffer(:)
   character (VarNameLen)                :: VarName
   integer                               :: stat
@@ -6285,7 +6306,7 @@ end subroutine ext_pio_get_var_ti_integer_sca
 
 subroutine ext_pio_get_var_td_integer_arr(DataHandle,Element,DateStr,Var,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -6438,7 +6459,7 @@ end subroutine ext_pio_get_var_td_integer_arr
 
 subroutine ext_pio_get_var_td_integer_sca(DataHandle,Element,DateStr,Var,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -6591,7 +6612,7 @@ end subroutine ext_pio_get_var_td_integer_sca
 
 subroutine ext_pio_get_var_ti_logical_arr(DataHandle,Element,Var,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -6604,7 +6625,7 @@ subroutine ext_pio_get_var_ti_logical_arr(DataHandle,Element,Var,Data,Count,OutC
   integer,               intent(out)    :: OutCount
   integer               ,intent(out)    :: Status
   type(wrf_data_handle) ,pointer        :: DH
-  integer                               :: XLen
+  integer(kind=PIO_OFFSET_KIND)         :: XLen
   integer,               allocatable    :: Buffer(:)
   character (VarNameLen)                :: VarName
   integer                               :: stat
@@ -6698,7 +6719,7 @@ end subroutine ext_pio_get_var_ti_logical_arr
 
 subroutine ext_pio_get_var_ti_logical_sca(DataHandle,Element,Var,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -6711,7 +6732,7 @@ subroutine ext_pio_get_var_ti_logical_sca(DataHandle,Element,Var,Data,Count,OutC
   integer,               intent(out)    :: OutCount
   integer               ,intent(out)    :: Status
   type(wrf_data_handle) ,pointer        :: DH
-  integer                               :: XLen
+  integer(kind=PIO_OFFSET_KIND)         :: XLen
   integer,               allocatable    :: Buffer(:)
   character (VarNameLen)                :: VarName
   integer                               :: stat
@@ -6805,7 +6826,7 @@ end subroutine ext_pio_get_var_ti_logical_sca
 
 subroutine ext_pio_get_var_td_logical_arr(DataHandle,Element,DateStr,Var,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -6957,7 +6978,7 @@ end subroutine ext_pio_get_var_td_logical_arr
 
 subroutine ext_pio_get_var_td_logical_sca(DataHandle,Element,DateStr,Var,Data,Count,OutCount,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -7109,7 +7130,7 @@ end subroutine ext_pio_get_var_td_logical_sca
 
 subroutine ext_pio_get_var_ti_char_arr(DataHandle,Element,Var,Data,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -7122,7 +7143,7 @@ subroutine ext_pio_get_var_ti_char_arr(DataHandle,Element,Var,Data,Status)
   
   integer               ,intent(out)    :: Status
   type(wrf_data_handle) ,pointer        :: DH
-  integer                               :: XLen
+  integer(kind=PIO_OFFSET_KIND)         :: XLen
   
   character (VarNameLen)                :: VarName
   integer                               :: stat
@@ -7200,7 +7221,7 @@ end subroutine ext_pio_get_var_ti_char_arr
 
 subroutine ext_pio_get_var_ti_char_sca(DataHandle,Element,Var,Data,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -7213,7 +7234,7 @@ subroutine ext_pio_get_var_ti_char_sca(DataHandle,Element,Var,Data,Status)
   
   integer               ,intent(out)    :: Status
   type(wrf_data_handle) ,pointer        :: DH
-  integer                               :: XLen
+  integer(kind=PIO_OFFSET_KIND)         :: XLen
   
   character (VarNameLen)                :: VarName
   integer                               :: stat
@@ -7256,7 +7277,7 @@ subroutine ext_pio_get_var_ti_char_sca(DataHandle,Element,Var,Data,Status)
         return
       endif
     enddo
-    stat = pio_inq_att(DH%file_handle,DH%descVar(NVar),trim(Element),XType,XLen)
+    stat = pio_inq_att(DH%file_handle,DH%descVar(NVar)%varID,trim(Element),XType,XLen)
     call netcdf_err(stat,Status)
     if(Status /= WRF_NO_ERR) then
       write(msg,*) 'NetCDF error in ',__FILE__,' ','CHAR',', line', __LINE__,' Element ',Element
@@ -7291,7 +7312,7 @@ end subroutine ext_pio_get_var_ti_char_sca
 
 subroutine ext_pio_get_var_td_char_arr(DataHandle,Element,DateStr,Var,Data,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -7429,7 +7450,7 @@ end subroutine ext_pio_get_var_td_char_arr
 
 subroutine ext_pio_get_var_td_char_sca(DataHandle,Element,DateStr,Var,Data,Status)
   use pio_kinds
-  use pio
+  use pio_nf
   use wrf_data_pio
   use pio_routines
   implicit none
@@ -7863,8 +7884,8 @@ subroutine ext_pio_write_field(DataHandle,DateStr,Var,Field,FieldType,grid, &
   integer, dimension(1,1)                      :: tmp0dint
   integer, dimension(:,:,:), allocatable       :: tmp2dint
 
-! write(unit=0, fmt='(3a,i6)') 'file: ', __FILE__, ', line: ', __LINE__
-! write(unit=0, fmt='(5a)') ' Write var: <', trim(var), '>, at <', trim(DateStr), '>'
+  write(unit=0, fmt='(3a,i6)') 'file: ', __FILE__, ', line: ', __LINE__
+  write(unit=0, fmt='(5a)') ' Write var: <', trim(var), '>, at <', trim(DateStr), '>'
 
  !Local, possibly adjusted, copies of MemoryStart and MemoryEnd
   MemoryOrder = trim(adjustl(MemoryOrdIn))
@@ -8156,6 +8177,15 @@ subroutine ext_pio_write_field(DataHandle,DateStr,Var,Field,FieldType,grid, &
                       Stagger,FieldType,Field,Status)
       endif
     else
+        write(unit=0, fmt='(3a,i6)') 'file: ', __FILE__, ', line: ', __LINE__
+        write(unit=0, fmt='(6x,5a)') ' Write var: <', trim(var), '>, at <', trim(DateStr), '>'
+        write(unit=0, fmt='(6x,a,6I6)') 'Length_global = ', Length_global(1:NDim)
+        write(unit=0, fmt='(6x,a,6I6)') 'VStart = ', VStart(1:NDim)
+        write(unit=0, fmt='(6x,a,6I6)') 'VCount = ', VCount(1:NDim)
+        write(unit=0, fmt='(6x,a,6I6)') 'Length = ', Length(1:NDim)
+        write(unit=0, fmt='(6x,3a)') 'MemoryOrder = <', trim(MemoryOrder), '>'
+        write(unit=0, fmt='(6x,3a)') 'Stagger = <', trim(Stagger), '>'
+
        call FieldIO('write',DataHandle,DateStr,Length_global,VStart,VCount,Length,MemoryOrder, &
                      Stagger,FieldType,Field,Status)
     end if
@@ -8219,7 +8249,7 @@ subroutine ext_pio_read_field(DataHandle,DateStr,Var,Field,FieldType,grid, &
   integer                                      :: VarID
   integer                                      :: NDims
   integer                                      :: NAtts
-  integer(KIND=PIO_OFFSET)                     :: Len
+  integer(KIND=PIO_OFFSET_KIND)                :: Len
   integer                                      :: stat
   integer                                      :: i, j, n, fldsize
   integer                                      :: FType
