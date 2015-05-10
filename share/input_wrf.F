@@ -844,7 +844,6 @@
         !  method that is used in all of the "ideal" programs to get the
         !  base-state height (phb).
 
-#ifndef PIO
         CALL wrf_get_dom_ti_char ( fid , 'SIMULATION_INITIALIZATION_TYPE', sim_type , ierr )
         IF      ( TRIM(sim_type) .EQ. "IDEALIZED DATA" ) THEN
            grid%this_is_an_ideal_run = .TRUE.
@@ -854,10 +853,6 @@
            CALL wrf_get_dom_ti_char ( fid , 'START_DATE' , input_name , ierr )
            grid%this_is_an_ideal_run = INDEX(TRIM(input_name) , '0001-' ) .NE. 0
         END IF
-#else
-        CALL wrf_get_dom_ti_char ( fid , 'START_DATE' , input_name , ierr )
-        grid%this_is_an_ideal_run = INDEX(TRIM(input_name) , '0001-' ) .NE. 0
-#endif
 
         IF ( grid%this_is_an_ideal_run ) THEN
           grid%hypsometric_opt = 1

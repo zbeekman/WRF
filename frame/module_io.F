@@ -101,12 +101,6 @@ SUBROUTINE wrf_ioinit( Status )
 #ifdef PHDF5
   CALL ext_phdf5_ioinit( SysDepInfo, ierr( 3) )
 #endif
-#ifdef PNETCDF
-  CALL ext_pnc_ioinit( SysDepInfo, ierr(11) )
-#endif
-#ifdef PIO
-  CALL ext_pio_ioinit( SysDepInfo, ierr(12) )
-#endif
 #ifdef MCELIO
   CALL ext_mcel_ioinit ( SysDepInfo, ierr( 4) )
 #endif
@@ -170,12 +164,6 @@ SUBROUTINE wrf_ioexit( Status )
 #endif
 #ifdef PHDF5
   CALL ext_phdf5_ioexit( ierr( 3) )
-#endif
-#ifdef PNETCDF
-  CALL ext_pnc_ioexit(ierr(11) )
-#endif
-#ifdef PIO
-  CALL ext_pio_ioexit(ierr(12) )
 #endif
 #ifdef MCELIO
   CALL ext_mcel_ioexit ( ierr( 4) )

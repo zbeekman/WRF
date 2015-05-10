@@ -111,7 +111,7 @@ subroutine ext_pio_open_for_read_begin( FileName, grid, SysDepInfo, DataHandle, 
      DH%first_operation = .false.
   end if
 
-  stat = pio_openfile(DH%iosystem, DH%file_handle, pio_iotype_pnetcdf, FileName)
+  stat = pio_openfile(DH%iosystem, DH%file_handle, DH%piotype, FileName)
   call netcdf_err(stat,Status)
   if(Status /= WRF_NO_ERR) then
      write(msg,*) 'NetCDF error in ',__FILE__,', line', __LINE__
@@ -258,9 +258,6 @@ subroutine ext_pio_open_for_update( FileName, grid, SysDepInfo, DataHandle, Stat
   integer                                :: i
   integer                                :: ndims, unlimitedDimID
   character(PIO_MAX_NAME)                :: Name
-  integer(PIO_OFFSET_KIND), parameter :: limit = 33554432
-! integer(PIO_OFFSET_KIND), parameter :: limit = 536870912
-! integer(PIO_OFFSET_KIND), parameter :: limit = 1073741824
 
   call upgrade_filename(FileName)
 
@@ -283,8 +280,8 @@ subroutine ext_pio_open_for_update( FileName, grid, SysDepInfo, DataHandle, Stat
      DH%first_operation = .false.
   end if
 
-  call pio_set_buffer_size_limit(limit)  
-  stat = pio_openfile(DH%iosystem, DH%file_handle, pio_iotype_pnetcdf, FileName)
+  call pio_set_buffer_size_limit(DH%piobuflimit)  
+  stat = pio_openfile(DH%iosystem, DH%file_handle, DH%piotype, FileName)
   call netcdf_err(stat,Status)
   if(Status /= WRF_NO_ERR) then
     write(msg,*) 'NetCDF error in ',__FILE__,', line', __LINE__
@@ -427,7 +424,7 @@ SUBROUTINE ext_pio_open_for_write_begin(FileName,grid,SysDepInfo,DataHandle,Stat
   end if
 
   stat = pio_CreateFile(DH%iosystem, DH%file_handle, &
-                        pio_iotype_pnetcdf, FileName, PIO_64BIT_OFFSET)
+                        DH%piotype, FileName, PIO_64BIT_OFFSET)
 
   call netcdf_err(stat,Status)
   if(Status /= WRF_NO_ERR) then
@@ -438,8 +435,6 @@ SUBROUTINE ext_pio_open_for_write_begin(FileName,grid,SysDepInfo,DataHandle,Stat
 
  !JPE added for performance
  !stat = nf90_set_fill(DH%file_handle, NF90_NOFILL, i)
-
- !call pio_set_buffer_size_limit(limit)  
 
   DH%FileStatus  = WRF_FILE_OPENED_NOT_COMMITTED
   DH%FileName    = trim(FileName)

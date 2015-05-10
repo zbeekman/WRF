@@ -93,7 +93,7 @@ GPFS            =
 CURL            = -lcurl -lgpfs
 HDF5            = -lhdf5_hl -lhdf5
 NETCDF          = -lnetcdf -lnetcdff
-PIO             = -lpio
+PIO             = -lpiof -lpioc
 ZLIB            = -lz -lsz
 DEP_LIB_PATH    = 
 NETCDF4_DEP_LIB = $(DEP_LIB_PATH) $(HDF5) $(ZLIB) $(GPFS) $(CURL) $(PIO) $(NETCDF)
@@ -216,8 +216,8 @@ CC_TOOLS_CFLAGS = -DNMM_CORE=$(WRF_NMM_CORE) -DPIO -DNETCDF
  LIB_EXTERNAL    = \
                       -L$(WRF_SRC_ROOT_DIR)/external/io_netcdf -lwrfio_nf \
                       -L$(WRF_SRC_ROOT_DIR)/external/io_pio -lwrfio_pio \
-		      -L/glade/p/work/huangwei/mywrf/WRF/netcdf_links/lib \
-			-lpio -lpnetcdf -lnetcdff -lnetcdf -lcurl -lgpfs \
+		      -L/glade/scratch/huangwei/src/wrfWithPIO/netcdf_links/lib \
+			-lpiof -lpioc -lpnetcdf -lnetcdff -lnetcdf -lcurl -lgpfs \
 			-lhdf5_hl -lhdf5 \
 			-lsz -lz -lm
 
@@ -226,9 +226,9 @@ LDFLAGS         =    $(OMP) $(FCFLAGS) $(LDFLAGS_LOCAL)
 ENVCOMPDEFS     =    
 WRF_CHEM	=	0 
 CPPFLAGS        =    $(ARCHFLAGS) $(ENVCOMPDEFS) -I$(LIBINCLUDE) $(TRADFLAG) 
-NETCDFPATH      =    /glade/p/work/huangwei/mywrf/WRF/netcdf_links
-PNETCDFPATH     =    /glade/p/work/huangwei/mywrf/WRF/netcdf_links
-PIOPATH         =    /glade/p/work/huangwei/mywrf/WRF/netcdf_links
+NETCDFPATH      =    /glade/scratch/huangwei/src/wrfWithPIO/netcdf_links
+PNETCDFPATH     =    /glade/scratch/huangwei/src/wrfWithPIO/netcdf_links
+PIOPATH         =    /glade/scratch/huangwei/src/wrfWithPIO/netcdf_links
 
 bundled:  io_only 
 external: io_only $(WRF_SRC_ROOT_DIR)/external/RSL_LITE/librsl_lite.a gen_comms_rsllite module_dm_rsllite $(ESMF_TARGET)

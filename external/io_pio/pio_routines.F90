@@ -1180,8 +1180,8 @@ subroutine initialize_pio(grid, DH)
    type(domain)                   :: grid
    type(wrf_data_handle), pointer :: DH
 
-   integer     :: ierr
-   integer(i4) :: communicator, pioprocs, piostart, piostride, pioshift
+   integer     :: n, ierr
+   integer(i4) :: communicator
 
    communicator = grid%communicator
 
@@ -1198,51 +1198,51 @@ subroutine initialize_pio(grid, DH)
 
    if(grid%pioprocs > nprocs) then
      !Force pioprocs to be nprocs.
-      pioprocs = nprocs
+      DH%pioprocs = nprocs
    else if(grid%pioprocs < 1) then
      !Force pioprocs to be 1.
-      pioprocs = 1
+      DH%pioprocs = 1
    else
-      pioprocs = grid%pioprocs
+      DH%pioprocs = grid%pioprocs
    endif
 
-   piostride = nprocs / grid%pioprocs
+   DH%piostride = nprocs / grid%pioprocs
 
-   if((grid%pioprocs * piostride) < nprocs) then
+   if((grid%pioprocs * DH%piostride) < nprocs) then
      !We expect that: nprocs = piostride * grid%pioprocs
-      piostride = piostride + 1
+      DH%piostride = DH%piostride + 1
    endif
 
-   if(piostride /= grid%piostride) then
+   if(DH%piostride /= grid%piostride) then
      !We expect that user's piostride equals what we calculated here.
      !If not, override it.
       write(unit=0, fmt='(3a,i6)') 'file: ', __FILE__, ', line: ', __LINE__
-      write(unit=0, fmt='(a,i6)') 'Calculated piostride = ', piostride, &
+      write(unit=0, fmt='(a,i6)') 'Calculated piostride = ', DH%piostride, &
                                   'User provided piostride = ', grid%piostride
    endif
 
    if(grid%pioshift < 0) then
      !pioshift can from 0, but can not less than 0, usually, we 
       if(grid%piostride > 1) then
-         pioshift = 1
+         DH%pioshift = 1
       else
-         pioshift = 0
+         DH%pioshift = 0
       endif
       write(unit=0, fmt='(3a,i6)') 'file: ', __FILE__, ', line: ', __LINE__
-      write(unit=0, fmt='(a,i6)') 'PIO has forced pioshift to: ', pioshift
+      write(unit=0, fmt='(a,i6)') 'PIO has forced pioshift to: ', DH%pioshift
    else if(grid%pioshift >= grid%piostride) then
      !pioshift can not large then piostride
       write(unit=0, fmt='(3a,i6)') 'file: ', __FILE__, ', line: ', __LINE__
       write(unit=0, fmt='(a,i6)') 'User provided a pioshift of: ', grid%pioshift
       if(grid%piostride > 1) then
-         pioshift = 1
+         DH%pioshift = 1
       else
-         pioshift = 0
+         DH%pioshift = 0
       endif
       write(unit=0, fmt='(3a,i6)') 'file: ', __FILE__, ', line: ', __LINE__
-      write(unit=0, fmt='(a,i6)') 'PIO has forced pioshift to: ', pioshift
+      write(unit=0, fmt='(a,i6)') 'PIO has forced pioshift to: ', DH%pioshift
    else
-      pioshift = grid%pioshift
+      DH%pioshift = grid%pioshift
    endif
 
    if(grid%piostart < 0) then
@@ -1250,10 +1250,32 @@ subroutine initialize_pio(grid, DH)
       write(unit=0, fmt='(3a,i6)') 'file: ', __FILE__, ', line: ', __LINE__
       write(unit=0, fmt='(a,i6)') 'User provided a piostart of: ', grid%piostart
       write(unit=0, fmt='(a,i6)') 'PIO has forced piosstart to: ', 0
-      piostart = 0
+      DH%piostart = 0
    else
-      piostart = grid%piostart
+      DH%piostart = grid%piostart
    endif
+
+   if(PIO_IOTYPE_NETCDF4P == grid%piotype) then
+       DH%piotype = PIO_IOTYPE_NETCDF4P
+   else if(PIO_IOTYPE_NETCDF4C == grid%piotype) then
+       DH%piotype = PIO_IOTYPE_NETCDF4C
+   else if(PIO_IOTYPE_NETCDF == grid%piotype) then
+       DH%piotype = PIO_IOTYPE_NETCDF
+   else
+       DH%piotype = PIO_IOTYPE_PNETCDF
+   end if
+
+   if(PIO_rearr_box == grid%piomethod) then
+       DH%piomethod = PIO_rearr_box
+   else
+       DH%piomethod = PIO_rearr_subset
+   end if
+
+   DH%piobuflimit = 1048576
+   do n = 1, 10
+      if(DH%piobuflimit >= grid%piobuflimit) exit
+      DH%piobuflimit = 2*DH%piobuflimit
+   end do
 
   !write(unit=0, fmt='(3a,i6)') 'file: ', __FILE__, ', line: ', __LINE__
   !write(unit=0, fmt='(2(a,i6))') 'nprocs = ', nprocs, ', myrank = ', myrank
@@ -1263,20 +1285,12 @@ subroutine initialize_pio(grid, DH)
   !                             ', pioshift = ', pioshift
 
   !call PIO_init to initiate iosystem
-  !call PIO_init(my_rank, MPI_COMM_WORLD, 4, 0, 4, PIO_rearr_box, iosystem, 1)
-  !call PIO_init(myrank, MPI_COMM_WORLD, pioprocs, &
-  
-   call PIO_init(myrank, communicator, pioprocs, &
-                 piostart, piostride, &
-                 PIO_rearr_box, DH%iosystem, pioshift)
+   call PIO_init(myrank, communicator, DH%pioprocs, &
+                 DH%piostart, DH%piostride, &
+                 DH%piomethod, DH%iosystem, DH%pioshift)
 
    DH%nprocs = nprocs
    DH%myrank = myrank
-
-   DH%piostart = piostart
-   DH%pioshift = pioshift
-   DH%pioprocs = pioprocs
-   DH%piostride = piostride
 
    call get_ijk_from_grid(grid,                         &
                           ids, ide, jds, jde, kds, kde, &

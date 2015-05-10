@@ -10,7 +10,8 @@
 
 module wrf_data_pio
 
-  use pio
+  use pio_types
+  use pio_nf
   use pio_kinds
 
   integer                , parameter      :: FATAL            = 0
@@ -127,7 +128,7 @@ module wrf_data_pio
    integer(i4)             :: iostat       ! PIO-specific io status
    integer(i4)             :: myrank, nprocs
    integer(i4)             :: pioprocs, piostart, piostride, pioshift
-                                           ! the 3D grid size used to write VDC data
+   integer(i4)             :: piobuflimit, piotype, piomethod
   end type wrf_data_handle
 
   type(wrf_data_handle),target            :: WrfDataHandles(WrfDataHandleMax)
