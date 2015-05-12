@@ -1,3 +1,4 @@
+#define HRD_MULTIPLE_STORMS
 !-----------------------------------------------------------------------
 !
 !NCEP_MESO:MEDIATION_LAYER:SOLVER

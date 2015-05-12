@@ -163,6 +163,7 @@ SUBROUTINE med_shutdown_io ( grid , config_flags )
    USE module_io_domain
   ! Model layer
    USE module_configure
+   USE module_dm, ONLY : domain_active_this_task
 
    IMPLICIT NONE
 
@@ -171,15 +172,27 @@ SUBROUTINE med_shutdown_io ( grid , config_flags )
    TYPE (grid_config_rec_type) , INTENT(IN)   :: config_flags
   ! Local
    CHARACTER (LEN=80)      :: message
-   INTEGER                 :: ierr
+   INTEGER                 :: id, ierr
 
+write(0,*)__FILE__,__LINE__
    IF ( grid%oid > 0 ) CALL close_dataset ( grid%oid , config_flags , "DATASET=HISTORY" )
    IF ( grid%lbc_fid > 0 ) CALL close_dataset ( grid%lbc_fid , config_flags , "DATASET=BOUNDARY" )
 
+write(0,*)__FILE__,__LINE__
 ! registry generated closes for auxhist streams
 #include "shutdown_closes.inc"
 
-   CALL wrf_ioexit( ierr )    ! shut down the quilt I/O
+write(0,*)__FILE__,__LINE__
+   DO id = 1, max_domains
+     IF( domain_active_this_task(id) ) THEN
+       CALL push_communicators_for_domain(id)
+write(0,*)__FILE__,__LINE__,id
+       CALL wrf_ioexit( ierr )    ! shut down the quilt I/O
+write(0,*)__FILE__,__LINE__
+       CALL pop_communicators_for_domain
+     ENDIF
+   ENDDO
+write(0,*)__FILE__,__LINE__
 
    RETURN
 
