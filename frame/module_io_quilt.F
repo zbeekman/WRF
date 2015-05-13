@@ -1678,7 +1678,15 @@ okay_to_w = .false.
             CALL ext_gr2_ioexit( Status )
 #endif
             CALL wrf_message ( 'I/O QUILT SERVERS DONE' )
-            CALL mpi_finalize(ierr)
+#if ( DA_CORE != 1 )
+            IF (coupler_on) THEN
+               CALL cpl_finalize()
+            ELSE
+#endif
+               CALL mpi_finalize(ierr)
+#if ( DA_CORE != 1 )
+            END IF
+#endif
             STOP
           ELSE
             WRITE(mess,*)'Possible 32-bit overflow on output server. Try larger nio_tasks_per_group in namelist.'
