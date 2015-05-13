@@ -585,6 +585,7 @@ gen_packs_halo ( FILE *fp , node_t *p, char *shw, int xy /* 0=y,1=x */ , int pu 
   node_t * dimd ;
   char fname[NAMELEN] ;
   char tmp[NAMELEN_LONG], tmp2[NAMELEN_LONG], tmp3[NAMELEN_LONG] ;
+  char tmp4[NAMELEN_LONG] ;
   char commuse[NAMELEN] ;
   int maxstenwidth, stenwidth ;
   char * t1, * t2 , *wordsize ;
@@ -674,10 +675,9 @@ fprintf(fp,"  DO idim%d = %s_sdim%d,%s_edim%d\n",d-2,q->name,d-2,q->name,d-2 ) ;
                   strcpy(sm,sd) ; strcpy(em,ed ) ;
                   strcpy(sp,sd) ; strcpy(ep,ed ) ;
                 }
-
 fprintf(fp," IF ( SIZE(%s,%d)*SIZE(%s,%d) .GT. 1 ) THEN\n",varref,xdex+1,varref,ydex+1 ) ; 
-fprintf(fp,"  CALL %s ( %s,&\n%s ( grid%%sm31,grid%%sm32,grid%%sm33%sitrace),%s,&\nrsl_sendbeg_m, rsl_sendw_m, rsl_sendbeg_p, rsl_sendw_p, &\nrsl_recvbeg_m, rsl_recvw_m, rsl_recvbeg_p, rsl_recvw_p, &\n%s, %d, %d, DATA_ORDER_%s, %d, &\n",
-                       packname, commname, varref , moredims, shw, wordsize, xy, pu, memord, xy?(q->stag_x?1:0):(q->stag_y?1:0) ) ;
+fprintf(fp,"  CALL %s ( %s,&\n%s ( %s%sitrace),%s,&\nrsl_sendbeg_m, rsl_sendw_m, rsl_sendbeg_p, rsl_sendw_p, &\nrsl_recvbeg_m, rsl_recvw_m, rsl_recvbeg_p, rsl_recvw_p, &\n%s, %d, %d, DATA_ORDER_%s, %d, &\n",
+                       packname, commname, varref , index_with_firstelem("","grid%",-1,tmp4,q,""),moredims, shw, wordsize, xy, pu, memord, xy?(q->stag_x?1:0):(q->stag_y?1:0) ) ;
 fprintf(fp,"mytask, ntasks, ntasks_x, ntasks_y,       &\n") ;
 if ( !strcmp( packname, "RSL_LITE_PACK_SWAP" ) ||
      !strcmp( packname, "RSL_LITE_PACK_CYCLE" ) ) {
