@@ -890,6 +890,7 @@ CONTAINS
 	  IF(SF_URBAN_PHYSICS == 1) THEN
            OMG= OMG_URB2D(I,J)   
            tloc=mod(int(OMG/3.14159*180./15.+12.+0.5 ),24)
+           if (tloc.lt.0) tloc=tloc+24
            if (tloc==0) tloc=24
            CALL cal_mon_day(julian,julyr,jmonth,jday) 
            IF( IVGTYP(I,J) == ISURBAN .or. IVGTYP(I,J) == 31 .or. &
@@ -3107,6 +3108,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
            IRIOPTION=IRI_SCHEME
            OMG= OMG_URB2D(I,J)   
            tloc=mod(int(OMG/3.14159*180./15.+12.+0.5 ),24)
+           if (tloc.lt.0) tloc=tloc+24
            if (tloc==0) tloc=24
            CALL cal_mon_day(julian,julyr,jmonth,jday) 
 	  IF(SF_URBAN_PHYSICS == 1) THEN
@@ -3116,8 +3118,8 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                    IF (IRIOPTION ==1) THEN
                    IF (tloc==21 .or. tloc==22) THEN  !irrigation on vegetaion in urban area, MAY-SEP, 9-10pm
                    IF (jmonth==5 .or. jmonth==6 .or. jmonth==7 .or. jmonth==8 .or. jmonth==9) THEN
-                      IF (SMC(USOIL) .LT. SMCREF) SMC(USOIL)= SMCREF
-                      IF (SMC(DSOIL) .LT. SMCREF) SMC(DSOIL)= SMCREF
+                      IF (SMC(USOIL) .LT. SMCREF) SMC(USOIL)= REFSMC(ISLTYP(I,J))
+                      IF (SMC(DSOIL) .LT. SMCREF) SMC(DSOIL)= REFSMC(ISLTYP(I,J))
                    ENDIF
                    ENDIF
                    ENDIF
@@ -3986,6 +3988,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
            IRIOPTION=IRI_SCHEME
            OMG= OMG_URB2D(I,J)   
            tloc=mod(int(OMG/3.14159*180./15.+12.+0.5 ),24)
+           if (tloc.lt.0) tloc=tloc+24
            if (tloc==0) tloc=24
            CALL cal_mon_day(julian,julyr,jmonth,jday) 
 	  IF(SF_URBAN_PHYSICS == 1) THEN
@@ -3995,8 +3998,8 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                    IF (IRIOPTION ==1) THEN
                    IF (tloc==21 .or. tloc==22) THEN  !irrigation on vegetaion in urban area, MAY-SEP, 9-10pm
                    IF (jmonth==5 .or. jmonth==6 .or. jmonth==7 .or. jmonth==8 .or. jmonth==9) THEN
-                      IF (SMC(USOIL) .LT. SMCREF) SMC(USOIL)= SMCREF
-                      IF (SMC(DSOIL) .LT. SMCREF) SMC(DSOIL)= SMCREF
+                      IF (SMC(USOIL) .LT. SMCREF) SMC(USOIL)= REFSMC(ISLTYP(I,J))
+                      IF (SMC(DSOIL) .LT. SMCREF) SMC(DSOIL)= REFSMC(ISLTYP(I,J))
                    ENDIF
                    ENDIF
                    ENDIF

@@ -41,6 +41,37 @@ ALL_MODULES =                           \
                $(INCLUDE_MODULES)
 
 configcheck:
+	@echo " "
+	@echo "============================================================================================== "
+	@echo " "
+	@echo "The following indicate the compilers selected to build the WRF system"
+	@echo " "
+	@echo "Serial Fortran compiler (mostly for tool generation):"
+	@echo which SFC
+	@which `echo $(SFC) | cut -d " " -f1`
+	@echo " "
+	@echo "Serial C compiler (mostly for tool generation):"
+	@echo which SCC
+	@which `echo $(SCC) | cut -d " " -f1`
+	@echo " "
+	@echo "Fortran compiler for the model source code:"
+	@echo which FC
+	@if command -v timex > /dev/null 2>&1; then \
+	  which `echo $(FC) | cut -d " " -f2` ; \
+	  echo "Will use 'timex' to report timing information" ; \
+	elif command -v time > /dev/null 2>&1; then \
+	  which `echo $(FC) | cut -d " " -f2` ; \
+	  echo "Will use 'time' to report timing information" ; \
+	else \
+	  which `echo $(FC) | cut -d " " -f1` ; \
+	fi
+	@echo " "
+	@echo "C compiler for the model source code:"
+	@echo which CC
+	@which `echo $(CC) | cut -d " " -f1`
+	@echo " "
+	@echo "============================================================================================== "
+	@echo " "
 	@if [ "$(A2DCASE)" -a "$(DMPARALLEL)" ] ; then \
 	 echo "------------------------------------------------------------------------------" ; \
 	 echo "WRF CONFIGURATION ERROR                                                       " ; \
@@ -51,6 +82,7 @@ configcheck:
 	 echo "------------------------------------------------------------------------------" ; \
          exit 2 ; \
 	fi
+ 
 
 framework_only : configcheck
 	$(MAKE) MODULE_DIRS="$(ALL_MODULES)" ext
@@ -120,8 +152,6 @@ em_fire : wrf
 	( cd test/em_fire ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
 	( cd test/em_fire ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
 	( cd test/em_fire ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
-	( cd test/em_fire ; /bin/rm -f gribmap.txt ; ln -s ../../run/gribmap.txt . )
-	( cd test/em_fire ; /bin/rm -f grib2map.tbl ; ln -s ../../run/grib2map.tbl . )
 	( cd test/em_fire ; /bin/sh create_links.sh )
 	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
 	( cd run ; if test -f namelist.input ; then \
@@ -139,8 +169,6 @@ em_quarter_ss : wrf
 	( cd test/em_quarter_ss ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
 	( cd test/em_quarter_ss ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
 	( cd test/em_quarter_ss ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
-	( cd test/em_quarter_ss ; /bin/rm -f gribmap.txt ; ln -s ../../run/gribmap.txt . )
-	( cd test/em_quarter_ss ; /bin/rm -f grib2map.tbl ; ln -s ../../run/grib2map.tbl . )
 	( cd test/em_quarter_ss ; /bin/rm -f bulkdens.asc_s_0_03_0_9 ; ln -s ../../run/bulkdens.asc_s_0_03_0_9 . )
 	( cd test/em_quarter_ss ; /bin/rm -f bulkradii.asc_s_0_03_0_9 ; ln -s ../../run/bulkradii.asc_s_0_03_0_9 . )
 	( cd test/em_quarter_ss ; /bin/rm -f capacity.asc ; ln -s ../../run/capacity.asc . )
@@ -184,8 +212,6 @@ em_squall2d_x : wrf
 	( cd test/em_squall2d_x ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
 	( cd test/em_squall2d_x ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
 	( cd test/em_squall2d_x ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
-	( cd test/em_squall2d_x ; /bin/rm -f gribmap.txt ; ln -s ../../run/gribmap.txt . )
-	( cd test/em_squall2d_x ; /bin/rm -f grib2map.tbl ; ln -s ../../run/grib2map.tbl . )
 	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
 	( cd run ; if test -f namelist.input ; then \
 		/bin/cp -f namelist.input namelist.input.backup ; fi ; \
@@ -221,8 +247,6 @@ em_squall2d_y : wrf
 	( cd test/em_squall2d_y ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
 	( cd test/em_squall2d_y ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
 	( cd test/em_squall2d_y ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
-	( cd test/em_squall2d_y ; /bin/rm -f gribmap.txt ; ln -s ../../run/gribmap.txt . )
-	( cd test/em_squall2d_y ; /bin/rm -f grib2map.tbl ; ln -s ../../run/grib2map.tbl . )
 	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
 	( cd run ; if test -f namelist.input ; then \
 		/bin/cp -f namelist.input namelist.input.backup ; fi ; \
@@ -256,8 +280,6 @@ em_b_wave : wrf
 	( cd test/em_b_wave ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
 	( cd test/em_b_wave ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
 	( cd test/em_b_wave ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
-	( cd test/em_b_wave ; /bin/rm -f gribmap.txt ; ln -s ../../run/gribmap.txt . )
-	( cd test/em_b_wave ; /bin/rm -f grib2map.tbl ; ln -s ../../run/grib2map.tbl . )
 	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
 	( cd run ; if test -f namelist.input ; then \
 		/bin/cp -f namelist.input namelist.input.backup ; fi ; \
@@ -291,8 +313,6 @@ em_les : wrf
 	( cd test/em_les ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
 	( cd test/em_les ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
 	( cd test/em_les ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
-	( cd test/em_les ; /bin/rm -f gribmap.txt ; ln -s ../../run/gribmap.txt . )
-	( cd test/em_les ; /bin/rm -f grib2map.tbl ; ln -s ../../run/grib2map.tbl . )
 	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
 	( cd run ; if test -f namelist.input ; then \
 		/bin/cp -f namelist.input namelist.input.backup ; fi ; \
@@ -326,8 +346,6 @@ em_seabreeze2d_x : wrf
 	( cd test/em_seabreeze2d_x ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
 	( cd test/em_seabreeze2d_x ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
 	( cd test/em_seabreeze2d_x ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
-	( cd test/em_seabreeze2d_x ; /bin/rm -f gribmap.txt ; ln -s ../../run/gribmap.txt . )
-	( cd test/em_seabreeze2d_x ; /bin/rm -f grib2map.tbl ; ln -s ../../run/grib2map.tbl . )
 	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
 	( cd run ; if test -f namelist.input ; then \
 		/bin/cp -f namelist.input namelist.input.backup ; fi ; \
@@ -359,8 +377,6 @@ em_convrad : wrf
 	( cd test/em_convrad ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
 	( cd test/em_convrad ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
 	( cd test/em_convrad ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
-	( cd test/em_convrad ; /bin/rm -f gribmap.txt ; ln -s ../../run/gribmap.txt . )
-	( cd test/em_convrad ; /bin/rm -f grib2map.tbl ; ln -s ../../run/grib2map.tbl . )
 	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
 	( cd run ; if test -f namelist.input ; then \
 		/bin/cp -f namelist.input namelist.input.backup ; fi ; \
@@ -607,8 +623,6 @@ em_hill2d_x : wrf
 	( cd test/em_hill2d_x ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
 	( cd test/em_hill2d_x ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
 	( cd test/em_hill2d_x ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
-	( cd test/em_hill2d_x ; /bin/rm -f gribmap.txt ; ln -s ../../run/gribmap.txt . )
-	( cd test/em_hill2d_x ; /bin/rm -f grib2map.tbl ; ln -s ../../run/grib2map.tbl . )
 	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
 	( cd run ; if test -f namelist.input ; then \
 		/bin/cp -f namelist.input namelist.input.backup ; fi ; \
@@ -642,8 +656,6 @@ em_grav2d_x : wrf
 	( cd test/em_grav2d_x ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
 	( cd test/em_grav2d_x ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
 	( cd test/em_grav2d_x ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
-	( cd test/em_grav2d_x ; /bin/rm -f gribmap.txt ; ln -s ../../run/gribmap.txt . )
-	( cd test/em_grav2d_x ; /bin/rm -f grib2map.tbl ; ln -s ../../run/grib2map.tbl . )
 	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
 	( cd run ; if test -f namelist.input ; then \
 		/bin/cp -f namelist.input namelist.input.backup ; fi ; \
@@ -677,8 +689,6 @@ em_heldsuarez : wrf
 	( cd test/em_heldsuarez ; /bin/rm -f wrf.exe ; ln -s ../../main/wrf.exe . )
 	( cd test/em_heldsuarez ; /bin/rm -f ideal.exe ; ln -s ../../main/ideal.exe . )
 	( cd test/em_heldsuarez ; /bin/rm -f README.namelist ; ln -s ../../run/README.namelist . )
-	( cd test/em_heldsuarez ; /bin/rm -f gribmap.txt ; ln -s ../../run/gribmap.txt . )
-	( cd test/em_heldsuarez ; /bin/rm -f grib2map.tbl ; ln -s ../../run/grib2map.tbl . )
 	( cd run ; /bin/rm -f ideal.exe ; ln -s ../main/ideal.exe . )
 	( cd run ; if test -f namelist.input ; then \
 		/bin/cp -f namelist.input namelist.input.backup ; fi ; \

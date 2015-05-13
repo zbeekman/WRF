@@ -2922,7 +2922,6 @@ CONTAINS
 !.. experiences with HWRF testing.
 !+---+-----------------------------------------------------------------+
 !
-
 !+---+-----------------------------------------------------------------+
 
       SUBROUTINE cal_cldfra3(CLDFRA, qv, qc, qi, qs,                    &
@@ -2973,7 +2972,7 @@ CONTAINS
          RHI_max = 0.0
          CLDFRA(I,K,J) = 0.0
 
-         if (qc(i,k,j)+qi(i,k,j)+qs(i,k,j) .gt. 1.E-7) then
+         if (qc(i,k,j)+qi(i,k,j) .gt. 1.E-8) then
             CLDFRA(I,K,J) = 1.0
             qvsat(i,k,j) = qv(i,k,j)
          else
@@ -3008,7 +3007,7 @@ CONTAINS
      &                                *((RH_00O-RHUM)/(RH_00O-RHI_max)))
             endif
 
-            CLDFRA(I,K,J) = MIN(0.95, CLDFRA(I,K,J))
+            CLDFRA(I,K,J) = MAX(0.0, MIN(CLDFRA(I,K,J), 0.95))
 
          endif
       ENDDO
@@ -3050,7 +3049,6 @@ CONTAINS
       ENDDO
       ENDDO
 
-
       END SUBROUTINE cal_cldfra3
 
 !+---+-----------------------------------------------------------------+
@@ -3058,7 +3056,7 @@ CONTAINS
 !.. a reasonable value of LWP or IWP that might be contained in that depth,
 !.. unless existing LWC/IWC is already there.
 
-      subroutine find_cloudLayers(qvs1d, cfr1d, T1d, P1d, R1d,          &
+      SUBROUTINE find_cloudLayers(qvs1d, cfr1d, T1d, P1d, R1d,          &
      &                            debugfl, qc1d, qi1d, qs1d, kts,kte)
 !
       IMPLICIT NONE
@@ -3072,7 +3070,7 @@ CONTAINS
 !..Local vars.
       REAL, DIMENSION(kts:kte):: theta, dz
       REAL:: Z1, Z2, theta1, theta2, ht1, ht2
-      INTEGER:: k, k2, k_tropo, k_m12C, k_m40C, k_cldb, k_cldt
+      INTEGER:: k, k2, k_tropo, k_m12C, k_m40C, k_cldb, k_cldt, kbot
       LOGICAL:: in_cloud
       character*512 dbg_msg
 
@@ -3132,6 +3130,19 @@ CONTAINS
          endif
       ENDDO
 
+!..We would like to prevent fractional clouds below LCL in idealized
+!.. situation with deep well-mixed convective PBL, that otherwise is
+!.. likely to get clouds in more realistic capping inversion layer.
+
+      kbot = kts+2
+      DO k = kbot, k_m12C
+         if ( (theta(k)-theta(k-1)) .gt. 0.05E-3*dz(k)) EXIT
+      ENDDO
+      kbot = MAX(kts+1, k-1)
+      DO k = kts, kbot
+         if (cfr1d(k).gt.0.0 .and. cfr1d(k).lt.0.999) cfr1d(k) = 0.
+      ENDDO
+
 
 !..Starting below tropo height, if cloud fraction greater than 1 percent,
 !.. compute an approximate total layer depth of cloud, determine a total 
@@ -3175,15 +3186,15 @@ CONTAINS
       k_cldb = k_tropo
       in_cloud = .false.
       k = k_m12C
-      DO WHILE (.not. in_cloud .AND. k.gt.kts)
+      DO WHILE (.not. in_cloud .AND. k.gt.kbot)
          k_cldt = 0
          if (cfr1d(k).ge.0.01) then
             in_cloud = .true.
             k_cldt = MAX(k_cldt, k)
          endif
          if (in_cloud) then
-            DO k2 = k_cldt-1, kts, -1
-               if (cfr1d(k2).lt.0.01 .or. k2.eq.kts) then
+            DO k2 = k_cldt-1, kbot, -1
+               if (cfr1d(k2).lt.0.01 .or. k2.eq.kbot) then
                   k_cldb = k2+1
                   goto 88
                endif
@@ -3224,12 +3235,11 @@ CONTAINS
 !       enddo
 !     endif
 
-
       END SUBROUTINE find_cloudLayers
 
 !+---+-----------------------------------------------------------------+
 
-      subroutine adjust_cloudIce(cfr,qi,qs,qvs, T,Rho,dz, k1,k2,kts,kte)
+      SUBROUTINE adjust_cloudIce(cfr,qi,qs,qvs, T,Rho,dz, k1,k2,kts,kte)
 !
       IMPLICIT NONE
 !
@@ -3260,12 +3270,11 @@ CONTAINS
          endif
       enddo
 
-
       END SUBROUTINE adjust_cloudIce
 
 !+---+-----------------------------------------------------------------+
 
-      subroutine adjust_cloudH2O(cfr, qc, qvs, T,Rho,dz, k1,k2,kts,kte)
+      SUBROUTINE adjust_cloudH2O(cfr, qc, qvs, T,Rho,dz, k1,k2,kts,kte)
 !
       IMPLICIT NONE
 !
@@ -3290,13 +3299,14 @@ CONTAINS
 
       do k = k1, k2
          this_lwp = max_lwp*dz(k)/tdz
-         if (cfr(k).gt.0.95.and.qc(k).lt.1.E-7.and.T(k).lt.273.16) then
+         if (cfr(k).gt.0.95.and.qc(k).lt.1.E-7.and.T(k).lt.253.16) then
             qc(k) = qc(k) + 0.05*this_lwp/Rho(k)/dz(k)
-         elseif (cfr(k).gt.0.01.and.cfr(k).lt.0.99.and.T(k).le.298.16) then
+         elseif (cfr(k).gt.0.01.and.cfr(k).lt.0.99.and.T(k).lt.273.16.and.T(k).ge.253.16) then
+            qc(k) = qc(k) + cfr(k)*this_lwp/Rho(k)/dz(k)
+         elseif (cfr(k).gt.0.01.and.cfr(k).lt.0.99.and.T(k).le.298.16.and.T(k).ge.273.16) then
             qc(k) = qc(k) + cfr(k)*cfr(k)*this_lwp/Rho(k)/dz(k)
          endif
       enddo
-
 
       END SUBROUTINE adjust_cloudH2O
 
@@ -3304,7 +3314,7 @@ CONTAINS
 !..Do not alter any grid-explicitly resolved hydrometeors, rather only
 !.. the supposed amounts due to the cloud fraction scheme.
 
-      subroutine adjust_cloudFinal(cfr, qc, qi, Rho,dz, kts,kte,k_tropo)
+      SUBROUTINE adjust_cloudFinal(cfr, qc, qi, Rho,dz, kts,kte,k_tropo)
 !
       IMPLICIT NONE
 !
@@ -3346,9 +3356,8 @@ CONTAINS
          enddo
       endif
 
-
-
       END SUBROUTINE adjust_cloudFinal
+
 !+---+-----------------------------------------------------------------+
 
    SUBROUTINE toposhad_init(ht_shad,ht_loc,shadowmask,nested,iter,   &
