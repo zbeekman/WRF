@@ -2804,7 +2804,9 @@ END
       IMPLICIT NONE
 #ifndef STUBMPI
       INTEGER ierr
+write(0,*)'calling MPI_FINALIZE'
       CALL MPI_FINALIZE( ierr )
+write(0,*)'back from MPI_FINALIZE',ierr
 #endif
       RETURN
    END SUBROUTINE wrf_dm_shutdown

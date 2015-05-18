@@ -663,6 +663,7 @@ okay_to_w = .false.
 !CALL end_timing("MPI_Reduce at top of forever loop") 
 !JMDEBUGwrite(0,*)'obufsize = ',obufsize
 ! Negative obufsize will trigger I/O server exit.  
+write(0,*)'after mpi_x_reduce on quilt server ',obufsize
         IF ( obufsize .LT. 0 ) THEN
           IF ( obufsize .EQ. -100 ) THEN         ! magic number
 #ifdef NETCDF
@@ -692,7 +693,9 @@ okay_to_w = .false.
                CALL cpl_finalize() 
             ELSE
 #endif
+write(0,*)'calling mpi_finalize from quilt swerver '
                CALL mpi_finalize(ierr)
+write(0,*)'back from mpi_finalize from quilt swerver ',ierr
 #if ( DA_CORE != 1 )
             END IF
 #endif
@@ -1687,6 +1690,7 @@ okay_to_w = .false.
 #if ( DA_CORE != 1 )
             END IF
 #endif
+write(0,*)'back from mpi_finalize from quilt swerver ',ierr
             STOP
           ELSE
             WRITE(mess,*)'Possible 32-bit overflow on output server. Try larger nio_tasks_per_group in namelist.'
@@ -3496,7 +3500,9 @@ SUBROUTINE wrf_quilt_ioexit( Status )
   ENDIF
 #endif
 
+write(0,*)__FILE__,__LINE__,nio_groups
   DO iserver = 1, nio_groups
+write(0,*)__FILE__,__LINE__,iserver
     if(poll_servers) then
        ! We're using server polling mode, so we must call
        ! *_find_server to receive the mpi_ssend sent by the servers,
@@ -3512,16 +3518,22 @@ SUBROUTINE wrf_quilt_ioexit( Status )
        actual_iserver=iserver
     endif
 
+write(0,*)__FILE__,__LINE__,actual_iserver
     CALL get_mpi_comm_io_groups( comm_io_group , actual_iserver )
+write(0,*)__FILE__,__LINE__,comm_io_group
 
     CALL mpi_x_comm_size( comm_io_group , tasks_in_group , ierr )
+write(0,*)__FILE__,__LINE__,tasks_in_group
     CALL mpi_comm_rank( comm_io_group , me , ierr )
+write(0,*)__FILE__,__LINE__,me
 
 ! BY SENDING A NEGATIVE SIZE WE GET THE SERVERS TO SHUT DOWN
     hdrbufsize = -100 
     reduced = 0
     IF ( me .eq. 0 ) reduced(1) = hdrbufsize 
+write(0,*)__FILE__,__LINE__,hdrbufsize
     CALL mpi_x_reduce( reduced, reduced_dummy, 2, MPI_INTEGER, MPI_SUM, tasks_in_group-1, comm_io_group, ierr )
+write(0,*)__FILE__,__LINE__,'back from mpi_x_reduce '
 
   ENDDO
   Status = 0
