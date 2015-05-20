@@ -2610,7 +2610,7 @@ write(0,*)'back from mpi_finalize from quilt swerver ',ierr
         CALL mpi_init ( ierr )
 #  endif
         CALL wrf_set_dm_communicator( MPI_COMM_WORLD )
-        CALL wrf_termio_dup
+        CALL wrf_termio_dup(MPI_COMM_WORLD)
       ENDIF
       CALL wrf_get_dm_communicator( mpi_comm_here )   ! get global communicator
 
