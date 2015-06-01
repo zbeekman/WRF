@@ -162,6 +162,7 @@ RECURSIVE SUBROUTINE integrate ( grid )
    LOGICAL , EXTERNAL                     :: wrf_dm_on_monitor
    INTEGER                                :: idum1 , idum2 , ierr , open_status
    LOGICAL                                :: should_do_last_io
+   LOGICAL                                :: may_have_moved
 
 integer myproc,i,j
 
@@ -225,6 +226,11 @@ integer myproc,i,j
        USE module_configure
        TYPE (domain), POINTER ::  grid , parent
      END SUBROUTINE med_nest_move
+     SUBROUTINE reconcile_nest_positions_over_tasks ( grid )
+       USE module_domain
+       USE module_configure
+       TYPE (domain), POINTER ::  grid
+     END SUBROUTINE reconcile_nest_positions_over_tasks
 #endif
 
        ! mediation-supplied routine that gives mediation layer opportunity to 
@@ -377,6 +383,7 @@ ENDIF
                    CALL wrf_debug( 100 , message )
                  ENDIF
                ENDDO
+               may_have_moved = .FALSE.
                DO kid = 1, max_nests
                  IF ( ASSOCIATED( grid_ptr%nests(kid)%ptr ) ) THEN
                    CALL set_current_grid_ptr( grid_ptr%nests(kid)%ptr )
@@ -390,10 +397,17 @@ ENDIF
 #ifdef MOVE_NESTS
                    IF ( .NOT. domain_clockisstoptime( head_grid ) ) THEN
                      CALL med_nest_move ( grid_ptr , grid_ptr%nests(kid)%ptr )
+                     may_have_moved = .TRUE.
                    ENDIF
 #endif
                  END IF
                END DO
+#ifdef MOVE_NESTS
+               IF ( may_have_moved ) THEN
+                 CALL reconcile_nest_positions_over_tasks( grid_ptr )
+                 CALL model_to_grid_config_rec ( grid_ptr%id , model_config_rec , config_flags )
+               ENDIF
+#endif
                IF (coupler_on) CALL cpl_snd( grid_ptr ) 
                grid_ptr => grid_ptr%sibling
             END DO

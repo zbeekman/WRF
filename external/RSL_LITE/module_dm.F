@@ -33,7 +33,7 @@ MODULE module_dm
    INTEGER, DIMENSION(max_domains) ::  ntasks_stack, ntasks_y_stack          &
                                      , ntasks_x_stack, mytask_stack          &
                                      , mytask_x_stack, mytask_y_stack        &
-                                     , id_stack
+                                     , id_stack                            
    INTEGER, DIMENSION(max_domains) ::  ntasks_store, ntasks_y_store          &
                                      , ntasks_x_store, mytask_store          &
                                      , mytask_x_store, mytask_y_store      
@@ -5837,6 +5837,7 @@ integer myproc
       ! Generate interpolation information and interpolate Q, T and
       ! possibly PD while we're at it:
  
+!jm we might need this: IF ( grid%active_this_task ) THEN
       call store_interp_info(ngrid,grid)
       call ext_n2c_fulldom(&
            ngrid%deta1,ngrid%deta2,ngrid%eta1,             &
@@ -5852,7 +5853,7 @@ integer myproc
            nids, nide, njds, njde, nkds, nkde,             &
            nims, nime, njms, njme, nkms, nkme,             &
            nips, nipe, njps, njpe, nkps, nkpe)
-
+!jm ENDIF
 
       ! "interp" ngrid onto intermediate grid
 #include "nest_feedbackup_interp.inc"

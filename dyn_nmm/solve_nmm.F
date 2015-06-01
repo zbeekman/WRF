@@ -300,8 +300,8 @@
 !-----------------------------------------------------------------------
 !
 !!!!! IF(WRF_DM_ON_MONITOR() )THEN
-        WRITE(MESSAGE,125)grid%ntsd,grid%ntsd*GRID%DT/3600.
-  125   FORMAT(' SOLVE_NMM: TIMESTEP IS ',I5,'   TIME IS ',F7.3,' HOURS')
+        WRITE(MESSAGE,125)grid%id,grid%ntsd,grid%ntsd*GRID%DT/3600.
+  125   FORMAT(' SOLVE_NMM: ',I3,' TIMESTEP IS ',I5,'   TIME IS ',F7.3,' HOURS')
         CALL WRF_MESSAGE(TRIM(MESSAGE))
 !!!!  ENDIF
 !

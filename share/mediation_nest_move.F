@@ -11,8 +11,6 @@ SUBROUTINE med_nest_move ( parent, nest )
    USE module_dm, ONLY : wrf_dm_move_nest,nest_task_offsets,mpi_comm_to_kid,mpi_comm_to_mom, which_kid
    IMPLICIT NONE
    TYPE(domain) , POINTER                     :: parent, nest, grid
-TYPE(domain) , POINTER                     :: mook
-integer myproc
    INTEGER dx, dy, origdy       ! number of parent domain points to move
 #ifdef MOVE_NESTS
   ! Local 
@@ -1275,8 +1273,6 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
 
 
    abort=.false. ! will be set to .true. if any safety checks fail
-
-
    ! INITIALIZE NEST MOTION TO DISABLED
    move_cd_x=0
    move_cd_y=0
@@ -1333,7 +1329,6 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
    !  DETERMINE AUTOMATICALLY THE DIRECTION OF GRID MOTION
    !
 
-
    IF ( .NOT. grid%active_this_task ) grid%mvnest = .FALSE.   ! prevent inactive grids from turning on movement
    IF ( (parent%active_this_task .OR. grid%active_this_task) ) THEN
      IF ( parent%active_this_task ) THEN
@@ -1346,7 +1341,6 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
    ENDIF
 
    CALL push_communicators_for_domain(grid%id)
-
 
    can_move: if(grid%num_moves.eq.-99 .and. grid%mvnest .and. .not. abort) then
 
@@ -1424,7 +1418,6 @@ LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
             endif
          endif
 
-         ! Inform the user.
 !jm zap         if(wrf_dm_on_monitor()) then
             if(move_cd_x/=0 .or. move_cd_y/=0) then
                write(mess,'("d",I0," moving x",SP,I0," y",I0,SS," to follow d",I0)') &
@@ -1672,6 +1665,7 @@ LOGICAL FUNCTION direction_of_move ( parent , grid , move_cd_x, move_cd_y )
    call wrf_debug(5,message)
 
    direction_of_move = direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
+
 ! any nest grid needs to know if grid is moving
    IF ( grid%id .GT. 1 .AND. grid%num_nests .GT. 0 ) THEN
      IF ( (.NOT. (grid%active_this_task .AND. grid%nests(kid)%ptr%active_this_task) ) .AND. &
@@ -1729,8 +1723,9 @@ LOGICAL FUNCTION direction_of_move ( parent , grid , move_cd_x, move_cd_y )
              call wrf_debug(1,message)
           ENDIF
 
-          IF ( (.NOT. (grid%active_this_task .AND. grid%nests(kid)%ptr%active_this_task) ) .AND. &
-                      (grid%active_this_task .OR.  grid%nests(kid)%ptr%active_this_task) ) THEN
+!jm          IF ( (.NOT. (grid%active_this_task .AND. grid%nests(kid)%ptr%active_this_task) ) .AND. &
+!jm                      (grid%active_this_task .OR.  grid%nests(kid)%ptr%active_this_task) ) THEN
+         IF (grid%active_this_task .OR.  grid%nests(kid)%ptr%active_this_task ) THEN
            IF ( grid%active_this_task ) THEN
              comzilla = mpi_comm_to_kid( kid , grid%id )
            ELSE
@@ -1837,3 +1832,52 @@ LOGICAL FUNCTION direction_of_move ( parent , grid , move_cd_x, move_cd_y )
    RETURN
 END FUNCTION direction_of_move
 #endif
+
+SUBROUTINE reconcile_nest_positions_over_tasks ( grid )
+   USE module_driver_constants, ONLY : max_nests, max_domains
+   USE module_domain, ONLY : domain, find_grid_by_id
+   USE module_utility
+   USE module_configure, ONLY : grid_config_rec_type, model_config_rec, model_to_grid_config_rec
+   USE module_state_description
+   USE module_dm, ONLY : wrf_dm_move_nest,nest_task_offsets,mpi_comm_to_kid,mpi_comm_to_mom, which_kid &
+                        ,comm_start, nest_pes_x, nest_pes_y,local_communicator
+   IMPLICIT NONE
+   TYPE(domain) , POINTER                     :: grid, result_grid
+!local
+   INTEGER kid
+   INTEGER itask
+   INTEGER max_dom, id
+   INTEGER buf(max_domains,2)
+
+   CALL nl_get_max_dom( 1 , max_dom )
+   IF ( grid%num_nests .GT. 1 ) THEN
+    IF ( grid%active_this_task ) THEN
+     DO kid = 1, max_nests
+     ! which task is active?
+       IF ( ASSOCIATED( grid%nests(kid)%ptr ) ) THEN
+          ! check to see if the starting task for the nest is within the range of tasks
+	  ! of the parent's local communicator; that task should be the root of the bcast on this grid's (the parent's) communicator
+          ! since it is active in both the parent and nest and should have valid parent_start information;
+          ! otoh, if it is outside then the parent and nest are not sharing processors 
+          itask = comm_start( grid%nests(kid)%ptr%id ) - comm_start( grid%id )
+          buf(:,1) = model_config_rec%i_parent_start
+          buf(:,2) = model_config_rec%j_parent_start
+          IF ( itask .GE. 0 .AND. itask .LT. nest_pes_x(grid%id)*nest_pes_y(grid%id) ) THEN
+            CALL push_communicators_for_domain(grid%id)
+            CALL BYTE_BCAST_FROM_ROOT( buf, 2*max_domains*IWORDSIZE, itask, local_communicator)
+            CALL pop_communicators_for_domain
+          ENDIF
+          DO id = 1, max_dom
+            CALL find_grid_by_id ( id, grid%nests(kid)%ptr, result_grid )
+            IF ( ASSOCIATED(result_grid) .AND. .NOT. result_grid%active_this_task ) THEN
+              model_config_rec%i_parent_start(id) = buf(id,1)
+              model_config_rec%j_parent_start(id) = buf(id,2)
+              result_grid%i_parent_start = model_config_rec%i_parent_start(id)
+              result_grid%j_parent_start = model_config_rec%j_parent_start(id)
+            ENDIF
+          ENDDO
+       END IF
+     END DO
+    ENDIF
+   ENDIF
+END SUBROUTINE reconcile_nest_positions_over_tasks
