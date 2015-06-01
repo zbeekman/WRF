@@ -182,17 +182,13 @@ write(0,*)__FILE__,__LINE__
 ! registry generated closes for auxhist streams
 #include "shutdown_closes.inc"
 
-write(0,*)__FILE__,__LINE__
    DO id = 1, max_domains
      IF( domain_active_this_task(id) ) THEN
        CALL push_communicators_for_domain(id)
-write(0,*)__FILE__,__LINE__,id
        CALL wrf_ioexit( ierr )    ! shut down the quilt I/O
-write(0,*)__FILE__,__LINE__
        CALL pop_communicators_for_domain
      ENDIF
    ENDDO
-write(0,*)__FILE__,__LINE__
 
    RETURN
 
