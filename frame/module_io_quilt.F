@@ -284,6 +284,12 @@ MODULE module_wrf_quilt
       INTEGER :: k, m, nprocx, nprocy, found, found_io
       LOGICAL :: reorder_mesh
       CHARACTER*256 message
+
+#if 0
+! with the changes to quilting and the movement of some init calls around
+! this no longer works because the namelist hasn't been read and distributed yet.
+! need to move this somewhere where it will work again, maybe into check-a-mundo?
+!
 !check the namelist and make sure there are no output forms specified
 !that cannot be quilted
       CALL nl_get_io_form_history(1,   io_form_setting) ; call sokay( 'history', io_form_setting )
@@ -299,6 +305,7 @@ MODULE module_wrf_quilt
       CALL nl_get_io_form_auxhist9(1,  io_form_setting) ; call sokay( 'auxhist9', io_form_setting )
       CALL nl_get_io_form_auxhist10(1, io_form_setting) ; call sokay( 'auxhist10', io_form_setting )
       CALL nl_get_io_form_auxhist11(1, io_form_setting) ; call sokay( 'auxhist11', io_form_setting )
+#endif
 
       n_groups = n_groups_arg
       IF ( n_groups .LT. 1 ) n_groups = 1
@@ -663,7 +670,7 @@ okay_to_w = .false.
 !CALL end_timing("MPI_Reduce at top of forever loop") 
 !JMDEBUGwrite(0,*)'obufsize = ',obufsize
 ! Negative obufsize will trigger I/O server exit.  
-write(0,*)'after mpi_x_reduce on quilt server ',obufsize
+!write(0,*)'after mpi_x_reduce on quilt server ',obufsize
         IF ( obufsize .LT. 0 ) THEN
           IF ( obufsize .EQ. -100 ) THEN         ! magic number
 #ifdef NETCDF
@@ -693,9 +700,7 @@ write(0,*)'after mpi_x_reduce on quilt server ',obufsize
                CALL cpl_finalize() 
             ELSE
 #endif
-write(0,*)'calling mpi_finalize from quilt swerver '
                CALL mpi_finalize(ierr)
-write(0,*)'back from mpi_finalize from quilt swerver ',ierr
 #if ( DA_CORE != 1 )
             END IF
 #endif
@@ -1690,7 +1695,6 @@ write(0,*)'back from mpi_finalize from quilt swerver ',ierr
 #if ( DA_CORE != 1 )
             END IF
 #endif
-write(0,*)'back from mpi_finalize from quilt swerver ',ierr
             STOP
           ELSE
             WRITE(mess,*)'Possible 32-bit overflow on output server. Try larger nio_tasks_per_group in namelist.'
