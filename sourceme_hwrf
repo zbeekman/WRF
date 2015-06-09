@@ -1,4 +1,6 @@
 #setenv PNETCDF_QUILT 190
+setenv FC ifort
+setenv CC icc
 setenv WRF_NMM_CORE 1
 setenv WRF_NMM_NEST 1
 setenv HWRF 1

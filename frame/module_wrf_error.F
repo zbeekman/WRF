@@ -208,20 +208,20 @@ SUBROUTINE wrf_message( str )
   IMPLICIT NONE
 
   CHARACTER*(*) str
-!  if(silence/=0) return
+  if(silence/=0) return
   if(buffered/=0) then
 #if defined(WRF_LOG_BUFFERING)
      call wrf_log_action(wrf_log_write,len_trim(str),str)
 #endif
   else
 !$OMP MASTER
-!     if(stderrlog/=0) then
+     if(stderrlog/=0) then
 300     format(A)
         write(0,300) trim(str)
 # ifdef _WIN32
   FLUSH(0)
 # endif
-!     endif
+     endif
      print 300,trim(str)
 !$OMP END MASTER
   endif
@@ -299,8 +299,6 @@ SUBROUTINE wrf_error_fatal3( file_str, line, str )
   if(buffered/=0) call wrf_log_action(wrf_log_flush,1,' ')
 # endif
   flush(0)
-
-!call failbadly(0.0,1.0)
 
 #ifdef ESMFIO
 ! 5.2.0r  CALL esmf_finalize(terminationflag=ESMF_ABORT)

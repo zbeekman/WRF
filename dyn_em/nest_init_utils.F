@@ -11,50 +11,6 @@ SUBROUTINE init_domain_constants_em ( parent , nest )
    CHARACTER (LEN=256) :: char_junk
    INTEGER :: comzilla
 
-!debug write(0,*)__FILE__,__LINE__,'patt ',parent%active_this_task
-!debug write(0,*)__FILE__,__LINE__,'natt ',nest%active_this_task
-
-!debug write(0,*)__FILE__,__LINE__,'parent%sd31 ',parent%id, parent%sd31
-!debug write(0,*)__FILE__,__LINE__,'parent%ed31 ',parent%id, parent%ed31
-!debug write(0,*)__FILE__,__LINE__,'parent%sd32 ',parent%id, parent%sd32
-!debug write(0,*)__FILE__,__LINE__,'parent%ed32 ',parent%id, parent%ed32
-!debug write(0,*)__FILE__,__LINE__,'parent%sd33 ',parent%id, parent%sd33
-!debug write(0,*)__FILE__,__LINE__,'parent%ed33 ',parent%id, parent%ed33
-!debug write(0,*)__FILE__,__LINE__,'parent%sm31 ',parent%id, parent%sm31
-!debug write(0,*)__FILE__,__LINE__,'parent%em31 ',parent%id, parent%em31
-!debug write(0,*)__FILE__,__LINE__,'parent%sm32 ',parent%id, parent%sm32
-!debug write(0,*)__FILE__,__LINE__,'parent%em32 ',parent%id, parent%em32
-!debug write(0,*)__FILE__,__LINE__,'parent%sm33 ',parent%id, parent%sm33
-!debug write(0,*)__FILE__,__LINE__,'parent%em33 ',parent%id, parent%em33
-!debug write(0,*)__FILE__,__LINE__,'parent%sp31 ',parent%id, parent%sp31
-!debug write(0,*)__FILE__,__LINE__,'parent%ep31 ',parent%id, parent%ep31
-!debug write(0,*)__FILE__,__LINE__,'parent%sp32 ',parent%id, parent%sp32
-!debug write(0,*)__FILE__,__LINE__,'parent%ep32 ',parent%id, parent%ep32
-!debug write(0,*)__FILE__,__LINE__,'parent%sp33 ',parent%id, parent%sp33
-!debug write(0,*)__FILE__,__LINE__,'parent%ep33 ',parent%id, parent%ep33
-
-!debug write(0,*)__FILE__,__LINE__,'nest%sd31 ',nest%id, nest%sd31
-!debug write(0,*)__FILE__,__LINE__,'nest%ed31 ',nest%id, nest%ed31
-!debug write(0,*)__FILE__,__LINE__,'nest%sd32 ',nest%id, nest%sd32
-!debug write(0,*)__FILE__,__LINE__,'nest%ed32 ',nest%id, nest%ed32
-!debug write(0,*)__FILE__,__LINE__,'nest%sd33 ',nest%id, nest%sd33
-!debug write(0,*)__FILE__,__LINE__,'nest%ed33 ',nest%id, nest%ed33
-!debug write(0,*)__FILE__,__LINE__,'nest%sm31 ',nest%id, nest%sm31
-!debug write(0,*)__FILE__,__LINE__,'nest%em31 ',nest%id, nest%em31
-!debug write(0,*)__FILE__,__LINE__,'nest%sm32 ',nest%id, nest%sm32
-!debug write(0,*)__FILE__,__LINE__,'nest%em32 ',nest%id, nest%em32
-!debug write(0,*)__FILE__,__LINE__,'nest%sm33 ',nest%id, nest%sm33
-!debug write(0,*)__FILE__,__LINE__,'nest%em33 ',nest%id, nest%em33
-!debug write(0,*)__FILE__,__LINE__,'nest%sp31 ',nest%id, nest%sp31
-!debug write(0,*)__FILE__,__LINE__,'nest%ep31 ',nest%id, nest%ep31
-!debug write(0,*)__FILE__,__LINE__,'nest%sp32 ',nest%id, nest%sp32
-!debug write(0,*)__FILE__,__LINE__,'nest%ep32 ',nest%id, nest%ep32
-!debug write(0,*)__FILE__,__LINE__,'nest%sp33 ',nest%id, nest%sp33
-!debug write(0,*)__FILE__,__LINE__,'nest%ep33 ',nest%id, nest%ep33
-!debug write(0,*)__FILE__,__LINE__,'nest%i_parent_start ',nest%id, nest%i_parent_start
-!debug write(0,*)__FILE__,__LINE__,'nest%j_parent_start ',nest%id, nest%j_parent_start
-!debug write(0,*)__FILE__,__LINE__,'nest%parent_grid_ratio ',nest%id, nest%parent_grid_ratio
-
    IF ( parent%active_this_task .AND. nest%active_this_task ) THEN
      nest%p_top   = parent%p_top
      nest%save_topo_from_real   = parent%save_topo_from_real

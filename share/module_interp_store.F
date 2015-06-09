@@ -41,7 +41,6 @@ subroutine store_interp_info(grid, parent_grid)
 #if (NMM_CORE == 1 && NMM_NEST == 1)
   kpres=-99999
   grid_id=grid%id
-
   parent_grid_id=parent_grid%id
 
   parent_fis=>parent_grid%fis

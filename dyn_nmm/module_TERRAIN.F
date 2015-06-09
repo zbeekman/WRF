@@ -20,7 +20,6 @@ contains
     integer, intent(in) :: level,input_type,io_form
     integer i
 
-write(0,*)__FILE__,level,minlevel,maxlevel
     if(level<minlevel .or. level>maxlevel) then
 3304   format("INVALID NESTING LEVEL ",I0,": only ",I0," through ",I0," are allowed.")
        write(message,3304) level,minlevel,maxlevel

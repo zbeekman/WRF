@@ -63,7 +63,6 @@ IF ( phase == 1 ) THEN
 #endif
 #ifdef DM_PARALLEL
 !CALL disable_quilting
-write(0,*)__FILE__,__LINE__,'calling init_module_wrf_quilt'
  CALL init_module_wrf_quilt    !! this *must* be called before init_module_dm
 
  ! We must never reach this line or phase 2 in an I/O server.

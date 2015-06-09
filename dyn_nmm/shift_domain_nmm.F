@@ -165,23 +165,16 @@ IF ( grid%active_this_task ) THEN
    px = isign(grid%parent_grid_ratio,disp_x)
    py = isign(grid%parent_grid_ratio,disp_y)
 
-write(0,*)__FILE__,__LINE__,'disp_x, disp_y ', disp_x, disp_y
-write(*,*)__FILE__,__LINE__,'disp_x, disp_y ', disp_x, disp_y
-
 #ifdef DM_PARALLEL
 ! shift the nest domain in x
    do ii = 1,abs(disp_x)
 #include <../inc/SHIFT_HALO_X_HALO.inc>
-write(0,*)__FILE__,__LINE__,'shifting in X ',grid%id,ii
-write(*,*)__FILE__,__LINE__,'disp_x, disp_y ', disp_x, disp_y
 #include <../frame/loop_based_x_shift_code.h>
    enddo
 
 ! shift the nest domain in y
    do ii = 1,abs(disp_y)
 #include <../inc/SHIFT_HALO_Y_HALO.inc>
-write(0,*)__FILE__,__LINE__,'shifting in Y ',grid%id,ii
-write(*,*)__FILE__,__LINE__,'disp_x, disp_y ', disp_x, disp_y
 #include <../frame/loop_based_y_shift_code.h>
    enddo
 #endif

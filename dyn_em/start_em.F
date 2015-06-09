@@ -145,6 +145,10 @@
    END IF
 
    IF ( config_flags%polar ) THEN
+!write(0,*)__FILE__,__LINE__,' clat ',ips,ipe,jps,jpe
+!do j = jps,jpe
+!write(0,*)__FILE__,__LINE__,' clat ',ids,j,grid%clat(ips,j)
+!enddo
 
 #ifdef DM_PARALLEL
 ! WARNING:  this might present scaling issues on very large numbers of processors
@@ -1318,7 +1322,6 @@ endif
                               ids, ide, jds, jde, kds, kde,                    &
                               ims, ime, jms, jme, kms, kme,                    &
                               its, ite, jts, jte, kts, kte                     )
-
          CALL set_w_surface(  config_flags, grid%znw, fill_w_flag,             &
                               grid%w_2, grid%ht, grid%u_2, grid%v_2, grid%cf1, &
                               grid%cf2, grid%cf3, grid%rdx, grid%rdy, grid%msftx, grid%msfty, &

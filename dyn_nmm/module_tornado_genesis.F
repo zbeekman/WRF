@@ -444,7 +444,7 @@ contains
 
 3313 format('TG extrema: max(wind)=',F0.2,' max(w)=',F0.2,' min(w)=',F0.2,'  max(zhel)=',F0.4,' min(zhel)=',F0.4)
     write(message,3313) maxmaxwind,maxmaxw,minminw,maxmaxzhel,minminzhel
-    call wrf_debug(2,message)
+    call wrf_debug(1,message)
   end subroutine calc_tornado_genesis
 
 end module module_tornado_genesis

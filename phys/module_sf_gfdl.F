@@ -439,11 +439,7 @@ CONTAINS
         CPM(I,J)=CP*(1.+0.8*QV3D(i,kts,j))
         esat = fpvs(t1(i))
         QGH(I,J)=ep2*esat/(1000.*ps(i)-esat)
-!debug if ( i.eq.10.and.j.eq.10) then
-!debug         esat = fpvs_dbg(tskin(i))
-!debug else
         esat = fpvs(tskin(i))
-!debug endif
         qss(i) = ep2*esat/(1000.*ps(i)-esat)
         QSFC(I,J)=qss(i)
 !       PSIH(i,j)=PH(i)

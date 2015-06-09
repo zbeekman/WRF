@@ -1471,7 +1471,6 @@ CONTAINS
                   LWUPFLX=LWUPFLX,LWUPFLXC=LWUPFLXC,                &
                   LWDNFLX=LWDNFLX,LWDNFLXC=LWDNFLXC                 &
                                                                     )
-             CALL wrf_debug (100, 'back from CALL rrtmg_lw')
 
         CASE (HELDSUAREZ)
              CALL wrf_debug (100, 'CALL heldsuarez')
@@ -1896,7 +1895,6 @@ CONTAINS
                      asyaer3d_sw=asyaer_sw,                             & ! jararias 2013/11
                      swddir=swddir,swddni=swddni,swddif=swddif,         & ! jararias 2013/08/10
                      xcoszen=coszen,julian=julian                       ) ! jararias 2013/08/14
-             CALL wrf_debug(100, 'back from CALL rrtmg_sw')
 
              DO j=jts,jte
              DO k=kts,kte

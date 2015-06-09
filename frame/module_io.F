@@ -244,8 +244,6 @@ SUBROUTINE wrf_open_for_write_begin( FileName , grid, SysDepInfo, &
 
   WRITE(mess,*) 'module_io.F: in wrf_open_for_write_begin, FileName = ',TRIM(FileName)
   CALL wrf_debug( 100, mess )
-  WRITE(mess,*) 'module_io.F: in wrf_open_for_write_begin, SysDepInfo = ',TRIM(SysDepInfo)
-  CALL wrf_debug( 100, mess )
 
   Comm_compute = grid%communicator
   Comm_io = grid%iocommunicator

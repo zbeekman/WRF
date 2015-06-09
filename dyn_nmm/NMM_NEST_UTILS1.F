@@ -455,41 +455,6 @@ SUBROUTINE med_construct_egrid_weights ( parent , nest )
                         IDS,IDE,JDS,JDE,KDS,KDE,                                 & ! nested domain dimension
                         IMS,IME,JMS,JME,KMS,KME,                                 &
                         ITS,ITE,JTS,JTE,KTS,KTE                                  )
-#if 0
-write(0,*)'back from EARTH_LATLON nest%id ',nest%id
-write(0,*)'back from EARTH_LATLON shape(nest%HLAT) ',shape(nest%HLAT)
-write(0,*)'back from EARTH_LATLON nest%dx ',nest%dx
-write(0,*)'back from EARTH_LATLON nest%dy ',nest%dy
-write(0,*)'back from EARTH_LATLON nest%wbd0 ',nest%wbd0
-write(0,*)'back from EARTH_LATLON nest%sbd0 ',nest%sbd0
-write(0,*)'back from EARTH_LATLON nest%HLAT '
-write(0,*)'back from EARTH_LATLON parent_CLAT ',parent_CLAT
-write(0,*)'back from EARTH_LATLON parent_CLON ',parent_CLON
-write(100,*)ite-its+1,jte-jts+1,' HLAT '
-do j =jts,jte
-do i =its,ite
-  write(100,*)nest%HLAT(i,j)
-enddo
-enddo
-write(100,*)ite-its+1,jte-jts+1,' HLON '
-do j =jts,jte
-do i =its,ite
-  write(100,*)nest%HLON(i,j)
-enddo
-enddo
-write(100,*)ite-its+1,jte-jts+1,' VLAT '
-do j =jts,jte
-do i =its,ite
-  write(100,*)nest%VLAT(i,j)
-enddo
-enddo
-write(100,*)ite-its+1,jte-jts+1,' VLON '
-do j =jts,jte
-do i =its,ite
-  write(100,*)nest%VLON(i,j)
-enddo
-enddo
-#endif
 
 !   Determine the weights of nested grid h points nearest to H points of parent domain 
 
