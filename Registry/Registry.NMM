@@ -1677,7 +1677,7 @@ package   rrtmg_lwscheme_fast  ra_lw_physics==24     -             -
 package   goddardlwscheme  ra_lw_physics==5          -             -
 package   flglwscheme   ra_lw_physics==7             -             -
 package   gfdllwscheme  ra_lw_physics==99            -             -
-package   hwrflwscheme  ra_lw_physics==98            -             -
+package   hwrflwscheme  ra_lw_physics==98            -             state:o3rad
 
 package   swradscheme   ra_sw_physics==1             -             -
 package   gsfcswscheme  ra_sw_physics==2             -             -
@@ -1687,7 +1687,7 @@ package   rrtmg_swscheme_fast  ra_sw_physics==24     -             -
 package   goddardswscheme  ra_sw_physics==5          -             -
 package   flgswscheme   ra_sw_physics==7             -             -
 package   gfdlswscheme  ra_sw_physics==99            -             -
-package   hwrfswscheme  ra_sw_physics==98
+package   hwrfswscheme  ra_sw_physics==98            -             state:o3rad
 package   heldsuarez    ra_lw_physics==31            -             -
 
 package   sfclayscheme   sf_sfclay_physics==91       -             -

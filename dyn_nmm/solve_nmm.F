@@ -229,6 +229,7 @@
 !-----------------------------------------------------------------------
 !
       ttim=now_time() ! used to calculate total time spent in solver
+
       CALL DOMAIN_CLOCK_GET(GRID,ADVANCEcOUNT=NTSD_current)
 !
       IF(NTSD_current==0)THEN

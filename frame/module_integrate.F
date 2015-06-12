@@ -357,6 +357,7 @@ ENDIF
 IF ( grid%active_this_task ) THEN
               CALL med_after_solve_io ( grid , config_flags )
 ENDIF
+
             grid_ptr => grid
             DO WHILE ( ASSOCIATED( grid_ptr ) )
 
