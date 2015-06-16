@@ -105,7 +105,7 @@ CONTAINS
 #endif
 500 format(A)
     ! Open namelist.input using the same unit used by module_io_wrf 
-    ! since we know nobody will screw up that unit:
+    ! since we know nobody else will use that unit:
     OPEN(unit=27, file="namelist.input", form="formatted", status="old")
     READ(27,nml=logging,iostat=iostat)
     if(iostat /= 0) then
