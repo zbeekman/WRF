@@ -75,12 +75,13 @@ MODULE module_wrf_quilt
   INTEGER, PARAMETER :: max_servers = int_num_handles+1  ! why +1?
   LOGICAL, DIMENSION(0:int_num_handles) :: okay_to_write, int_handle_in_use, okay_to_commit
   INTEGER, DIMENSION(0:int_num_handles) :: int_num_bytes_to_write, io_form
+  INTEGER, DIMENSION(0:int_num_handles) :: which_grid_is_handle
+  INTEGER, DIMENSION(0:int_num_handles) :: prev_server_for_handle
   REAL, POINTER,SAVE :: int_local_output_buffer(:)
   INTEGER,      SAVE :: int_local_output_cursor
   LOGICAL          :: quilting_enabled
   LOGICAL          :: disable_quilt = .FALSE.
-  INTEGER          :: prev_server_for_handle = -1
-  INTEGER          :: server_for_handle(int_num_handles)
+  INTEGER          :: server_for_handle(int_num_handles,max_domains)
   INTEGER          :: reduced(2), reduced_dummy(2)
   LOGICAL, EXTERNAL :: wrf_dm_on_monitor
 
@@ -127,19 +128,26 @@ MODULE module_wrf_quilt
 !</DESCRIPTION>
       IMPLICIT NONE
       INTEGER, INTENT(IN) :: dhandle
+! local
+      INTEGER :: id
+      
       IF ( dhandle .GE. 1 .AND. dhandle .LE. int_num_handles ) THEN
-        IF ( server_for_handle ( dhandle ) .GE. 1 ) THEN
-          get_server_id = server_for_handle ( dhandle )
+        id = which_grid_is_handle(dhandle)
+        IF ( id .LT. 1 .OR. id .GT. max_domains ) THEN
+          CALL wrf_error_fatal("module_io_quilt: get_server_id, bad grid id stored with handle")
+        ENDIF
+        IF ( server_for_handle ( dhandle, id ) .GE. 1 ) THEN
+          get_server_id = server_for_handle ( dhandle, id )
         ELSE
            IF(poll_servers) THEN
               ! Poll server group masters to find an inactive I/O server group:
-              call wrf_quilt_find_server(server_for_handle(dhandle))
+              call wrf_quilt_find_server(server_for_handle(dhandle, id))
            ELSE
               ! Server polling is disabled, so cycle through servers:
-              prev_server_for_handle = mod ( prev_server_for_handle + 1 , nio_groups )
-              server_for_handle( dhandle ) = prev_server_for_handle+1
+              prev_server_for_handle(id) = mod ( prev_server_for_handle(id) + 1 , nio_groups )
+              server_for_handle( dhandle, id ) = prev_server_for_handle(id)+1
            ENDIF
-           get_server_id=server_for_handle(dhandle)
+           get_server_id=server_for_handle(dhandle, id)
         ENDIF
       ELSE
          CALL wrf_message('module_io_quilt: get_server_id bad dhandle' )
@@ -150,8 +158,14 @@ MODULE module_wrf_quilt
     SUBROUTINE set_server_id ( dhandle, value )
        IMPLICIT NONE
        INTEGER, INTENT(IN) :: dhandle, value
+       INTEGER id
        IF ( dhandle .GE. 1 .AND. dhandle .LE. int_num_handles ) THEN
-         server_for_handle(dhandle) = value
+         id = which_grid_is_handle(dhandle)
+         IF ( id .GE. 1 .AND. ID .LE. max_domains ) THEN
+           server_for_handle(dhandle,id) = value
+         ELSE
+           CALL wrf_message('module_io_quilt: set_server_id bad grid id stored with handle' )
+         ENDIF
        ELSE
          CALL wrf_message('module_io_quilt: set_server_id bad dhandle' )
        ENDIF
@@ -174,7 +188,8 @@ MODULE module_wrf_quilt
 ! Note that client tasks know nothing about package-specific handles.
 ! Only the I/O quilt servers know about them.
 !</DESCRIPTION>
-      INTEGER i, retval
+      INTEGER, INTENT(OUT) :: retval
+      INTEGER i
       retval = -1
       DO i = 1, int_num_handles
         IF ( .NOT. int_handle_in_use(i) )  THEN
@@ -665,6 +680,7 @@ okay_to_w = .false.
         ! if needed (currently needed only for ioclose).
         reduced_dummy = 0
 
+!write(0,*)'before mpi_x_reduce on quilt server '
         CALL mpi_x_reduce( reduced_dummy, reduced, 2, MPI_INTEGER, MPI_SUM, mytask_io_group, mpi_comm_io_groups(1,1), ierr )
         obufsize = reduced(1)
 !CALL end_timing("MPI_Reduce at top of forever loop") 
@@ -1023,11 +1039,11 @@ okay_to_w = .false.
                   DEALLOCATE( RData )
 ! The I/O server "root" handles the "put_dom_ti_real" request.
                 CASE ( int_dom_ti_real )
-!write(0,*)' int_dom_ti_real '
                   CALL mpi_type_size( MPI_REAL, ftypesize, ierr )
                   ALLOCATE( RData( bigbuf(icurs/itypesize + 4 ) ) )      ! 5 is the count of data items for this record ; defined in collect_on_comm.c
                   CALL int_get_ti_header( bigbuf(icurs/itypesize:), hdrbufsize, itypesize, ftypesize, &
                                           DataHandle, Element, RData, Count, code )
+!write(0,*)' int_dom_ti_real ',trim(element),count
                   icurs = icurs + hdrbufsize
 
                   SELECT CASE (use_package(io_form(DataHandle)))
@@ -1060,11 +1076,11 @@ okay_to_w = .false.
 
 ! The I/O server "root" handles the "put_dom_td_integer" request.
                 CASE ( int_dom_td_integer )
-!write(0,*)' int_dom_td_integer '
                   CALL mpi_type_size( MPI_INTEGER, ftypesize, ierr )
                   ALLOCATE( IData( bigbuf(icurs/itypesize + 4 ) ) )      ! 5 is the count of data items for this record ; defined in collect_on_comm.c
                   CALL int_get_td_header( bigbuf(icurs/itypesize:), hdrbufsize, itypesize, ftypesize, &
                                           DataHandle, DateStr, Element, IData, Count, code )
+!write(0,*)' int_dom_td_integer ',trim(element)
                   icurs = icurs + hdrbufsize
 
                   SELECT CASE (use_package(io_form(DataHandle)))
@@ -1096,18 +1112,18 @@ okay_to_w = .false.
 
 ! The I/O server "root" handles the "put_dom_ti_integer" request.
                 CASE ( int_dom_ti_integer )
-!write(0,*)' int_dom_ti_integer '
 
                   CALL mpi_type_size( MPI_INTEGER, ftypesize, ierr )
                   ALLOCATE( IData( bigbuf(icurs/itypesize + 4 ) ) )      ! 5 is the count of data items for this record ; defined in collect_on_comm.c
                   CALL int_get_ti_header( bigbuf(icurs/itypesize:), hdrbufsize, itypesize, ftypesize, &
                                           DataHandle, Element, IData, Count, code )
+!write(0,*)' int_dom_ti_integer ',trim(element)
                   icurs = icurs + hdrbufsize
                   SELECT CASE (use_package(io_form(DataHandle)))
 #ifdef NETCDF
                     CASE ( IO_NETCDF   )
                       CALL ext_ncd_put_dom_ti_integer( handle(DataHandle),TRIM(Element), IData, Count, Status )
-!write(0,*)'ext_ncd_put_dom_ti_integer ',handle(DataHandle),TRIM(Element),IData,Status
+!!write(0,*)'ext_ncd_put_dom_ti_integer ',handle(DataHandle),TRIM(Element),IData,Status
 #endif
 #ifdef INTIO
                     CASE ( IO_INTIO   )
@@ -1134,9 +1150,9 @@ okay_to_w = .false.
  
 ! The I/O server "root" handles the "set_time" request.
                 CASE ( int_set_time )
-!write(0,*)' int_set_time '
                   CALL int_get_ti_header_char( bigbuf(icurs/itypesize), hdrbufsize, itypesize, &
                                                DataHandle, Element, VarName, CData, code )
+!write(0,*)' int_set_time ',trim(element)
                   SELECT CASE (use_package(io_form(DataHandle)))
 #ifdef INTIO
                     CASE ( IO_INTIO   )
@@ -1150,10 +1166,9 @@ okay_to_w = .false.
 
 ! The I/O server "root" handles the "put_dom_ti_char" request.
                 CASE ( int_dom_ti_char )
-!write(0,*)' before int_get_ti_header_char '
                   CALL int_get_ti_header_char( bigbuf(icurs/itypesize), hdrbufsize, itypesize, &
                                                DataHandle, Element, VarName, CData, code )
-!write(0,*)' after int_get_ti_header_char ',VarName
+!write(0,*)' after int_get_ti_header_char ',trim(VarName),trim(element)
 
                   SELECT CASE (use_package(io_form(DataHandle)))
 #ifdef NETCDF
@@ -1184,9 +1199,9 @@ okay_to_w = .false.
 
 ! The I/O server "root" handles the "put_var_ti_char" request.
                 CASE ( int_var_ti_char )
-!write(0,*)' int_var_ti_char '
                   CALL int_get_ti_header_char( bigbuf(icurs/itypesize), hdrbufsize, itypesize, &
                                                DataHandle, Element, VarName, CData, code )
+!write(0,*)' int_var_ti_char ',trim(varname),trim(element)
 
                   SELECT CASE (use_package(io_form(DataHandle)))
 #ifdef NETCDF
@@ -2564,7 +2579,7 @@ okay_to_w = .false.
                             tasks_per_split,comm_start,dm_task_split
       IMPLICIT NONE
       INCLUDE 'mpif.h'
-      INTEGER i
+      INTEGER i,j
       NAMELIST /namelist_quilt/ nio_tasks_per_group, nio_groups, poll_servers
       INTEGER ntasks, mytask, ierr, io_status, id, itask
 #  if defined(_OPENMP) && defined(MPI2_THREAD_SUPPORT)
@@ -2598,8 +2613,14 @@ okay_to_w = .false.
       DO i = 1,int_num_handles
         okay_to_write(i) = .FALSE.
         int_handle_in_use(i) = .FALSE.
-        server_for_handle(i) = 0 
+        which_grid_is_handle(i) = -1
+        prev_server_for_handle(i) = -1
         int_num_bytes_to_write(i) = 0
+      ENDDO
+      DO j = 1, max_domains
+        DO i = 1,int_num_handles
+          server_for_handle(i,j) = 0 
+        ENDDO
       ENDDO
 
       CALL MPI_INITIALIZED( mpi_inited, ierr )
@@ -3036,7 +3057,7 @@ LOGICAL FUNCTION  use_input_servers()
   RETURN
 END FUNCTION use_input_servers
 
-SUBROUTINE wrf_quilt_open_for_write_begin( FileName , Comm_compute, Comm_io, SysDepInfo, &
+SUBROUTINE wrf_quilt_open_for_write_begin( FileName , gridid, Comm_compute, Comm_io, SysDepInfo, &
                                      DataHandle , io_form_arg, Status )
 !<DESCRIPTION>
 ! Instruct the I/O quilt servers to begin data definition ("training") phase
@@ -3050,6 +3071,7 @@ SUBROUTINE wrf_quilt_open_for_write_begin( FileName , Comm_compute, Comm_io, Sys
   INCLUDE 'mpif.h'
 #include "intio_tags.h"
   CHARACTER *(*), INTENT(IN)  :: FileName
+  INTEGER ,       INTENT(IN)  :: gridid
   INTEGER ,       INTENT(IN)  :: Comm_compute , Comm_io
   CHARACTER *(*), INTENT(IN)  :: SysDepInfo
   INTEGER ,       INTENT(OUT) :: DataHandle
@@ -3094,13 +3116,17 @@ SUBROUTINE wrf_quilt_open_for_write_begin( FileName , Comm_compute, Comm_io, Sys
 
   END SELECT
 
+  which_grid_is_handle(DataHandle) = gridid
   iserver = get_server_id ( DataHandle )
-!JMDEBUGwrite(0,*)'wrf_quilt_open_for_write_begin iserver = ', iserver
+!write(0,*)'wrf_quilt_open_for_write_begin DataHandle = ', DataHandle
+!write(0,*)'wrf_quilt_open_for_write_begin filename = ', Trim(filename)
+!write(0,*)'wrf_quilt_open_for_write_begin sysdepinfo = ', Trim(sysdepinfo)
+!write(0,*)'wrf_quilt_open_for_write_begin iserver = ', iserver
   CALL get_mpi_comm_io_groups( comm_io_group , iserver )
-!JMDEBUGwrite(0,*)'wrf_quilt_open_for_write_begin comm_io_group  = ', comm_io_group 
+!write(0,*)'wrf_quilt_open_for_write_begin comm_io_group  = ', comm_io_group 
 
   CALL mpi_x_comm_size( comm_io_group , tasks_in_group , ierr )
-!JMDEBUGwrite(0,*)'mpi_x_comm_size tasks_in_group ',tasks_in_group, ierr
+!write(0,*)'mpi_x_comm_size tasks_in_group ',tasks_in_group, ierr
 
 !!JMTIMING  CALL start_timing
   ! send the size of my local buffer to the i/o task (reduced_dummy doesnt mean anything on client side)
@@ -3111,6 +3137,7 @@ SUBROUTINE wrf_quilt_open_for_write_begin( FileName , Comm_compute, Comm_io, Sys
 #else
   IF ( wrf_dm_on_monitor() )  reduced(2) = i 
 #endif
+!write(0,*)'calling mpi_x_reduce in wrf_quilt_open_for_write_begin '
   CALL mpi_x_reduce( reduced, reduced_dummy, 2, MPI_INTEGER, MPI_SUM, tasks_in_group-1, comm_io_group, ierr )
 !!JMTIMING   CALL end_timing("MPI_Reduce in wrf_quilt_open_for_write_begin")
 
@@ -3707,6 +3734,7 @@ SUBROUTINE wrf_quilt_put_dom_ti_real ( DataHandle,Element,   Data, Count,  Statu
   REAL dummy
 !
 !!JMTIMING  CALL start_timing
+!write(0,*)__FILE__,__LINE__,trim(element),count
   CALL wrf_debug ( DEBUG_LVL, 'in wrf_quilt_put_dom_ti_real' ) 
   CALL MPI_TYPE_SIZE( MPI_INTEGER, itypesize, ierr )
   locElement = Element
@@ -3865,6 +3893,7 @@ SUBROUTINE wrf_quilt_put_dom_ti_integer ( DataHandle,Element,   Data, Count,  St
   locElement = Element
 
   CALL wrf_debug ( DEBUG_LVL, 'in wrf_quilt_put_dom_ti_integer' ) 
+!write(0,*)__FILE__,__LINE__,trim(element),count
 
   IF ( DataHandle .GE. 1 .AND. DataHandle .LE. int_num_handles ) THEN
     IF ( int_handle_in_use( DataHandle ) ) THEN
@@ -4026,6 +4055,7 @@ SUBROUTINE wrf_quilt_put_dom_ti_char ( DataHandle, Element,  Data,  Status )
 !
 !!JMTIMING  CALL start_timing
   CALL wrf_debug ( DEBUG_LVL, 'in wrf_quilt_put_dom_ti_char' ) 
+!write(0,*)__FILE__,__LINE__,trim(element)
 
   IF ( DataHandle .GE. 1 .AND. DataHandle .LE. int_num_handles ) THEN
     IF ( int_handle_in_use( DataHandle ) ) THEN
@@ -4572,6 +4602,7 @@ SUBROUTINE wrf_quilt_put_var_ti_char ( DataHandle,Element,  Varname, Data,  Stat
 
 !!JMTIMING  CALL start_timing
   CALL wrf_debug ( DEBUG_LVL, 'in wrf_quilt_put_var_ti_char' ) 
+!write(0,*)__FILE__,__LINE__,trim(varname),trim(element)
 
   IF ( DataHandle .GE. 1 .AND. DataHandle .LE. int_num_handles ) THEN
     IF ( int_handle_in_use( DataHandle ) ) THEN
