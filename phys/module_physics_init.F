@@ -1766,7 +1766,7 @@ USE module_dm, ONLY : local_communicator
 !   Read in CAM ozone data, and interpolate data to model grid
 !   Interpolation of aerosols is done on domain 1 only
 
-   IF ( config_flags%o3input .EQ. 2 .AND. id .EQ. 1 ) THEN
+   IF ( config_flags%o3input .EQ. 2 ) THEN
       CALL oznini(ozmixm,pin,levsiz,n_ozmixm,XLAT,                &
                      ids, ide, jds, jde, kds, kde,                  &
                      ims, ime, jms, jme, kms, kme,                  &
