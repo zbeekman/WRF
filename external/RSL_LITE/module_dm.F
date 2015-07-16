@@ -1808,13 +1808,24 @@ ENDIF
 
       IF ( mytask .EQ. 0 ) THEN
         OPEN ( unit=27, file="namelist.input", form="formatted", status="old" )
+! get a sneak peak an nproc_x and nproc_y
+        nproc_x = -1
+        nproc_y = -1
+        READ ( 27 , NML = domains, IOSTAT=io_status )
+        CLOSE ( 27 )
+        OPEN ( unit=27, file="namelist.input", form="formatted", status="old" )
         tasks_per_split = ntasks
 ! we need to sneak-peak the parent_id namelist setting, ,which is in the "domains" section
 ! of the namelist.  That namelist is registry generated, so the registry-generated information
 ! is #included above.
         nest_pes_x = 0    ! dimensions of communicator in X and y
         nest_pes_y = 0
-        CALL compute_mesh( ntasks-num_io_tasks, n_x, n_y )
+        IF ( nproc_x .EQ. -1 .OR. nproc_y .EQ. -1 ) THEN
+          CALL compute_mesh( ntasks-num_io_tasks, n_x, n_y )
+        ELSE
+          n_x = nproc_x
+          n_y = nproc_y
+        ENDIF 
         comm_start = 0   ! make it so everyone will use same communicator if the dm_task_split namelist is not specified or is empty
         nest_pes_x(1:max_dom) = n_x
         nest_pes_y(1:max_dom) = n_y
@@ -1826,9 +1837,12 @@ ENDIF
 ! or if  dm_task_split was read but was emptly, do nothing: dm_task_split not specified, everyone uses same communicator (see above)
       ENDIF
       CALL mpi_bcast( tasks_per_split, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+      CALL mpi_bcast( nproc_x, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+      CALL mpi_bcast( nproc_y, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( comm_start, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( nest_pes_x, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( nest_pes_y, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+
       nkids = 1
       which_kid = 0
       DO i = 2, max_dom
