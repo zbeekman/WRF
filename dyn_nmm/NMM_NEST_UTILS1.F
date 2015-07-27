@@ -3113,8 +3113,8 @@ SUBROUTINE NEST_TERRAIN ( nest, config_flags )
          call MASTER(IDS,IDE,JDS,JDE)
 #ifdef DM_PARALLEL
       ELSE
-         call wrf_debug(1,'NEST_TERRAIN SLAVE PROCESS')
-         call SLAVE(IDS,IDE,JDS,JDE)
+         call wrf_debug(1,'NEST_TERRAIN CLIENT PROCESS')
+         call CLIENT(IDS,IDE,JDS,JDE)
       ENDIF monitor_only
 #endif
 
@@ -3154,7 +3154,7 @@ SUBROUTINE NEST_TERRAIN ( nest, config_flags )
 
 CONTAINS
 #ifdef DM_PARALLEL
-  SUBROUTINE SLAVE(IDS,IDE,JDS,JDE)
+  SUBROUTINE CLIENT(IDS,IDE,JDS,JDE)
     IMPLICIT NONE
     integer, intent(in) :: IDS,IDE,JDS,JDE
     REAL, DIMENSION(1,1) :: avc_nest,lnd_nest
@@ -3171,7 +3171,7 @@ CONTAINS
      call wrf_debug(1,'back from wrf_global_to_patch_real in nest_terrain')
 
 
-  END SUBROUTINE SLAVE
+  END SUBROUTINE CLIENT
 #endif
   SUBROUTINE MASTER(IDS,IDE,JDS,JDE)
     IMPLICIT NONE
