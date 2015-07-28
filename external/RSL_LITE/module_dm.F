@@ -1800,6 +1800,17 @@ ENDIF
       CALL mpi_bcast( nio_groups , 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( max_dom, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( parent_id, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+! check to make sure that if nio_tasks_per_group is non-zero for any domain it has to be non-zero for all of them
+      i = MAXVAL(nio_tasks_per_group(1:max_dom))
+      IF ( i .GT. 0 .AND. nio_groups .GT. 0 ) THEN
+        DO id = 1, max_dom
+          IF ( nio_tasks_per_group(id) .LE. 0 ) THEN
+             CALL wrf_error_fatal( &
+'If nio_tasks_per_group in namelist.input is non-zero for any domain, every active domain must have a non-zero value in nio_tasks_per_group')
+          ENDIF
+        ENDDO
+      ENDIF
+
       num_io_tasks = 0
       DO id = 1, max_dom
         num_io_tasks = num_io_tasks + nio_tasks_per_group(id)*nio_groups
