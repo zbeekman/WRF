@@ -1678,6 +1678,29 @@ ENDIF
 # endif
     END SUBROUTINE wrf_dm_minval_integer
 
+   SUBROUTINE hwrf_coupler_init
+#ifdef HWRF
+# ifndef STUBMPI
+      IMPLICIT NONE
+      INCLUDE 'mpif.h'
+      LOGICAL mpi_inited
+      INTEGER mpi_comm_here,ierr
+      CALL MPI_INITIALIZED( mpi_inited, ierr )
+      IF ( .NOT. mpi_inited ) THEN
+        IF ( coupler_on ) THEN
+           CALL cpl_init( mpi_comm_here )
+        ELSE
+           CALL mpi_init ( ierr )
+           mpi_comm_here = MPI_COMM_WORLD
+        ENDIF
+        CALL atm_cmp_start( mpi_comm_here )
+        CALL wrf_set_dm_communicator( mpi_comm_here )
+        CALL wrf_termio_dup( mpi_comm_here )
+      ENDIF
+      RETURN
+# endif
+#endif
+   END SUBROUTINE hwrf_coupler_init
 
    SUBROUTINE split_communicator
 #ifndef STUBMPI
@@ -1690,7 +1713,7 @@ ENDIF
       INTEGER mype_local,ntasks_local,num_compute_tasks
 #  if defined(_OPENMP) && defined(MPI2_THREAD_SUPPORT)
       INTEGER thread_support_provided, thread_support_requested
-#endif
+#  endif
       INTEGER i, j, k, x, y, n_x, n_y
       INTEGER iii
       INTEGER, ALLOCATABLE :: icolor(:),icolor2(:),idomain(:)
@@ -1774,7 +1797,8 @@ ENDIF
 #endif
 #  endif
 #ifdef HWRF
-        CALL atm_cmp_start( mpi_comm_here )   ! atmospheric side of HWRF coupler will split MPI_COMM_WORLD and return communicator as argument
+!!!!! jm 20150807 note that for HWRF, this will not be called here because of the call to hwrf_coupler_init (defined above) in init_modules
+!!!!        CALL atm_cmp_start( mpi_comm_here )   ! atmospheric side of HWRF coupler will split MPI_COMM_WORLD and return communicator as argument
 #endif
         CALL wrf_set_dm_communicator( mpi_comm_here )
         CALL wrf_termio_dup( mpi_comm_here )

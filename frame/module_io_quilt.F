@@ -2722,7 +2722,7 @@ okay_to_w = .false.
 !!!!! end of needed to sneak-peak the namelist
 
 ! set up the arrays associating quilt tasks to domains and check to make sure it will work
-!   role_for_task( maxprocs ) = 0 if compute, otherwise id of grid for which's it's a server
+! role_for_task( maxprocs ) = 0 if compute, otherwise id of grid for which's it's a server
       ALLOCATE(role_for_task(ntasks))
       ! count up the number of I/O tasks needed, each domain has its own set
       ncompute_tasks = 0
@@ -2735,8 +2735,10 @@ okay_to_w = .false.
       DO id = 1, max_dom
         num_io_tasks = num_io_tasks + nio_tasks_per_group(id)*nio_groups
       ENDDO
-      IF ( ncompute_tasks + num_io_tasks .NE. ntasks ) THEN
-        WRITE(message,"('ncompute_tasks(',i9,')+num_io_tasks(',i9,') .NE. ntasks(',i9,')')")ncompute_tasks,num_io_tasks,ntasks
+!jm      IF ( ncompute_tasks + num_io_tasks .NE. ntasks ) THEN
+!jm        WRITE(message,"('ncompute_tasks(',i9,')+num_io_tasks(',i9,') .NE. ntasks(',i9,')')")ncompute_tasks,num_io_tasks,ntasks
+      IF ( ncompute_tasks + num_io_tasks .GT. ntasks ) THEN
+        WRITE(message,"('ncompute_tasks(',i9,')+num_io_tasks(',i9,') .GT. ntasks(',i9,')')")ncompute_tasks,num_io_tasks,ntasks
         CALL wrf_error_fatal(TRIM(message))
       ENDIF
       DO itask = 1, ncompute_tasks
@@ -2750,9 +2752,6 @@ okay_to_w = .false.
         ENDDO
       ENDDO
       ntasks = itask - 1
-!do i = 1, ntasks
-!write(0,*)'role_for_task ',i,role_for_task(i)
-!enddo
 ! end set up of role_for_task array
 
       poll_servers = (temp_poll == 1)
