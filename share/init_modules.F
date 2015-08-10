@@ -75,6 +75,7 @@ IF ( phase == 1 ) THEN
 ! jm 20150807
 ! jm this was moved to here so that the coupler can divide up the tasks before the model starts doing it for quilting, nesting etc.
 ! jm the idea is that the atmosphere will see only the communicator with the tasks it is supposed to use for that stuff
+! jm hwrf_coupler_init is defined in external/RSL_LITE/module_dm.F
  CALL hwrf_coupler_init
 #endif
 

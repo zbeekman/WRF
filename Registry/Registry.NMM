@@ -1303,6 +1303,8 @@ rconfig   integer   max_ts_locs     namelist,domains    1                5      
 rconfig   integer   num_moves       namelist,domains    1                0
 rconfig   integer   vortex_interval namelist,domains    max_domains      15  -  "" "" "minutes"
 rconfig   integer   corral_dist     namelist,domains    max_domains      8
+#for HWRF -- set to true for one storm, false for > 1 this gets inferred from the way the nests are configured in frame/module_domain.F
+rconfig   logical   multi_storm     derived             1              .true.
 rconfig   integer   move_id         namelist,domains    max_moves        0
 rconfig   integer   move_interval   namelist,domains    max_moves        999999999
 rconfig   integer   move_cd_x       namelist,domains    max_moves        0
