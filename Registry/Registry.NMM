@@ -1481,9 +1481,9 @@ state  real   pin       {ls}     misc      1    -   -      "PIN"             "PR
 state    real   o3rad           ikj     misc        1         -      irh      "o3rad"    "RADIATION 3D OZONE" "ppmv"
 
 ifdef HWRF=1
-rconfig   integer movemin                 namelist,physics      max_domains  10       irh    "movemin" "nest movement timestep (multiples of nphs)"
+rconfig   integer ntrack                 namelist,physics      max_domains  10       irh    "ntrack" "nest movement timestep (multiples of nphs)"
 endif
-rconfig   integer movemin                 namelist,physics      max_domains  0       irh    "movemin" "nest movement timestep (multiples of nphs)"
+rconfig   integer ntrack                 namelist,physics      max_domains  0       irh    "ntrack" "nest movement timestep (multiples of nphs)"
 
 rconfig   integer num_snso_layers         namelist,physics      1             7       irh    "num_snso_layers"               ""      ""
 rconfig   integer num_snow_layers         namelist,physics   1             3       irh    "num_snow_layers"               ""      ""
