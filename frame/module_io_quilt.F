@@ -379,18 +379,21 @@ MODULE module_wrf_quilt
       nprocx = nest_pes_x(id)
       nprocy = nest_pes_y(id)
 
-      nio = min(nio,nprocy)
-      m = mod(nprocy,nio)  ! divide up remainder, 1 row per, until gone
-      ii = 1
-      DO j = 1, nio, 1
-         DO k = 1,nprocy/nio+min(m,1)
-           DO i = 1, nprocx
-             icolor(ii+comm_start(id)) = j - 1
-             ii = ii + 1
-           ENDDO
-         ENDDO
-         m = max(m-1,0)
-      ENDDO
+      IF ( nio .GT. nprocy*nprocx ) THEN
+        CALL wrf_error_fatal( 'more io tasks than compute tasks specified' ) 
+      ENDIF
+  
+      m = mod(nprocy*nprocx,nio)  ! divide up remainder, 1 row per, until gone
+      ii = 0
+      j = 1
+      do while ( j .le. nprocx*nprocy )
+        do i = 0, (nprocx*nprocy)/nio+min(m,1)-1
+           icolor(j+comm_start(id)) = ii
+           j = j + 1
+        enddo
+        ii = ii + 1
+        m = max(m-1,0)
+      enddo
 
 ! ... and add the io servers as the last task in each group
       DO j = 1, n_groups
@@ -441,6 +444,7 @@ MODULE module_wrf_quilt
          ENDIF
          icolor(1)=1
 
+         nio = nio_tasks_per_group(id)
          do j=1,n_groups
             i=ncompute_tasks+j*nio-1
             if(me+1==i) then
