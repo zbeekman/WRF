@@ -14,8 +14,9 @@ module da_dynamics
    use module_dm, only : local_communicator, &
       ntasks_x, ntasks_y, data_order_xy, mytask, &
       ntasks
-   use module_comm_dm, only : halo_2d_work_sub
-   use da_control, only : ips,ipe,jps,jpe,kps,kpe
+   use module_comm_dm, only : halo_2d_work_sub, halo_wpec_sub, halo_wpec_adj_sub
+   use da_control, only : ips,ipe,jps,jpe,kps,kpe,ids,ide,jds,jde,kds,kde,ims,ime,jms,jme,kms,kme,&
+                     its,ite,jts,jte,kts,kte
 #endif
 
    use da_define_structures, only : xbx_type
@@ -28,13 +29,15 @@ module da_dynamics
 
    contains
 
-#include "da_balance_cycloterm.inc"
 #include "da_balance_cycloterm_adj.inc"
 #include "da_balance_cycloterm_lin.inc"
+#include "da_balance_cycloterm.inc"
 #include "da_balance_equation_adj.inc"
 #include "da_balance_equation_lin.inc"
+#include "da_balance_equation.inc"
 #include "da_balance_geoterm_adj.inc"
 #include "da_balance_geoterm_lin.inc"
+#include "da_balance_geoterm.inc"
 #include "da_hydrostaticp_to_rho_adj.inc"
 #include "da_hydrostaticp_to_rho_lin.inc"
 #include "da_psichi_to_uv.inc"

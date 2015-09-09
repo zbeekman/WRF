@@ -16,7 +16,7 @@ module da_test
 !  use mpi, only : mpi_sum
 #endif
 
-   use da_control, only : num_procs, var4d_bin, var4d_lbc                                
+   use da_control, only : num_procs, var4d_bin, var4d_lbc, check_test_unit                                
    use module_domain, only : vp_type, xb_type, x_type, ep_type, &
       domain, domain_clock_get, domain_clock_set, domain_clockprint, domain_clockadvance
    use module_state_description, only : dyn_em,dyn_em_tl,dyn_em_ad,p_a_qv
@@ -49,7 +49,7 @@ module da_test
       da_psichi_to_uv, da_psichi_to_uv_adj
    use da_ffts, only : da_solve_poissoneqn_fct
    use da_minimisation, only : da_transform_vtoy_adj,da_transform_vtoy, da_swap_xtraj, &
-       da_read_basicstates, da_calculate_j
+       da_read_basicstates, da_calculate_j,da_calculate_j_constraint
    use da_obs, only : da_transform_xtoy,da_transform_xtoy_adj
    use da_par_util, only : da_patch_to_global, da_system, da_cv_to_global
 #ifdef DM_PARALLEL
@@ -143,5 +143,6 @@ contains
 #include "da_check_vtoy_adjoint.inc"
 #include "da_get_y_lhs_value.inc"
 #include "da_check_gradient.inc"
+#include "da_check_gradient_constraint.inc"
 
 end module da_test
