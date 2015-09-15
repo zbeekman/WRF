@@ -1,4 +1,4 @@
-subroutine da_recursive_filter_1d_inverse(pass, alpha, field, n)
+subroutine da_recursive_filter_1d_inv(pass, alpha, field, n)
 
    !---------------------------------------------------------------------------
    ! Purpose: Perform one pass of inverse of recursive filter on 1D array.
@@ -7,6 +7,10 @@ subroutine da_recursive_filter_1d_inverse(pass, alpha, field, n)
    !
    ! Lorenc, A. (1992), Iterative Analysis Using Covariance Functions and Filters. 
    !                    Q.J.R. Meteorol. Soc., 118: 569-591. Equation (A2)
+   !
+   ! Christopher M. Hayden and R. James Purser, 1995: Recursive Filter Objective Analysis of 
+   !                    Meteorological Fields: Applications to NESDIS Operational Processing. 
+   !                    J. Appl. Meteor., 34, 3-15. 
    !
    ! Author: Zhiquan (Jake) Liu, NCAR/MMM, 2015-09 
    !---------------------------------------------------------------------------
@@ -24,7 +28,7 @@ subroutine da_recursive_filter_1d_inverse(pass, alpha, field, n)
    real    :: b(1:n)         ! Field after left-right pass.
    real    :: c(1:n)         ! Field after right-left pass.
 
-   if (trace_use_dull) call da_trace_entry("da_recursive_filter_1d_inverse")
+   if (trace_use_dull) call da_trace_entry("da_recursive_filter_1d_inv")
    
    !-------------------------------------------------------------------------
    ! [1.0] Initialise:
@@ -75,6 +79,6 @@ subroutine da_recursive_filter_1d_inverse(pass, alpha, field, n)
 
    field(1:n) = a(1:n)
 
-   if (trace_use_dull) call da_trace_exit("da_recursive_filter_1d_inverse")
+   if (trace_use_dull) call da_trace_exit("da_recursive_filter_1d_inv")
    
-end subroutine da_recursive_filter_1d_inverse
+end subroutine da_recursive_filter_1d_inv

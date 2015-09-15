@@ -4,7 +4,7 @@ subroutine da_transform_vvtovp(grid, evec, eval, vertical_wgt, vv, vp, mz, level
    ! Purpose: Transform from fields on vertical EOFS to fields on vertical 
    ! levels.
    !
-   ! Method:  Perform vp(i,j,k) = P E L^{1/2} vv(i,j,m) transform.
+   ! Method:  Perform vp(i,j,k) = E L^{1/2} vv(i,j,m) transform.
    !---------------------------------------------------------------------------
 
    implicit none
@@ -13,6 +13,10 @@ subroutine da_transform_vvtovp(grid, evec, eval, vertical_wgt, vv, vp, mz, level
    integer, intent(in)  :: mz                         ! # vertical modes.
    integer, intent(in)  :: levels                     ! # no. of levels  
 
+! note: evec/eval assumed to vary in y direction (jds:jde), truncated to mz<=levels
+!       eval here is in fact square root of eighen values
+! by default, vertical weight not calculated/used
+!
    real*8,  intent(in)  :: evec(jds:jde,kds:kde,1:mz) ! Eigenvectors.
    real*8,  intent(in)  :: eval(jds:jde,1:mz)         ! Eigenvalues.
    real,    intent(in)  :: vertical_wgt(ims:ime,jms:jme,kms:kme) ! Weighting.
