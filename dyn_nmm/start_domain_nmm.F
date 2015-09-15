@@ -13,10 +13,10 @@
           character*255 :: message
 
           real :: dt
-          integer :: nphs,movemin
+          integer :: nphs,ntrack
           if(model_config_rec%max_dom>=2) then
              ! Normally, in an HWRF simulation, domain 2 has
-             ! dt*nphs*movemin = coupling timestep
+             ! dt*nphs*ntrack = coupling timestep
              ! So if there is a domain 2, we'll use that to
              ! guess the coupling timestep.
              if(gridid==1) then
@@ -25,7 +25,7 @@
                 ! 2 still has its dt set to the internal WRF default of 2.
                 ! To get domain 2's correct dt, we get domain 1's dt and
                 ! divide by 3
-                call wrf_message('Guessing coupling timestep from d01''s dt/3 and d02''s nphs and movemin...')
+                call wrf_message('Guessing coupling timestep from d01''s dt/3 and d02''s nphs and ntrack...')
                 call model_to_grid_config_rec(1,model_config_rec,config_flags)
                 dt=config_flags%dt/3
                 call model_to_grid_config_rec(2,model_config_rec,config_flags)
@@ -42,11 +42,11 @@
              dt=config_flags%dt
           endif
           nphs=config_flags%nphs
-          movemin=config_flags%movemin
+          ntrack=config_flags%ntrack
 
-          dtc = dt*nphs*movemin
-388       format("dtc=dt*nphs*movemin = ",F0.3,"=",F0.3,"*",I0,"*",I0)
-          write(message,388) dtc,dt,nphs,movemin
+          dtc = dt*nphs*ntrack
+388       format("dtc=dt*nphs*ntrack = ",F0.3,"=",F0.3,"*",I0,"*",I0)
+          write(message,388) dtc,dt,nphs,ntrack
           call wrf_message(message)
         END SUBROUTINE GUESS_COUPLING_TIMESTEP
 #endif
@@ -224,7 +224,7 @@
 #endif
       LOGICAL :: E_BDY,N_BDY,S_BDY,W_BDY,WARM_RAIN,ADV_MOIST_COND
       LOGICAL :: START_OF_SIMULATION
-      LOGICAL :: LRESTART
+      LOGICAL :: LRESTART, nestmove
       LOGICAL :: ETAMP_Regional, ICE1_indx, ICE2_indx
       LOGICAL :: IS_CAMMGMP_USED=.FALSE.
 
@@ -304,6 +304,7 @@
 !
         RESTRT=config_flags%restart
         ANAL=config_flags%analysis                
+        nestmove=RESTRT .and. .not. allowed_to_read
 
 #ifdef HWRF
 ! Sam's doing for hour 0 & 6 nest movement safeguards
@@ -1627,9 +1628,15 @@
       IF((.NOT.RESTRT.OR.NEST).AND. allowed_to_read)THEN ! This is gopal's inclusion for moving nest
         DO K=KPS,KPE
           DO J=JFS,JFE
-          DO I=IFS,IFE
-            grid%dwdt(I,J,K)=1.
-          ENDDO
+             if(.not. grid%keepnh .or. .not. nestmove &
+                    .or. j<7 .or. j+6>jfe) then
+                DO I=IFS,IFE
+                   grid%dwdt(I,J,K)=1.
+                ENDDO
+             else
+                grid%dwdt(1:3,j,k)=1.
+                grid%dwdt(ife-2:ife,j,k)=1.
+             endif
           ENDDO
         ENDDO
       ENDIF
@@ -1670,16 +1677,39 @@
 #else
       IF(.NOT.RESTRT.OR.NEST)THEN
 #endif
+#ifdef IDEAL_NMM_TC
+        do k=kps,kpe
+          do j=jfs,jfe
+           do i=ifs,ife
+             grid%f(I,J)=0.5*GRID%DT*3.15656e-5 ! IDEAL CASE 0.5*DT*f (and not f!)
+           enddo
+          enddo
+        enddo
+#endif
+        if(nestmove) then
+           if(.not.grid%keepnh) then
+              call wrf_message('Discarding non-hydrostatic state at nest move.  Set keepnh=T to retain the state.')
+           else
+              call wrf_message('Retaining non-hydrostatic state at nest move except at nest boundaries.')
+           endif
+        endif
+
         DO K=KPS,KPE
         DO J=JFS,JFE
-        DO I=IFS,IFE
-          grid%pint(I,J,K)=grid%eta1(K)*grid%pdtop+grid%eta2(K)*grid%pdsl(I,J)+grid%pt
-          grid%z(I,J,K)=grid%pint(I,J,K)
-          grid%w(I,J,K)=0.
-#ifdef IDEAL_NMM_TC
-             grid%f(I,J)=0.5*GRID%DT*3.15656e-5 ! IDEAL CASE 0.5*DT*f (and not f!)
-#endif
-        ENDDO
+           if(.not.nestmove .or. .not. grid%keepnh .or. j<7 .or. j+6>=jfe) then
+              DO I=IFS,IFE
+                 grid%pint(I,J,K)=grid%eta1(K)*grid%pdtop+grid%eta2(K)*grid%pdsl(I,J)+grid%pt
+                 grid%z(I,J,K)=grid%pint(I,J,K)
+                 grid%w(I,J,K)=0.
+              ENDDO
+           else
+              grid%pint(1:3,J,K)=grid%eta1(K)*grid%pdtop+grid%eta2(K)*grid%pdsl(I,J)+grid%pt
+              grid%z(1:3,J,K)=grid%pint(I,J,K)
+              grid%w(1:3,J,K)=0.
+              grid%pint(ife-2:ife,J,K)=grid%eta1(K)*grid%pdtop+grid%eta2(K)*grid%pdsl(I,J)+grid%pt
+              grid%z(ife-2:ife,J,K)=grid%pint(I,J,K)
+              grid%w(ife-2:ife,J,K)=0.
+           endif
         ENDDO
         ENDDO
       ENDIF
