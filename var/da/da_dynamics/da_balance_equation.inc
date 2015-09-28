@@ -29,7 +29,7 @@ subroutine da_balance_equation(grid, xbx)
    if (trace_use) call da_trace_entry("da_balance_equation")
 
    !---------------------------------------------------------------------------
-   ! [1.0] Initialise iand set Multipilactive constants
+   ! [1.0] Initialise i and set multiplicative constants
    !---------------------------------------------------------------------------
 
    ! Computation to check for edge of domain:
@@ -61,7 +61,7 @@ subroutine da_balance_equation(grid, xbx)
 
    phi_b  =   grid%xb%p
 
- do k = kts, kte
+   do k = kts, kte
 
       term_x(ims:ime,jms:jme) = 0.0
       term_y(ims:ime,jms:jme) = 0.0
@@ -69,7 +69,7 @@ subroutine da_balance_equation(grid, xbx)
       phi_b_y(ims:ime,jms:jme) = 0.0
 
       !---------------------------------------------------------------------------
-      ! [2.0] Calculate RHS of balance equation in gridpt space:
+      ! [2.0] Calculate RHS of balance equation in gridpoint space:
       !---------------------------------------------------------------------------
 
       ! [2.1] Include geostrophic terms in balance eqn if requested:
@@ -90,8 +90,8 @@ subroutine da_balance_equation(grid, xbx)
       ! [2.3] Include phi_b terms in balance eqn
       do j = js, je
          do i = is, ie
-          phi_b_x(i,j) = coefx(i,j)*(phi_b(i+1,j,k)-phi_b(i-1,j,k)) 
-          phi_b_y(i,j) = coefy(i,j)*(phi_b(i,j+1,k)-phi_b(i,j-1,k))                 
+            phi_b_x(i,j) = coefx(i,j)*(phi_b(i+1,j,k)-phi_b(i-1,j,k)) 
+            phi_b_y(i,j) = coefy(i,j)*(phi_b(i,j+1,k)-phi_b(i,j-1,k))                 
          end do
       end do
 

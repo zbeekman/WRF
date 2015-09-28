@@ -1,8 +1,7 @@
-subroutine da_transform_vtod_wpec(cv_size, be, ep, cv, vp, vv, vp6, vv6, xbx, &
-                              grid, config_flags)
+subroutine da_transform_vtod_wpec(cv_size, be, ep, cv, vp, vv, vp6, vv6, xbx, grid, config_flags)
 
    !----------------------------------------------------------------------
-   ! Purpose:  Does transform of control variable (V) to Obs-space (Y)
+   ! Purpose:  Transform control variable (V) to observation-space (Y)
    !----------------------------------------------------------------------
 
    implicit none
@@ -32,7 +31,7 @@ subroutine da_transform_vtod_wpec(cv_size, be, ep, cv, vp, vv, vp6, vv6, xbx, &
       call da_transform_vtox(grid, cv_size, xbx, be, ep, cv, vv, vp)
       call da_transform_xtoxa_all(grid)
 
-   call da_balance_equation_lin(grid, xbx)
+      call da_balance_equation_lin(grid, xbx)
 
 
    if (trace_use) call da_trace_exit("da_transform_vtod_wpec")

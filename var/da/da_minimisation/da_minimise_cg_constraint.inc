@@ -80,7 +80,6 @@ subroutine da_minimise_cg_constraint(grid, config_flags,            &
    jp_end     = be % cv % size_jb + be % cv % size_je + be % cv % size_jp
 
 
-write(6,*)'call da_calculate_j_constraint'
    call da_calculate_j_constraint(it, 0, cv_size, be%cv%size_jb, be%cv%size_je, be%cv%size_jp, &
                        be%cv%size_jl, xbx, be, iv, xhat, cv, re, y, j_cost, ghat, grid, config_flags)
    j0_total = j_cost%total

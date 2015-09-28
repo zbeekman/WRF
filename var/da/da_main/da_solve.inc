@@ -413,16 +413,13 @@
          if (test_gradient) then
             call da_allocate_y (iv, re)
             call da_allocate_y (iv, y)
- if(.not.use_wpec)then
-
-      write(6,*)'call da_check_gradient!'
-            call da_check_gradient (grid, config_flags, cv_size, xhat, cvt, 1.0e-18, 17, &
-                         xbx, be, iv, y, re, j)
-else
-      write(6,*)'call da_check_gradient_constraint!'
-            call da_check_gradient_constraint (grid, config_flags, cv_size, xhat, cvt, 1.0e-18, 17, &
-                         xbx, be, iv, y, re, j)
-end if
+            if(.not.use_wpec)then
+               call da_check_gradient (grid, config_flags, cv_size, xhat, cvt, 1.0e-18, 17, &
+                    xbx, be, iv, y, re, j)
+            else
+               call da_check_gradient_constraint (grid, config_flags, cv_size, xhat, cvt, 1.0e-18, 17, &
+                    xbx, be, iv, y, re, j)
+            end if
             call da_deallocate_y (re)
             call da_deallocate_y (y)
          endif
@@ -475,19 +472,17 @@ end if
 	 
       else
 
-      if(use_wpec)then
+         if (use_wpec) then
 
-      write(6,*)'Use WPEC constraint!'
+            write(unit=message(1),fmt='(a)') 'Calling da_minimise_cg_constraint for WPEC constraint'
+            call da_message(message(1:1))
+            call da_minimise_cg_constraint( grid, config_flags, it, be % cv % size, &
+                 xbx, be, iv, j_grad_norm_target, xhat, cvt, re, y, j)
+         else
 
-         call da_minimise_cg_constraint( grid, config_flags, it, be % cv % size, &
-            xbx, be, iv, j_grad_norm_target, xhat, cvt, re, y, j)
-      else
-
-      write(6,*)'Don not use WPEC constraint!'
-
-         call da_minimise_cg( grid, config_flags, it, be % cv % size, & 
-            xbx, be, iv, j_grad_norm_target, xhat, cvt, re, y, j)
-      end if
+            call da_minimise_cg( grid, config_flags, it, be % cv % size, & 
+                 xbx, be, iv, j_grad_norm_target, xhat, cvt, re, y, j)
+         end if
       
       end if
  

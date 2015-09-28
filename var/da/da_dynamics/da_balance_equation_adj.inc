@@ -58,10 +58,10 @@ subroutine da_balance_equation_adj(grid, xbx)
       call da_error(__FILE__,__LINE__,message(1:1))
    end if
    
-u(:,:,:)      =  0.0
-v(:,:,:)      =  0.0
-p(:,:,:)      =  0.0
-geoh(:,:,:)   =  0.0
+   u(:,:,:)      =  0.0
+   v(:,:,:)      =  0.0
+   p(:,:,:)      =  0.0
+   geoh(:,:,:)   =  0.0
 
    do k = kts, kte
 
@@ -125,10 +125,10 @@ geoh(:,:,:)   =  0.0
 
    end do
 
-grid%xa%u=u
-grid%xa%v=v
-grid%xa%p=p
-grid%xa%geoh=geoh
+   grid%xa%u=u
+   grid%xa%v=v
+   grid%xa%p=p
+   grid%xa%geoh=geoh
 
 
    if (trace_use) call da_trace_exit("da_balance_equation_adj")

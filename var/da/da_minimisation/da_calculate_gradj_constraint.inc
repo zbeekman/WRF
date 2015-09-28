@@ -106,14 +106,14 @@ subroutine da_calculate_gradj_constraint(it, iter, cv_size, cv_size_jb, cv_size_
    !----------------------------------------------------------------------
    if(.not.var4d)then
 
-grid%xa%grad_p_x(:,:,:)=0.0
-grid%xa%grad_p_y(:,:,:)=0.0
+      grid%xa%grad_p_x(:,:,:)=0.0
+      grid%xa%grad_p_y(:,:,:)=0.0
 
       call da_transform_vtod_wpec(cv_size, be, grid%ep, cv, grid%vp, &
               grid%vv, grid%vp6, grid%vv6, xbx, grid, config_flags)
 
-   grid%xa%grad_p_x=(grid%xa%grad_p_x)/balance_error
-   grid%xa%grad_p_y=(grid%xa%grad_p_y)/balance_error
+      grid%xa%grad_p_x=(grid%xa%grad_p_x)/balance_error
+      grid%xa%grad_p_y=(grid%xa%grad_p_y)/balance_error
 
       call da_transform_vtod_wpec_adj(cv_size, be, grid%ep, grad_jd,  &
               grid%vp, grid%vv, grid%vp6, grid%vv6, xbx, grid, config_flags, .true.)
@@ -199,11 +199,11 @@ grid%xa%grad_p_y(:,:,:)=0.0
       gnorm_js = sqrt(da_dot_cv(cv_size, grad_js, grad_js, grid, mz))
       gnorm_jl = sqrt(da_dot_cv(cv_size, grad_jl, grad_jl, grid, mz))
 
-if (present(re)) then 
-   if (rootproc) &
-         write(grad_unit,fmt='(2x,i2,1x,e10.3,2x,i4,8(1x,f10.3))') & 
+   if (present(re)) then 
+      if (rootproc) write(grad_unit,fmt='(2x,i2,1x,e10.3,2x,i4,8(1x,f10.3))') & 
                it, eps(it), iter, gnorm_j, gnorm_jb, gnorm_jo, gnorm_jd, gnorm_je, gnorm_jp, gnorm_js, gnorm_jl
-end if
+   end if
+
    if (trace_use) call da_trace_exit("da_calculate_gradj_constraint")
 
 end subroutine da_calculate_gradj_constraint

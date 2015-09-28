@@ -75,7 +75,7 @@ subroutine da_transform_xtoxa_all(grid)
 
    do j=jts,jte
       do i=its,ite
-        if ((fg_format==fg_format_wrf_arw_regional) .or. &
+         if ((fg_format==fg_format_wrf_arw_regional) .or. &
             (fg_format==fg_format_wrf_arw_global  ) ) then
             geoh(kts)=0.0
             do k=kts,kte
@@ -83,9 +83,9 @@ subroutine da_transform_xtoxa_all(grid)
                        + grid%xa%rho(i,j,k)*grid%xb%psac(i,j)/grid%xb%rho(i,j,k))*grid%xb%dnw(k)/grid%xb%rho(i,j,k)
                grid%xa%geoh(i,j,k)=0.5*(geoh(k)+geoh(k+1))
             end do
-     end if
-    end do
-    end do
+         end if
+      end do
+   end do
 
    endif ! only for 3dvar
  
@@ -182,10 +182,10 @@ subroutine da_transform_xtoxa_all(grid)
    end if
 
    if ( (use_radarobs .and. use_radar_rf) .or. (use_rad .and. crtm_cloud) ) then
-    if ( cloud_cv_options == 1 )then
-      ! Partition of hydrometeor increments via warm rain process
-      call da_moist_phys_lin(grid)
-    end if
+      if ( cloud_cv_options == 1 )then
+         ! Partition of hydrometeor increments via warm rain process
+         call da_moist_phys_lin(grid)
+      end if
    end if
 
    !---------------------------------------------------------------

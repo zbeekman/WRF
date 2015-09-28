@@ -138,21 +138,21 @@ subroutine da_calculate_j_constraint(it, iter, cv_size, cv_size_jb, cv_size_je, 
    !----------------------------------------------------------------------
    if(.not.var4d)then
 
-grid%xa%grad_p_x(:,:,:)=0.0
-grid%xa%grad_p_y(:,:,:)=0.0
+      grid%xa%grad_p_x(:,:,:)=0.0
+      grid%xa%grad_p_y(:,:,:)=0.0
 
       call da_transform_vtod_wpec(cv_size, be, grid%ep, xhat+cv, grid%vp, &
               grid%vv, grid%vp6, grid%vv6, xbx, grid, config_flags)
 
       j % jd = 0.0
 
-do i=its,ite
-do jj=jts,jte
-do k=kts,kte
-      j % jd = j % jd + 0.5*(grid%xa%grad_p_x(i,jj,k)**2+grid%xa%grad_p_y(i,jj,k)**2)/balance_error
-end do
-end do
-end do
+      do i=its,ite
+         do jj=jts,jte
+            do k=kts,kte
+               j % jd = j % jd + 0.5*(grid%xa%grad_p_x(i,jj,k)**2+grid%xa%grad_p_y(i,jj,k)**2)/balance_error
+            end do
+         end do
+      end do
 
       jd_local = j % jd
       ! summation across processors:

@@ -96,17 +96,17 @@ subroutine da_transform_xtoxa_adj_all(grid)
       do i=its,ite
          if ((fg_format==fg_format_wrf_arw_regional) .or. &
              (fg_format==fg_format_wrf_arw_global  )  ) then
-   geoh(:)=0.0
-   do k=kte,kts,-1
+            geoh(:)=0.0
+            do k=kte,kts,-1
                geoh(k) = geoh(k) + 0.5*grid%xa%geoh(i,j,k)
                geoh(k+1) = geoh(k+1) + 0.5*grid%xa%geoh(i,j,k)
-grid%xa%mu(i,j)=grid%xa%mu(i,j)-geoh(k+1)*grid%xb%dnw(k)/grid%xb%rho(i,j,k)
-grid%xa%rho(i,j,k)=grid%xa%rho(i,j,k)+geoh(k+1)*grid%xb%psac(i,j)*grid%xb%dnw(k)/(grid%xb%rho(i,j,k)**2)
+               grid%xa%mu(i,j)=grid%xa%mu(i,j)-geoh(k+1)*grid%xb%dnw(k)/grid%xb%rho(i,j,k)
+               grid%xa%rho(i,j,k)=grid%xa%rho(i,j,k)+geoh(k+1)*grid%xb%psac(i,j)*grid%xb%dnw(k)/(grid%xb%rho(i,j,k)**2)
                geoh(k) = geoh(k) + geoh(k+1)
+            end do
+         end if
+      end do
    end do
-end if
-end do
-end do
 
    call da_pt_to_rho_adj(grid)
 

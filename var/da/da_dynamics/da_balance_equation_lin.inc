@@ -30,7 +30,7 @@ subroutine da_balance_equation_lin(grid, xbx)
    if (trace_use) call da_trace_entry("da_balance_equation_lin")
 
    !---------------------------------------------------------------------------
-   ! [1.0] Initialise iand set Multipilactive constants
+   ! [1.0] Initialise i and set multiplicative constants
    !---------------------------------------------------------------------------
 
    is = ims; ie = ime; js = jms; je = jme
@@ -64,7 +64,7 @@ subroutine da_balance_equation_lin(grid, xbx)
    geoh   =   grid%xa%geoh
 
  
- do k = kts, kte
+   do k = kts, kte
 
       term_x(ims:ime,jms:jme) = 0.0
       term_y(ims:ime,jms:jme) = 0.0
@@ -72,7 +72,7 @@ subroutine da_balance_equation_lin(grid, xbx)
       phi_b_y(ims:ime,jms:jme) = 0.0
 
       !---------------------------------------------------------------------------
-      ! [2.0] Calculate RHS of balance equation in gridpt space:
+      ! [2.0] Calculate RHS of balance equation in gridpoint space:
       !---------------------------------------------------------------------------
 
       ! [2.1] Include geostrophic terms in balance eqn if requested:
@@ -93,13 +93,13 @@ subroutine da_balance_equation_lin(grid, xbx)
       ! [2.3] Include phi_b terms in balance eqn
       do j = js, je
          do i = is, ie
-          phi_b_x(i,j) = coefx(i,j)*(p(i+1,j,k)-p(i-1,j,k) + grid%xb % rho(i,j,k)*(geoh(i+1,j,k)-geoh(i-1,j,k)) )
-          phi_b_y(i,j) = coefy(i,j)*(p(i,j+1,k)-p(i,j-1,k) + grid%xb % rho(i,j,k)*(geoh(i,j+1,k)-geoh(i,j-1,k)) )                 
+            phi_b_x(i,j) = coefx(i,j)*(p(i+1,j,k)-p(i-1,j,k) + grid%xb % rho(i,j,k)*(geoh(i+1,j,k)-geoh(i-1,j,k)) )
+            phi_b_y(i,j) = coefy(i,j)*(p(i,j+1,k)-p(i,j-1,k) + grid%xb % rho(i,j,k)*(geoh(i,j+1,k)-geoh(i,j-1,k)) )                 
          end do
       end do
 
    !------------------------------------------------------------------------------
-   !  [3.0] Solve Grad_p for balance eqn :
+   !  [3.0] Solve Grad_p for balance equation :
    !------------------------------------------------------------------------------
       do j = js, je
          do i = is, ie
@@ -108,7 +108,7 @@ subroutine da_balance_equation_lin(grid, xbx)
          end do
       end do
 
-    end do
+   end do
 
    if (trace_use) call da_trace_exit("da_balance_equation_lin")
 
