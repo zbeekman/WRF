@@ -179,8 +179,6 @@ contains
       
 #include "da_calculate_j.inc"
 #include "da_calculate_gradj.inc"
-#include "da_calculate_j_constraint.inc"
-#include "da_calculate_gradj_constraint.inc"
 #include "da_jo_and_grady.inc"
 #include "da_calculate_residual.inc"
 #include "da_get_var_diagnostics.inc"
@@ -189,7 +187,6 @@ contains
 #include "da_dot_cv.inc"
 #include "da_write_diagnostics.inc"
 #include "da_minimise_cg.inc"
-#include "da_minimise_cg_constraint.inc"
 #include "da_minimise_lz.inc"
 #include "da_calculate_grady.inc"
 #include "da_transform_vtoy.inc"

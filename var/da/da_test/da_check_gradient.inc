@@ -54,11 +54,11 @@ subroutine da_check_gradient(grid, config_flags, cv_size, xhat, cv, pdx, itertes
 
    call da_message((/' gradient test starting'/))
 
- !  if (pdx<=EPSILON(pdx)) then
- !     if (rootproc) write(6,*)'grtest, pdx=',pdx
- !     write(6,*)'grtest: pdx too small',pdx
- !     return
- !  endif
+!   if (pdx<=EPSILON(pdx)) then
+!      if (rootproc) write(6,*)'grtest, pdx=',pdx
+!      write(6,*)'grtest: pdx too small',pdx
+!      return
+!   endif
 
    !----------------------------------------------------------------------------
    ! [1] Initial point
@@ -86,7 +86,7 @@ subroutine da_check_gradient(grid, config_flags, cv_size, xhat, cv, pdx, itertes
    call da_message((/' The test direction is the positive of the gradient '/))
 
 !   xdir  = -1.0  * grad
- xdir  = 1.0  * grad  
+   xdir  = 1.0  * grad  
    !----------------------------------------------------------------------------
    ! [1.2] Set function f value and derivative at origin
    !----------------------------------------------------------------------------

@@ -48,7 +48,7 @@ module da_wrfvar_top
       xbx_type,da_deallocate_background_errors,da_initialize_cv, &
       da_zero_vp_type,da_allocate_y,da_deallocate_observations, &
       da_deallocate_y, da_zero_x
-   use da_minimisation, only : da_get_innov_vector,da_minimise_cg,da_minimise_cg_constraint, &
+   use da_minimisation, only : da_get_innov_vector,da_minimise_cg, &
       da_minimise_lz, da_write_diagnostics, da_calculate_residual, &
       da_calculate_grady, da_sensitivity, da_lanczos_io, da_calculate_j, &
       da_kmat_mul
@@ -67,7 +67,7 @@ module da_wrfvar_top
    use da_setup_structures, only : da_setup_obs_structures, &
       da_setup_background_errors,da_setup_flow_predictors, &
       da_setup_cv, da_scale_background_errors, da_scale_background_errors_cv3
-   use da_test, only : da_check, da_check_gradient,da_check_gradient_constraint
+   use da_test, only : da_check, da_check_gradient
    use da_tools_serial, only : da_get_unit, da_free_unit
    use da_tracing, only : da_trace_entry, da_trace_exit, da_trace, da_trace_report
    use da_transfer_model, only : da_transfer_xatoanalysis,da_setup_firstguess, &
