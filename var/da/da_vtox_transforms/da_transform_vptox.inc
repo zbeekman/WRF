@@ -6,8 +6,11 @@ subroutine da_transform_vptox(grid, vp, be, ep)
    !    Author: Syed RH Rizvi,  MMM/ESSL/NCAR,  Date: 10/22/2008
    ! Updates:
    !
-   !       Implementation of multi-variate BE for cv_options=6
-   !       Syed RH Rizvi,  MMM/NESL/NCAR,  Date: 02/01/2010
+   !    Implementation of multi-variate BE for cv_options=6
+   !    Syed RH Rizvi,  MMM/NESL/NCAR,  Date: 02/01/2010
+   !------------------------
+   !    Zhiquan (Jake) Liu, NCAR/MMM, 2015-09
+   !     re-order transform to avoid local chi_u and test inverse U transform
    !-----------------------------------------------------------------------
 
    implicit none
@@ -19,7 +22,6 @@ subroutine da_transform_vptox(grid, vp, be, ep)
    type (ep_type), intent(in), optional :: ep  ! Ensemble perturbations.
 
    integer :: i, k, j, k1, ij            ! Loop counters.
-   real, allocatable          :: chi_u(:,:,:)  ! Unbalanced chi
 
    if (trace_use) call da_trace_entry("da_transform_vptox") 
 
@@ -39,96 +41,16 @@ subroutine da_transform_vptox(grid, vp, be, ep)
    !$OMP PRIVATE ( ij, k1, k, j, i)
    do ij = 1 , grid%num_tiles
 
-   if ( cv_options == 6 ) then
-      allocate (chi_u(its:ite,grid%j_start(ij):grid%j_end(ij),kts:kte) )
-      do k = kts, kte
-         do j = grid%j_start(ij), grid%j_end(ij)
-            do i = its, ite
-               chi_u(i,j,k) = vp%v2(i,j,k)
-            end do
-         end do
-      end do
-   end if
-
-   ! Chi:
-   if (cv_options /= 7) then
-      do k = kts, kte
-         do j = grid%j_start(ij), grid%j_end(ij)
-            do i = its, ite
-               vp%v2(i,j,k) = vp%v2(i,j,k) + be%reg_psi_chi(j,k)* vp%v1(i,j,k)
-            end do
-         end do
-      end do
-   end if
-  
-   ! Temperature:
-   do k = kts, kte
-      do j = grid%j_start(ij), grid%j_end(ij)
-         do i = its, ite
-            grid%xa%t(i,j,k) = vp%v3(i,j,k)
-         end do
-      end do
-   end do
-
-   if (cv_options /= 7) then
-      do k1 = kts, kte
-         do k = kts, kte
-            do j = grid%j_start(ij), grid%j_end(ij)
-               do i = its, ite
-                  grid%xa%t(i,j,k) = grid%xa%t(i,j,k) + be%reg_psi_t(j,k,k1)*vp%v1(i,j,k1)
-               end do
-            end do
-         end do
-      end do
-   end if
-
-   if ( cv_options == 6 ) then
-      do k1 = kts, kte
-         do k = kts, kte
-            do j = grid%j_start(ij), grid%j_end(ij)
-               do i = its, ite
-                  grid%xa%t(i,j,k) = grid%xa%t(i,j,k) + be%reg_chi_u_t(j,k,k1)*chi_u(i,j,k1)
-               end do
-            end do
-         end do
-      end do
-   end if
-
-   ! Surface Pressure
-   do j = grid%j_start(ij), grid%j_end(ij)
-      do i = its, ite
-         grid%xa%psfc(i,j) = vp%v5(i,j,1) 
-      end do
-   end do
-
-   if (cv_options /= 7) then
-      do k = kts,kte
-         do j = grid%j_start(ij), grid%j_end(ij)
-            do i = its, ite
-               grid%xa%psfc(i,j) = grid%xa%psfc(i,j) + be%reg_psi_ps(j,k)*vp%v1(i,j,k)
-            end do
-         end do
-      end do
-   end if
-
-   if ( cv_options == 6 ) then
-      do k = kts,kte
-         do j = grid%j_start(ij), grid%j_end(ij)
-            do i = its, ite
-               grid%xa%psfc(i,j) = grid%xa%psfc(i,j) + be%reg_chi_u_ps(j,k)*chi_u(i,j,k)
-            end do
-         end do
-      end do
-   end if
-
-   ! Moisture
+   ! 2.1 Pseudo rh_u to Pseudo rh (only for cv6)
+   ! do moisture first to avoid local (chi_u,t_t,Ps_u) variables
+   !--------------------------------------------------------------
    if ( cv_options == 6 ) then
       do k1 = kts, kte
          do k = kts, kte
             do j = grid%j_start(ij), grid%j_end(ij)
                do i = its, ite
                   vp%v4(i,j,k1) = vp%v4(i,j,k1) + be%reg_psi_rh(j,k1,k)*vp%v1(i,j,k) + &
-                  be%reg_chi_u_rh(j,k1,k)*chi_u(i,j,k) + be%reg_t_u_rh(j,k1,k)*vp%v3(i,j,k)
+                  be%reg_chi_u_rh(j,k1,k)*vp%v2(i,j,k) + be%reg_t_u_rh(j,k1,k)*vp%v3(i,j,k)
                end do
             end do
          end do
@@ -143,8 +65,85 @@ subroutine da_transform_vptox(grid, vp, be, ep)
       end do
    end if
 
-!
-   if ( cv_options == 6 ) deallocate (chi_u )
+   ! 2.2 t_u --> t, do this before chi_u --> chi
+   !----------------------------------------------
+   if (cv_options /= 7) then
+      !write(*,'(a30,3i4,2x,e15.5)') "Tu(its+3,jts+3,kts+3)", its+3, grid%j_start(ij)+3, kts+3, vp%v3(its+3,grid%j_start(ij)+3,kts+3)
+      do k1 = kts, kte
+         do k = kts, kte
+            do j = grid%j_start(ij), grid%j_end(ij)
+               do i = its, ite
+                  vp%v3(i,j,k) = vp%v3(i,j,k) + be%reg_psi_t(j,k,k1)*vp%v1(i,j,k1)
+               end do
+            end do
+         end do
+      end do
+      !write(*,'(a30,3i4,2x,e15.5)') "T(its+3,jts+3,kts+3)", its+3, grid%j_start(ij)+3, kts+3, vp%v3(its+3,grid%j_start(ij)+3,kts+3)
+   end if
+
+   if ( cv_options == 6 ) then
+      do k1 = kts, kte
+         do k = kts, kte
+            do j = grid%j_start(ij), grid%j_end(ij)
+               do i = its, ite
+                  vp%v3(i,j,k) = vp%v3(i,j,k) + be%reg_chi_u_t(j,k,k1)*vp%v2(i,j,k1)
+               end do
+            end do
+         end do
+      end do
+   end if
+
+   do k = kts, kte
+      do j = grid%j_start(ij), grid%j_end(ij)
+         do i = its, ite
+            grid%xa%t(i,j,k) = vp%v3(i,j,k)
+         end do
+      end do
+   end do
+
+   ! 2.3 Ps_u --> Ps, do this before chi_u --> chi
+   !-------------------------------------------------
+   if (cv_options /= 7) then
+      !write(*,'(a30,2i4,2x,e15.5)') "Psu(its+3,jts+3,1)", its+3, grid%j_start(ij)+3, vp%v5(its+3,grid%j_start(ij)+3,1)
+      do k = kts,kte
+         do j = grid%j_start(ij), grid%j_end(ij)
+            do i = its, ite
+               vp%v5(i,j,1) = vp%v5(i,j,1) + be%reg_psi_ps(j,k)*vp%v1(i,j,k)
+            end do
+         end do
+      end do
+      !write(*,'(a30,2i4,2x,e15.5)') "Ps(its+3,jts+3,1)", its+3, grid%j_start(ij)+3, vp%v5(its+3,grid%j_start(ij)+3,1)
+   end if
+
+   if ( cv_options == 6 ) then
+      do k = kts,kte
+         do j = grid%j_start(ij), grid%j_end(ij)
+            do i = its, ite
+               vp%v5(i,j,1) = vp%v5(i,j,1) + be%reg_chi_u_ps(j,k)*vp%v2(i,j,k)
+            end do
+         end do
+      end do
+   end if
+
+   do j = grid%j_start(ij), grid%j_end(ij)
+      do i = its, ite
+         grid%xa%psfc(i,j) = vp%v5(i,j,1)
+      end do
+   end do
+
+   ! 2.4 Chi_u --> Chi, do this last
+   !-----------------------------------
+   if (cv_options /= 7) then
+      !write(*,'(a30,3i4,2x,e15.5)') "Chiu(its+3,jts+3,kts+3)", its+3, grid%j_start(ij)+3, kts+3, vp%v2(its+3,grid%j_start(ij)+3,kts+3)
+      do k = kts, kte
+         do j = grid%j_start(ij), grid%j_end(ij)
+            do i = its, ite
+               vp%v2(i,j,k) = vp%v2(i,j,k) + be%reg_psi_chi(j,k)* vp%v1(i,j,k)
+            end do
+         end do
+      end do
+      !write(*,'(a30,3i4,2x,e15.5)') "Chi(its+3,jts+3,kts+3)", its+3, grid%j_start(ij)+3, kts+3, vp%v2(its+3,grid%j_start(ij)+3,kts+3)
+   end if
 
    end do
    !$OMP END PARALLEL DO

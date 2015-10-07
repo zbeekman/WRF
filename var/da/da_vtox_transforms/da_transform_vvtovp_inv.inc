@@ -47,7 +47,7 @@ subroutine da_transform_vvtovp_inv(grid, evec, eval, vertical_wgt, vp, vv, mz, l
                temp = evec(j,k,m) / eval(j,m)
    
                do i = its, ite
-                  vv(i,j,m) = vv(i,j,m) + temp*vp(i,j,k)
+                  vv(i,j,m) = vv(i,j,m) + temp * vp(i,j,k)
                end do
             end do
          end do

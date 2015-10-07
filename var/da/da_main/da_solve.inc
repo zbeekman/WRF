@@ -572,7 +572,14 @@
          call  da_scale_background_errors_cv3 ( grid, be, it )
       endif
 
-      call da_initialize_cv (cv_size, xhat)
+      call da_initialize_cv (cv_size, xhat) ! xhat = 0
+
+      if ( use_inverse_u .and. it > 1 ) then
+         print '(/10X,"===> Use inverse transform of square-root B for outer-loop=",i2)', it
+         if ( cv_options == 3 ) print *, 'Stop: inverse U transform not for cv_options = 3'
+         call da_transform_vtox_inv (grid,be%cv%size_jb,xbx,be,grid%ep,cvt(1:be%cv%size_jb),grid%vv,grid%vp)
+      end if
+
 
       ! [8.1] Calculate nonlinear model trajectory 
 

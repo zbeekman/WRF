@@ -34,6 +34,7 @@ module da_recursive_filter
 #include "da_recursive_filter_1d_inv.inc"
 #include "da_transform_through_rf.inc"
 #include "da_transform_through_rf_adj.inc"
+#include "da_transform_through_rf_inv.inc"
 
 #include "da_apply_rf_1v.inc"
 #include "da_apply_rf_1v_adj.inc"

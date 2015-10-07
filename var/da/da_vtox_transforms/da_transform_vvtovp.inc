@@ -13,10 +13,14 @@ subroutine da_transform_vvtovp(grid, evec, eval, vertical_wgt, vv, vp, mz, level
    integer, intent(in)  :: mz                         ! # vertical modes.
    integer, intent(in)  :: levels                     ! # no. of levels  
 
-! note: evec/eval assumed to vary in y direction (jds:jde), truncated to mz<=levels
-!       eval here is in fact square root of eighen values
-! by default, vertical weight not calculated/used
-!
+! liuz's note: 
+!-------------------------------------------------------------------------
+! 1. evec/eval assumed to vary in y direction (jds:jde) though it may not
+!       be true in BE file (e.g., likely domain-averaged BE with bib_type=5).
+! 2. evec/eval truncated to number of EOF mode mz<=levels
+! 3. eval here is in fact square root of eigen values (see da_allocate_background_errors)
+! 4. by default, vertical weight not calculated/used
+!---------------------------------------------------------------------------
    real*8,  intent(in)  :: evec(jds:jde,kds:kde,1:mz) ! Eigenvectors.
    real*8,  intent(in)  :: eval(jds:jde,1:mz)         ! Eigenvalues.
    real,    intent(in)  :: vertical_wgt(ims:ime,jms:jme,kms:kme) ! Weighting.

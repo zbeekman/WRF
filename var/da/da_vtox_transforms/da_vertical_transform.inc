@@ -29,8 +29,10 @@ subroutine da_vertical_transform(grid, string, be, vertical_wgt, vv, vp)
       !------------------------------------------------------------------- 
 
       if (be % v1 % mz > 0) then
+         write(*,'(a30,3i4,2x,e15.5)') "vv%v1(its+3,jts+3,kts+3)", its+3, jts+3, kts+3, vv%v1(its+3,jts+3,kts+3)
          call da_transform_vvtovp (grid, be % v1 % evec, be % v1 % val, vertical_wgt, &
             vv % v1, vp % v1, be % v1 % mz, kte) ! psi, stream function
+         write(*,'(a30,3i4,2x,e15.5)') "vp%v1(its+3,jts+3,kts+3)", its+3, jts+3, kts+3, vp%v1(its+3,jts+3,kts+3)
       else
          vp % v1(its:ite,jts:jte,kts:kte) = 0.0
       end if
@@ -51,7 +53,7 @@ subroutine da_vertical_transform(grid, string, be, vertical_wgt, vv, vp)
 
       if (be % v4 % mz > 0) then
          call da_transform_vvtovp (grid, be % v4 % evec, be % v4 % val, vertical_wgt, &
-            vv % v4, vp % v4, be % v4 % mz, kte) ! rh, pseudo rh
+            vv % v4, vp % v4, be % v4 % mz, kte) ! pseudo rh=q/qs(background)
       else
          vp % v4(its:ite,jts:jte,kts:kte) = 0.0
       end if
@@ -71,42 +73,42 @@ subroutine da_vertical_transform(grid, string, be, vertical_wgt, vv, vp)
      if(cloud_cv_options == 2)then
       if (be % v6 % mz > 0) then
          call da_transform_vvtovp (grid, be % v6 % evec, be % v6 % val, vertical_wgt, &
-            vv % v6, vp % v6, be % v6 % mz, kte)
+            vv % v6, vp % v6, be % v6 % mz, kte) ! cloud water qcw
       else
          vp % v6(its:ite,jts:jte,kts:kte) = 0.0
       end if
 
       if (be % v7 % mz > 0) then
          call da_transform_vvtovp (grid, be % v7 % evec, be % v7 % val, vertical_wgt, &
-            vv % v7, vp % v7, be % v7 % mz, kte)
+            vv % v7, vp % v7, be % v7 % mz, kte) ! rain water qrain
       else
          vp % v7(its:ite,jts:jte,kts:kte) = 0.0
       end if
 
       if (be % v8 % mz > 0) then
          call da_transform_vvtovp (grid, be % v8 % evec, be % v8 % val, vertical_wgt, &
-            vv % v8, vp % v8, be % v8 % mz, kte)
+            vv % v8, vp % v8, be % v8 % mz, kte) ! cloud ice qice
       else
          vp % v8(its:ite,jts:jte,kts:kte) = 0.0
       end if
 
       if (be % v9 % mz > 0) then
          call da_transform_vvtovp (grid, be % v9 % evec, be % v9 % val, vertical_wgt, &
-            vv % v9, vp % v9, be % v9 % mz, kte)
+            vv % v9, vp % v9, be % v9 % mz, kte) ! snow qsnow
       else
          vp % v9(its:ite,jts:jte,kts:kte) = 0.0
       end if
 
       if (be % v10% mz > 0) then
          call da_transform_vvtovp (grid, be % v10 % evec, be % v10 % val, vertical_wgt, &
-            vv % v10, vp % v10, be % v10 % mz, kte)
+            vv % v10, vp % v10, be % v10 % mz, kte) ! qgraupel
       else
          vp % v10(its:ite,jts:jte,kts:kte) = 0.0
       end if
 
       if (be % v11 % mz > 0) then
          call da_transform_vvtovp (grid, be % v11 % evec, be % v11 % val, vertical_wgt, &
-            vv % v11, vp % v11, be % v11 % mz, kte)
+            vv % v11, vp % v11, be % v11 % mz, kte) ! vertical velocity w
       else
          vp % v11(its:ite,jts:jte,kts:kte) = 0.0
       end if
@@ -177,8 +179,10 @@ subroutine da_vertical_transform(grid, string, be, vertical_wgt, vv, vp)
       !------------------------------------------------------------------- 
 
       if (be % v1 % mz > 0) then
+         write(*,'(a30,3i4,2x,e15.5)') "inv_vp%v1(its+3,jts+3,kts+3)", its+3, jts+3, kts+3, vp%v1(its+3,jts+3,kts+3) 
          call da_transform_vvtovp_inv (grid, be % v1 % evec, be % v1 % val, vertical_wgt, &
             vp % v1, vv % v1, be % v1 % mz, kte)
+         write(*,'(a30,4i4,2x,e15.5)') "inv_vv%v1(its+3,jts+3,kts+3)", be%v1%mz, its+3, jts+3, kts+3, vv%v1(its+3,jts+3,kts+3)
       end if
 
       if (be % v2 % mz > 0) then
