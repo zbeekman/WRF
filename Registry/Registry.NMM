@@ -286,6 +286,15 @@ state  real   told      ijk    dyn_nmm     1      -      r       "TOLD"    "T fr
 state  real   uold      ijk    dyn_nmm     1      -      r       "UOLD"    "U from previous timestep"                      "m s-1"
 state  real   vold      ijk    dyn_nmm     1      -      r       "VOLD"    "V from previous timestep"                      "m s-1"
 #
+# NMM IAU
+#
+state  real   iau_tdt    ijkb    dyn_nmm    1      -      r   "IAU_TDT"       "Sensible temperature tendency for IAU"         "K s-1"
+state  real   iau_qdt    ijkb    dyn_nmm    1      -      r   "IAU_QDT"       "Specific humidity tendency for IAU"            "kg kg-1 s-1"
+state  real   iau_udt    ijkb    dyn_nmm    1      -      r   "IAU_UDT"       "U component of wind tendency for IAU"          "m s-2"
+state  real   iau_vdt    ijkb    dyn_nmm    1      -      r   "IAU_VDT"       "V component of wind"                           "m s-2"
+state  real   iau_pintdt ijkb    dyn_nmm    1      -      r   "IAU_PINTDT"    "Model layer interface pressure tendency at for IAU"  "Pa s-1"
+state  real   iau_pddt   ijb     dyn_nmm    1      -      r   "IAU_PDDT"      "Mass tendency at I,J in the sigma domain for IAU"  "Pa s-1"
+#
 # NMM DFI
 #
 state   real   hcoeff         {ndfi} misc        1         -     -    "HCOEFF"               "initialization weights"
@@ -1239,6 +1248,14 @@ rconfig   logical nocolons                namelist,time_control         1       
 rconfig   logical cycling                 namelist,time_control         1             .false. -    "true for cycling (using wrfout file as input data)"
 rconfig   logical output_ready_flag       namelist,time_control         1             .false. -    "drop a flag called wrfoutReady_d<domain>_<date> after history write" "" ""
 
+# IAU namelist
+rconfig   character  iau_inname          namelist,time_control        1       "wrfiauinc_d<domain>"     -     "name of iau infile"   ""      ""
+rconfig   character  iau_outname         namelist,time_control   max_domains  "wrfiauincout_d<domain>"     -     "name of iau outfile"   ""      ""
+rconfig   character  iauanl_outname      namelist,time_control   max_domains  "incwrfanl_d<domain>"     -     "name of analysis outfile"   ""      ""
+rconfig   character  iaurst_inname        namelist,time_control  1         "wrfiaurst_d<domain>_<date>"     -     "name of restrt infile"    ""      ""
+rconfig   character  iaurst_outname       namelist,time_control 	1  "wrfiaurst_d<domain>_<date>"     -     "name of restrt outfile"   ""      ""
+rconfig   integer iau_opt                namelist,time_control   1       0     rh   "iau_opt"                ""      ""
+
 # DFI namelist
 rconfig   integer dfi_opt                namelist,dfi_control   1       0     rh   "dfi_opt"                ""      ""
 rconfig   integer dfi_savehydmeteors     namelist,dfi_control   1       0     rh   "dfi_radar"                "DFI radar switch"      ""
@@ -1748,6 +1765,9 @@ package   kfscheme       cu_physics==99              -             -
 package   g3shcuscheme   shcu_physics==1             -             -
 package   camuwshcuscheme shcu_physics==2            -             -
 package   grimsshcuscheme shcu_physics==3            -             -
+
+package   iau_noiau     iau_opt==0                  -             -
+package   iau_yesiau    iau_opt==1                  -             -
 
 package   dfi_setup      dfi_stage==0                -             -
 package   dfi_bck        dfi_stage==1                -             -

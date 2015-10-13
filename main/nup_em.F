@@ -272,8 +272,8 @@ integer :: ii
    CALL alloc_and_configure_domain ( domain_id  = 1 ,                  &
                                      grid       = head_grid ,          &
                                      parent     = null_domain ,        &
-                                     kid        = -1                   )
-
+                                     kid        = -1 ,                 &
+                                     iau_opt    = 0                    )
    parent_grid => head_grid
 
    !  Set up time initializations.
@@ -293,7 +293,8 @@ integer :: ii
    CALL alloc_and_configure_domain ( domain_id  = 2 ,                  &
                                      grid       = nested_grid ,        &
                                      parent     = parent_grid ,        &
-                                     kid        = 1                   )
+                                     kid        = 1 ,                  &
+                                     iau_opt    = 0                    )
 
 ! now that the nest is allocated, pinch off the extra two rows/columns of the parent
 ! note the IKJ assumption here.

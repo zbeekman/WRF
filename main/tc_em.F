@@ -137,7 +137,8 @@ PROGRAM tc_data
    CALL alloc_and_configure_domain ( domain_id  = 1           , &
                                      grid       = head_grid   , &
                                      parent     = null_domain , &
-                                     kid        = -1            )
+                                     kid        = -1          , &
+                                     iau_opt    = 0             )
 
    grid => head_grid
    CALL nl_get_max_dom ( 1 , max_dom )

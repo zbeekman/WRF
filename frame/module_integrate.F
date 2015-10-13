@@ -152,6 +152,7 @@ RECURSIVE SUBROUTINE integrate ( grid )
 
    CHARACTER*32                           :: outname, rstname
    TYPE(domain) , POINTER                 :: grid_ptr , new_nest
+   TYPE(domain) , POINTER                 :: iau_nest
    TYPE(domain)                           :: intermediate_grid
    INTEGER                                :: step
    INTEGER                                :: nestid , kid
@@ -166,6 +167,8 @@ RECURSIVE SUBROUTINE integrate ( grid )
    LOGICAL                                :: should_do_last_io
    LOGICAL                                :: may_have_moved
 
+
+   INTEGER                                :: iau_opt
 
    ! interface
    INTERFACE
@@ -200,18 +203,20 @@ RECURSIVE SUBROUTINE integrate ( grid )
      END SUBROUTINE med_after_solve_io
        ! mediation-supplied routine that gives mediation layer opportunity to 
        ! perform I/O to initialize a new nest
-     SUBROUTINE med_pre_nest_initial ( parent , newid , config_flags )
+     SUBROUTINE med_pre_nest_initial ( parent , newid , config_flags, iau_opt )
        USE module_domain
        USE module_configure
        TYPE (domain), POINTER ::  parent
        INTEGER, INTENT(IN)    ::  newid
        TYPE (grid_config_rec_type) config_flags
+       INTEGER,INTENT(IN) :: iau_opt
      END SUBROUTINE med_pre_nest_initial
-     SUBROUTINE med_nest_initial ( parent , grid , config_flags )
+     SUBROUTINE med_nest_initial ( parent , grid , config_flags , iau_opt )
        USE module_domain
        USE module_configure
        TYPE (domain), POINTER ::  grid , parent
        TYPE (grid_config_rec_type) config_flags
+       INTEGER,INTENT(IN) :: iau_opt
      END SUBROUTINE med_nest_initial
        ! mediation-supplied routine that gives mediation layer opportunity to 
        ! provide parent->nest forcing
@@ -298,13 +303,14 @@ IF ( grid%active_this_task ) THEN
 ENDIF
 !            END IF
             CALL med_setup_step ( grid , config_flags )
+            iau_opt = config_flags%iau_opt
             a_nest_was_opened = .false.
             ! for each nest whose time has come...
             DO WHILE ( nests_to_open( grid , nestid , kid ) )
                ! nestid is index into model_config_rec (module_configure) of the grid
                ! to be opened; kid is index into an open slot in grid's list of children
                a_nest_was_opened = .true.
-               CALL med_pre_nest_initial ( grid , nestid , config_flags )
+               CALL med_pre_nest_initial ( grid , nestid , config_flags, iau_opt )
                CALL alloc_and_configure_domain ( domain_id  = nestid ,   &
 ! better if this were not ifdef'd here, try moving into module_dm? see comment above. jm 20140828
 #ifdef DM_PARALLEL
@@ -312,9 +318,31 @@ ENDIF
 #endif
                                                  grid       = new_nest , &
                                                  parent     = grid ,     &
-                                                 kid        = kid        )
+                                                 kid        = kid ,      &
+                                                 iau_opt    = 0          )
                CALL Setup_Timekeeping (new_nest)
-               CALL med_nest_initial ( grid , new_nest , config_flags )
+               CALL med_nest_initial ( grid , new_nest , config_flags, 0 )
+               IF ( iau_opt.eq.1 ) THEN
+                 call wrf_debug(1000,'module_integrate.F: Banglin before med_pre_nest_initial ( grid.. iau ')
+                 CALL med_pre_nest_initial ( grid , nestid , config_flags, 0 )
+                 call wrf_debug(1000,'module_integrate.F: Banglin before alloc_and_configure_domain ( domain_id  = iau...')
+                 CALL alloc_and_configure_domain ( domain_id  = nestid ,   &
+! better if this were not ifdef'd here, try moving into module_dm? see comment above. jm 20140828
+#ifdef DM_PARALLEL
+                                              active_this_task = domain_active_this_task( nestid ), &
+#endif
+                                                   grid       = iau_nest , &
+                                                   parent     = grid ,     &
+                                                   kid        = kid ,      &
+                                                   iau_opt    = iau_opt    )
+                 call wrf_debug(1000,'module_integrate.F: Banglin before Setup_Timekeeping(iau_nest)')
+                 CALL Setup_Timekeeping (iau_nest)
+                 call wrf_debug(1000,'module_integrate.F: Banglin before med_nest_initial ( grid inside iau ...')
+                 CALL med_nest_initial ( grid , iau_nest , config_flags, iau_opt )
+                 call wrf_debug(1000,'module_integrate.F: Banglin before iau_copy_arrays(iau_nest, new_nest )')
+                 CALL iau_copy_arrays( iau_nest, new_nest )
+               ENDIF
+
 IF ( grid%active_this_task ) THEN
                IF ( grid%dfi_stage == DFI_STARTFWD ) THEN
                   CALL wrf_dfi_startfwd_init(new_nest)
@@ -366,6 +394,7 @@ ENDIF
                    CALL set_current_grid_ptr( grid_ptr%nests(kid)%ptr )
                    ! Recursive -- advance nests from previous time level to this time level.
                    CALL wrf_debug( 100 , 'module_integrate: calling med_nest_force ' )
+!  IAU info added in  integrate < med_nest_force <  med_force_domain
                    CALL med_nest_force ( grid_ptr , grid_ptr%nests(kid)%ptr )
                    CALL wrf_debug( 100 , 'module_integrate: back from med_nest_force ' )
                    grid_ptr%nests(kid)%ptr%start_subtime = &
@@ -462,6 +491,37 @@ ENDIF ! active_this_task
    CALL pop_communicators_for_domain
    
 END SUBROUTINE integrate
+
+   SUBROUTINE iau_copy_arrays( iau_grid, grid )
+
+      USE module_domain, ONLY : domain
+      USE module_model_constants
+      USE module_state_description
+
+      IMPLICIT NONE
+
+      INTEGER :: its, ite, jts, jte, kts, kte, &
+                 i, j, k
+
+      !  Input data.
+      TYPE(domain) , POINTER          :: grid
+      TYPE(domain) , POINTER          :: iau_grid
+      ! local
+
+     grid%iau_udt(:,:,:)    = iau_grid%u(:,:,:)
+     grid%iau_vdt(:,:,:)    = iau_grid%v(:,:,:)
+     grid%iau_tdt(:,:,:)    = iau_grid%t(:,:,:) 
+     grid%iau_qdt(:,:,:)    = iau_grid%q(:,:,:)
+     grid%iau_pddt(:,:)     = iau_grid%pd(:,:)
+!     grid%iau_udt(:,:,:)    = iau_grid%u(:,:,:) + grid%u(:,:,:)
+!     grid%iau_vdt(:,:,:)    = iau_grid%v(:,:,:) + grid%v(:,:,:)
+!     grid%iau_tdt(:,:,:)    = iau_grid%t(:,:,:) + grid%t(:,:,:)
+!     grid%iau_qdt(:,:,:)    = iau_grid%q(:,:,:) + grid%q(:,:,:)
+!     grid%iau_pddt(:,:)     = iau_grid%pd(:,:)  + grid%pd(:,:)
+
+
+
+   END SUBROUTINE iau_copy_arrays
 
 END MODULE module_integrate
 

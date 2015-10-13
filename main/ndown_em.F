@@ -240,7 +240,8 @@ real :: cf1_c,cf2_c,cf3_c,cfn_c,cfn1_c
    CALL alloc_and_configure_domain ( domain_id  = 1 ,                  &
                                      grid       = head_grid ,          &
                                      parent     = null_domain ,        &
-                                     kid        = -1                   )
+                                     kid        = -1 ,                 &
+                                     iau_opt    = 0                    )
 
    parent_grid => head_grid
 
@@ -450,7 +451,8 @@ real :: cf1_c,cf2_c,cf3_c,cfn_c,cfn1_c
          CALL alloc_and_configure_domain ( domain_id  = 2 ,                  &
                                            grid       = nested_grid ,        &
                                            parent     = parent_grid ,        &
-                                           kid        = 1                   )
+                                           kid        = 1 ,                  &
+                                           iau_opt    = 0                    )
    
          CALL       wrf_debug ( 100 , 'wrf: calling model_to_grid_config_rec ' )
          CALL model_to_grid_config_rec ( nested_grid%id , model_config_rec , config_flags )

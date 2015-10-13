@@ -517,7 +517,7 @@ CONTAINS
    RETURN
    END SUBROUTINE wrf_patch_domain
 !
-   SUBROUTINE alloc_and_configure_domain ( domain_id , active_this_task, grid , parent, kid )
+   SUBROUTINE alloc_and_configure_domain ( domain_id , active_this_task, grid , parent, kid, iau_opt )
 
 !<DESCRIPTION>
 ! This subroutine is used to allocate a domain data structure of
@@ -568,6 +568,7 @@ CONTAINS
       TYPE( domain ) , POINTER        :: grid
       TYPE( domain ) , POINTER        :: parent
       INTEGER , INTENT(IN)            :: kid    ! which kid of parent am I?
+      INTEGER , INTENT(IN)            :: iau_opt
 
       !  Local data.
       INTEGER                     :: sd1 , ed1 , sp1 , ep1 , sm1 , em1
@@ -730,7 +731,7 @@ CONTAINS
          new_grid%num_parents = 1
          parent%nests(kid)%ptr => new_grid
          new_grid%child_of_parent(1) = kid    ! note assumption that nest can have only 1 parent
-         parent%num_nests = parent%num_nests + 1
+         if ( iau_opt .eq. 0) parent%num_nests = parent%num_nests + 1
 !jm 20150810, this replaces the compile-time logic associated with the CPP constant HRD_MULTIPLE_STORMS
 ! used in solve_nmm of the HWRF version to decide whether or not to call the coupler.  If there is more than
 ! one nest to a parent then that implies there are multiple storms, so we turn off the coupling.
@@ -1346,6 +1347,7 @@ CONTAINS
         IF ( grid%id .EQ. 1 ) &
           CALL wrf_message ( 'DYNAMICS OPTION: coamps dyncore' )
 #endif
+
 
       CALL set_scalar_indices_from_config( id , idum1 , idum2 )
 

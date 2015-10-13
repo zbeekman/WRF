@@ -127,8 +127,8 @@ real::t1,t2
    CALL alloc_and_configure_domain ( domain_id  = 1           , &
                                      grid       = head_grid   , &
                                      parent     = null_domain , &
-                                     kid        = -1            )
-
+                                     kid        = -1          , &
+                                     iau_opt    = 0             )
    grid => head_grid
 
    CALL Setup_Timekeeping ( grid )
@@ -152,6 +152,7 @@ real::t1,t2
    CALL set_config_as_buffer( configbuf, configbuflen )
 #endif
 
+! Banglin IAU only for nmm
    CALL domain_clock_get( grid, current_timestr=timestr )
    CALL construct_filename2a ( inpname , config_flags%input_inname , grid%id , 2 , timestr )
    CALL open_r_dataset ( fid, TRIM(inpname) , grid , config_flags , "DATASET=INPUT", ierr )

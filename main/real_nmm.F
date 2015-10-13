@@ -130,7 +130,8 @@ PROGRAM real_data
    CALL alloc_and_configure_domain ( domain_id  = 1           , &
                                      grid       = head_grid   , &
                                      parent     = null_domain , &
-                                     kid        = -1            )
+                                     kid        = -1          , &
+                                     iau_opt    = 0             )
 
    grid => head_grid
 
@@ -540,7 +541,9 @@ SUBROUTINE med_sidata_input ( grid , config_flags )
 
 !!! not sure about this, but doesnt seem like needs to be called each time
       IF ( loop .EQ. 1 ) THEN
+        call wrf_debug(1000,'real_nmm.F: Banglin before CALL start_domain')
         CALL start_domain ( grid , .TRUE.)
+        call wrf_debug(1000,'real_nmm.F: Banglin after CALL start_domain')
       END IF
 
 #if ( WRF_CHEM == 1 )

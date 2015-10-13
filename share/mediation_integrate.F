@@ -183,7 +183,7 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
        ! Only the parent initiates the restart writing. Otherwise, different
        ! domains may be written out at different times and with different 
        ! time stamps in the file names.
-       CALL med_restart_out ( grid , config_flags )
+       CALL med_restart_out ( grid , config_flags, 0 )
      ENDIF
      CALL WRFU_AlarmRingerOff( grid%alarms( RESTART_ALARM ), rc=rc )
    ELSE
@@ -218,7 +218,7 @@ SUBROUTINE med_after_solve_io ( grid , config_flags )
    RETURN
 END SUBROUTINE med_after_solve_io
 
-SUBROUTINE med_pre_nest_initial ( parent , newid , config_flags )
+SUBROUTINE med_pre_nest_initial ( parent , newid , config_flags, iau_opt )
   ! Driver layer
 #ifdef MOVE_NESTS
    USE module_domain    , ONLY : domain, domain_clock_get
@@ -242,6 +242,7 @@ SUBROUTINE med_pre_nest_initial ( parent , newid , config_flags )
    INTEGER, INTENT(IN)                         :: newid
    TYPE (grid_config_rec_type) , INTENT(INOUT) :: config_flags
    TYPE (grid_config_rec_type)                 :: nest_config_flags
+   INTEGER,INTENT(IN) :: iau_opt
 
   ! Local
    INTEGER                :: itmp, fid, ierr, icnt
@@ -252,7 +253,12 @@ SUBROUTINE med_pre_nest_initial ( parent , newid , config_flags )
 #ifdef MOVE_NESTS
 
    CALL domain_clock_get( parent, current_timestr=timestr, start_time=strt_time, current_time=cur_time )
-   CALL construct_filename2a ( rstname , config_flags%rst_inname , newid , 2 , timestr )
+   IF ( iau_opt.eq.1 ) THEN
+     CALL construct_filename2a ( rstname , config_flags%iaurst_inname , newid , 2 , timestr )
+   ELSE
+     CALL construct_filename2a ( rstname , config_flags%rst_inname , newid , 2 , timestr )
+   ENDIF
+   WRITE( message , * )  'mediation_integrate: med_pre_nest_initial: Banglin open file ', TRIM(rstname)
 
 #ifdef ESMFIO
     IF ( config_flags%restart .AND. (cur_time .EQ. strt_time) ) THEN
@@ -289,7 +295,7 @@ SUBROUTINE med_pre_nest_initial ( parent , newid , config_flags )
 END SUBROUTINE med_pre_nest_initial
 
 
-SUBROUTINE med_nest_initial ( parent , nest , config_flags )
+SUBROUTINE med_nest_initial ( parent , nest , config_flags, iau_opt )
   ! Driver layer
    USE module_domain    , ONLY : domain , domain_clock_get , get_ijk_from_grid
    USE module_timing
@@ -306,6 +312,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
    TYPE(domain) , POINTER                     :: parent, nest
    TYPE (grid_config_rec_type) , INTENT(IN)   :: config_flags
    TYPE (grid_config_rec_type)                :: nest_config_flags
+   INTEGER,INTENT(IN) :: iau_opt
 
   ! Local
    LOGICAL, EXTERNAL      :: wrf_dm_on_monitor
@@ -357,11 +364,12 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
         TYPE(domain) , POINTER                 :: parent , nest
      END SUBROUTINE med_interp_domain_small
 
-     SUBROUTINE med_initialdata_input_ptr( nest , config_flags )
+     SUBROUTINE med_initialdata_input_ptr( nest , config_flags, iau_opt )
         USE module_domain       , ONLY : domain
         USE module_configure    , ONLY : grid_config_rec_type
         TYPE (grid_config_rec_type), INTENT(IN) :: config_flags
         TYPE(domain) , POINTER :: nest
+        INTEGER,INTENT(IN) :: iau_opt
      END SUBROUTINE med_initialdata_input_ptr
 
      SUBROUTINE med_nest_feedback ( parent , nest , config_flags )
@@ -418,6 +426,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
 
    END INTERFACE
 
+   call wrf_debug(1000,'mediation_integrate.F: Banglin before interp_init ...')
    CALL interp_init
 
    CALL domain_clock_get( parent, start_time=strt_time, current_time=cur_time )
@@ -435,7 +444,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
 
 #ifdef MOVE_NESTS
      parent%nest_pos = parent%ht
-     where ( parent%nest_pos .gt. 0. ) parent%nest_pos = parent%nest_pos + 500.  ! make a cliff
+     where ( parent%nest_pos .gt. 0. ) parent%nest_pos = parent%nest_pos + 500. + float(iau_opt)  ! make a cliff
 #endif
 
 ! initialize some other constants (and 1d arrays in z)
@@ -457,6 +466,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
                                ips, ipe, jps, jpe, kps, kpe    )
   
 ! get the nest config flags
+     call wrf_debug(1000,'mediation_integrate.F: Banglin before model_to_grid_config_rec ...')
      CALL model_to_grid_config_rec ( nest%id , model_config_rec , nest_config_flags )
 
      IF ( nest_config_flags%input_from_file .OR. nest_config_flags%input_from_hires ) THEN
@@ -486,7 +496,8 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
 
        IF ( nest_config_flags%input_from_file ) THEN
 ! read input from dataset
-          CALL med_initialdata_input_ptr( nest , nest_config_flags )
+          call wrf_debug(1000,'mediation_integrate.F: Banglin before med_initialdata_input_ptr ...')
+          CALL med_initialdata_input_ptr( nest , nest_config_flags , iau_opt )
 
        ELSE IF ( nest_config_flags%input_from_hires ) THEN
 ! read in high res topography
@@ -553,6 +564,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
 ! feedback, mostly for this new terrain, but it is the safe thing to do
      parent%ht_coarse = parent%ht
 
+     call wrf_debug(1000,'mediation_integrate.F: Banglin before med_nest_feedback ...')
      CALL med_nest_feedback ( parent , nest , config_flags )
 
 ! This is the new interpolation for specific 3d arrays that are sensitive to the
@@ -612,6 +624,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
      parent%imask_xystag = 1
 
      parent%press_adj = .FALSE.
+     call wrf_debug(1000,'mediation_integrate.F: Banglin before start_domain ...line 613 ...')
      CALL start_domain ( parent , .TRUE. )
 
      parent%acsnow     = save_acsnow
@@ -642,7 +655,12 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
      IF ( wrf_dm_on_monitor() ) CALL start_timing
 
      CALL domain_clock_get( nest, current_timestr=timestr )
-     CALL construct_filename2a ( rstname , config_flags%rst_inname , nest%id , 2 , timestr )
+     IF ( iau_opt.eq.1 ) THEN
+       CALL construct_filename2a ( rstname , config_flags%iaurst_inname , nest%id , 2 , timestr )
+     ELSE
+       CALL construct_filename2a ( rstname , config_flags%rst_inname , nest%id , 2 , timestr )
+     ENDIF
+
 
      WRITE(message,*)'RESTART: nest, opening ',TRIM(rstname),' for reading'
      CALL wrf_message ( message )
@@ -665,7 +683,8 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
      nest%imask_ystag = 1
      nest%imask_xystag = 1
      nest%press_adj = .FALSE.
-     CALL start_domain ( nest , .TRUE. )
+     call wrf_debug(1000,'mediation_integrate.F: Banglin before start_domain ...line 669 ...')
+     CALL start_domain ( nest, .TRUE.)
 #ifndef MOVE_NESTS
 ! this doesn't need to be done for moving nests, since ht_coarse is part of the restart
      parent%ht_coarse = parent%ht
@@ -806,19 +825,21 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
    ! not use MOIST and SCALAR as prognostic variables (they are
    ! recalculated on the fly every timestep):
 !zhang's doing for analysis option
-  IF(.not. nest%analysis .and. .not. config_flags%restart)THEN    ! initialize for cold-start
+  IF( .not. nest%analysis .and. .not. config_flags%restart)THEN    ! initialize for cold-start
 #endif
 
 !----------------------------------------------------------------------------
 !  initialize nested domain configurations including setting up wbd,sbd, etc 
 !----------------------------------------------------------------------------
 
+   call wrf_debug(1000,'mediation_integrate.F: Banglin before med_nest_egrid_configure ...line 818 ...')
    CALL med_nest_egrid_configure ( parent , nest )
 
 !-------------------------------------------------------------------------
 !  initialize lat-lons and determine weights 
 !-------------------------------------------------------------------------
 
+    call wrf_debug(1000,'mediation_integrate.F: Banglin before med_construct_egrid_weights ...line 825 ...')
     CALL med_construct_egrid_weights ( parent, nest )
 !
 !
@@ -927,6 +948,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
     ENDIF
 
 #ifdef HWRF
+   call wrf_debug(1000,'mediation_integrate.F: Banglin before med_interp_domain ...line 918 ...')
    CALL med_interp_domain( parent, nest )
 #else
     CALL domain_clock_get( parent, start_time=strt_time, current_time=cur_time )
@@ -936,13 +958,21 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
      CALL med_interp_domain( parent, nest )
 
     ELSE
+    call wrf_debug(1000,'mediation_integrate.F: Banglin before domain_clock_ge ...line 927 ...')
 
      CALL domain_clock_get( nest, current_timestr=timestr )
-     CALL construct_filename2a ( rstname , config_flags%rst_inname , nest%id , 2 , timestr )
+     IF ( iau_opt.eq.1 ) THEN
+       CALL construct_filename2a ( rstname , config_flags%iaurst_inname , nest%id , 2 , timestr )
+     ELSE
+       CALL construct_filename2a ( rstname , config_flags%rst_inname , nest%id , 2 , timestr )
+     ENDIF
+
 
      WRITE(message,*)'RESTART: nest, opening ',TRIM(rstname),' for reading'
      CALL wrf_message ( message )
+     call wrf_debug(1000,'mediation_integrate.F: Banglin before model_to_grid ...line 939 ...')
      CALL model_to_grid_config_rec ( nest%id , model_config_rec , nest_config_flags )
+     call wrf_debug(1000,'mediation_integrate.F: Banglin before open_r_dataset ...line 942 ...')
      CALL open_r_dataset ( fid , TRIM(rstname) , nest , nest_config_flags , "DATASET=RESTART", ierr )
      IF ( ierr .NE. 0 ) THEN
        WRITE( message , '("program wrf: error opening ",A32," for reading")') TRIM(rstname)
@@ -985,7 +1015,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
     IF ( nest%active_this_task) THEN
      CALL model_to_grid_config_rec ( nest%id , model_config_rec , nest_config_flags )
      CALL push_communicators_for_domain( nest%id )
-     CALL med_analysis_out ( nest, nest_config_flags )
+     CALL med_analysis_out ( nest, nest_config_flags, iau_opt )
      CALL pop_communicators_for_domain
     ENDIF
 
@@ -999,11 +1029,11 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
   IF ( nest%active_this_task) THEN
   IF( nest%analysis .and. .not. config_flags%restart)THEN
    CALL push_communicators_for_domain( nest%id )
-   CALL med_analysis_in ( nest, config_flags )
+   CALL med_analysis_in ( nest, config_flags, iau_opt )
    CALL pop_communicators_for_domain
   ELSE IF (config_flags%restart)THEN
    CALL push_communicators_for_domain( nest%id )
-   CALL med_restart_in ( nest, config_flags )
+   CALL med_restart_in ( nest, config_flags, iau_opt )
    CALL pop_communicators_for_domain
   ENDIF
   ENDIF
@@ -1243,7 +1273,7 @@ SUBROUTINE med_nest_feedback ( parent , nest , config_flags )
    RETURN
 END SUBROUTINE med_nest_feedback
 
-SUBROUTINE med_last_solve_io ( grid , config_flags )
+SUBROUTINE med_last_solve_io ( grid , config_flags, iau_opt )
   ! Driver layer
    USE module_state_description
    USE module_domain    , ONLY : domain, domain_clock_get
@@ -1257,6 +1287,7 @@ SUBROUTINE med_last_solve_io ( grid , config_flags )
   ! Arguments
    TYPE(domain)                               :: grid
    TYPE (grid_config_rec_type) , INTENT(IN)   :: config_flags
+   INTEGER,INTENT(IN) :: iau_opt
   ! Local
    INTEGER                                    :: rc
 #ifdef HWRF
@@ -1300,7 +1331,7 @@ SUBROUTINE med_last_solve_io ( grid , config_flags )
 !end of zhang's doing
 #endif
      IF ( grid%id .EQ. 1 ) THEN
-       CALL med_restart_out ( grid , config_flags )
+       CALL med_restart_out ( grid , config_flags , iau_opt )
      ENDIF
    ENDIF
 
@@ -1320,7 +1351,7 @@ END SUBROUTINE med_last_solve_io
 !  The file is simply called wrfanal***. This is gopal's doing
 !===================================================================================
 !
-SUBROUTINE med_analysis_in ( grid , config_flags )
+SUBROUTINE med_analysis_in ( grid , config_flags, iau_opt )
   ! Driver layer
    USE module_domain    , ONLY : domain, domain_clock_get
    USE module_io_domain
@@ -1335,6 +1366,7 @@ SUBROUTINE med_analysis_in ( grid , config_flags )
   ! Arguments
    TYPE(domain)                               :: grid
    TYPE (grid_config_rec_type) , INTENT(IN)   :: config_flags
+   INTEGER,INTENT(IN) :: iau_opt
 
   ! Local
    LOGICAL, EXTERNAL :: wrf_dm_on_monitor
@@ -1356,7 +1388,12 @@ SUBROUTINE med_analysis_in ( grid , config_flags )
 !zhang's doing   CALL ESMF_ClockGet( grid%domain_clock, CurrTime=CurrTime, rc=ierr )
 !zhang's doing   CALL wrf_timetoa ( CurrTime, timestr )
    CALL domain_clock_get( grid, current_timestr=timestr )
-   CALL construct_filename2a ( rstname ,config_flags%anl_outname, grid%id , 2 , timestr )
+!Banglin only for reading
+   IF ( iau_opt.eq.1 ) THEN
+     CALL construct_filename2a ( rstname ,config_flags%iauanl_outname, grid%id , 2 , timestr )
+   ELSE
+     CALL construct_filename2a ( rstname ,config_flags%anl_outname, grid%id , 2 , timestr )
+   ENDIF
 
    WRITE( message , '("med_analysis_in: opening ",A," for reading")' ) TRIM ( rstname )
    CALL wrf_debug( 1 , message )
@@ -1400,7 +1437,7 @@ SUBROUTINE med_analysis_in ( grid , config_flags )
 END SUBROUTINE med_analysis_in
 !=========================================================================================================
 !=========================================================================================================
-SUBROUTINE med_analysis_out ( grid , config_flags )
+SUBROUTINE med_analysis_out ( grid , config_flags, iau_opt )
   ! Driver layer
    USE module_domain    , ONLY : domain, domain_clock_get
    USE module_io_domain
@@ -1415,6 +1452,7 @@ SUBROUTINE med_analysis_out ( grid , config_flags )
   ! Arguments
    TYPE(domain)                               :: grid
    TYPE (grid_config_rec_type) , INTENT(IN)   :: config_flags
+   INTEGER,INTENT(IN) :: iau_opt
 
   ! Local
    LOGICAL, EXTERNAL :: wrf_dm_on_monitor
@@ -1442,7 +1480,11 @@ SUBROUTINE med_analysis_out ( grid , config_flags )
 !zhang's doing   CALL ESMF_ClockGet( grid%domain_clock, CurrTime=CurrTime, rc=ierr )
 !zhang's doing   CALL wrf_timetoa ( CurrTime, timestr )
    CALL domain_clock_get( grid, current_timestr=timestr )
-   CALL construct_filename2a ( rstname ,config_flags%anl_outname, grid%id , 2 , timestr )
+   IF ( iau_opt.eq.1 ) THEN
+      CALL construct_filename2a ( rstname ,config_flags%iauanl_outname, grid%id , 2 , timestr )
+   ELSE
+      CALL construct_filename2a ( rstname ,config_flags%anl_outname, grid%id , 2 , timestr )
+   ENDIF
 
    WRITE( message , '("med_analysis_out: opening ",A," for writing")' ) TRIM ( rstname )
    CALL wrf_debug( 1 , message )
@@ -1463,7 +1505,7 @@ END SUBROUTINE med_analysis_out
 
 #endif 
 
-RECURSIVE SUBROUTINE med_restart_out ( grid , config_flags )
+RECURSIVE SUBROUTINE med_restart_out ( grid , config_flags, iau_opt )
   ! Driver layer
    USE module_domain    , ONLY : domain , domain_clock_get
    USE module_io_domain
@@ -1478,6 +1520,7 @@ RECURSIVE SUBROUTINE med_restart_out ( grid , config_flags )
   ! Arguments
    TYPE(domain)                               :: grid
    TYPE (grid_config_rec_type) , INTENT(IN)   :: config_flags
+   INTEGER,INTENT(IN) :: iau_opt
 
   ! Local
    LOGICAL, EXTERNAL :: wrf_dm_on_monitor
@@ -1499,7 +1542,11 @@ RECURSIVE SUBROUTINE med_restart_out ( grid , config_flags )
    ! write out this domains restart file first
 
    CALL domain_clock_get( grid, current_timestr=timestr )
-   CALL construct_filename2a ( rstname , config_flags%rst_outname , grid%id , 2 , timestr )
+   IF ( iau_opt.eq.1 ) THEN
+      CALL construct_filename2a ( rstname , config_flags%iaurst_outname , grid%id , 2 , timestr )
+   ELSE
+      CALL construct_filename2a ( rstname , config_flags%rst_outname , grid%id , 2 , timestr )
+   ENDIF
 
    WRITE( message , '("med_restart_out: opening ",A," for writing")' ) TRIM ( rstname )
    CALL wrf_debug( 1 , message )
@@ -1520,7 +1567,7 @@ RECURSIVE SUBROUTINE med_restart_out ( grid , config_flags )
    DO kid = 1, max_nests
       IF ( ASSOCIATED( grid%nests(kid)%ptr ) ) THEN
         CALL model_to_grid_config_rec ( grid%nests(kid)%ptr%id , model_config_rec , kid_config_flags )
-        CALL med_restart_out ( grid%nests(kid)%ptr , kid_config_flags ) 
+        CALL med_restart_out ( grid%nests(kid)%ptr , kid_config_flags, iau_opt ) 
       ENDIF
    ENDDO
 
@@ -1582,7 +1629,7 @@ END SUBROUTINE med_boundary_out
 #ifdef HWRF
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !zhang's doing
-SUBROUTINE med_restart_in ( grid , config_flags )
+SUBROUTINE med_restart_in ( grid , config_flags, iau_opt )
   ! Driver layer
    USE module_domain    , ONLY : domain, domain_clock_get
    USE module_io_domain
@@ -1596,6 +1643,7 @@ SUBROUTINE med_restart_in ( grid , config_flags )
   ! Arguments
    TYPE(domain)                               :: grid
    TYPE (grid_config_rec_type) , INTENT(IN)   :: config_flags
+   INTEGER,INTENT(IN) :: iau_opt
 
   ! Local
    LOGICAL, EXTERNAL :: wrf_dm_on_monitor
@@ -1617,7 +1665,13 @@ SUBROUTINE med_restart_in ( grid , config_flags )
 !zhang's doing   CALL ESMF_ClockGet( grid%domain_clock, CurrTime=CurrTime, rc=ierr )
 !zhang's doing   CALL wrf_timetoa ( CurrTime, timestr )
    CALL domain_clock_get( grid, current_timestr=timestr )
-   CALL construct_filename2a ( rstname ,config_flags%rst_outname, grid%id , 2 , timestr )
+   IF ( iau_opt.eq.1 ) THEN
+!    CALL construct_filename2a ( rstname ,config_flags%iau_outname, grid%id , 2 , timestr )
+     CALL construct_filename2a ( rstname ,config_flags%rst_outname, grid%id , 2 , timestr )
+   ELSE
+     CALL construct_filename2a ( rstname ,config_flags%rst_outname, grid%id , 2 , timestr )
+   ENDIF
+
 
    WRITE( message , '("med_restart_in: opening ",A," for reading")' ) TRIM ( rstname )
    CALL wrf_debug( 1 , message )

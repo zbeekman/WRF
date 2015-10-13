@@ -1024,7 +1024,7 @@ USE module_timing
 ! one parent and only one child.
 
    IF   ( grid%num_nests .GT. 1 ) THEN
-     CALL wrf_error_fatal ( 'domains in moving nest simulations can have only 1 nest' )
+     CALL wrf_error_fatal ( 'domains in moving nest simulations can have only 1 nest, line 1009' )
    ENDIF
    kid = 1
 
@@ -1670,7 +1670,7 @@ LOGICAL FUNCTION direction_of_move ( parent , grid , move_cd_x, move_cd_y )
 ! one parent and only one child.
 
    IF   ( grid%num_nests .GT. 1 ) THEN
-     CALL wrf_error_fatal ( 'domains in moving nest simulations can have only 1 nest' )
+     CALL wrf_error_fatal ( 'domains in moving nest simulations can have only 1 nest, line 1614' )
    ENDIF
    kid = 1
    write(message,*) 'grid%num_nests=',grid%num_nests

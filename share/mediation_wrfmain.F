@@ -1,24 +1,26 @@
 !WRF:MEDIATION_LAYER:
 !
 
-SUBROUTINE med_initialdata_input_ptr ( grid , config_flags )
+SUBROUTINE med_initialdata_input_ptr ( grid , config_flags, iau_opt )
    USE module_domain
    USE module_configure
    IMPLICIT NONE
    TYPE (domain) , POINTER :: grid
    TYPE (grid_config_rec_type) , INTENT(IN)   :: config_flags
+   INTEGER,INTENT(IN) :: iau_opt
    INTERFACE 
-      SUBROUTINE med_initialdata_input ( grid , config_flags )
+      SUBROUTINE med_initialdata_input ( grid , config_flags, iau_opt )
          USE module_domain
          USE module_configure
          TYPE (domain) :: grid
          TYPE (grid_config_rec_type) , INTENT(IN) :: config_flags
+         INTEGER,INTENT(IN) :: iau_opt
       END SUBROUTINE med_initialdata_input
    END INTERFACE
-   CALL  med_initialdata_input ( grid , config_flags )
+   CALL  med_initialdata_input ( grid , config_flags, iau_opt )
 END SUBROUTINE med_initialdata_input_ptr
 
-SUBROUTINE med_initialdata_input ( grid , config_flags )
+SUBROUTINE med_initialdata_input ( grid , config_flags, iau_opt )
   ! Driver layer
    USE module_domain
    USE module_io_domain
@@ -43,9 +45,12 @@ use module_io
   ! Arguments
    TYPE(domain)                               :: grid
    TYPE (grid_config_rec_type) , INTENT(IN)   :: config_flags
+   INTEGER,INTENT(IN) :: iau_opt
   ! Local
    INTEGER                :: fid , ierr , myproc
    CHARACTER (LEN=80)     :: inpname , rstname, timestr
+   INTEGER                :: iau_fid
+   CHARACTER (LEN=80)     :: iau_inpname
    CHARACTER (LEN=80)     :: message
    LOGICAL                :: restart
    LOGICAL, EXTERNAL      :: wrf_dm_on_monitor
@@ -62,9 +67,22 @@ use module_io
 
 ! typically <date> will not be part of input_inname but allow for it
         CALL domain_clock_get( grid, current_timestr=timestr )
+        IF ( iau_opt.eq.1 ) THEN
+          CALL construct_filename2a ( iau_inpname , config_flags%iau_inname , grid%id , 2 , timestr )
+        ENDIF
         CALL construct_filename2a ( inpname , config_flags%input_inname , grid%id , 2 , timestr )
 
-        CALL open_r_dataset ( fid, TRIM(inpname) , grid , config_flags , "DATASET=INPUT", ierr )
+        IF ( iau_opt.eq.1 ) THEN
+          WRITE( message , * )  'wrf main: Banglin open file line 76 ', TRIM(iau_inpname)
+          CALL       wrf_debug ( 1000, trim(message))
+!         CALL open_r_dataset ( fid, TRIM(iau_inpname) , grid , config_flags , "DATASET=INPUT", ierr )
+          CALL open_r_dataset ( fid, TRIM(inpname) , grid , config_flags , "DATASET=INPUT", ierr )
+        ELSE
+          WRITE( message , * )  'wrf main: Banglin open file line 81', TRIM(inpname)
+          CALL       wrf_debug ( 1000, trim(message))
+          CALL open_r_dataset ( fid, TRIM(inpname) , grid , config_flags , "DATASET=INPUT", ierr )
+        ENDIF
+        CALL       wrf_debug ( 1000 , 'wrf main: Banglin after calling open_r_dataset for wrfinput' )
         IF ( ierr .NE. 0 ) THEN
           WRITE( wrf_err_message , * ) 'program wrf: error opening ',TRIM(inpname),' for reading ierr=',ierr
           CALL WRF_ERROR_FATAL ( wrf_err_message )
@@ -73,6 +91,7 @@ use module_io
 #include "fine_stream_input.inc"
 
         CALL close_dataset ( fid , config_flags , "DATASET=INPUT" )
+        CALL       wrf_debug ( 1000 , 'wrf main: Banglin after calling close_dataset' )
         IF ( wrf_dm_on_monitor() ) THEN
           WRITE ( message , FMT = '("processing wrfinput file (stream 0) for domain ",I8)' ) grid%id
           CALL end_timing ( TRIM(message) )
@@ -121,7 +140,9 @@ use module_io
 #if (EM_CORE == 1)
      grid%press_adj = .FALSE.
 #endif
-     CALL start_domain ( grid , .TRUE. )
+     IF ( iau_opt.eq.0 ) THEN
+        CALL start_domain ( grid , .TRUE. )
+     ENDIF
    ELSE
 
      IF ( wrf_dm_on_monitor() ) CALL start_timing
@@ -151,7 +172,9 @@ use module_io
 #if (EM_CORE == 1)
      grid%press_adj = .FALSE.
 #endif
-     CALL start_domain ( grid , .TRUE. )
+     IF ( iau_opt.eq.0 ) THEN
+        CALL start_domain ( grid , .TRUE. )
+     ENDIF
    ENDIF
 
    RETURN

@@ -149,7 +149,8 @@ real::t1,t2
    CALL alloc_and_configure_domain ( domain_id  = 1           , &
                                      grid       = head_grid   , &
                                      parent     = null_domain , &
-                                     kid        = -1            )
+                                     kid        = -1          , &
+                                     iau_opt    = 0             )
 
    grid => head_grid
    CALL nl_get_max_dom ( 1 , max_dom )
@@ -209,7 +210,8 @@ real::t1,t2
                CALL alloc_and_configure_domain ( domain_id  = domain_id    , &
                                                  grid       = another_grid , &
                                                  parent     = grid_ptr     , &
-                                                 kid        = sibling_count )
+                                                 kid        = sibling_count, &
+                                                 iau_opt    = 0              )
                grid => another_grid
             ELSE
               CALL wrf_error_fatal( 'real_em.F: Could not find the parent domain')

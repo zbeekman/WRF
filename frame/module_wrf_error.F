@@ -2,7 +2,7 @@
 !
 
 MODULE module_wrf_error
-  INTEGER           :: wrf_debug_level = 0
+  INTEGER           :: wrf_debug_level = 1000
   CHARACTER*256     :: wrf_err_message
 
   ! LOGICAL silence -- if TRUE (non-zero), this MPI rank does not send

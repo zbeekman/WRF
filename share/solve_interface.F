@@ -30,6 +30,7 @@ SUBROUTINE solve_interface ( grid )
    TYPE (grid_config_rec_type)   :: config_flags
 
    INTEGER     :: idum1, idum2
+   INTEGER     :: iau_opt
 
    CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
    CALL set_scalar_indices_from_config ( grid%id , idum1 , idum2 )
@@ -53,6 +54,8 @@ SUBROUTINE solve_interface ( grid )
 # endif
 #endif
 #if (NMM_CORE == 1)
+   iau_opt = config_flags%iau_opt
+!  CALL solve_nmm  ( grid , config_flags, iau_opt   &
    CALL solve_nmm  ( grid , config_flags   &
 !
 # include <actual_new_args.inc>

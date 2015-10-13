@@ -135,6 +135,8 @@ PROGRAM convert_emissions
    INTEGER :: nv_g = 0
    INTEGER :: itime_f = 0
 
+   INTEGER :: iau_opt
+
    REAL :: dx,dy,area,eh
 
    CHARACTER(LEN= 8) :: chlanduse
@@ -163,6 +165,8 @@ PROGRAM convert_emissions
 #ifdef DEREF_KLUDGE
    INTEGER     :: sm31 , em31 , sm32 , em32 , sm33 , em33
 #endif
+
+  TYPE (domain) , POINTER :: iau_head_grid
 
 #include "version_decl"
 
@@ -216,7 +220,8 @@ PROGRAM convert_emissions
    CALL alloc_and_configure_domain ( domain_id  = 1           , &
                                      grid       = head_grid   , &
                                      parent     = null_domain , &
-                                     kid        = -1            )
+                                     kid        = -1          , &
+                                     iau_opt    =  0            )
    grid => head_grid
 
    !  Set up time initializations.
@@ -259,6 +264,12 @@ PROGRAM convert_emissions
 ! read wrfinput
 !
    CALL med_initialdata_input( head_grid , config_flags )
+!
+   iau_opt = config_flags%iau_opt
+   IF ( iau_opt .eq. 1 ) THEN
+     CALL med_initialdata_input( iau_head_grid , config_flags, iau_opt )
+     CALL iau_copy_arrays( iau_head_grid, head_grid )
+   ENDIF
 !
    write(message,FMT='(A)') ' wrfinput open error check '
    CALL  wrf_debug ( 100, message )

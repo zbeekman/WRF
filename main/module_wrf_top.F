@@ -45,6 +45,10 @@ MODULE module_wrf_top
    INTEGER :: debug_level
    LOGICAL :: input_from_file
 
+   INTEGER :: iau_opt
+
+   TYPE (domain) , pointer :: iau_grid
+
 #ifdef DM_PARALLEL
    INTEGER                 :: nbytes
    INTEGER, PARAMETER      :: configbuflen = 4* CONFIG_BUF_LEN
@@ -85,11 +89,12 @@ MODULE module_wrf_top
      END SUBROUTINE wrf_dfi_array_reset
 ! #endif
 
-     SUBROUTINE med_nest_initial ( parent , grid , config_flags )
+     SUBROUTINE med_nest_initial ( parent , grid , config_flags, iau_opt )
        USE module_domain
        USE module_configure
        TYPE (domain), POINTER ::  grid , parent
        TYPE (grid_config_rec_type) config_flags
+       INTEGER,INTENT(IN) :: iau_opt
      END SUBROUTINE med_nest_initial
 
    END INTERFACE
@@ -327,12 +332,27 @@ CHARACTER*512 mminlu_loc
 #endif
                                      grid       = head_grid ,          &
                                      parent     = null_domain ,        &
-                                     kid        = -1                   )
-
+                                     kid        = -1 ,                 &
+                                     iau_opt    = 0                    )
    CALL       wrf_debug ( 100 , 'wrf: calling model_to_grid_config_rec ' )
    CALL model_to_grid_config_rec ( head_grid%id , model_config_rec , config_flags )
    CALL       wrf_debug ( 100 , 'wrf: calling set_scalar_indices_from_config ' )
    CALL set_scalar_indices_from_config ( head_grid%id , idum1, idum2 )
+
+   iau_opt = config_flags%iau_opt
+   IF ( iau_opt .eq. 1 ) THEN
+     CALL       wrf_debug ( 100 , 'wrf: calling alloc_and_configure_domain, inside ' )
+     CALL alloc_and_configure_domain ( domain_id  = 1 ,                  &
+                                       grid       = iau_grid ,           &
+                                       parent     = null_domain ,        &
+                                       kid        = -1 ,                 &
+                                       iau_opt    = iau_opt              )
+     CALL       wrf_debug ( 100 , 'wrf: calling model_to_grid_config_rec ' )
+     CALL model_to_grid_config_rec ( iau_grid%id , model_config_rec , config_flags )
+     CALL       wrf_debug ( 100 , 'wrf: calling set_scalar_indices_from_config, inside ' )
+     CALL set_scalar_indices_from_config ( iau_grid%id , idum1, idum2 )
+   ENDIF
+
    CALL       wrf_debug ( 100 , 'wrf: calling init_wrfio' )
    CALL init_wrfio
 
@@ -352,7 +372,8 @@ CHARACTER*512 mminlu_loc
    IF ( head_grid%dfi_opt .NE. DFI_NODFI ) head_grid%dfi_stage = DFI_SETUP
 ! #endif
 
-   CALL Setup_Timekeeping (head_grid)
+  
+     CALL Setup_Timekeeping (head_grid)
 
 !<DESCRIPTION>
 ! The head grid is initialized with read-in data through the call to <a
@@ -376,7 +397,13 @@ CHARACTER*512 mminlu_loc
 !</DESCRIPTION>
 
  IF ( domain_active_this_task(1) ) THEN
-   CALL med_initialdata_input( head_grid , config_flags )
+   CALL med_initialdata_input( head_grid , config_flags , 0 )
+
+   IF ( iau_opt .eq. 1 ) THEN
+     CALL Setup_Timekeeping (iau_grid)
+     CALL med_initialdata_input( iau_grid , config_flags, iau_opt )
+     CALL iau_copy_arrays( iau_grid, head_grid )
+   ENDIF
 
    IF ( config_flags%write_restart_at_0h ) THEN
       CALL med_restart_out ( head_grid, config_flags )
@@ -395,6 +422,7 @@ CHARACTER*512 mminlu_loc
    ! set default values for subtimes
    head_grid%start_subtime = domain_get_start_time ( head_grid )
    head_grid%stop_subtime = domain_get_stop_time ( head_grid )
+   CALL       wrf_debug ( 1000 , 'module_wrf_top.F: Banglin after domain_get_stop_time' )
 
  IF ( domain_active_this_task(1) ) THEN
    !  For EM (but not DA), if this is a DFI run, we can allocate some space.  We are
@@ -636,7 +664,8 @@ CHARACTER*512 mminlu_loc
             CALL alloc_and_configure_domain ( domain_id  = nestid_loc   , &
                                               grid       = new_nest_loc , &
                                               parent     = grid         , &
-                                              kid        = kid_loc        )
+                                              kid        = kid_loc      , &
+                                              iau_opt    = 0              )
          
 print *,'for parent domain id #',grid%id,', found child domain #',nestid_loc
             !  Since this is a DFI run, set the DFI switches to the same for all domains.
@@ -651,7 +680,7 @@ print *,'for parent domain id #',grid%id,', found child domain #',nestid_loc
             !  With space allocated, and timers set, the fine grid can be initialized with data.
 
             CALL model_to_grid_config_rec ( grid%id , model_config_rec , parent_config_flags )
-            CALL med_nest_initial ( grid , new_nest_loc , config_flags )
+            CALL med_nest_initial ( grid , new_nest_loc , config_flags, 0 )
 
             !  Here's the recursive part.  For each of these child domains, we call this same routine.
             !  This will find all of "new_nest_loc" first generation progeny.

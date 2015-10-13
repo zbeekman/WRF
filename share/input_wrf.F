@@ -935,17 +935,19 @@
 #if (DA_CORE != 1) 
 ! Don't perform the check for WRFVAR, as we're not passing the right dates
 ! around
-            CALL domain_clockprint(150, grid, &
-                   'DEBUG input_wrf():  get CurrTime from clock,')
-            IF ( time .NE. currtime ) THEN
-                WRITE( wrf_err_message , * )'Time in file: ',trim( current_date(1:19) )
-                CALL wrf_message ( trim(wrf_err_message) )
-                WRITE( wrf_err_message , * )'Time on domain: ',trim( currtimestr )
-                CALL wrf_message ( trim(wrf_err_message) )
-                CALL wrf_message( "**WARNING** Time in input file not equal to time on domain **WARNING**" )
-                WRITE(wrf_err_message,*) "**WARNING** Trying next time in file ",TRIM(fname)," ..."
-                CALL wrf_message( TRIM(wrf_err_message) )
-                GOTO 3003
+            IF ( config_flags%iau_opt .EQ. IAU_NOIAU ) THEN
+              CALL domain_clockprint(150, grid, &
+                     'DEBUG input_wrf():  get CurrTime from clock,')
+              IF ( time .NE. currtime ) THEN
+                  WRITE( wrf_err_message , * )'Time in file: ',trim( current_date(1:19) )
+                  CALL wrf_message ( trim(wrf_err_message) )
+                  WRITE( wrf_err_message , * )'Time on domain: ',trim( currtimestr )
+                  CALL wrf_message ( trim(wrf_err_message) )
+                  CALL wrf_message( "**WARNING** Time in input file not equal to time on domain **WARNING**" )
+                  WRITE(wrf_err_message,*) "**WARNING** Trying next time in file ",TRIM(fname)," ..."
+                  CALL wrf_message( TRIM(wrf_err_message) )
+                  GOTO 3003
+              ENDIF
             ENDIF
 #endif
 #if ( WRF_CHEM == 1 )

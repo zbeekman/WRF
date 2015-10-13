@@ -43,6 +43,7 @@ SUBROUTINE start_domain ( grid , allowed_to_read )
 !
                          )
 #endif
+   CALL       wrf_debug ( 1000 , 'start_domain.F: Banglin before start_domain_nmm' )
 #if (NMM_CORE == 1) 
    CALL start_domain_nmm( grid, allowed_to_read   &
 !
@@ -57,10 +58,12 @@ SUBROUTINE start_domain ( grid , allowed_to_read )
 !
                          )
 #endif
+   CALL       wrf_debug ( 1000 , 'start_domain.F: Banglin after start_domain_nmm' )
 
 #if (DA_CORE != 1)
    CALL calc_ts_locations( grid )
    CALL calc_track_locations( grid )
+   CALL       wrf_debug ( 1000 , 'start_domain.F: Banglin after calc_track_locations' )
 #endif
 
 END SUBROUTINE start_domain
