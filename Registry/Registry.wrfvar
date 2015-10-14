@@ -1775,8 +1775,8 @@ rconfig   logical   lat_stats_option        namelist,wrfvar11  1  .false.  - "la
 rconfig   integer   interp_option           namelist,wrfvar11  1  1        - "interp_option"           ""  ""
 
 rconfig   integer   balance_type            namelist,wrfvar12  1  1        - "balance_type"            ""  ""  
-rconfig   logical   use_wpec                namelist,wrfvar12  1  .false.  - "WPEC"                    ""  ""
-rconfig   real      balance_error           namelist,wrfvar12  1  0.001      - "balance error"          ""  ""
+rconfig   logical   use_wpec                namelist,wrfvar12  1  .false.  - "use_wpec"                ""  ""
+rconfig   real      wpec_factor             namelist,wrfvar12  1  0.001    - "wpec_factor"             ""  "Inverse of WPEC gamma factor"
                                                                                           
 rconfig   integer   vert_corr               namelist,wrfvar13  1  2        - "vert_corr"               ""  ""  
 rconfig   integer   vertical_ip             namelist,wrfvar13  1  0        - "vertical_ip"             ""  ""  

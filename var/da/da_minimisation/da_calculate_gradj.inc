@@ -116,6 +116,7 @@ subroutine da_calculate_gradj(it, iter, cv_size, cv_size_jb, cv_size_je, cv_size
    if (use_wpec) then
 
       if (var4d) call da_error(__FILE__,__LINE__,(/'Cannot use 4dvar with dynamic constraint'/))
+      if (wpec_factor <= 0) call da_error(__FILE__,__LINE__,(/'"wpec_factor" for dynamic constraint must be greater than zero'/))
 
       grid%xa%grad_p_x(:,:,:)=0.0
       grid%xa%grad_p_y(:,:,:)=0.0
@@ -123,8 +124,8 @@ subroutine da_calculate_gradj(it, iter, cv_size, cv_size_jb, cv_size_je, cv_size
       call da_transform_vtod_wpec(cv_size, be, grid%ep, cv, grid%vp, &
               grid%vv, grid%vp6, grid%vv6, xbx, grid, config_flags)
 
-      grid%xa%grad_p_x=(grid%xa%grad_p_x)/balance_error
-      grid%xa%grad_p_y=(grid%xa%grad_p_y)/balance_error
+      grid%xa%grad_p_x=(grid%xa%grad_p_x)/wpec_factor
+      grid%xa%grad_p_y=(grid%xa%grad_p_y)/wpec_factor
 
       call da_transform_vtod_wpec_adj(cv_size, be, grid%ep, grad_jd,  &
               grid%vp, grid%vv, grid%vp6, grid%vv6, xbx, grid, config_flags, .true.)
