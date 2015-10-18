@@ -326,6 +326,79 @@
       END IF
 
 !-----------------------------------------------------------------------
+! For adaptive time stepping, certain physics schemes are not allowed
+! to have intermittent frequencies.  So, for those schemes below, we just
+! turn the frequencies so that the schemes are called for each time step.
+!-----------------------------------------------------------------------
+
+      IF ( model_config_rec%use_adaptive_time_step ) THEN
+         IF ( ( model_config_rec%cu_physics(1) .EQ. BMJSCHEME     ) .OR. &
+              ( model_config_rec%cu_physics(1) .EQ. SASSCHEME     ) .OR. &
+              ( model_config_rec%cu_physics(1) .EQ. OSASSCHEME    ) .OR. &
+              ( model_config_rec%cu_physics(1) .EQ. NSASSCHEME    ) .OR. &
+              ( model_config_rec%cu_physics(1) .EQ. TIEDTKESCHEME ) ) THEN
+            wrf_err_message = '--- WARNING: If use_adaptive_time_step, must use cudt=0 for the following CU schemes:'
+            CALL wrf_message ( wrf_err_message )
+            wrf_err_message = '---          BMJ, all SAS, Tiedtke' 
+            CALL wrf_message ( wrf_err_message )
+            wrf_err_message = '---          CUDT=0 has been done for you.'
+            CALL wrf_message ( wrf_err_message )
+            DO i = 1, model_config_rec % max_dom
+               model_config_rec%cudt(i) = 0
+            END DO
+         END IF
+      END IF
+!-----------------------------------------------------------------------
+! The cu_rad_feedback namelist flag with the two Grell cumulus parameterization 
+! schemes needs to have the namelist flag cu_diag=1
+!-----------------------------------------------------------------------
+
+      DO i = 1, model_config_rec % max_dom
+         IF ( ( model_config_rec%cu_rad_feedback(i) .EQV. .TRUE. )  .OR. &
+              ( model_config_rec%cu_rad_feedback(i) .EQV. .true. ) ) THEN
+            wrf_err_message = '--- WARNING: Turning on cu_rad_feedback also requires setting cu_diag== 1'
+            CALL wrf_message ( wrf_err_message )
+            model_config_rec%cu_diag(i) = 1
+         ELSE
+            model_config_rec%cu_diag(i) = 0
+         END IF
+      END DO
+
+!-----------------------------------------------------------------------
+! The namelist flag cu_diag=1 must have one of the two Grell cumulus parameterizations
+! turned on.  All other cumulus parameterizations need to have cu_diag=0
+!-----------------------------------------------------------------------
+ 
+       DO i = 1, model_config_rec % max_dom
+         IF ( model_config_rec%cu_diag(i) .EQ. G3TAVE ) THEN
+          IF ( ( model_config_rec%cu_physics(i) .NE. GDSCHEME ) .AND. &
+               ( model_config_rec%cu_physics(i) .NE. G3SCHEME ) ) THEN
+                wrf_err_message = '--- ERROR: Using cu_diag=1 requires use of one of the following CU schemes:'
+                CALL wrf_message ( wrf_err_message )
+                wrf_err_message = '---          Grell (G3) CU scheme' 
+                CALL wrf_message ( wrf_err_message )
+                wrf_err_message = '---          Grell-Devenyi (GD) CU scheme' 
+                CALL wrf_error_fatal ( wrf_err_message )
+          END IF
+         END IF
+       END DO
+ 
+!-----------------------------------------------------------------------
+! The two Grell cumulus parameterization schemes need to have the 
+! namelist flag cu_diag=1, and all other cumulus schemes must have
+! cu_diag=0.
+!-----------------------------------------------------------------------
+
+      DO i = 1, model_config_rec % max_dom
+         IF ( ( model_config_rec%cu_physics(i) .EQ. GDSCHEME ) .OR. &
+              ( model_config_rec%cu_physics(i) .EQ. G3SCHEME ) ) THEN
+            model_config_rec%cu_diag(i) = 1
+         ELSE
+            model_config_rec%cu_diag(i) = 0
+         END IF
+      END DO
+ 
+!-----------------------------------------------------------------------
 !  Remapping namelist variables for gridded and surface fdda to aux streams 9 and 10.
 !  Relocated here so that the remappings are after checking the namelist for inconsistencies.
 !-----------------------------------------------------------------------

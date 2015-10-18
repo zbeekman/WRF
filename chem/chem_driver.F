@@ -510,6 +510,8 @@
        CALL wrf_debug(15,'tracer mode: only doing emissions and dry dep in chem_driver')
     CASE (CHEM_VOLC)
        CALL wrf_debug(15,'Full Volcanic Ash mode: doing emissions (SO2 + ASH), settling, and subgrid transport in chem_driver')
+    CASE (CHEM_VOLC_4BIN)
+       CALL wrf_debug(15,'4bin Volcanic Ash mode: doing emissions (ASH), settling, and subgrid transport in chem_driver')
     CASE (CHEM_VASH)
        CALL wrf_debug(15,'Volcanic Ash mode: only doing emissions, settling, and subgrid transport in chem_driver')
     CASE (DUST)
@@ -909,6 +911,7 @@
            config_flags%chem_opt /= CHEM_TRACER .and. &
            config_flags%chem_opt /= CHEM_VASH .and. &
            config_flags%chem_opt /= CHEM_VOLC .and. &
+           config_flags%chem_opt /= CHEM_VOLC_4BIN .and. &
            config_flags%chem_opt /= DUST .and. &
            config_flags%chem_opt /= CHEM_TRACE2 .and. &
            config_flags%chem_opt /= CO2_TRACER  .and. &
@@ -945,6 +948,7 @@
            config_flags%chem_opt /= CHEM_TRACER .and. &
            config_flags%chem_opt /= CHEM_VASH .and. &
            config_flags%chem_opt /= CHEM_VOLC .and. &
+           config_flags%chem_opt /= CHEM_VOLC_4BIN .and. &
            config_flags%chem_opt /= DUST .and. &
            config_flags%chem_opt /= CHEM_TRACE2 .and. &
            config_flags%chem_opt /= CO2_TRACER  .and. &
@@ -1175,6 +1179,7 @@
           config_flags%chem_opt /= CHEM_TRACER .and. &
           config_flags%chem_opt /= CHEM_VASH .and. &
           config_flags%chem_opt /= CHEM_VOLC .and. &
+          config_flags%chem_opt /= CHEM_VOLC_4BIN .and. &
           config_flags%chem_opt /= DUST .and. &
           config_flags%chem_opt /= CHEM_TRACE2 .and. &
           config_flags%chem_opt /= CO2_TRACER  .and. &
@@ -1261,18 +1266,34 @@ CALL kpp_mechanism_driver (chem,                                                
 !      chem(its:ite,kts:kte,jts:jte,p_h2o2)=vch2o2_old(its:ite,kts:kte,jts:jte)
    endif
 
-   so2so4_select: SELECT CASE(config_flags%chem_opt)
-     CASE (RADM2SORG,RADM2SORG_KPP,RACMSORG_KPP,RACM_SOA_VBS_KPP)
-       CALL wrf_debug(15,'gocart so2-so4 conversion')
-          call  so2so4(chem,p_so2,p_sulf,p_h2o2,p_QC,T_PHY,MOIST,           &
-         grid%gd_cloud_b, grid%gd_cldfr,                                    &
-         NUM_CHEM,NUM_MOIST,                                                &
-         ids,ide, jds,jde, kds,kde,                                         &
-         ims,ime, jms,jme, kms,kme,                                         &
-         its,ite, jts,jte, kts,kte                                          )
-     CASE DEFAULT
-       CALL wrf_debug(15,'no gocart so2-so4 conversion')
-   END SELECT so2so4_select                              
+   IF(config_flags%conv_tr_aqchem == 0 ) THEN
+      so2so4_selecta: SELECT CASE(config_flags%chem_opt)
+      CASE (RADM2SORG,RADM2SORG_KPP,RACMSORG_KPP,RACM_SOA_VBS_KPP)
+         CALL wrf_debug(15,'gocart so2-so4 conversion')
+         CALL  so2so4(0,chem,p_so2,p_sulf,p_h2o2,p_QC,T_PHY,MOIST,           &
+              grid%gd_cloud_b, grid%gd_cldfr,                                    &
+              NUM_CHEM,NUM_MOIST,                                                &
+              ids,ide, jds,jde, kds,kde,                                         &
+              ims,ime, jms,jme, kms,kme,                                         &
+              its,ite, jts,jte, kts,kte                                          )
+      CASE DEFAULT
+         CALL wrf_debug(15,'no gocart so2-so4 conversion')
+      END SELECT so2so4_selecta
+   else IF(config_flags%conv_tr_aqchem == 1 ) THEN
+      so2so4_selectb: SELECT CASE(config_flags%chem_opt)
+      CASE (RADM2SORG,RADM2SORG_KPP,RACMSORG_KPP,RACM_SOA_VBS_KPP)
+         CALL wrf_debug(15,'gocart so2-so4 conversion')
+         CALL  so2so4(1,chem,p_so2,p_sulf,p_h2o2,p_QC,T_PHY,MOIST,           &
+              grid%gd_cloud_b, grid%gd_cldfr,                                    &
+              NUM_CHEM,NUM_MOIST,                                                &
+              ids,ide, jds,jde, kds,kde,                                         &
+              ims,ime, jms,jme, kms,kme,                                         &
+              its,ite, jts,jte, kts,kte                                          )
+      CASE DEFAULT
+         CALL wrf_debug(15,'no gocart so2-so4 conversion')
+      END SELECT so2so4_selectb
+
+   ENDIF
 
 !
 #endif
@@ -1428,7 +1449,7 @@ end if !Chemistry time step check
 !
         if(config_flags%chem_opt == CHEM_VOLC)then
           CALL wrf_debug(15,'gocart so2-so4 conversion')
-          call  so2so4(chem,p_so2,p_sulf,p_h2o2,p_QC,T_PHY,MOIST,           &
+          CALL  so2so4(0,chem,p_so2,p_sulf,p_h2o2,p_QC,T_PHY,MOIST,           &
          grid%gd_cloud_b, grid%gd_cldfr,                                    &
          NUM_CHEM,NUM_MOIST,                                                &
          ids,ide, jds,jde, kds,kde,                                         &
