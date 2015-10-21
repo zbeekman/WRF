@@ -254,7 +254,7 @@ SUBROUTINE med_pre_nest_initial ( parent , newid , config_flags, iau_opt )
 
    CALL domain_clock_get( parent, current_timestr=timestr, start_time=strt_time, current_time=cur_time )
    IF ( iau_opt.eq.1 ) THEN
-     CALL construct_filename2a ( rstname , config_flags%iaurst_inname , newid , 2 , timestr )
+     CALL construct_filename2a ( rstname , config_flags%iau_inname , newid , 2 , timestr )
    ELSE
      CALL construct_filename2a ( rstname , config_flags%rst_inname , newid , 2 , timestr )
    ENDIF
@@ -656,7 +656,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags, iau_opt )
 
      CALL domain_clock_get( nest, current_timestr=timestr )
      IF ( iau_opt.eq.1 ) THEN
-       CALL construct_filename2a ( rstname , config_flags%iaurst_inname , nest%id , 2 , timestr )
+       CALL construct_filename2a ( rstname , config_flags%iau_inname , nest%id , 2 , timestr )
      ELSE
        CALL construct_filename2a ( rstname , config_flags%rst_inname , nest%id , 2 , timestr )
      ENDIF
@@ -962,7 +962,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags, iau_opt )
 
      CALL domain_clock_get( nest, current_timestr=timestr )
      IF ( iau_opt.eq.1 ) THEN
-       CALL construct_filename2a ( rstname , config_flags%iaurst_inname , nest%id , 2 , timestr )
+       CALL construct_filename2a ( rstname , config_flags%iau_inname , nest%id , 2 , timestr )
      ELSE
        CALL construct_filename2a ( rstname , config_flags%rst_inname , nest%id , 2 , timestr )
      ENDIF
@@ -1390,7 +1390,7 @@ SUBROUTINE med_analysis_in ( grid , config_flags, iau_opt )
    CALL domain_clock_get( grid, current_timestr=timestr )
 !Banglin only for reading
    IF ( iau_opt.eq.1 ) THEN
-     CALL construct_filename2a ( rstname ,config_flags%iauanl_outname, grid%id , 2 , timestr )
+     CALL construct_filename2a ( rstname ,config_flags%iau_inname, grid%id , 2 , timestr )
    ELSE
      CALL construct_filename2a ( rstname ,config_flags%anl_outname, grid%id , 2 , timestr )
    ENDIF
@@ -1666,8 +1666,7 @@ SUBROUTINE med_restart_in ( grid , config_flags, iau_opt )
 !zhang's doing   CALL wrf_timetoa ( CurrTime, timestr )
    CALL domain_clock_get( grid, current_timestr=timestr )
    IF ( iau_opt.eq.1 ) THEN
-!    CALL construct_filename2a ( rstname ,config_flags%iau_outname, grid%id , 2 , timestr )
-     CALL construct_filename2a ( rstname ,config_flags%rst_outname, grid%id , 2 , timestr )
+     CALL construct_filename2a ( rstname ,config_flags%iau_inname, grid%id , 2 , timestr )
    ELSE
      CALL construct_filename2a ( rstname ,config_flags%rst_outname, grid%id , 2 , timestr )
    ENDIF

@@ -55,8 +55,8 @@ SUBROUTINE solve_interface ( grid )
 #endif
 #if (NMM_CORE == 1)
    iau_opt = config_flags%iau_opt
-!  CALL solve_nmm  ( grid , config_flags, iau_opt   &
-   CALL solve_nmm  ( grid , config_flags   &
+!  CALL solve_nmm  ( grid , config_flags   &
+   CALL solve_nmm  ( grid , config_flags, iau_opt   &
 !
 # include <actual_new_args.inc>
 !

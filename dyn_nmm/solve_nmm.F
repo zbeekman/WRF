@@ -8,7 +8,7 @@
 #include "nmm_loop_macros.h"
 !-----------------------------------------------------------------------
 !
-      SUBROUTINE SOLVE_NMM(GRID,CONFIG_FLAGS                            &
+      SUBROUTINE SOLVE_NMM(GRID,CONFIG_FLAGS,iau_opt                    &
 !
 #include "dummy_new_args.inc"
 !
@@ -62,6 +62,7 @@
 !-----------------------------------------------------------------------
 !
       TYPE(DOMAIN),TARGET :: GRID
+      INTEGER,INTENT(IN) :: iau_opt
 !
 !***  DEFINITIONS OF DUMMY ARGUMENTS TO THIS ROUTINE (GENERATED FROM REGISTRY)
 !
@@ -153,6 +154,7 @@
 #endif
      &,            diag_tim,adjppt_tim,tornado_tim                      
 
+       real :: scale
 ! Flag for producing diagnostic fields (e.g., radar reflectivity) 
       LOGICAL                        :: diag_flag
 
@@ -334,6 +336,30 @@
 !***  SEE: http://www.mmm.ucar.edu/wrf/WG2/topics/settiles
 !
       CALL SET_TILES(GRID,IDS,IDE,JDS,JDE,IPS,IPE,JPS,JPE)
+!
+!-----------------------------------------------------------------------
+!***  ADD IAU TENDENCY
+!-----------------------------------------------------------------------
+!
+      IF ( iau_opt .eq. 1) THEN
+      IF ( grid%ntsd*GRID%DT/3600. .LE. 3.0) THEN
+        scale=GRID%DT/(3600.0*6.0)
+        DO J=JMS,JME
+        DO I=IMS,IME
+          DO K=KMS,KME
+            grid%u(I,J,K)=grid%u(I,J,K)+grid%iau_udt(I,J,K)*scale
+            grid%v(I,J,K)=grid%v(I,J,K)+grid%iau_vdt(I,J,K)*scale
+            grid%t(I,J,K)=grid%t(I,J,K)+grid%iau_tdt(I,J,K)*scale
+            grid%q(I,J,K)=grid%q(I,J,K)+grid%iau_qdt(I,J,K)*scale
+          ENDDO
+          DO K=KMS,KME+1
+!           grid%pint(I,J,K)=grid%pint(I,J,K)+grid%iau_pintdt(I,J,K)*scale
+          ENDDO
+          grid%pd(I,J)=grid%pd(I,J)+grid%iau_pddt(I,J)*scale
+        ENDDO
+        ENDDO
+      ENDIF
+      ENDIF
 !
 !-----------------------------------------------------------------------
 !***  SET FLAG FOR NAM, HRW, or HWRF (Ferrier-based) microphysics

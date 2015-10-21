@@ -68,21 +68,11 @@ use module_io
 ! typically <date> will not be part of input_inname but allow for it
         CALL domain_clock_get( grid, current_timestr=timestr )
         IF ( iau_opt.eq.1 ) THEN
-          CALL construct_filename2a ( iau_inpname , config_flags%iau_inname , grid%id , 2 , timestr )
-        ENDIF
-        CALL construct_filename2a ( inpname , config_flags%input_inname , grid%id , 2 , timestr )
-
-        IF ( iau_opt.eq.1 ) THEN
-          WRITE( message , * )  'wrf main: Banglin open file line 76 ', TRIM(iau_inpname)
-          CALL       wrf_debug ( 1000, trim(message))
-!         CALL open_r_dataset ( fid, TRIM(iau_inpname) , grid , config_flags , "DATASET=INPUT", ierr )
-          CALL open_r_dataset ( fid, TRIM(inpname) , grid , config_flags , "DATASET=INPUT", ierr )
+          CALL construct_filename2a ( inpname , config_flags%iau_inname , grid%id , 2 , timestr )
         ELSE
-          WRITE( message , * )  'wrf main: Banglin open file line 81', TRIM(inpname)
-          CALL       wrf_debug ( 1000, trim(message))
-          CALL open_r_dataset ( fid, TRIM(inpname) , grid , config_flags , "DATASET=INPUT", ierr )
+          CALL construct_filename2a ( inpname , config_flags%input_inname , grid%id , 2 , timestr )
         ENDIF
-        CALL       wrf_debug ( 1000 , 'wrf main: Banglin after calling open_r_dataset for wrfinput' )
+        CALL open_r_dataset ( fid, TRIM(inpname) , grid , config_flags , "DATASET=INPUT", ierr )
         IF ( ierr .NE. 0 ) THEN
           WRITE( wrf_err_message , * ) 'program wrf: error opening ',TRIM(inpname),' for reading ierr=',ierr
           CALL WRF_ERROR_FATAL ( wrf_err_message )
@@ -148,7 +138,11 @@ use module_io
      IF ( wrf_dm_on_monitor() ) CALL start_timing
 
      CALL domain_clock_get( grid, current_timestr=timestr )
-     CALL construct_filename2a ( rstname , config_flags%rst_inname , grid%id , 2 , timestr )
+     IF ( iau_opt.eq.1 ) THEN
+        CALL construct_filename2a ( rstname , config_flags%iau_inname , grid%id , 2 , timestr )
+     ELSE
+        CALL construct_filename2a ( rstname , config_flags%rst_inname , grid%id , 2 , timestr )
+     ENDIF
 
      WRITE(message,*)'RESTART run: opening ',TRIM(rstname),' for reading'
      CALL wrf_message (  message )
