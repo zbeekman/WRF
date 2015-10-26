@@ -43,7 +43,7 @@ subroutine da_setup_obs_structures( grid, ob, iv, j_cost)
       use_amsubobs .OR. use_airsobs .OR. use_eos_amsuaobs .OR. &
       use_hsbobs .OR. use_kma1dvar .OR. use_filtered_rad .OR. &
       use_ssmisobs .OR. use_hirs4obs .OR. use_mhsobs .OR. use_pseudo_rad .OR. &
-      use_mwtsobs  .OR. use_mwhsobs .OR. use_atmsobs .OR. use_simulated_rad .OR. use_iasiobs) then
+      use_mwtsobs  .OR. use_mwhsobs .OR. use_atmsobs .OR. use_simulated_rad .OR. use_iasiobs .OR. use_seviriobs) then
       use_rad = .true.
    else
       use_rad = .false.
@@ -159,6 +159,13 @@ subroutine da_setup_obs_structures( grid, ob, iv, j_cost)
       write(unit=message(1),fmt='(A,I3)') &
          'Invalid sfc_assi_option = ', sfc_assi_options
       call da_error(__FILE__,__LINE__,message(1:1))
+   end if
+
+   if ( use_gpsrefobs ) then
+      if ( ob_format_gpsro == ob_format_bufr .and.  &
+           ob_format       == ob_format_ascii ) then
+         call da_message((/'ob_format=2 while ob_format_gpsro=1, will be reading GPSRO data from gpsro.bufr'/))
+      end if
    end if
 
    !---------------------------------------------------------------------------      

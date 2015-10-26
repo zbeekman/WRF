@@ -28,7 +28,9 @@ CONTAINS
      &          ,th10,th2,thz0,th_phy,tmn,tshltr,tsk,tslb             &
      &          ,tyr,tyra,tdly,tlag,lagday,nyear,nday,tmn_update,yr   &
      &          ,t_phy,u10,udrunoff,ust,uz0,u_frame,u_phy,v10,vegfra  &
+     &          ,uoce,voce                                            &
      &          ,vz0,v_frame,v_phy,warm_rain,wspd,xice,xland,z,znt    &
+     &          ,max_edom,cplmask                                     &
 #if (HWRF==1)
      &          ,mznt                                                 &
 #endif
@@ -40,7 +42,7 @@ CONTAINS
      &          ,xicem,isice,iswater,ct,tke_pbl                       &
 #endif
      &          ,albbck,embck,lh,sh2o,shdmax,shdmin,z0                &
-     &          ,flqc,flhc,psfc,sst,sstsk,dtw,sst_update,sst_skin     &
+     &          ,flqc,flhc,psfc,sst,sst_input,sstsk,dtw,sst_update,sst_skin     &
      &          ,scm_force_skintemp,scm_force_flux,t2,emiss           &
      &          ,sf_sfclay_physics,sf_surface_physics,ra_lw_physics   & 
      &          ,mosaic_lu,mosaic_soil                                &
@@ -68,6 +70,12 @@ CONTAINS
      &          ,ch,tsq,qsq,cov,Sh3d,el_pbl,bl_mynn_cloudpdf          & ! MYNN
      &          ,fgdp,dfgdp,vdfg,grav_settling                        & ! Katata - fog dep
 #endif
+     &          ,lakedepth2d,  savedtke12d,  snowdp2d,   h2osno2d       & !lake
+     &          ,snl2d,        t_grnd2d,     t_lake3d,   lake_icefrac3d & !lake
+     &          ,z_lake3d,     dz_lake3d,    t_soisno3d, h2osoi_ice3d   & !lake
+     &          ,h2osoi_liq3d, h2osoi_vol3d, z3d,        dz3d           & !lake
+     &          ,zi3d,         watsat3d,     csol3d,     tkmg3d         & !lake
+     &          ,tkdry3d,      tksatu3d,     LakeModel,  lakeminalt     & !lake
             !  cyl ocean variable
                 ,OM_TMP,OM_S,OM_U,OM_V,OM_DEPTH,OM_ML,OM_LON          &
      &          ,OM_LAT,okms,okme,rdx,rdy,msfu,msfv,msft              &
@@ -169,6 +177,7 @@ CONTAINS
 !------------------------------------------------------------------------------
      &          , ids,ide,jds,jde,kds,kde                             &
      &          , ims,ime,jms,jme,kms,kme                             &
+     &          , ips,ipe,jps,jpe,kps,kpe                             &
      &          , i_start,i_end,j_start,j_end,kts,kte,num_tiles       &
              !  Optional moisture tracers
      &           ,qv_curr, qc_curr, qr_curr                           &
@@ -306,6 +315,8 @@ CONTAINS
    USE module_sf_sfcdiags_ruclsm
    USE module_sf_sstskin
    USE module_sf_tmnupdate
+   USE module_sf_lake
+   USE module_cpl, ONLY : coupler_on, cpl_rcv
 !
 !  This driver calls subroutines for the surface parameterizations.
 !
@@ -376,6 +387,8 @@ CONTAINS
 !-- TLAG          mean surface temperature of previous 140 days (K)
 !-- TDLY          accumulated daily mean surface temperature of the current day (K)
 !-- XLAND         land mask (1 for land, 2 for water)
+!-- MAX_EDOM      number of external model domains
+!-- CPLMASK       coupling mask (1 for data read in wrflowinput, 0 data received from the coupler)
 !-- ZNT           thermal time-varying roughness length (m)
 !-- MZNT          momentum time-varying roughness length (m)
 !-- Z0            background roughness length (m)
@@ -405,6 +418,8 @@ CONTAINS
 !-- tratx         ratio of t over th2 (Added for obs-nudging)
 !-- u10           diagnostic 10-m u component from surface layer
 !-- v10           diagnostic 10-m v component from surface layer
+!-- UOCE          sea surface zonal currents (m s-1)
+!-- VOCE          sea surface meridional currents (m s-1)
 !-- th2           diagnostic 2-m theta from surface layer and lsm
 !-- t2            diagnostic 2-m temperature from surface layer and lsm
 !-- q2            diagnostic 2-m mixing ratio from surface layer and lsm
@@ -429,6 +444,7 @@ CONTAINS
 !-- DT            time step (second)
 !-- PSFC          pressure at the surface (Pa)
 !-- SST           sea-surface temperature (K)
+!-- SST_INPUT     sea-surface temperature read in wrflowinput (K) (= SST if no coupling)
 !-- SSTSK         skin sea-surface temperature (K)
 !-- DTW           warm layer temp diff (K)
 !-- TSLB
@@ -468,6 +484,12 @@ CONTAINS
 !-- jme           end index for j in memory
 !-- kms           start index for k in memory
 !-- kme           end index for k in memory
+!-- ips           start index for i in patch
+!-- ipe           end index for i in patch
+!-- jps           start index for j in patch
+!-- jpe           end index for j in patch
+!-- kps           start index for k in patch
+!-- kpe           end index for k in patch
 !-- its           start index for i in tile
 !-- ite           end index for i in tile
 !-- jts           start index for j in tile
@@ -481,6 +503,7 @@ CONTAINS
    INTEGER, INTENT(IN) ::                                             &
      &           ids,ide,jds,jde,kds,kde                              &
      &          ,ims,ime,jms,jme,kms,kme                              &
+     &          ,ips,ipe,jps,jpe,kps,kpe                              &
      &          ,kts,kte,num_tiles
 
    INTEGER, INTENT(IN)::   FRACTIONAL_SEAICE
@@ -497,6 +520,8 @@ CONTAINS
 
    INTEGER, INTENT(IN)::   NLCAT, mosaic_lu, mosaic_soil
    INTEGER, INTENT(IN)::   NSCAT
+   INTEGER,  INTENT(IN )  :: LakeModel
+   REAL,     INTENT(IN)   :: lakeminalt
 
    INTEGER, INTENT(IN)::   history_interval
 
@@ -547,6 +572,7 @@ CONTAINS
    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(IN )::   RAINCV
    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(INOUT)::   SST
    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(INOUT ),OPTIONAL ::   SSTSK
+   REAL, DIMENSION( ims:ime , jms:jme ), INTENT(IN    ),OPTIONAL ::   SST_INPUT
    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(INOUT ),OPTIONAL ::   DTW
    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(INOUT)::   TMN
    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(INOUT ),OPTIONAL ::   TYR
@@ -561,6 +587,8 @@ CONTAINS
    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(INOUT)::   ICEDEPTH
    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(INOUT)::   SNOWSI
    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(INOUT)::   XLAND
+   INTEGER,                                          INTENT(IN   ) ::   MAX_EDOM
+   REAL, DIMENSION( ims:ime , 1:max_edom, jms:jme ), INTENT(IN   ), OPTIONAL ::   CPLMASK
    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(INOUT)::   XICEM
    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(INOUT)::   MAVAIL
    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(INOUT)::   SNOALB
@@ -702,6 +730,8 @@ CONTAINS
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(OUT)::   TSHLTR
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(OUT)::   U10
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(OUT)::   V10
+   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(OUT)::   UOCE
+   REAL, DIMENSION( ims:ime, jms:jme ), INTENT(OUT)::   VOCE
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(OUT)::   PSFC
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT)::   ACSNOM
    REAL, DIMENSION( ims:ime, jms:jme ), INTENT(INOUT)::   SFCEVP
@@ -1102,6 +1132,33 @@ CONTAINS
      REAL, DIMENSION( ims:ime, jms:jme ) :: UST_SEA
      REAL, DIMENSION( ims:ime, jms:jme ) :: QZ0_SEA
      REAL, DIMENSION( ims:ime, jms:jme ) :: TSK_LOCAL
+    ! lake varibles ,inout(14)
+    real,    dimension(ims:ime,jms:jme ),intent(inout)                      :: savedtke12d
+    real,    dimension(ims:ime,jms:jme ),intent(inout)                      :: snowdp2d,       &
+                                                                               h2osno2d,       &
+                                                                               snl2d,          &
+                                                                               t_grnd2d
+ 
+    real,    dimension( ims:ime,1:nlevlake, jms:jme ),INTENT(inout)          :: t_lake3d,       &
+                                                                               lake_icefrac3d
+    real,    dimension( ims:ime,-nlevsnow+1:nlevsoil, jms:jme ),INTENT(inout) :: t_soisno3d,     &
+                                                                               h2osoi_ice3d,   &
+                                                                               h2osoi_liq3d,   &
+                                                                               h2osoi_vol3d,   &
+                                                                               z3d,            &
+                                                                               dz3d
+    real,    dimension( ims:ime,-nlevsnow+0:nlevsoil, jms:jme ),INTENT(inout) :: zi3d
+    ! in(8)
+    real,    dimension( ims:ime,1:nlevlake, jms:jme ),INTENT(in)             :: z_lake3d,       &
+                                                                               dz_lake3d
+    real,    dimension( ims:ime,1:nlevsoil, jms:jme ),INTENT(in)             :: watsat3d,       &
+                                                                               csol3d,         &
+                                                                               tkmg3d,         &
+                                                                               tkdry3d,        &
+                                                                               tksatu3d
+    real,    dimension(ims:ime,jms:jme ),intent(in)                         :: lakedepth2d
+!    logical, dimension(ims:ime,jms:jme ),intent(in)                         :: lake 
+ 
 !
    REAL   :: xice_threshold
 
@@ -1125,8 +1182,12 @@ CONTAINS
 !
 !
 !------------------------------------------------------------------
+! Initialize local variables
+  q_ref2m = 0.0
+!------------------------------------------------------------------
 !
 ! stop run if using ssib and fractional seaice=0  (fds 12/2010)
+
   if(sf_surface_physics .eq. SSIBSCHEME .and. fractional_seaice .eq. 0) then
     WRITE( message,* ) 'Please activate fractional seaice option when using SSiB model'
     CALL wrf_error_fatal ( message )
@@ -1152,6 +1213,28 @@ CONTAINS
       call wrf_error_fatal("Field SNOWSI not found in input.  Field SNOWSI is required if SEAICE_SNOWDEPTH_OPT=1")
   endif
 
+  IF ( coupler_on .and. present(cplmask) .and. present(sst_input) ) THEN
+     
+     CALL cpl_rcv( id, 'SST',            &
+        &              ids, ide, jds, jde, kds, kde, &
+        &              ims, ime, jms, jme, kms, kme, &
+        &              ips, ipe, jps, jpe, kps, kpe, &
+        &              max_edom, cplmask, SST, SST_INPUT )
+     
+     CALL cpl_rcv( id, 'UOCE',            &
+        &              ids, ide, jds, jde, kds, kde, &
+        &              ims, ime, jms, jme, kms, kme, &
+        &              ips, ipe, jps, jpe, kps, kpe, &
+        &              max_edom, cplmask, UOCE )
+     
+     CALL cpl_rcv( id, 'VOCE',            &
+        &              ids, ide, jds, jde, kds, kde, &
+        &              ims, ime, jms, jme, kms, kme, &
+        &              ips, ipe, jps, jpe, kps, kpe, &
+        &              max_edom, cplmask, VOCE )
+     
+  END IF
+  
 !$OMP PARALLEL DO &
 !$OMP PRIVATE (ij, i, j, k)
   DO ij = 1,num_tiles
@@ -1503,6 +1586,9 @@ CONTAINS
             v_phytmp(i,k,j)=v_phy(i,k,j)+v_frame
             u_phytmp(i,k,j)=u_phy(i,k,j)+u_frame
           ENDDO
+! remove surface currents for atmospheric low-level winds
+          u_phytmp(i,kts,j)=u_phytmp(i,kts,j)-uoce(i,j)
+          v_phytmp(i,kts,j)=v_phytmp(i,kts,j)-voce(i,j)
        ENDDO
        ENDDO
      ENDDO
@@ -2441,6 +2527,10 @@ CONTAINS
             ENDIF
          ENDIF
 
+!added for WRF_HYDRO
+#ifdef WRF_HYDRO
+         if(HYDRO_dt .ge. 0) HYDRO_dt = dtbl
+#endif
          CALL wrf_debug(100,'in NOAHMP DRV')
          CALL noahmplsm(ITIMESTEP,       YR, JULIAN_IN,   COSZEN, XLAT_URB2D, &
 	           DZ8W,     DTBL,      DZS,     NUM_SOIL_LAYERS,         DX, &
@@ -2468,6 +2558,9 @@ CONTAINS
 		  SHGXY,    SHCXY,    SHBXY,    EVGXY,     EVBXY,      GHVXY, &
 		  GHBXY,    IRGXY,    IRCXY,    IRBXY,      TRXY,      EVCXY, &
 	       CHLEAFXY,   CHUCXY,   CHV2XY,   CHB2XY,                        &                          
+#ifdef WRF_HYDRO
+                 sfcheadrt,INFXSRT,soldrain,                          &    !O
+#endif
                 ids,ide, jds,jde, kds,kde,                      &
                 ims,ime, jms,jme, kms,kme,                      &
                 i_start(ij),i_end(ij), j_start(ij),j_end(ij), kts,kte )
@@ -2902,7 +2995,7 @@ CONTAINS
                 sfcrunoff,udrunoff,ivgtyp,isltyp,vegfra,        &
                 albedo,znt,z0, tmn,xland,xice, emiss,           &
                 snowc,qsfc,rainbl,maxpatch,                     &
-                num_soil_layers,dtbl,dzs,itimestep,             &
+                num_soil_layers,dtbl,xtime, dt,dzs,             &
                 smois,tslb,snow,canwat,                         &
                 chs,chs2,sh2o,snowh,                            &
                 u_phy,v_phy,                                    &
@@ -3309,6 +3402,36 @@ CONTAINS
      !$OMP END PARALLEL DO
    ENDIF
 #endif
+! adding a lake model -- 07/02/2010
+   IF ( LakeModel == 1 ) THEN
+ 
+      CALL wrf_debug( 100, 'Call LakeModel' )
+ 
+      DO ij = 1 , num_tiles
+ 
+         CALL Lake(  t_phy        ,p8w            ,dz8w         ,qv_curr         ,&  !i
+                     u_phy        ,v_phy          , glw         ,emiss           ,&
+                     rainbl       ,dtbl           ,swdown       ,albedo          ,&
+                     xlat_urb2d   ,z_lake3d       ,dz_lake3d    ,lakedepth2d     ,&
+                     watsat3d     ,csol3d         ,tkmg3d       ,tkdry3d         ,&
+                     tksatu3d     ,ivgtyp         ,ht           ,xland           ,&
+                     lakeminalt                                                  ,&
+                     ids          ,ide            ,jds          ,jde             ,&
+                     kds          ,kde            ,ims          ,ime             ,&
+                     jms          ,jme            ,kms          ,kme             ,&
+                     i_start(ij)  ,i_end(ij)      ,j_start(ij)  ,j_end(ij)       ,&
+                     kts          ,kte                                           ,&
+                     h2osno2d     ,snowdp2d       ,snl2d        ,z3d             ,&  !h
+                     dz3d         ,zi3d           ,h2osoi_vol3d ,h2osoi_liq3d    ,&
+                     h2osoi_ice3d ,t_grnd2d       ,t_soisno3d   ,t_lake3d        ,&
+                     savedtke12d  ,lake_icefrac3d                                ,&
+                     hfx          ,lh             ,grdflx       ,tsk             ,&  !o
+                     qfx          ,t2             ,th2          ,q2 )
+ 
+ 
+      ENDDO
+ 
+   ENDIF
 
 ! Reset RAINBL in mm (Accumulation between PBL calls)
 
