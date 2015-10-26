@@ -17,10 +17,11 @@ CONTAINS
                      ,itimestep,dt,dx,cudt,curr_secs,adapt_step_flag  &
                      ,cudtacttime                                     & 
                      ,rainc,raincv,pratec,nca                         &
-                     ,cldfra_dp,cldfra_sh                             & !ckay for subgrid cloud
+                     ,cldfra_dp,cldfra_sh,w_up                        & !ckay for subgrid cloud
                      ,QC_CU,QI_CU                                     &
                      ,z,z_at_w,dz8w,mavail,pblh,p8w,psfc,tsk          &
                      ,tke_pbl, ust                                    &
+                     ,ZOL,WSTAR                                       &  !ckay
                      ,forcet,forceq,w0avg,stepcu,gsw                  &
                      ,cldefi,lowlyr,xland,cu_act_flag,warm_rain       &
                      ,hfx,qfx,cldfra,cldfra_mp_all,tpert2d            &
@@ -93,9 +94,11 @@ CONTAINS
                                           ,OSASSCHEME,MESO_SAS        &  !Kwon
                                           ,NSASSCHEME                 &
 # if (EM_CORE == 1)
-                                          , CAMMGMPSCHEME             &
+                                          ,MSKFSCHEME                 &
+                                          ,CAMMGMPSCHEME              &
 # endif
-                                          ,TIEDTKESCHEME              
+                                          ,TIEDTKESCHEME              &
+                                          ,NTIEDTKESCHEME              
 
 ! *** add new modules of schemes here
 
@@ -109,6 +112,9 @@ CONTAINS
 #endif
    USE module_domain    , ONLY: domain
    USE module_cu_kfeta  , ONLY : kf_eta_cps
+#if (EM_CORE==1)
+   USE module_cu_mskf   , ONLY : mskf_cps
+#endif
    USE module_cu_gd     , ONLY : grelldrv
    USE module_cu_gf     , ONLY : gfdrv
    USE module_cu_g3     , ONLY : g3drv,conv_grell_spread3d
@@ -117,6 +123,7 @@ CONTAINS
    USE module_cu_mesosas, ONLY : cu_meso_sas
    USE module_cu_camzm_driver, ONLY : camzm_driver
    USE module_cu_tiedtke, ONLY : cu_tiedtke
+   USE module_cu_ntiedtke,ONLY : cu_ntiedtke
    USE module_cu_nsas   , ONLY : cu_nsas
    USE module_wrf_error , ONLY : wrf_err_message
 
@@ -327,8 +334,11 @@ CONTAINS
                                                       ,       v  &
                                                       ,      th  &
                                                       ,       t  &
-                                                      ,     rho  &
-                                                      ,       w  
+                                                      ,     rho    ! ckay
+!ckay
+   REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                 &
+         INTENT(INout ) ::                                    w
+
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme ), INTENT(OUT ), OPTIONAL ::  evapcdp3d, icwmrdp3d, rprddp3d
 
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                 &
@@ -344,6 +354,9 @@ CONTAINS
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                 &
          INTENT(INOUT)  ::                            cldfra_dp  &
                                                     , cldfra_sh
+
+   REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                 &
+         INTENT(INOUT ),OPTIONAL ::                        w_up
 
    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(IN) ::           &
           GSW,HT,XLAND
@@ -361,6 +374,12 @@ CONTAINS
 
    REAL, DIMENSION( ims:ime , jms:jme ),INTENT(INOUT),OPTIONAL :: &
         PRATEC,MAVAIL,PBLH,PSFC,TSK,TPERT2D,UST,HFX,QFX
+
+!ckay
+   REAL, DIMENSION( ims:ime , jms:jme ),                         &
+         OPTIONAL, INTENT(INOUT) ::                         ZOL  &
+                                                    ,     WSTAR
+
    REAL, DIMENSION( ims:ime , jms:jme ) :: tmppratec
                                                     
    INTEGER, DIMENSION( ims:ime , jms:jme ),                      &
@@ -603,7 +622,7 @@ CONTAINS
    END IF
 
 #if  ( EM_CORE == 1 )
-      if(cu_physics .eq. 5 ) then
+      if(cu_physics .eq. 5 .or. cu_physics .eq. 16) then
       !$OMP PARALLEL DO   &
       !$OMP PRIVATE ( ij,i,j,k,its,ite,jts,jte )
 
@@ -625,7 +644,8 @@ CONTAINS
       !$OMP END PARALLEL DO
       endif
 
-      IF ( cu_physics == G3SCHEME .OR.  cu_physics == GFSCHEME .OR. cu_physics == KFETASCHEME ) THEN
+      IF ( cu_physics == G3SCHEME .OR.  cu_physics == GFSCHEME .OR.     &
+           cu_physics == KFETASCHEME .OR. cu_physics == MSKFSCHEME ) THEN
 #ifdef DM_PARALLEL
 #include "HALO_CUP_G3_IN.inc"
 #endif
@@ -730,8 +750,43 @@ CONTAINS
                ,F_QI=f_qi,F_QS=f_qs                             &
                ,CLDFRA_DP_KF=cldfra_dp                          & ! ckay for sub-grid cloud
                ,CLDFRA_SH_KF=cldfra_sh                          &
+               ,QC_KF=QC_CU,QI_KF=QI_CU                         )
+
+#if (EM_CORE==1)
+     CASE (MSKFSCHEME)
+          CALL wrf_debug(100,'in mskf_cps')
+          CALL MSKF_CPS(                                        &
+                U=u ,V=v ,TH=th ,T=t ,W=w ,RHO=rho              &
+               ,CUDT=cudt_pass                                  &
+               ,ADAPT_STEP_FLAG=adapt_step_flag_pass            &
+               ,RAINCV=raincv, PRATEC=tmppratec, NCA=nca        &
+               ,DZ8W=dz8w                                       &
+               ,PCPS=p, PI=pi ,W0AVG=W0AVG                      &
+               ,CUTOP=HTOP,CUBOT=HBOT                           &
+               ,XLV0=XLV0 ,XLV1=XLV1 ,XLS0=XLS0 ,XLS1=XLS1      &
+               ,CP=CP ,R=R_d ,G=G ,EP1=EP_1 ,EP2=EP_2           &
+               ,SVP1=SVP1 ,SVP2=SVP2 ,SVP3=SVP3 ,SVPT0=SVPT0    &
+               ,DT=dt ,KTAU=itimestep ,DX=dx                    &
+               ,STEPCU=stepcu                                   &
+               ,CU_ACT_FLAG=cu_act_flag ,WARM_RAIN=warm_rain    &
+               ,QV=qv_curr                                      &
+               ,IDS=ids,IDE=ide,JDS=jds,JDE=jde,KDS=kds,KDE=kde &
+               ,IMS=ims,IME=ime,JMS=jms,JME=jme,KMS=kms,KME=kme &
+               ,ITS=its,ITE=ite,JTS=jts,JTE=jte,KTS=kts,KTE=kte &
+               ,trigger=trigger_kf                              &
+              ! optionals
+               ,RTHCUTEN=rthcuten                               &
+               ,RQVCUTEN=rqvcuten ,RQCCUTEN=rqccuten            &
+               ,RQRCUTEN=rqrcuten ,RQICUTEN=rqicuten            &
+               ,RQSCUTEN=rqscuten, RQVFTEN=RQVFTEN              &
+               ,F_QV=f_qv,F_QC=f_qc,F_QR=f_qr                   &
+               ,F_QI=f_qi,F_QS=f_qs                             &
+               ,CLDFRA_DP_KF=cldfra_dp                          & ! ckay for sub-grid cloud
+               ,CLDFRA_SH_KF=cldfra_sh                          &
+               ,W_UP=w_up                                       & ! ckay
                ,QC_KF=QC_CU,QI_KF=QI_CU                         &
-                                                                )
+               ,ZOL=zol,WSTAR=wstar,UST=ust,PBLH=pblh           )  !ckay
+#endif
 
      CASE (GDSCHEME)
           CALL wrf_debug(100,'in grelldrv')
@@ -1043,7 +1098,7 @@ CONTAINS
 
           CALL wrf_debug(100,'in cu_tiedtke')
           CALL CU_TIEDTKE(                                      &
-                DT=dt,ITIMESTEP=itimestep,STEPCU=STEPCU,HFX=hfx &
+                DT=dt,ITIMESTEP=itimestep,STEPCU=STEPCU         &
                ,RAINCV=RAINCV,PRATEC=tmppratec,QFX=qfx,ZNU=znu  &
                ,U3D=u,V3D=v,W=w,T3D=t,PI3D=pi,RHO3D=rho         &
                ,QV3D=QV_CURR,QC3D=QC_CURR,QI3D=QI_CURR          &
@@ -1067,6 +1122,38 @@ CONTAINS
                                                              )
         ELSE
           CALL wrf_error_fatal('Lacking arguments for CU_TIEDTKE in cumulus driver')
+        ENDIF
+
+! NEW TIEDTKE SCHEME - ZCX&YQW (U of Hawaii)
+     CASE (NTIEDTKESCHEME)
+
+        IF ( PRESENT ( QFX ) .AND. PRESENT( HFX )) THEN
+
+          CALL wrf_debug(100,'in cu_ntiedtke')
+          CALL CU_NTIEDTKE(                                      &
+                DT=dt,ITIMESTEP=itimestep,STEPCU=STEPCU,HFX=hfx  &
+               ,RAINCV=RAINCV,PRATEC=tmppratec,QFX=qfx          &
+               ,U3D=u,V3D=v,W=w,T3D=t,PI3D=pi,RHO3D=rho         &
+               ,QV3D=QV_CURR,QC3D=QC_CURR,QI3D=QI_CURR          &
+               ,DZ8W=dz8w,PCPS=p,P8W=p8w,XLAND=XLAND,DX=dx      &
+               ,CU_ACT_FLAG=CU_ACT_FLAG                         &
+               ,IDS=ids,IDE=ide,JDS=jds,JDE=jde,KDS=kds,KDE=kde &
+               ,IMS=ims,IME=ime,JMS=jms,JME=jme,KMS=kms,KME=kme &
+               ,ITS=its,ITE=ite,JTS=jts,JTE=jte,KTS=kts,KTE=kte &
+              ! optionals
+#if (NMM_CORE == 1 )
+               ,QVFTEN=FORCEQ, THFTEN=FORCET                    &
+#else
+               ,QVFTEN=RQVFTEN,THFTEN=RTHFTEN                   &
+#endif
+               ,RTHCUTEN=RTHCUTEN,RQVCUTEN=RQVCUTEN             &
+               ,RQCCUTEN=RQCCUTEN,RQICUTEN=RQICUTEN             &
+               ,RUCUTEN = RUCUTEN,RVCUTEN = RVCUTEN             &
+               ,F_QV=f_qv,F_QC=f_qc,F_QR=f_qr                   &
+               ,F_QI=f_qi,F_QS=f_qs                             &
+                                                             )
+        ELSE
+          CALL wrf_error_fatal('Lacking arguments for CU_NTIEDTKE in cumulus driver')
         ENDIF
 
 ! New GFS SAS SCHEME - (Yonsei Univ., South Korea)

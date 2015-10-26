@@ -15,8 +15,8 @@ MODULE module_em
 	vertical_diffusion_v, vertical_diffusion, vertical_diffusion_3dmp, sixth_order_diffusion, rk_rayleigh_damp, &
         theta_relaxation, vertical_diffusion_mp, zero_tend, zero_tend2d
 	
-   USE module_state_description, only: param_first_scalar, p_qr, p_qv, p_qc, p_qg, p_qi, p_qs, tiedtkescheme, heldsuarez, &
-        positivedef, gdscheme, g3scheme, gfscheme, kfetascheme, monotonic, wenopd_scalar, weno_scalar, weno_mom
+   USE module_state_description, only: param_first_scalar, p_qr, p_qv, p_qc, p_qg, p_qi, p_qs, tiedtkescheme,ntiedtkescheme, heldsuarez, &
+        positivedef, gdscheme, g3scheme, gfscheme, kfetascheme, mskfscheme, monotonic, wenopd_scalar, weno_scalar, weno_mom
 	
    USE module_damping_em, only: held_suarez_damp
 
@@ -494,7 +494,8 @@ SUBROUTINE rk_tendency ( config_flags, rk_step,                           &
 
      IF ( config_flags%cu_physics == GDSCHEME  .OR.     &
           config_flags%cu_physics == GFSCHEME  .OR.     &
-          config_flags%cu_physics == G3SCHEME ) THEN
+          config_flags%cu_physics == G3SCHEME  .OR.     &
+          config_flags%cu_physics == NTIEDTKESCHEME )  THEN     ! NTiedtke
 
      ! theta advection only:
 
@@ -1063,8 +1064,8 @@ SUBROUTINE rk_scalar_tend ( scs, sce, config_flags,          &
 
      IF((config_flags%cu_physics == GDSCHEME .OR. config_flags%cu_physics == G3SCHEME .OR. &
          config_flags%cu_physics == GFSCHEME .OR.    & 
-         config_flags%cu_physics == KFETASCHEME .OR. &      ! new trigger in KF
-         config_flags%cu_physics == TIEDTKESCHEME  ) &      ! Tiedtke
+         config_flags%cu_physics == KFETASCHEME .OR. config_flags%cu_physics == MSKFSCHEME .OR. &      ! new trigger in KF
+         config_flags%cu_physics == TIEDTKESCHEME .OR. config_flags%cu_physics == NTIEDTKESCHEME  ) &      ! Tiedtke
                      .and. moist_step .and. ( im == P_QV) ) THEN
 
         CALL set_tend( RQVFTEN, advect_tend, msfty,    &
@@ -2109,8 +2110,8 @@ subroutine trajectory (     grid,config_flags,               &
    REAL , DIMENSION( ims:ime , jms:jme  ) ,              &
                                         INTENT(IN   ) ::xlong, xlat
 
-  real, dimension(kms:kme), intent(inout) :: traj_i,traj_j,traj_k
-  real, dimension(kms:kme), intent(inout) :: traj_long,traj_lat
+  real, dimension(1:config_flags%num_traj), intent(inout) :: traj_i,traj_j,traj_k
+  real, dimension(1:config_flags%num_traj), intent(inout) :: traj_long,traj_lat
   real, dimension(ims:ime,kms:kme,jms:jme),intent(in) :: rdzw
   real, dimension(ims:ime,kms:kme,jms:jme)::u,v,w
   real, dimension(ims:ime,jms:jme),intent(in)::msft,msfu,msfv

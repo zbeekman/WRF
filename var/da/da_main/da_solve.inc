@@ -414,7 +414,8 @@
 
       call da_deallocate_y(re)
       call da_deallocate_observations (iv)
-      return   
+      if (trace_use) call da_trace_exit ("da_solve")
+      return
    end if
    
    !---------------------------------------------------------------------------
@@ -545,7 +546,7 @@
       end if
 
 ! Re-scale the variances and the scale-length for outer-loop > 1:
-      if (it > 1 .and. cv_options == 5) then
+      if (it > 1 .and. (cv_options == 5 .or. cv_options == 7)) then
          print '(/10X,"===> Re-set BE SCALINGS for outer-loop=",i2)', it
          call  da_scale_background_errors ( be, it )
       else if (it > 1 .and. cv_options == 3) then
@@ -664,7 +665,10 @@
 
       num_qcstat_conv=0
       call da_get_innov_vector (it, num_qcstat_conv, ob, iv, grid , config_flags)
-      if ( multi_inc == 1 ) return      
+      if ( multi_inc == 1 ) then 
+         if (trace_use) call da_trace_exit ("da_solve")
+         return
+      end if
 
       if (test_transforms .or. test_gradient) then
 
