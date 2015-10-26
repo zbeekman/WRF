@@ -24,10 +24,12 @@ subroutine da_add_flow_dependence_xa_adj_dual_res (ne, ep, grid, vp)
                nims, nime, nkms, nkme, njms, njme, &
                nips, nipe, nkps, nkpe, njps, njpe
 
+#ifdef DM_PARALLEL
    ! HALO STUFF
    integer :: rsl_sendw_p, rsl_sendbeg_p, rsl_recvw_p, rsl_recvbeg_p
    integer :: rsl_sendw_m, rsl_sendbeg_m, rsl_recvw_m, rsl_recvbeg_m
    logical, external :: rsl_comm_iter
+#endif
 
 
    ! Get coarse (ensemble) grid dimensions ( grid%intermediate_gridd)
@@ -428,7 +430,7 @@ subroutine da_add_flow_dependence_xa_adj_dual_res (ne, ep, grid, vp)
                  nids, nide, nkds, nkde, njds, njde,   &         ! ND dims
                  nims, nime, nkms, nkme, njms, njme,   &         ! ND dims
                  nips, nipe, nkps, MIN( (nkde-1), nkpe ), njps, njpe,   &         
-                  shw(0), grid%imask_nostag,         &         ! stencil half width
+                  shw(1), grid%imask_nostag,         &         ! stencil half width
                   .FALSE., .FALSE.,                                                &         ! xstag, ystag
                   grid%i_parent_start, grid%j_parent_start,                     &
                   grid%parent_grid_ratio, grid%parent_grid_ratio                &
@@ -445,7 +447,7 @@ subroutine da_add_flow_dependence_xa_adj_dual_res (ne, ep, grid, vp)
                  nids, nide, nkds, nkde, njds, njde,   &         ! ND dims
                  nims, nime, nkms, nkme, njms, njme,   &         ! ND dims
                  nips, nipe, nkps, MIN( (nkde-1), nkpe ), njps, njpe,   &         
-                  shw(0), grid%imask_nostag,         &         ! stencil half width
+                  shw(1), grid%imask_nostag,         &         ! stencil half width
                   .FALSE., .FALSE.,                                                &         ! xstag, ystag
                   grid%i_parent_start, grid%j_parent_start,                     &
                   grid%parent_grid_ratio, grid%parent_grid_ratio                &
@@ -462,7 +464,7 @@ subroutine da_add_flow_dependence_xa_adj_dual_res (ne, ep, grid, vp)
                  nids, nide, nkds, nkde, njds, njde,   &         ! ND dims
                  nims, nime, nkms, nkme, njms, njme,   &         ! ND dims
                  nips, nipe, nkps, MIN( (nkde-1), nkpe ), njps, njpe,   &         
-                  shw(0), grid%imask_nostag,         &         ! stencil half width
+                  shw(1), grid%imask_nostag,         &         ! stencil half width
                   .FALSE., .FALSE.,                                                &         ! xstag, ystag
                   grid%i_parent_start, grid%j_parent_start,                     &
                   grid%parent_grid_ratio, grid%parent_grid_ratio                &
@@ -479,7 +481,7 @@ subroutine da_add_flow_dependence_xa_adj_dual_res (ne, ep, grid, vp)
                  nids, nide, nkds, nkde, njds, njde,   &         ! ND dims
                  nims, nime, nkms, nkme, njms, njme,   &         ! ND dims
                  nips, nipe, nkps, MIN( (nkde-1), nkpe ), njps, njpe,   &         
-                  shw(0), grid%imask_nostag,         &         ! stencil half width
+                  shw(1), grid%imask_nostag,         &         ! stencil half width
                   .FALSE., .FALSE.,                                                &         ! xstag, ystag
                   grid%i_parent_start, grid%j_parent_start,                     &
                   grid%parent_grid_ratio, grid%parent_grid_ratio                &
@@ -497,7 +499,7 @@ subroutine da_add_flow_dependence_xa_adj_dual_res (ne, ep, grid, vp)
                  nids, nide, 1, 1, njds, njde,   &         ! ND dims
                  nims, nime, 1, 1, njms, njme,   &         ! ND dims
                  nips, nipe, 1, 1, njps, njpe,   &         
-                  shw(0), grid%imask_nostag,         &         ! stencil half width
+                  shw(1), grid%imask_nostag,         &         ! stencil half width
                   .FALSE., .FALSE.,                                                &         ! xstag, ystag
                   grid%i_parent_start, grid%j_parent_start,                     &
                   grid%parent_grid_ratio, grid%parent_grid_ratio                &
@@ -515,7 +517,7 @@ subroutine da_add_flow_dependence_xa_adj_dual_res (ne, ep, grid, vp)
                  nids, nide, nkds, nkde, njds, njde,   &         ! ND dims
                  nims, nime, nkms, nkme, njms, njme,   &         ! ND dims
                  nips, nipe, nkps, MIN( (nkde-1), nkpe ), njps, njpe,   &         
-                  shw(0), grid%imask_nostag,         &         ! stencil half width
+                  shw(1), grid%imask_nostag,         &         ! stencil half width
                   .FALSE., .FALSE.,                                                &         ! xstag, ystag
                   grid%i_parent_start, grid%j_parent_start,                     &
                   grid%parent_grid_ratio, grid%parent_grid_ratio                &
@@ -532,7 +534,7 @@ subroutine da_add_flow_dependence_xa_adj_dual_res (ne, ep, grid, vp)
                  nids, nide, nkds, nkde, njds, njde,   &         ! ND dims
                  nims, nime, nkms, nkme, njms, njme,   &         ! ND dims
                  nips, nipe, nkps, MIN( (nkde-1), nkpe ), njps, njpe,   &         
-                  shw(0), grid%imask_nostag,         &         ! stencil half width
+                  shw(1), grid%imask_nostag,         &         ! stencil half width
                   .FALSE., .FALSE.,                                                &         ! xstag, ystag
                   grid%i_parent_start, grid%j_parent_start,                     &
                   grid%parent_grid_ratio, grid%parent_grid_ratio                &
@@ -549,7 +551,7 @@ subroutine da_add_flow_dependence_xa_adj_dual_res (ne, ep, grid, vp)
                  nids, nide, nkds, nkde, njds, njde,   &         ! ND dims
                  nims, nime, nkms, nkme, njms, njme,   &         ! ND dims
                  nips, nipe, nkps, MIN( (nkde-1), nkpe ), njps, njpe,   &         
-                  shw(0), grid%imask_nostag,         &         ! stencil half width
+                  shw(1), grid%imask_nostag,         &         ! stencil half width
                   .FALSE., .FALSE.,                                                &         ! xstag, ystag
                   grid%i_parent_start, grid%j_parent_start,                     &
                   grid%parent_grid_ratio, grid%parent_grid_ratio                &
@@ -566,7 +568,7 @@ subroutine da_add_flow_dependence_xa_adj_dual_res (ne, ep, grid, vp)
                  nids, nide, nkds, nkde, njds, njde,   &         ! ND dims
                  nims, nime, nkms, nkme, njms, njme,   &         ! ND dims
                  nips, nipe, nkps, MIN( (nkde-1), nkpe ), njps, njpe,   &         
-                  shw(0), grid%imask_nostag,         &         ! stencil half width
+                  shw(1), grid%imask_nostag,         &         ! stencil half width
                   .FALSE., .FALSE.,                                                &         ! xstag, ystag
                   grid%i_parent_start, grid%j_parent_start,                     &
                   grid%parent_grid_ratio, grid%parent_grid_ratio                &
@@ -584,7 +586,7 @@ subroutine da_add_flow_dependence_xa_adj_dual_res (ne, ep, grid, vp)
                  nids, nide, 1, 1, njds, njde,   &         ! ND dims
                  nims, nime, 1, 1, njms, njme,   &         ! ND dims
                  nips, nipe, 1, 1, njps, njpe,   &         
-                  shw(0), grid%imask_nostag,         &         ! stencil half width
+                  shw(1), grid%imask_nostag,         &         ! stencil half width
                   .FALSE., .FALSE.,                                                &         ! xstag, ystag
                   grid%i_parent_start, grid%j_parent_start,                     &
                   grid%parent_grid_ratio, grid%parent_grid_ratio                &
@@ -624,9 +626,9 @@ subroutine da_add_flow_dependence_xa_adj_dual_res (ne, ep, grid, vp)
 
    else 
 
-      print *, ' CSS invalid value of  dual_res_upscale_opt'
-      print *, ' Should be 1, 2, or 3. Stop'
-      stop
+      write(unit=message(1),fmt='(A,I4)') 'Invalid value of dual_res_upscale_opt: ', dual_res_upscale_opt
+      write(unit=message(2),fmt='(A)') 'Valid values are 1, 2, or 3'
+      call da_error(__FILE__,__LINE__,message(1:2))
 
    endif
 

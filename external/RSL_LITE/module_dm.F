@@ -4,7 +4,7 @@ MODULE module_dm
    USE module_wrf_error
    USE module_driver_constants
 !   USE module_comm_dm
-#if !defined( DA_CORE )
+#if ( DA_CORE != 1 )
    USE module_cpl, ONLY : coupler_on, cpl_init
 #endif
 
@@ -662,6 +662,10 @@ CONTAINS
          c_kms = 1
          c_kme = c_kde
 
+! Default initializations
+         c_sm1x = 1 ; c_em1x = 1 ; c_sm2x = 1 ; c_em2x = 1 ; c_sm3x = 1 ; c_em3x = 1
+         c_sm1y = 1 ; c_em1y = 1 ; c_sm2y = 1 ; c_em2y = 1 ; c_sm3y = 1 ; c_em3y = 1
+
 #if (DA_CORE == 1)
          c_kmsx = c_kpsx 
          c_kmex = c_kpex 
@@ -830,9 +834,6 @@ CONTAINS
          intermediate_grid%nide = ide
          intermediate_grid%njds = jds
          intermediate_grid%njde = jde
-
-!        c_sm1x = 1 ; c_em1x = 1 ; c_sm2x = 1 ; c_em2x = 1 ; c_sm3x = 1 ; c_em3x = 1
-!        c_sm1y = 1 ; c_em1y = 1 ; c_sm2y = 1 ; c_em2y = 1 ; c_sm3y = 1 ; c_em3y = 1
 
          intermediate_grid%sm31x                           = c_sm1x
          intermediate_grid%em31x                           = c_em1x
@@ -1639,14 +1640,14 @@ CONTAINS
         ENDIF
         mpi_comm_here = MPI_COMM_WORLD
 #  else
-#if !defined( DA_CORE )
+#if ( DA_CORE != 1 )
         IF ( coupler_on ) THEN
            CALL cpl_init( mpi_comm_here )
         ELSE
 #endif
            CALL mpi_init ( ierr )
            mpi_comm_here = MPI_COMM_WORLD
-#if !defined( DA_CORE )
+#if ( DA_CORE != 1 )
         ENDIF
 #endif
 #  endif
@@ -2287,7 +2288,7 @@ END
 
    SUBROUTINE wrf_abort
 
-#if !defined( DA_CORE )
+#if ( DA_CORE != 1 )
       USE module_cpl, ONLY : coupler_on, cpl_abort
 #endif
 
@@ -2295,13 +2296,13 @@ END
 #ifndef STUBMPI
       INCLUDE 'mpif.h'
       INTEGER ierr
-#if !defined( DA_CORE )
+#if ( DA_CORE != 1 )
       IF ( coupler_on ) THEN
          CALL cpl_abort( 'wrf_abort', 'look for abort message in rsl* files' )
       ELSE
 #endif
          CALL mpi_abort(MPI_COMM_WORLD,1,ierr)
-#if !defined( DA_CORE )
+#if ( DA_CORE != 1 )
       END IF
 #endif
 #else

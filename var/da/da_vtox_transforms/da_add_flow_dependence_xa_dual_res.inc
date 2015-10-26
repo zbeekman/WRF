@@ -28,10 +28,12 @@ subroutine da_add_flow_dependence_xa_dual_res (grid, ne,  ep, vp)
 
    integer :: nj, cj, nk, ck, ni, ci ! for testing
 
+#ifdef DM_PARALLEL
    ! HALO STUFF
    integer :: rsl_sendw_p, rsl_sendbeg_p, rsl_recvw_p, rsl_recvbeg_p
    integer :: rsl_sendw_m, rsl_sendbeg_m, rsl_recvw_m, rsl_recvbeg_m
    logical, external :: rsl_comm_iter
+#endif
 
 
    ! Get coarse (ensemble) grid dimensions ( grid%intermediate_gridd)
@@ -108,7 +110,6 @@ subroutine da_add_flow_dependence_xa_dual_res (grid, ne,  ep, vp)
    !!!!!! DO HALO STUFF !!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   print *, ' CSS  calling inc/HALO_INTERP_DOWN_inline.inc'
    CALL rsl_comm_iter_init(4,cjps,cjpe)
    DO WHILE ( rsl_comm_iter( grid%intermediate_grid%id , grid%intermediate_grid%is_intermediate, 4 , &
 			    0 , cjds,cjde,cjps,cjpe, grid%intermediate_grid%njds, grid%intermediate_grid%njde, &
@@ -424,13 +425,12 @@ subroutine da_add_flow_dependence_xa_dual_res (grid, ne,  ep, vp)
                  nids, nide, nkds, nkde, njds, njde,   &         ! ND dims
                  nims, nime, nkms, nkme, njms, njme,   &         ! ND dims
                  nips, nipe, nkps, MIN( (nkde-1), nkpe ), njps, njpe,   &         ! ND dims
-                  shw(0), grid%imask_nostag,         &         ! stencil half width
+                  shw(1), grid%imask_nostag,         &         ! stencil half width
                   .FALSE., .FALSE.,                                                &         ! xstag, ystag
                   grid%i_parent_start, grid%j_parent_start,                     &
                   grid%parent_grid_ratio, grid%parent_grid_ratio                &
                   )
 
-      print *, ' CSS, min/max U = ',minval(output_u),maxval(output_u)
 
      ! For testing
      DO nj = njps, njpe
@@ -438,7 +438,6 @@ subroutine da_add_flow_dependence_xa_dual_res (grid, ne,  ep, vp)
            ck = nk
            DO ni = nips, nipe
               ci = grid%i_parent_start + (ni-1) / grid%parent_grid_ratio      ! j coord of CD point 
-   !          print *,'CSS input/output u = ',ens_contrib_u(ni,nk,nj), output_u(ni,nk,nj)
            ENDDO
      ENDDO
      ! For testing
@@ -453,13 +452,12 @@ subroutine da_add_flow_dependence_xa_dual_res (grid, ne,  ep, vp)
                  nids, nide, nkds, nkde, njds, njde,   &         ! ND dims
                  nims, nime, nkms, nkme, njms, njme,   &         ! ND dims
                  nips, nipe, nkps, MIN( (nkde-1), nkpe ), njps, njpe,   &         ! ND dims
-                  shw(0), grid%imask_nostag,         &         ! stencil half width
+                  shw(1), grid%imask_nostag,         &         ! stencil half width
                   .FALSE., .FALSE.,                                                &         ! xstag, ystag
                   grid%i_parent_start, grid%j_parent_start,                     &
                   grid%parent_grid_ratio, grid%parent_grid_ratio                &
                   )
 
-      print *, ' CSS, min/max V = ',minval(output_v),maxval(output_v)
       ! T
       call interp_fcn (  &
                   ens_contrib_t,   &       ! CD field ... intermediate grid
@@ -470,13 +468,12 @@ subroutine da_add_flow_dependence_xa_dual_res (grid, ne,  ep, vp)
                  nids, nide, nkds, nkde, njds, njde,   &         ! ND dims
                  nims, nime, nkms, nkme, njms, njme,   &         ! ND dims
                  nips, nipe, nkps, MIN( (nkde-1), nkpe ), njps, njpe,   &         ! ND dims
-                  shw(0), grid%imask_nostag,         &         ! stencil half width
+                  shw(1), grid%imask_nostag,         &         ! stencil half width
                   .FALSE., .FALSE.,                                                &         ! xstag, ystag
                   grid%i_parent_start, grid%j_parent_start,                     &
                   grid%parent_grid_ratio, grid%parent_grid_ratio                &
                   )
 
-      print *, ' CSS, min/max T = ',minval(output_t),maxval(output_t)
       ! Q
       call interp_fcn (  &
                   ens_contrib_q,   &       ! CD field ... intermediate grid
@@ -487,13 +484,12 @@ subroutine da_add_flow_dependence_xa_dual_res (grid, ne,  ep, vp)
                  nids, nide, nkds, nkde, njds, njde,   &         ! ND dims
                  nims, nime, nkms, nkme, njms, njme,   &         ! ND dims
                  nips, nipe, nkps, MIN( (nkde-1), nkpe ), njps, njpe,   &         ! ND dims
-                  shw(0), grid%imask_nostag,         &         ! stencil half width
+                  shw(1), grid%imask_nostag,         &         ! stencil half width
                   .FALSE., .FALSE.,                                                &         ! xstag, ystag
                   grid%i_parent_start, grid%j_parent_start,                     &
                   grid%parent_grid_ratio, grid%parent_grid_ratio                &
                   )
 
-      print *, ' CSS, min/max Q = ',minval(output_q),maxval(output_q)
       ! P
       call interp_fcn (  &
                   ens_contrib_p,   &       ! CD field ... intermediate grid
@@ -504,26 +500,15 @@ subroutine da_add_flow_dependence_xa_dual_res (grid, ne,  ep, vp)
                  nids, nide, 1, 1, njds, njde,   &         ! ND dims
                  nims, nime, 1, 1, njms, njme,   &         ! ND dims
                  nips, nipe, 1, 1, njps, njpe,   &         ! ND dims
-                  shw(0), grid%imask_nostag,         &         ! stencil half width
+                  shw(1), grid%imask_nostag,         &         ! stencil half width
                   .FALSE., .FALSE.,                                                &         ! xstag, ystag
                   grid%i_parent_start, grid%j_parent_start,                     &
                   grid%parent_grid_ratio, grid%parent_grid_ratio                &
                   )
-   print *, ' CSS, min/max P = ',minval(output_p),maxval(output_p)
-
-!  if ( num_procs.eq.1 ) then
-!     if ( grid%parent_grid_ratio.eq.3) then
-! write(*,*) 'CSS output_u = ',ens_contrib_u(123,21,53),output_u(107,21,98)
-! write(*,*) 'CSS output_v = ',ens_contrib_v(123,21,53),output_v(107,21,98)
-! write(*,*) 'CSS output_t = ',ens_contrib_t(123,21,53),output_t(107,21,98)
-! write(*,*) 'CSS output_q = ',ens_contrib_q(123,21,53),output_q(107,21,98)
-! write(*,*) 'CSS output_p = ',ens_contrib_p(123,1,53),output_p(107,1,98)
-!     endif
-!  endif
 
    else
 
-      write(*,*) ' CSS Using adjoint-based interpolation '
+           call da_message((/"Using adjoint-based interpolation"/))
 
       !$OMP PARALLEL DO &
       !$OMP PRIVATE (n)

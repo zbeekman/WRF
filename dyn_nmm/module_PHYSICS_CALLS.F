@@ -198,7 +198,7 @@
 !***  LOCAL VARIABLES
 !***
 !-----------------------------------------------------------------------
-      INTEGER :: I,ICLOUD,IENDX,II,ISTAT,J,JDAY,JMONTH,K,KMNTH,N,NRAD
+      INTEGER :: I,IENDX,II,ISTAT,J,JDAY,JMONTH,K,KMNTH,N,NRAD
 !
       INTEGER,DIMENSION(3) :: IDAT
       INTEGER,DIMENSION(12) :: MONTH=(/31,28,31,30,31,30,31,31          &
@@ -312,8 +312,6 @@
       ENDDO
       ENDDO
 !
-      ICLOUD=999
-!
       GMT=REAL(IHRST)
 !
 !$omp parallel do                                                       &
@@ -388,8 +386,8 @@
      &                 ,J_START=GRID%J_START,J_END=GRID%J_END           &
      &                 ,KTS=KTS,KTE=KTE,NUM_TILES=GRID%NUM_TILES        &
      &                 ,ITIMESTEP=NTSD,DT=DT                            &
-     &                 ,CU_RAD_FEEDBACK=config_flags%cu_rad_feedback    &
-     &                 ,QC_ADJUST=GD_CLOUD,QI_ADJUST=GD_CLOUD2          &
+     &                 ,ICLOUD_CU=config_flags%ICLOUD_CU                &
+     &                 ,QC_CU=GRID%QC_CU,QI_CU=GRID%QI_CU               &
 ! WRF-Solar variables
                        ,swint_opt=config_flags%swint_opt                &   
      &       ,SWDDIR=grid%swddir,SWDDNI=grid%swddni,SWDDIF=grid%swddif     & ! jararias
@@ -399,6 +397,11 @@
      &       ,coszen=grid%coszen                                   & 
      &       ,hrang=grid%hrang                                   & 
      &       ,ht=ht                                   & 
+     &       ,aer_type=config_flags%aer_type                                                        &
+     &       ,aer_aod550_opt=config_flags%aer_aod550_opt,aer_aod550_val=config_flags%aer_aod550_val &
+     &       ,aer_angexp_opt=config_flags%aer_angexp_opt,aer_angexp_val=config_flags%aer_angexp_val &
+     &       ,aer_ssa_opt=config_flags%aer_ssa_opt,aer_ssa_val=config_flags%aer_ssa_val             &
+     &       ,aer_asy_opt=config_flags%aer_asy_opt,aer_asy_val=config_flags%aer_asy_val             &
 #ifdef WRF_CHEM
      &                 ,AER_RA_FEEDBACK=config_flags%aer_ra_feedback    &
      &                 ,PM2_5_DRY=pm2_5_dry,PM2_5_WATER=pm2_5_water     &
@@ -431,7 +434,7 @@
      &                 ,LW_PHYSICS=CONFIG_FLAGS%RA_LW_PHYSICS           &
      &                 ,SW_PHYSICS=CONFIG_FLAGS%RA_SW_PHYSICS           &
      &                 ,RADT=RADT,RA_CALL_OFFSET=GRID%RA_CALL_OFFSET    &
-     &                 ,STEPRA=NRAD,ICLOUD=ICLOUD                       &
+     &                 ,STEPRA=NRAD,ICLOUD=config_flags%ICLOUD          &
      &                 ,WARM_RAIN=WARM_RAIN                             &
      &                 ,SWDOWNC=TOTSWDNC,CLDFRA=CLFR                    &
      &                 ,SWUPT=SWUPT                                     &
@@ -1492,14 +1495,18 @@
      &        ,   irbxy=grid%irbxy    ,    trxy=grid%trxy    ,   evcxy=grid%evcxy    &
      &        ,chleafxy=grid%chleafxy ,  chucxy=grid%chucxy                          &                       
      &        ,  chv2xy=grid%chv2xy   ,  chb2xy=grid%chb2xy , chstarxy=grid%chstarxy &                       
+     &        ,  smoiseq=grid%smoiseq, smcwtdxy=grid%smcwtdxy, rechxy=grid%rechxy    &                       
+     &        ,  deeprechxy=grid%deeprechxy                                          &                       
      &        ,coszen=grid%czen,xlat_urb2d=grid%xlat                                 &
+! mosaic tiling for Noah
+     &        ,sf_surface_mosaic=config_flags%sf_surface_mosaic,  mosaic_cat=config_flags%mosaic_cat      &
 ! lake module
-     &          ,lakedepth2d=grid%lakedepth2d, savedtke12d=grid%savedtke12d, snowdp2d=grid%snowdp2d, h2osno2d=grid%h2osno2d       & !lake
-     &          ,snl2d=grid%snl2d, t_grnd2d=grid%t_grnd2d, t_lake3d=grid%t_lake3d,   lake_icefrac3d=grid%lake_icefrac3d           & !lake
-     &          ,z_lake3d=grid%z_lake3d, dz_lake3d=grid%dz_lake3d, t_soisno3d=grid%t_soisno3d, h2osoi_ice3d=grid%h2osoi_ice3d     & !lake
-     &          ,h2osoi_liq3d=grid%h2osoi_liq3d, h2osoi_vol3d=grid%h2osoi_vol3d, z3d=grid%z3d, dz3d=grid%dz3d                     & !lake
-     &          ,zi3d=grid%zi3d, watsat3d=grid%watsat3d, csol3d=grid%csol3d, tkmg3d=grid%tkmg3d                                   & !lake
-     &          ,tkdry3d=grid%tkdry3d,tksatu3d=grid%tksatu3d, LakeModel=grid%LakeModel,  lakeminalt=grid%lakeminalt               & !lake
+     &        ,lakedepth2d=grid%lakedepth2d, savedtke12d=grid%savedtke12d, snowdp2d=grid%snowdp2d, h2osno2d=grid%h2osno2d    &
+     &        ,snl2d=grid%snl2d, t_grnd2d=grid%t_grnd2d, t_lake3d=grid%t_lake3d,   lake_icefrac3d=grid%lake_icefrac3d        &
+     &        ,z_lake3d=grid%z_lake3d, dz_lake3d=grid%dz_lake3d, t_soisno3d=grid%t_soisno3d, h2osoi_ice3d=grid%h2osoi_ice3d  &
+     &        ,h2osoi_liq3d=grid%h2osoi_liq3d, h2osoi_vol3d=grid%h2osoi_vol3d, z3d=grid%z3d, dz3d=grid%dz3d                  &
+     &        ,zi3d=grid%zi3d, watsat3d=grid%watsat3d, csol3d=grid%csol3d, tkmg3d=grid%tkmg3d                                &
+     &        ,tkdry3d=grid%tkdry3d,tksatu3d=grid%tksatu3d, LakeModel=grid%sf_lake_physics,  lake_min_elev=grid%lake_min_elev  &
 ! end lake module
      &        ,maxpatch=1,inest=1,history_interval=config_flags%history_interval  & !clm
 
@@ -1595,6 +1602,8 @@
      &               ,J_START=GRID%J_START,J_END=GRID%J_END           &
      &               ,KTS=KTS,KTE=KTE,NUM_TILES=GRID%NUM_TILES        &
      &               ,CTOPO=grid%ctopo,CTOPO2=grid%ctopo2             &
+     &               ,WINDFARM_OPT=config_flags%windfarm_opt          &
+     &               ,POWER=grid%POWER                                &
      &               ,NUM_SCALAR=1, NUM_TRACER=1                      &  ! parameters not used by NMM
 #if (NMM_CORE==1)
      &               ,DISHEAT=DISHEAT                                 &
@@ -2326,6 +2335,9 @@
 !
       REAL,DIMENSION(:,:,:,:),ALLOCATABLE :: MOIST_TRANS
 !
+      REAL,DIMENSION(IMS:IME,KMS:KME,JMS:JME) :: CLDFRA_DP, CLDFRA_SH
+      REAL,DIMENSION(IMS:IME,KMS:KME,JMS:JME) :: QC_CU, QI_CU
+!
       LOGICAL :: RESTART,WARM_RAIN,ETAMP_Regional
       LOGICAL,DIMENSION(IMS:IME,JMS:JME) :: CU_ACT_FLAG
 !
@@ -2643,6 +2655,8 @@
                   ! Others
      &                 ,ITIMESTEP=NTSD,DT=DT,DX=GPS                     &
      &                 ,RAINC=RAINC,RAINCV=RAINCV,NCA=NCA               &
+     &                 ,CLDFRA_DP=CLDFRA_DP,CLDFRA_SH=CLDFRA_SH         &
+     &                 ,QC_CU=QC_CU, QI_CU=QI_CU                        &
      &                 ,DZ8W=DZ,P8W=P8W,FORCET=TTEN,FORCEQ=QTEN         &
      &                 ,CLDEFI=CLDEFI,LOWLYR=LOWLYR,XLAND=XLAND         &
      &                 ,CU_ACT_FLAG=CU_ACT_FLAG,WARM_RAIN=WARM_RAIN     &
@@ -3086,6 +3100,7 @@
      &                  TH=TH_PHY,RHO=RR,PI_PHY=PI_PHY,P=P_PHY          &
      &                 ,RAINNC=RAINNC,RAINNCV=RAINNCV                   &
      &                 ,DZ8W=DZ,P8W=P8W,DT=DTPHS,DX=DX,DY=DY            &
+     &                 ,W=grid%W                                        &
      &                 ,MP_PHYSICS=CONFIG_FLAGS%MP_PHYSICS              &
 #ifdef WRF_CHEM
      &                 ,CHEM_OPT=CONFIG_FLAGS%CHEM_OPT                  &
@@ -3118,6 +3133,7 @@
      &                 ,DO_RADAR_REF=config_flags%do_radar_ref          &
      &                 ,DIAGFLAG=diag_flag                              &
      &                 ,ID=grid%id                                      &
+     &                 ,num_scalar=1                                      &  !mchen temporary
      &                 ,refl_10cm=grid%refl_10cm & ! to calc. radar reflectivity
      &                 ,re_cloud=grid%re_cloud                          & ! G. Thompson
      &                 ,re_ice=grid%re_ice                              & ! G. Thompson
