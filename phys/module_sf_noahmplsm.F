@@ -948,7 +948,7 @@ contains
                    SMCEQ   ,                                                   & ! IN : Vegetation/Soil characteristics
                    SFCTMP  , SFCPRS  , PSFC    , UU      , VV      , Q2      , & ! IN : Forcing
                    QC      , SOLDN   , LWDN    ,                               & ! IN : Forcing
-	           PRCP_CV , PRCP_NC , PRCPSNOW, PRCPGRPL, PRCPHAIL,           & ! IN : Forcing
+	           PRCPCONV, PRCPNONC, PRCPSHCV, PRCPSNOW, PRCPGRPL, PRCPHAIL, & ! IN : Forcing
                    TBOT    , CO2AIR  , O2AIR   , FOLN    , FICEOLD , ZLVL    , & ! IN : Forcing
                    ALBOLD  , SNEQVO  ,                                         & ! IN/OUT : 
                    STC     , SH2O    , SMC     , TAH     , EAH     , FWET    , & ! IN/OUT : 
@@ -1010,11 +1010,12 @@ contains
   REAL                           , INTENT(IN)    :: LAT    !latitude (radians)
   REAL, DIMENSION(-NSNOW+1:    0), INTENT(IN)    :: FICEOLD!ice fraction at last timestep
   REAL, DIMENSION(       1:NSOIL), INTENT(IN)    :: SMCEQ  !equilibrium soil water  content [m3/m3]
-  REAL                           , INTENT(IN)    :: PRCP_CV  ! convective precipitation entering  [mm]    ! MB/AN : v3.7
-  REAL                           , INTENT(IN)    :: PRCP_NC  ! non-convective precipitation entering [mm] ! MB/AN : v3.7
-  REAL                           , INTENT(IN)    :: PRCPSNOW ! snow entering land model [mm]              ! MB/AN : v3.7
-  REAL                           , INTENT(IN)    :: PRCPGRPL ! graupel entering land model [mm]           ! MB/AN : v3.7
-  REAL                           , INTENT(IN)    :: PRCPHAIL ! hail entering land model [mm]              ! MB/AN : v3.7
+  REAL                           , INTENT(IN)    :: PRCPCONV ! convective precipitation entering  [mm/s]    ! MB/AN : v3.7
+  REAL                           , INTENT(IN)    :: PRCPNONC ! non-convective precipitation entering [mm/s] ! MB/AN : v3.7
+  REAL                           , INTENT(IN)    :: PRCPSHCV ! shallow convective precip entering  [mm/s]   ! MB/AN : v3.7
+  REAL                           , INTENT(IN)    :: PRCPSNOW ! snow entering land model [mm/s]              ! MB/AN : v3.7
+  REAL                           , INTENT(IN)    :: PRCPGRPL ! graupel entering land model [mm/s]           ! MB/AN : v3.7
+  REAL                           , INTENT(IN)    :: PRCPHAIL ! hail entering land model [mm/s]              ! MB/AN : v3.7
 
 !jref:start; in 
   REAL                           , INTENT(IN)    :: QC     !cloud water mixing ratio
@@ -1229,10 +1230,11 @@ contains
 ! --------------------------------------------------------------------------------------------------
 ! re-process atmospheric forcing
 
-   CALL ATM (SFCPRS  ,SFCTMP   ,Q2     ,PRCP_CV,PRCP_NC, PRCPSNOW, &
-             PRCPGRPL,PRCPHAIL ,SOLDN  ,COSZ   ,THAIR  , QAIR    , & 
-             EAIR    ,RHOAIR   ,QPRECC ,QPRECL ,SOLAD  , SOLAI   , &
-             SWDOWN  ,BDFALL   ,RAIN   ,SNOW   ,FP     , FPICE, PRCP )     
+   CALL ATM (SFCPRS  ,SFCTMP   ,Q2      ,                            &
+             PRCPCONV, PRCPNONC,PRCPSHCV,PRCPSNOW,PRCPGRPL,PRCPHAIL, &
+             SOLDN   ,COSZ     ,THAIR   ,QAIR    ,                   & 
+             EAIR    ,RHOAIR   ,QPRECC  ,QPRECL  ,SOLAD   ,SOLAI   , &
+             SWDOWN  ,BDFALL   ,RAIN    ,SNOW    ,FP      ,FPICE   , PRCP )     
 
 ! snow/soil layer thickness (m)
 
@@ -1393,10 +1395,11 @@ contains
 
 !== begin atm ======================================================================================
 
-  SUBROUTINE ATM (SFCPRS  ,SFCTMP   ,Q2     ,PRCP_CV,PRCP_NC, PRCPSNOW, &
-                  PRCPGRPL,PRCPHAIL ,SOLDN  ,COSZ   ,THAIR  , QAIR    , & 
-                  EAIR    ,RHOAIR   ,QPRECC ,QPRECL ,SOLAD  , SOLAI   , &
-		  SWDOWN  ,BDFALL   ,RAIN   ,SNOW   ,FP     , FPICE   ,PRCP )     
+  SUBROUTINE ATM (SFCPRS  ,SFCTMP   ,Q2      ,                             &
+                  PRCPCONV,PRCPNONC ,PRCPSHCV,PRCPSNOW,PRCPGRPL,PRCPHAIL , &
+                  SOLDN   ,COSZ     ,THAIR   ,QAIR    ,                    & 
+                  EAIR    ,RHOAIR   ,QPRECC  ,QPRECL  ,SOLAD   , SOLAI   , &
+		  SWDOWN  ,BDFALL   ,RAIN    ,SNOW    ,FP      , FPICE   ,PRCP )     
 ! --------------------------------------------------------------------------------------------------
 ! re-process atmospheric forcing
 ! ----------------------------------------------------------------------
@@ -1409,11 +1412,12 @@ contains
   REAL                          , INTENT(IN)  :: SFCPRS !pressure (pa)
   REAL                          , INTENT(IN)  :: SFCTMP !surface air temperature [k]
   REAL                          , INTENT(IN)  :: Q2     !mixing ratio (kg/kg)
-  REAL                          , INTENT(IN)  :: PRCP_CV  ! convective precipitation entering  [mm]    ! MB/AN : v3.7
-  REAL                          , INTENT(IN)  :: PRCP_NC  ! non-convective precipitation entering [mm] ! MB/AN : v3.7
-  REAL                          , INTENT(IN)  :: PRCPSNOW ! snow entering land model [mm]              ! MB/AN : v3.7
-  REAL                          , INTENT(IN)  :: PRCPGRPL ! graupel entering land model [mm]           ! MB/AN : v3.7
-  REAL                          , INTENT(IN)  :: PRCPHAIL ! hail entering land model [mm]              ! MB/AN : v3.7
+  REAL                          , INTENT(IN)  :: PRCPCONV ! convective precipitation entering  [mm/s]    ! MB/AN : v3.7
+  REAL                          , INTENT(IN)  :: PRCPNONC ! non-convective precipitation entering [mm/s] ! MB/AN : v3.7
+  REAL                          , INTENT(IN)  :: PRCPSHCV ! shallow convective precip entering  [mm/s]   ! MB/AN : v3.7
+  REAL                          , INTENT(IN)  :: PRCPSNOW ! snow entering land model [mm/s]              ! MB/AN : v3.7
+  REAL                          , INTENT(IN)  :: PRCPGRPL ! graupel entering land model [mm/s]           ! MB/AN : v3.7
+  REAL                          , INTENT(IN)  :: PRCPHAIL ! hail entering land model [mm/s]              ! MB/AN : v3.7
   REAL                          , INTENT(IN)  :: SOLDN  !downward shortwave radiation (w/m2)
   REAL                          , INTENT(IN)  :: COSZ   !cosine solar zenith angle [0-1]
 
@@ -1463,11 +1467,11 @@ contains
        SOLAI(1) = SWDOWN*0.3*0.5     ! diffuse vis
        SOLAI(2) = SWDOWN*0.3*0.5     ! diffuse nir
 
-       PRCP = PRCP_CV + PRCP_NC
+       PRCP = PRCPCONV + PRCPNONC + PRCPSHCV
 
        IF(OPT_SNF == 4) THEN
-         QPRECC = PRCP_CV
-	 QPRECL = PRCP_NC
+         QPRECC = PRCPCONV + PRCPSHCV
+	 QPRECL = PRCPNONC
        ELSE
          QPRECC = 0.10 * PRCP          ! should be from the atmospheric model
          QPRECL = 0.90 * PRCP          ! should be from the atmospheric model
@@ -1475,6 +1479,7 @@ contains
 
 ! fractional area that receives precipitation (see, Niu et al. 2005)
    
+    FP = 0.0
     IF(QPRECC + QPRECL > 0.) & 
        FP = (QPRECC + QPRECL) / (10.*QPRECC + QPRECL)
 
@@ -1518,8 +1523,8 @@ contains
      BDFALL = MIN(120.,67.92+51.25*EXP((SFCTMP-TFRZ)/2.59))       !MB/AN: change to MIN  
      IF(OPT_SNF == 4) THEN
         PRCP_FROZEN = PRCPSNOW + PRCPGRPL + PRCPHAIL
-        IF(PRCP_NC > 0. .and. PRCP_FROZEN > 0.) THEN
-	  FPICE = MIN(1.0,PRCP_FROZEN/PRCP_NC)
+        IF(PRCPNONC > 0. .and. PRCP_FROZEN > 0.) THEN
+	  FPICE = MIN(1.0,PRCP_FROZEN/PRCPNONC)
 	  FPICE = MAX(0.0,FPICE)
 	  BDFALL = BDFALL*(PRCPSNOW/PRCP_FROZEN) + RHO_GRPL*(PRCPGRPL/PRCP_FROZEN) + &
 	             RHO_HAIL*(PRCPHAIL/PRCP_FROZEN)
@@ -1529,8 +1534,8 @@ contains
 	
      ENDIF
 
-     RAIN   = (QPRECC + QPRECL) * (1.-FPICE)
-     SNOW   = (QPRECC + QPRECL) * FPICE
+     RAIN   = PRCP * (1.-FPICE)
+     SNOW   = PRCP * FPICE
 
 
   END SUBROUTINE ATM
@@ -2491,7 +2496,7 @@ contains
                     EAIR    ,RHOAIR  ,SNOWH   ,VAI     ,GAMMAV   ,GAMMAG   , & !in
                     FWET    ,LAISUN  ,LAISHA  ,CWP     ,DZSNSO  , & !in
                     ZLVL    ,ZPD     ,Z0M     ,FVEG    , & !in
-                    Z0MG    ,EMV     ,EMG     ,CANLIQ           , & !in
+                    Z0MG    ,EMV     ,EMG     ,CANLIQ  ,FSNO, & !in
                     CANICE  ,STC     ,DF      ,RSSUN   ,RSSHA   , & !in
                     RSURF   ,LATHEAV ,LATHEAG ,PARSUN  ,PARSHA  ,IGS     , & !in
                     FOLN    ,CO2AIR  ,O2AIR   ,BTRAN   ,SFCPRS  , & !in
@@ -2513,7 +2518,7 @@ contains
     CALL BARE_FLUX (NSNOW   ,NSOIL   ,ISNOW   ,DT      ,SAG     , & !in
                     LWDN    ,UR      ,UU      ,VV      ,SFCTMP  , & !in
                     THAIR   ,QAIR    ,EAIR    ,RHOAIR  ,SNOWH   , & !in
-                    DZSNSO  ,ZLVL    ,ZPDG    ,Z0MG    ,          & !in
+                    DZSNSO  ,ZLVL    ,ZPDG    ,Z0MG    ,FSNO,          & !in
                     EMG     ,STC     ,DF      ,RSURF   ,LATHEAG  , & !in
                     GAMMAG   ,RHSUR   ,ILOC    ,JLOC    ,Q2      ,PAHB  , & !in
                     TGB     ,CMB     ,CHB     ,                   & !inout
@@ -3499,7 +3504,7 @@ contains
 ! here assume 1cm snow depth will fully cover the old snow
 
          IF (QSNOW > 0.) then
-           ALB = ALB + MIN(QSNOW*DT,SWEMX) * (0.84-ALB)/(SWEMX)
+           ALB = ALB + MIN(QSNOW,SWEMX/DT) * (0.84-ALB)/(SWEMX/DT)
          ENDIF
 
          ALBSNI(1)= ALB         ! vis diffuse
@@ -3836,7 +3841,7 @@ contains
                        EAIR    ,RHOAIR  ,SNOWH   ,VAI     ,GAMMAV   ,GAMMAG,  & !in
                        FWET    ,LAISUN  ,LAISHA  ,CWP     ,DZSNSO  , & !in
                        ZLVL    ,ZPD     ,Z0M     ,FVEG    , & !in
-                       Z0MG    ,EMV     ,EMG     ,CANLIQ  ,          & !in
+                       Z0MG    ,EMV     ,EMG     ,CANLIQ  ,FSNO,          & !in
                        CANICE  ,STC     ,DF      ,RSSUN   ,RSSHA   , & !in
                        RSURF   ,LATHEAV ,LATHEAG  ,PARSUN  ,PARSHA  ,IGS     , & !in
                        FOLN    ,CO2AIR  ,O2AIR   ,BTRAN   ,SFCPRS  , & !in
@@ -3883,6 +3888,7 @@ contains
   REAL,                            INTENT(IN) :: QAIR   !specific humidity at zlvl (kg/kg)
   REAL,                            INTENT(IN) :: RHOAIR !density air (kg/m**3)
   REAL,                            INTENT(IN) :: DT     !time step (s)
+  REAL,                            INTENT(IN) :: FSNO     !snow fraction
 
   REAL,                            INTENT(IN) :: SNOWH  !actual snow depth [m]
   REAL,                            INTENT(IN) :: FWET   !wetted fraction of canopy
@@ -4069,6 +4075,7 @@ contains
 ! ---------------------------------------------------------------------------------------------
         DTV = 0.
         DTG = 0.
+        MOZ    = 0.
         MOZSGN = 0
         MOZOLD = 0.
         HG     = 0.
@@ -4099,6 +4106,7 @@ contains
 
         HCAN = HVT
         UC = UR*LOG(HCAN/Z0M)/LOG(ZLVL/Z0M)
+        UC = UR*LOG((HCAN-ZPD+Z0M)/Z0M)/LOG(ZLVL/Z0M)   ! MB: add ZPD v3.7
         IF((HCAN-ZPD) <= 0.) THEN
           WRITE(message,*) "CRITICAL PROBLEM: HCAN <= ZPD"
           call wrf_message ( message )
@@ -4305,9 +4313,10 @@ contains
 
 ! if snow on ground and TG > TFRZ: reset TG = TFRZ. reevaluate ground fluxes.
 
-     IF(OPT_STC == 1) THEN
+     IF(OPT_STC == 1 .OR. OPT_STC == 3) THEN
      IF (SNOWH > 0.05 .AND. TG > TFRZ) THEN
         TG  = TFRZ
+        IF(OPT_STC == 3) TG  = (1.-FSNO)*TG + FSNO*TFRZ   ! MB: allow TG>0C during melt v3.7
         IRG = CIR*TG**4 - EMG*(1.-EMV)*LWDN - EMG*EMV*SB*TV**4
         SHG = CSH * (TG         - TAH)
         EVG = CEV * (ESTG*RHSUR - EAH)
@@ -4356,7 +4365,7 @@ contains
   SUBROUTINE BARE_FLUX (NSNOW   ,NSOIL   ,ISNOW   ,DT      ,SAG     , & !in
                         LWDN    ,UR      ,UU      ,VV      ,SFCTMP  , & !in
                         THAIR   ,QAIR    ,EAIR    ,RHOAIR  ,SNOWH   , & !in
-                        DZSNSO  ,ZLVL    ,ZPD     ,Z0M     ,          & !in
+                        DZSNSO  ,ZLVL    ,ZPD     ,Z0M     ,FSNO    , & !in
                         EMG     ,STC     ,DF      ,RSURF   ,LATHEA  , & !in
                         GAMMA   ,RHSUR   ,ILOC    ,JLOC    ,Q2      ,PAHB  , & !in
                         TGB     ,CM      ,CH      ,          & !inout
@@ -4405,6 +4414,7 @@ contains
   REAL,                            INTENT(IN) :: LATHEA !latent heat of vaporization/subli (j/kg)
   REAL,                            INTENT(IN) :: GAMMA  !psychrometric constant (pa/k)
   REAL,                            INTENT(IN) :: RHSUR  !raltive humidity in surface soil/snow air space (-)
+  REAL,                            INTENT(IN) :: FSNO     !snow fraction
 
 !jref:start; in 
   INTEGER                        , INTENT(IN) :: IVGTYP
@@ -4518,6 +4528,7 @@ contains
 ! -----------------------------------------------------------------
         MPE = 1E-6
         DTG = 0.
+        MOZ    = 0.
         MOZSGN = 0
         MOZOLD = 0.
         H      = 0.
@@ -4621,9 +4632,10 @@ contains
 
 ! if snow on ground and TG > TFRZ: reset TG = TFRZ. reevaluate ground fluxes.
 
-     IF(OPT_STC == 1) THEN
+     IF(OPT_STC == 1 .OR. OPT_STC == 3) THEN
      IF (SNOWH > 0.05 .AND. TGB > TFRZ) THEN
           TGB = TFRZ
+          IF(OPT_STC == 3) TGB  = (1.-FSNO)*TGB + FSNO*TFRZ  ! MB: allow TG>0C during melt v3.7
           IRB = CIR * TGB**4 - EMG*LWDN
           SHB = CSH * (TGB        - SFCTMP)
           EVB = CEV * (ESTG*RHSUR - EAIR )          !ESTG reevaluate ?
@@ -8689,7 +8701,7 @@ END  SUBROUTINE SHALLOWWATERTABLE
      IF(VEGTYP ==EBLFOREST) LEAFPT = EXP(0.01*(1.-EXP(0.50*XLAI))*XLAI)
 
      NONLEF = 1.0 - LEAFPT
-     STEMPT = XLAI/10.0
+     STEMPT = XLAI/10.0*LEAFPT
      LEAFPT = LEAFPT - STEMPT
 
 !  fraction of carbon into wood versus root
@@ -8705,8 +8717,8 @@ END  SUBROUTINE SHALLOWWATERTABLE
 
 ! leaf and root turnover per time step
 
-     LFTOVR = LTOVRC*1.E-6*LFMASS
-     STTOVR = LTOVRC*1.E-6*STMASS
+     LFTOVR = LTOVRC*5.E-7*LFMASS
+     STTOVR = LTOVRC*5.E-7*STMASS
      RTTOVR = RTOVRC*RTMASS
      WDTOVR = 9.5E-10*WOOD
 
@@ -8727,10 +8739,10 @@ END  SUBROUTINE SHALLOWWATERTABLE
 
 ! Impose lower T limit for photosynthesis
 
-!     ADDNPPLF = MAX(0.,LEAFPT*CARBFX - GRLEAF-RSLEAF)
-!     ADDNPPST = MAX(0.,STEMPT*CARBFX - GRSTEM-RSSTEM)
-     ADDNPPLF = LEAFPT*CARBFX - GRLEAF-RSLEAF  ! MB: test Kjetil 
-     ADDNPPST = STEMPT*CARBFX - GRSTEM-RSSTEM  ! MB: test Kjetil 
+     ADDNPPLF = MAX(0.,LEAFPT*CARBFX - GRLEAF-RSLEAF)
+     ADDNPPST = MAX(0.,STEMPT*CARBFX - GRSTEM-RSSTEM)
+!     ADDNPPLF = LEAFPT*CARBFX - GRLEAF-RSLEAF  ! MB: test Kjetil 
+!     ADDNPPST = STEMPT*CARBFX - GRSTEM-RSSTEM  ! MB: test Kjetil 
      IF(TV.LT.TMIN) ADDNPPLF =0.
      IF(TV.LT.TMIN) ADDNPPST =0.
 
@@ -8776,7 +8788,7 @@ END  SUBROUTINE SHALLOWWATERTABLE
 !  total carbon flux
 
      CFLUX  = - CARBFX + RSLEAF + RSROOT + RSWOOD + RSSTEM &  ! MB: add RSSTEM,GRSTEM,0.9*RSSOIL v3.7
-              + RSSOIL + GRLEAF + GRROOT + GRWOOD + GRSTEM + 0.9*RSSOIL   ! g/m2/s
+          + 0.9*RSSOIL + GRLEAF + GRROOT + GRWOOD + GRSTEM    ! g/m2/s
 
 ! for outputs
 

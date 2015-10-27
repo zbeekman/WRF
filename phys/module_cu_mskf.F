@@ -26,8 +26,12 @@ MODULE module_cu_mskf
 !     workshop: URL: http://www.mmm.ucar.edu/wrf/users/workshops/WS2013/ppts/9.2.pdf
 !
 ! Herwehe et al., 2014: Increasing the credibility of regional climate simulations 
-!     by introducing subgrid-scale cloud–radiation interactions. JGR, 119,
+!     by introducing subgrid-scale cloud-radiation interactions. JGR, 119,
 !     5317-5330, doi:10.1002/2014JD021504.
+!
+! Zheng et al., 2015: Improving High-Resolution Weather Forecasts using the
+!     Weather Research and Forecasting (WRF) Model with an Updated Kain-Fritsch
+!     Scheme. Revision - Mon. Wea. Rev.
 !ckay
 !--------------------------------------------------------------------
 ! Lookup table variables:
@@ -86,7 +90,7 @@ CONTAINS
           INTENT(IN   ) ::                                   &
                                                           U, &
                                                           V, &
-!ckay                                                       W, &
+!ckay                                                     W, &
                                                          TH, &
                                                           T, &
                                                          QV, &
@@ -154,18 +158,16 @@ CONTAINS
                                                cldfra_sh_KF, &
                                                       qc_KF, &
                                                       qi_KF, &
-                                                         W
+                                                          W
 !ckay
-!  REAL, DIMENSION( ims:ime, jms:jme )                     , &
-!        INTENT(INOUT) ::                                    &
-   REAL, DIMENSION( ims:ime, jms:jme ) ::                    &
-                                                        ZOL, &
+   REAL, DIMENSION( ims:ime, jms:jme )                     , &
+         INTENT(   IN) ::                               ZOL, &
                                                       WSTAR, &
                                                         UST, &
                                                        PBLH
 !ckaywup
-  REAL, DIMENSION( ims:ime,  kms:kme , jms:jme )      ,      &
-           INTENT(INOUT) ::    w_up
+   REAL, DIMENSION( ims:ime,  kms:kme , jms:jme )          , &
+           INTENT(INOUT) ::                             w_up
 
 
 ! LOCAL VARS
@@ -481,10 +483,6 @@ CONTAINS
                  cldfra_dp_KF,cldfra_sh_KF,w_up,    &
                  qc_KF,qi_KF,                       &
                  ZOL,WSTAR,UST,PBLH                 )
-!ckaywup
-!           do k=kts,kte
-!              w(I,K,J)=w(I,K,J)+w_up(i,K,j)
-!           end do
 
             IF(PRESENT(rthcuten).AND.PRESENT(rqvcuten)) THEN
               DO K=kts,kte
@@ -589,13 +587,10 @@ CONTAINS
 
 !ckay
       REAL, DIMENSION( ims:ime, jms:jme ),                 &
-            INTENT(INOUT) ::                          ZOL, &
+            INTENT(   IN) ::                          ZOL, &
                                                     WSTAR, &
                                                       UST, &
                                                      PBLH
-!ckay
-   REAL :: SCLvel, ZLCL_KAY, zz_kay
-
 !
       REAL, DIMENSION( kts:kte ), INTENT(INOUT) ::         &
                                                      DQDT, &
@@ -628,8 +623,7 @@ CONTAINS
 
 !ckaywup
   REAL, DIMENSION( ims:ime,  kms:kme , jms:jme )         , &
-        INTENT(INOUT) ::    w_up                       
-
+        INTENT(  OUT) ::                             w_up                       
 !
 !...DEFINE LOCAL VARIABLES...
 !
@@ -695,6 +689,7 @@ CONTAINS
    REAL    :: xcldfra,UMF_new,DMF_new,FXM_new
    REAL    :: sourceht, Scale_Fac, TOKIOKA, RATE_kay
    REAL    :: capeDX, tempKay
+   REAL    :: SCLvel, ZLCL_KAY, zz_kay
 
 !ckaywup
    REAL    :: envEsat, envQsat, envRH, envRHavg, denSplume
@@ -741,6 +736,13 @@ CONTAINS
       CLIQ = SVP2*SVPT0
       DLIQ = SVP3
 !
+      IF(DX.GE.24.999E3) THEN
+         Scale_Fac = 1.0
+         capeDX = 0.1
+      ELSE
+         Scale_Fac = 1.0 + (log(25.E3/DX))
+         capeDX = 0.1*Scale_Fac
+      END IF
 !
 !****************************************************************************
 !                                                      ! PPT FB MODS
@@ -957,12 +959,8 @@ usl:   DO
           QENV=Q0(K)+(Q0(KLCL)-Q0(K))*DLP
           TVEN=TENV*(1.+0.608*QENV)
 !     
-!ckay New trigger function
-              IF(DX.GE.24.999E3) then
-                Scale_Fac = 1.0
-              else
-                Scale_Fac = 1.0 + (log(25.E3/DX))
-               end if
+! ww: this needs to be initialized
+          DTRH = 0.
 
 ! Becthold 2001 trigger with my Beta parameter
            DTLCL = W0AVG1D(KLCL)/Scale_Fac
@@ -1142,17 +1140,13 @@ updraft:    DO NK=K,KL-1
 
 !ckay
               IF(DX.GE.24.999E3) then
-                Scale_Fac = 1.0
                 RATE_kay = RATE
               else
-                Scale_Fac = 1.0 + (log(25.E3/DX))
                 RATE_kay = RATE / Scale_Fac
                end if
               CALL CONDLOAD(QLIQ(NK1),QICE(NK1),WTW,DZZ,BOTERM,ENTERM,      &
                    RATE_kay,QNEWLQ,QNEWIC,QLQOUT(NK1),QICOUT(NK1),G)
 
-!ckay         CALL CONDLOAD(QLIQ(NK1),QICE(NK1),WTW,DZZ,BOTERM,ENTERM,      &
-!ckay                   RATE,QNEWLQ,QNEWIC,QLQOUT(NK1),QICOUT(NK1),G)
 !
 !...IF VERT VELOCITY IS LESS THAN ZERO, EXIT THE UPDRAFT LOOP AND,
 !...IF CLOUD IS TALL ENOUGH, FINALIZE UPDRAFT CALCULATIONS...
@@ -1172,18 +1166,9 @@ updraft:    DO NK=K,KL-1
 !ckay Kim et al 2011; Kang et al 2009; Lin et al 2013;  GCM findings
 
               TOKIOKA = 0.03
-
-            IF(DX.GE.24.999E3) then
-              Scale_Fac = 1.0
-            else
-              Scale_Fac  = 1.0 + (log(25.E3/DX))
-             end if
-
               TOKIOKA = TOKIOKA * Scale_Fac
-
               REI=VMFLCL*DP(NK1)*TOKIOKA/RAD         
 !ckay
-
               TVQU(NK1)=TU(NK1)*(1.+0.608*QU(NK1)-QLIQ(NK1)-QICE(NK1))
               IF(NK.EQ.K)THEN
                 DILBE=((TVLCL+TVQU(NK1))/(TVEN+TV0(NK1))-1.)*DZZ
@@ -1608,16 +1593,12 @@ updraft:    DO NK=K,KL-1
 !...for ETA model, DX is a function of location...
         TIMEC=DX/VCONV
         TADVEC=TIMEC
-!       TIMEC=AMAX1(1800.,TIMEC)         ! 30 minutes  >= TIMEC <= 60 minutes
-!       TIMEC=AMIN1(3600.,TIMEC)
-!       IF(ISHALL.EQ.1)TIMEC=2400.       ! shallow convection TIMEC = 40 minutes
-!       NIC=NINT(TIMEC/DT)
-!       TIMEC=FLOAT(NIC)*DT
 !
 !ckay
 !new dynTau based on subcloud layer scales : note Z0(KPBL)=altitude of source layer
 
-         TIMEC = CLDHGT(LC)*Scale_Fac
+         TIMEC = Amax1(CHMIN,CLDHGT(LC))
+         TIMEC = TIMEC*Scale_Fac
 
 !ckay SCLvel = SubCloudLayerVELOCITY = Wsb
          SCLvel = WSTAR(I,J)**3
@@ -1633,7 +1614,7 @@ updraft:    DO NK=K,KL-1
            ZLCL_KAY = ZLCL_KAY * (1.9*Ust(I,J)*Ust(I,J))
            FRC2 = FRC2 + ZLCL_KAY
          else
-          FRC2=3.8*Ust(I,J)*Ust(I,J)
+           FRC2=3.8*Ust(I,J)*Ust(I,J)
          end if 
 
           FRC2 = SQRT(FRC2)  
@@ -1643,10 +1624,10 @@ updraft:    DO NK=K,KL-1
          TIMEC = TIMEC/((0.03*SCLvel*ABE)**0.3333)
 
 !ckay: this dynTau is good for the Deep as well as Shallow Cu clouds
+        TIMEC = AMAX1(DT, TIMEC)
 
          NIC=NINT(TIMEC/DT)
          TIMEC=FLOAT(NIC)*DT
-
 !     
 !...COMPUTE WIND SHEAR AND PRECIPITATION EFFICIENCY.
 !     
@@ -1683,7 +1664,7 @@ updraft:    DO NK=K,KL-1
 !         WRITE(98,1035)PEF,PEFCBH,LC,LET,WKL,VWS
          WRITE(message,1035)PEF,PEFCBH,LC,LET,WKL,VWS
          CALL wrf_message( message )
-!       call flush(98)   
+!       flush(98)   
        endif     
 !        WRITE(98,1035)PEF,PEFCBH,LC,LET,WKL,VWS
 !*****************************************************************
@@ -1873,7 +1854,7 @@ d_mf:   IF(TDER.LT.1.)THEN
 !           write(98,*)'PRECIP EFFICIENCY =',PEFF
            write(message,*)'PRECIP EFFICIENCY =',PEFF
            CALL wrf_message(message)
-!          call flush(98)   
+!          flush(98)   
          ENDIF
 !
 !
@@ -2232,13 +2213,6 @@ iter:     DO NCOUNT=1,10
 !          GOTO 265
           EXIT iter
           ENDIF
-!ckay: Dec20  90% cape removal is now a function of DX
-         IF(DX.GE.24.999E3) then
-            capeDX = 0.1
-         else
-            Scale_Fac = 1.0 + (log(25.E3/DX))
-            capeDX = 0.1*Scale_Fac
-         end if
           DABE=AMAX1(ABE-ABEG,capeDX*ABE)
 
           FABE=ABEG/ABE
@@ -2330,37 +2304,33 @@ iter:     DO NCOUNT=1,10
             updil = updil/100.
             updil = updil*dxsq  
             Drag = 0.5   
-!           if(ainc.ge.10.0) print *,'AINC=',AINC
-        IF(ISHALL.EQ.1) THEN
 
-          DO NK=KLCL-1, LTOP1
+        IF(ISHALL.EQ.1) THEN
+          DO NK=KLCL, LTOP
+            UMF_new = UMF(NK)/updil
             denSplume = P0(NK)/(R*TU(NK))
             xcldfra = 0.07*alog(1.+(500.*UMF_new))
             xcldfra = amax1(0.01,xcldfra)
             cldfra_sh_KF(I,NK,J) = amin1(0.2,xcldfra)
 !ckaywup
-            UMF_new = UMF(NK)/updil
             DMF_new=DMF(NK)/updil
             FXM_new=FXM(NK)/dxsq
-            w_up(I,NK,J) = UMF_new/denSplume
-            w_up(I,NK,J) = w_up(I,NK,J) + (DMF_new/denSplume)
-            w_up(I,NK,J) = w_up(I,NK,J) - (FXM_new/denSplume)
-            w_up(I,NK,J) =  w_up(I,NK,J)*Drag*DT/TIMEC
+            w_up(I,NK,J) = (UMF_new+DMF_new-FXM_new)/denSplume
+            w_up(I,NK,J) = w_up(I,NK,J)*Drag*DT/TIMEC
           ENDDO
         ELSE 
-          DO NK=KLCL-1, LTOP1
+          DO NK=KLCL, LTOP
+! ww: moved the next line up
+            UMF_new = UMF(NK)/updil
             denSplume = P0(NK)/(R*TU(NK))
             xcldfra = 0.14*alog(1.+(500.*UMF_new))
             xcldfra = amax1(0.01,xcldfra)
             cldfra_dp_KF(I,NK,J) = amin1(0.6,xcldfra)
 !new added downdraft impact
-            UMF_new = UMF(NK)/updil
-            DMF_new=DMF(NK)/updil
-            FXM_new=FXM(NK)/dxsq
-            w_up(I,NK,J) = UMF_new/denSplume
-            w_up(I,NK,J) = w_up(I,NK,J) + (DMF_new/denSplume)
-            w_up(I,NK,J) = w_up(I,NK,J) - (FXM_new/denSplume)
-            w_up(I,NK,J) =  w_up(I,NK,J)*Drag*DT/TIMEC
+            DMF_new = DMF(NK)/updil
+            FXM_new = FXM(NK)/dxsq
+            w_up(I,NK,J) = (UMF_new+DMF_new-FXM_new)/denSplume
+            w_up(I,NK,J) = w_up(I,NK,J)*Drag*DT/TIMEC
           ENDDO
         ENDIF
 !ckaywup
@@ -2375,7 +2345,6 @@ iter:     DO NCOUNT=1,10
              w_up(I,NK,J) = 0.0
            end if
           END DO
-
 !     
 !...COMPUTE HYDROMETEOR TENDENCIES AS IS DONE FOR T, QV...
 !     
@@ -2460,7 +2429,7 @@ iter:     DO NCOUNT=1,10
 !         WRITE(98,1080)LFS,LDB,LDT,TIMEC,TADVEC,NSTEP,NCOUNT,FABE,AINC
          WRITE(message,1080)LFS,LDB,LDT,TIMEC,TADVEC,NSTEP,NCOUNT,FABE,AINC
          CALL wrf_message(message)
-!        call flush(98)   
+!        flush(98)   
        endif  
 !     
 !...SEND FINAL PARAMETERIZED VALUES TO OUTPUT FILES...
@@ -2497,7 +2466,7 @@ iter:     DO NCOUNT=1,10
          call wrf_message(message)
            write(message,*)'just before DO 300...'
          call wrf_message(message)
-!          call flush(98)
+!          flush(98)
            DO NK=1,LTOP
              K=LTOP-NK+1
              DTT=(TG(K)-T0(K))*86400./TIMEC
@@ -2606,7 +2575,7 @@ iter:     DO NCOUNT=1,10
             WRITE(98,4456)P0(K)/100.,T0(K)-273.16,Q0(K)*1000.,          &
                      U0(K),V0(K),W0AVG1D(K),dp(k)/100.,tke(k)
  311        CONTINUE
-!           call flush(98)
+!           flush(98)
 
 !        GOTO 297
 !         STOP 'QVERR'
@@ -2699,13 +2668,6 @@ iter:     DO NCOUNT=1,10
 !              PRINT *,'THIS COMBINATION OF IMOIST, IEXICE, IICE NOT ALLOWED!'
               CALL wrf_error_fatal ( 'KAIN-FRITSCH, THIS COMBINATION OF IMOIST, IEXICE, IICE NOT ALLOWED' )
           ENDIF
-!ckay
-!            IF(DX.GE.24.999E3) then
-!              Scale_Fac  = 1.0
-!            else
-!              Scale_Fac  = 1.0 + (log(25.E3/DX))
-!             end if
-!ckay
 
           DTDT(K)=(TG(K)-T0(K))/TIMEC
           DQDT(K)=(QG(K)-Q0(K))/TIMEC
@@ -2720,7 +2682,7 @@ iter:     DO NCOUNT=1,10
 !      write (6,909)I,J,RNC
 !      WRITE(98,*)'at NTSD =',NTSD,',No. of KF points activated =',
 !     *            NCCNT
-!      call flush(98)
+!      flush(98)
 1000  FORMAT(' ',10A8)
 1005  FORMAT(' ',F6.0,2X,F6.4,2X,F7.3,1X,F6.4,2X,4(F6.3,2X),2(F7.3,1X))
 1010  FORMAT(' ',' VERTICAL VELOCITY IS NEGATIVE AT ',F4.0,' MB')
@@ -2810,7 +2772,7 @@ iter:     DO NCOUNT=1,10
       ithtb=int(tth)+1
        IF(IPTB.GE.220 .OR. IPTB.LE.1 .OR. ITHTB.GE.250 .OR. ITHTB.LE.1)THEN
          write(98,*)'**** OUT OF BOUNDS *********'
-!        call flush(98)
+!        flush(98)
        ENDIF
 !
       t00=ttab(ithtb  ,iptb  )
