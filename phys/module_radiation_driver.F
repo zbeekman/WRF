@@ -685,7 +685,7 @@ CONTAINS
       expl_conv=.true. ! backward compatibility for ARW
    endif
 
-   CALL wrf_debug (1, 'Top of Radiation Driver')
+   CALL wrf_debug (5, 'Top of Radiation Driver')
 !  WRITE ( wrf_err_message , * ) 'itimestep = ',itimestep,', dt = ',dt,', lw and sw options = ',lw_physics,sw_physics
 !  CALL wrf_debug (1, wrf_err_message )
    if (lw_physics .eq. 0 .and. sw_physics .eq. 0)         return

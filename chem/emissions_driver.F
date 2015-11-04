@@ -75,7 +75,11 @@ CONTAINS
 
          ids,ide, jds,jde, kds,kde,                                        &
          ims,ime, jms,jme, kms,kme,                                        &
-         its,ite, jts,jte, kts,kte                                         )
+         its,ite, jts,jte, kts,kte                                         &
+#if ( WRFPLUS == 1 )
+         , cycle_count, cycle_interval &
+#endif
+         )
 !----------------------------------------------------------------------
   USE module_configure
   USE module_state_description
@@ -139,6 +143,7 @@ CONTAINS
                                stepscaleant,stepscalebb,                   &
                                num_ant_steps,num_bb_steps,                 &
                                check_count, checkpoint_interval
+   INTEGER, OPTIONAL, INTENT(IN) ::  cycle_count, cycle_interval
 #endif
    REAL, DIMENSION( ims:ime,  kms:kme, jms:jme,num_emis_vol),              &
          INTENT(INOUT ) ::                                                 &
@@ -668,12 +673,15 @@ CONTAINS
                IF ( (MOD(k,stepscaleant) == 0) .or. (stepscaleant==1) ) iant=iant+1
             enddo
          ENDIF
-         IF ( check_count .gt. 1 ) then
+         IF ( check_count .gt. 1 ) THEN
             iant=iant+(check_count-1)*checkpoint_interval/scaleant_frq
+         ENDIF
+         IF ( present(cycle_count) .and. check_count .eq. 1) THEN
+            iant=iant+(cycle_count-1)*cycle_interval/scaleant_frq
          ENDIF
       ENDIF
       IF(iant .GT. num_ant_steps .OR. iant .LE. 0) THEN
-         write(message,*)'emissions_driver: need to increase num_ant_steps, ktauc,iant,check_count,checkpoint_interval,scaleant_frq,curr_secs = ',ktau,iant,check_count,checkpoint_interval,scaleant_frq,curr_secs
+         write(message,*)'emissions_driver: need to increase num_ant_steps; ktauc,iant,check_count,checkpoint_interval,cycle_count,cycle_interval,scaleant_frq,curr_secs = ',ktau,iant,check_count,checkpoint_interval,cycle_count,cycle_interval,scaleant_frq,curr_secs
          CALL wrf_error_fatal( trim(message) )
       ENDIF
       ibb=1
@@ -690,12 +698,15 @@ CONTAINS
          IF ( check_count .gt. 1 ) then
             ibb=ibb+(check_count-1)*checkpoint_interval/scalebb_frq
          ENDIF
+         IF ( present(cycle_count) .and. check_count .eq. 1 ) THEN
+            ibb=ibb+(cycle_count-1)*cycle_interval/scalebb_frq
+         ENDIF
       ENDIF
       IF(ibb .GT. num_bb_steps .OR. ibb .LE. 0) THEN
          write(message,*)'emissions_driver: need to increase num_bb_steps, ktauc,ibb = ',ktau,ibb
 !         CALL wrf_error_fatal( trim(message) )
          CALL wrf_message(TRIM(message))
-         ibb=(check_count-1)*checkpoint_interval/scalebb_frq
+         ibb=(check_count-1)*checkpoint_interval/scalebb_frq+(cycle_count-1)*cycle_interval/scalebb_frq
 
 
       ENDIF

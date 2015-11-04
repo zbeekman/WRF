@@ -140,6 +140,8 @@
 !
    CHARACTER*256 :: mminlu_loc
    CHARACTER*256 :: message_txt
+   CHARACTER*10000 :: msg
+
    TYPE(WRFU_TimeInterval) :: tmpTimeInterval
    integer :: i,j,k,l,numgas,ixhour,n,ndystep,kk,nv
    real, DIMENSION (1,1) :: sza,cosszax
@@ -585,6 +587,17 @@ end if
 ! regiistry. For now, we will do a simple check to trap a change in the
 ! desired size of num_chem and assume that if the size is the same, the
 ! species will be too.  wig, 24-Oct-2005
+
+!DEBUG -JJG
+!     write(msg,*) &
+!        'chem_opt, num_chem', config_flags%chem_opt, num_chem, &
+!        'scale_emiss_opt, num_scaleant', config_flags%scale_emiss_opt, num_scaleant, &
+!        'scale_burn_opt, num_scalebb', config_flags%scale_burn_opt, num_scalebb,  &
+!        'emiss_opt, biomass_burn_opt', config_flags%emiss_opt, config_flags%biomass_burn_opt, &
+!        'bl_pbl_physics', config_flags%bl_pbl_physics
+!
+!     call wrf_message( trim(msg) )
+
      if( .not.allocated(is_aerosol) ) then
         allocate (is_aerosol(num_chem))
      else

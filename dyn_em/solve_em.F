@@ -75,6 +75,10 @@ SUBROUTINE solve_em ( grid , config_flags  &
    USE module_avgflx_em, ONLY : zero_avgflx, upd_avgflx
    USE module_cpl, ONLY : coupler_on, cpl_settime, cpl_store_input
 
+!!Timeseries TLNL Test -JJG
+   USE module_adtl_grid_utilities, ONLY : get_forc_locations, allocate_locations
+!!Timeseries TLNL Test -JJG
+
    IMPLICIT NONE
 
    !  Input data.
@@ -176,6 +180,13 @@ SUBROUTINE solve_em ( grid , config_flags  &
    TYPE(WRFU_TimeInterval)                    :: dtInterval, intervaltime,restartinterval
 
    INTEGER                                    :: temp_itimestep
+
+!!Timeseries TLNL Test -JJG
+   INTEGER, DIMENSION(:,:), ALLOCATABLE :: locations_f, locations_i
+   INTEGER :: ierr, nfloc, nf, nf0, nf1, iloc_f, jloc_f, kloc_f
+   INTEGER :: niloc, ni, iloc_i, jloc_i!, kloc_i
+!!Timeseries TLNL Test -JJG
+
 ! Define benchmarking timers if -DBENCH is compiled
 #include <bench_solve_em_def.h>
 
@@ -273,6 +284,10 @@ SUBROUTINE solve_em ( grid , config_flags  &
   CALL wrf_debug(50,TRIM(message))
 
 #endif
+  if(grid%cycle_count .gt. 1 .and. config_flags%dyn_opt .eq. dyn_em) then
+     curr_secs = curr_secs + REAL( 60*(grid%cycle_count-1)*grid%cycle_interval, 8 )
+  endif
+
 
    old_dt = grid%dt   ! store old time step for flux averaging code at end of RK loop
 !-----------------------------------------------------------------------------
@@ -309,6 +324,8 @@ endif
 #if ( WRFPLUS == 1 )
    temp_itimestep = grid%itimestep
    grid%itimestep = grid%itimestep + (grid%check_count-1)*grid%checkpoint_interval*60/grid%dt
+   grid%itimestep = grid%itimestep + (grid%cycle_count-1)*grid%cycle_interval*60/grid%dt
+
 #endif
 
    IF( coupler_on ) CALL cpl_store_input( grid, config_flags )
@@ -4128,8 +4145,118 @@ BENCH_END(bc_2d_tim)
 #endif
 
 #if ( WRFPLUS == 1 )
+   IF ( grid%check_TLNLonly .AND. grid%print_NL ) THEN
+!!Timeseries TLNL Test -JJG
+   CALL allocate_locations( 'locations_f', locations_f, nfloc, ierr)
+   IF( ierr .GT. 0) THEN
+      CALL wrf_error_fatal( 'adtl_check: error opening locations_f for reading')
+   ENDIF
+   CALL get_forc_locations( 'locations_f', locations_f, nfloc, ierr)
+
+
+   CALL allocate_locations( 'locations_i', locations_i, niloc, ierr)
+   IF( ierr .GT. 0) THEN
+      CALL wrf_error_fatal( 'adtl_check: error opening locations_i for reading')
+   ENDIF
+   CALL get_forc_locations( 'locations_i', locations_i, niloc, ierr)
+
+
+   CALL wrf_message("Extracting the FD cost function response")
+
+   IF ( grid%nl_perturbed ) THEN
+      nf0 = (grid%ni_tlnl-1)*nfloc/niloc+1
+      nf1 = grid%ni_tlnl*nfloc/niloc
+      iloc_i = locations_i(grid%ni_tlnl,1)
+      jloc_i = locations_i(grid%ni_tlnl,2)
+!      kloc_i = locations_i(grid%ni_tlnl,3)
+   ELSE
+      nf0=1
+      nf1=nfloc
+   ENDIF
+   DO nf = nf0, nf1 !(grid%ni_tlnl-1)*nfloc/niloc+1, grid%ni_tlnl*nfloc/niloc
+      iloc_f = locations_f(nf,1)
+      jloc_f = locations_f(nf,2)
+      kloc_f = locations_f(nf,3)
+      !Store the NL derivative
+      !$OMP PARALLEL DO    &
+      !$OMP PRIVATE ( ij )
+      numextract: DO ij = 1 , grid%num_tiles
+         IF( grid%i_start(ij) .le. iloc_f .AND. &
+            grid%i_end(ij)  .ge. iloc_f .AND. &
+            grid%j_start(ij) .le. jloc_f .AND. &
+            grid%j_end(ij)  .ge. jloc_f ) THEN
+
+            IF ( grid%nl_perturbed ) THEN
+               WRITE(1000000*iloc_i+10000*jloc_i+100*nf+1,FMT='(4(I6),1(D27.18))') &
+                  grid%itimestep, iloc_f, jloc_f, kloc_f, &
+                  grid%u_2(iloc_f,kloc_f,jloc_f)
+               WRITE(1000000*iloc_i+10000*jloc_i+100*nf+2,FMT='(4(I6),1(D27.18))') &
+                  grid%itimestep, iloc_f, jloc_f, kloc_f, &
+                  grid%v_2(iloc_f,kloc_f,jloc_f)
+               WRITE(1000000*iloc_i+10000*jloc_i+100*nf+3,FMT='(4(I6),1(D27.18))') &
+                  grid%itimestep, iloc_f, jloc_f, kloc_f, &
+                  grid%t_2(iloc_f,kloc_f,jloc_f)
+               WRITE(1000000*iloc_i+10000*jloc_i+100*nf+4,FMT='(4(I6),1(D27.18))') &
+                  grid%itimestep, iloc_f, jloc_f, kloc_f, &
+                  grid%ph_2(iloc_f,kloc_f,jloc_f)
+               WRITE(1000000*iloc_i+10000*jloc_i+100*nf+5,FMT='(4(I6),1(D27.18))') &
+                  grid%itimestep, iloc_f, jloc_f, kloc_f, &
+                  grid%mu_2(iloc_f,jloc_f)
+               WRITE(1000000*iloc_i+10000*jloc_i+100*nf+6,FMT='(4(I6),1(D27.18))') &
+                  grid%itimestep, iloc_f, jloc_f, kloc_f, &
+                  moist(iloc_f,kloc_f,jloc_f,2)
+#if ( WRF_CHEM == 1 )
+               WRITE(1000000*iloc_i+10000*jloc_i+100*nf+7,FMT='(4(I6),1(D27.18))') &
+                  grid%itimestep, iloc_f, jloc_f, kloc_f, &
+                  chem(iloc_f,kloc_f,jloc_f,p_bc1)
+               WRITE(1000000*iloc_i+10000*jloc_i+100*nf+8,FMT='(4(I6),1(D27.18))') &
+                  grid%itimestep, iloc_f, jloc_f, kloc_f, &
+                  chem(iloc_f,kloc_f,jloc_f,p_bc2)
+#endif
+            ELSE
+               iloc_i=locations_i(niloc/nfloc*(nf-1)+1,1)
+               jloc_i=locations_i(niloc/nfloc*(nf-1)+1,2)
+               WRITE(100000000+1000000*iloc_i+10000*jloc_i+100*nf+1,FMT='(4(I6),1(D27.18))') &
+                  grid%itimestep, iloc_f, jloc_f, kloc_f, &
+                  grid%u_2(iloc_f,kloc_f,jloc_f)
+               WRITE(100000000+1000000*iloc_i+10000*jloc_i+100*nf+2,FMT='(4(I6),1(D27.18))') &
+                  grid%itimestep, iloc_f, jloc_f, kloc_f, &
+                  grid%v_2(iloc_f,kloc_f,jloc_f)
+               WRITE(100000000+1000000*iloc_i+10000*jloc_i+100*nf+3,FMT='(4(I6),1(D27.18))') &
+                  grid%itimestep, iloc_f, jloc_f, kloc_f, &
+                  grid%t_2(iloc_f,kloc_f,jloc_f)
+               WRITE(100000000+1000000*iloc_i+10000*jloc_i+100*nf+4,FMT='(4(I6),1(D27.18))') &
+                  grid%itimestep, iloc_f, jloc_f, kloc_f, &
+                  grid%ph_2(iloc_f,kloc_f,jloc_f)
+               WRITE(100000000+1000000*iloc_i+10000*jloc_i+100*nf+5,FMT='(4(I6),1(D27.18))') &
+                  grid%itimestep, iloc_f, jloc_f, kloc_f, &
+                  grid%mu_2(iloc_f,jloc_f)
+               WRITE(100000000+1000000*iloc_i+10000*jloc_i+100*nf+6,FMT='(4(I6),1(D27.18))') &
+                  grid%itimestep, iloc_f, jloc_f, kloc_f, &
+                  moist(iloc_f,kloc_f,jloc_f,2)
+#if ( WRF_CHEM == 1 )
+               WRITE(100000000+1000000*iloc_i+10000*jloc_i+100*nf+7,FMT='(4(I6),1(D27.18))') &
+                  grid%itimestep, iloc_f, jloc_f, kloc_f, &
+                  chem(iloc_f,kloc_f,jloc_f,p_bc1)
+               WRITE(100000000+1000000*iloc_i+10000*jloc_i+100*nf+8,FMT='(4(I6),1(D27.18))') &
+                  grid%itimestep, iloc_f, jloc_f, kloc_f, &
+                  chem(iloc_f,kloc_f,jloc_f,p_bc2)
+#endif
+            ENDIF
+         ENDIF
+      END DO numextract
+      !$OMP END PARALLEL DO
+
+   ENDDO
+
+   DEALLOCATE(locations_f)
+   DEALLOCATE(locations_i)
+!!Timeseries TLNL Test -JJG
+   ENDIF
+
    grid%itimestep = temp_itimestep
 #endif
+
 
 !  Max values of CFL for adaptive time step scheme
 

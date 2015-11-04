@@ -9,8 +9,7 @@ dimspec bb       2                 namelist=num_bb_steps     z   burn_emiss_scal
 dimspec nsurf    -                 namelist=num_surf_obs     c   num_surf_obs
 dimspec nacft    -                 namelist=num_acft_obs     c   num_acft_obs
 dimspec ntim     -                 namelist=num_ts           c   num_ts
-dimspec nst      -                 namelist=num_surf_hx      c   num_surf_hx
-dimspec nat      -                 namelist=num_acft_hx      c   num_acft_hx
+dimspec nplt     -                 namelist=num_platform     c   num_platform
 
 rconfig integer  num_ant_steps     namelist,chem     1           1   rh  "num_scale_ant"   ""   ""
 rconfig integer  num_bb_steps      namelist,chem     1           1   rh  "num_scale_bb"   ""   ""
@@ -18,8 +17,9 @@ rconfig integer  num_bb_steps      namelist,chem     1           1   rh  "num_sc
 rconfig integer  num_surf_obs      namelist,chem     1           0   rh  "num_surf_obs"   ""   ""
 rconfig integer  num_acft_obs      namelist,chem     1           0   rh  "num_acft_obs"   ""   ""
 rconfig integer  num_ts            namelist,chem     1           0   rh  "num_ts"   ""   ""
-rconfig integer  num_surf_hx       namelist,chem     1           3   rh  "num_surf_hx"   ""   ""
-rconfig integer  num_acft_hx       namelist,chem     1           8   rh  "num_acft_hx"   ""   ""
+rconfig integer  num_platform      namelist,chem     1           1   rh  "num_platform"   ""   ""
+
+rconfig integer  chemda_opt        namelist,chem     max_domains 1   rh  "chemda_opt"   ""   ""
 
 rconfig integer  scaleant_frq      namelist,chem     max_domains 0   rh  "scale_ant_frq"    ""    ""
 rconfig integer  scalebb_frq       namelist,chem     max_domains 0   rh  "scale_bb_frq"    ""    ""
@@ -40,54 +40,79 @@ rconfig   integer pinterp_option   namelist,perturbation         1   1       -  
 rconfig   integer force_pbl        namelist,perturbation         1   0  r    "force_pbl"        ""      ""
 
 # chem observation arrays
+## SURFACE
 state    real  i_surf  {nsurf}  misc           1         -      h{17}      "i_surf"        "surf_obs grid location"             ""
 state    real  j_surf  {nsurf}  misc           1         -      h{17}      "j_surf"        "surf_obs grid location"             ""
 state    real  k_surf  {nsurf}  misc           1         -      h{17}      "k_surf"        "surf_obs grid location"             ""
 state    real  ti_surf {nsurf}  misc           1         -      h{17}      "ti_surf"        "surf_obs start itime"             ""
 state    real  tf_surf {nsurf}  misc           1         -      h{17}      "tf_surf"        "surf_obs end itime"             ""
-state    real  BC_surf {nsurf}  misc           1         -      h{17}      "BC_surf"        "surf_obs black carbon"             "ug/m^3"
-state    real  var_BC_surf {nsurf}  misc       1         -      h{17}      "var_BC_surf"        "surf_obs black carbon variance"             "ug^2/m^6"
-state    real  weight_BC_surf {nsurf}  misc       1         -      h{17}      "weight_BC_surf"        "surf_obs black carbon adj. forcing weight"             ""
+
+state    real    -           {nsurf}f  surf_hx       1         -     -          -  "surface model concentrations" ""
+state    real    surf_bc     {nsurf}f  surf_hx       1         -     h{17}      "surf_bc"     "surface modeled bc"    "ug/m^3"
+state    real    surf_oc     {nsurf}f  surf_hx       1         -     h{17}      "surf_oc"     "surface modeled oc"    "ug/m^3"
+state    real    surf_co     {nsurf}f  surf_hx       1         -     h{17}      "surf_co"     "surface modeled co"    "ppb"
+state    real    surf_co2    {nsurf}f  surf_hx       1         -     h{17}      "surf_co2"    "surface modeled co2"   "ppm"
+state    real    surf_ch4    {nsurf}f  surf_hx       1         -     h{17}      "surf_ch4"    "surface modeled ch4"   "ppb"
+
+#state    real    surf_sulf   {nsurf}f  surf_hx       1         -     h{17}      "surf_sulf"    "aircraft modeled sulfate"   "ppmv"
+state    real    surf_pblh   {nsurf}f  surf_hx       1         -     h{17}      "surf_pblh"    "aircraft modeled pblh"   "m"
+#state    real    surf_hgt    {nsurf}f  surf_hx       1         -     h{17}      "surf_hgt"    "aircraft modeled hgt"   "m"
+#state    real    surf_t_phy  {nsurf}f  surf_hx       1         -     h{17}      "surf_t_phy"    "aircraft modeled t_phy"   "K"
+#state    real    surf_wspd   {nsurf}f  surf_hx       1         -     h{17}      "surf_wspd"    "aircraft modeled wspd"   "m/2"
+#state    real    surf_qv     {nsurf}f  surf_hx       1         -     h{17}      "surf_qv"    "aircraft modeled qv"   "kg kg^-1"
+
+state    real    -             {nsurf}f  g_surf_hx       1         -     -          -  "surface model concentrations" ""
+state    real    g_surf_bc     {nsurf}f  g_surf_hx       1         -     h{17}      "g_surf_bc"     "surface modeled bc"    "ug/m^3"
+state    real    g_surf_oc     {nsurf}f  g_surf_hx       1         -     h{17}      "g_surf_oc"     "surface modeled oc"    "ug/m^3"
+state    real    g_surf_co     {nsurf}f  g_surf_hx       1         -     h{17}      "g_surf_co"     "surface modeled co"    "ppb"
+state    real    g_surf_co2    {nsurf}f  g_surf_hx       1         -     h{17}      "g_surf_co2"    "surface modeled co2"   "ppm"
+state    real    g_surf_ch4    {nsurf}f  g_surf_hx       1         -     h{17}      "g_surf_ch4"    "surface modeled ch4"   "ppb"
+
+state    real    -             {nsurf}f  a_surf_hx       1         -     -          -  "surface model concentrations" ""
+state    real    a_surf_bc     {nsurf}f  a_surf_hx       1         -     h{17}      "a_surf_bc"     "surface modeled bc"    "ug/m^3"
+state    real    a_surf_oc     {nsurf}f  a_surf_hx       1         -     h{17}      "a_surf_oc"     "surface modeled oc"    "ug/m^3"
+state    real    a_surf_co     {nsurf}f  a_surf_hx       1         -     h{17}      "a_surf_co"     "surface modeled co"    "ppb"
+state    real    a_surf_co2    {nsurf}f  a_surf_hx       1         -     h{17}      "a_surf_co2"    "surface modeled co2"   "ppm"
+state    real    a_surf_ch4    {nsurf}f  a_surf_hx       1         -     h{17}      "a_surf_ch4"    "surface modeled ch4"   "ppb"
 
 
-state    real    surf_hx        {nsurf}{nst}  misc       1         -     h{17}       "surf_hx" "surf_hx" "multiple"
-state    real    g_surf_hx      {nsurf}{nst}  misc       1         -     -       "g_surf_hx" "a_surf_hx" "multiple"
-state    real    a_surf_hx      {nsurf}{nst}  misc       1         -     -       "a_surf_hx" "a_surf_hx" "multiple"
-#state    real    surf_var       {nsurf}{nst}  misc       1         -     h{17}       "surf_var" "surf_var" "multiple"
-rconfig  integer p_surf_bc      namelist,chem            1         2     -       "p_surf_bc" "index for surface black carbon" "ug/m^3"
-rconfig  integer p_surf_pblh    namelist,chem            1         3     -       "p_surf_pblh" "index for PBLH at surface site"                    "m"
+## AIRCRAFT
+
+state    real     i_acft         {ntim}{nplt}  misc           1         -      h{17}      "i_acft"        "acft_obs grid location"             ""
+state    real     j_acft         {ntim}{nplt}  misc           1         -      h{17}      "j_acft"        "acft_obs grid location"             ""
+state    real     k_acft         {ntim}{nplt}  misc           1         -      h{17}      "k_acft"        "acft_obs grid location"             ""
+state    real     p_acft         {ntim}{nplt}  misc           1         -      h{17}      "p_acft"        "acft_obs pressure"             "hPa"
+state    integer  acft_obs_count     {ntim}{nplt}  misc           1         -      h{17}      "acft_obs_count" "acft_obs count"             ""
+
+state    real    -           {ntim}{nplt}f  acft_hx       1         -     -          -  "aircraft model concentrations" ""
+state    real    acft_bc     {ntim}{nplt}f  acft_hx       1         -     h{17}      "acft_bc"     "aircraft modeled bc"    "ug/m^3 @ 1013 hPa, 273K"
+state    real    acft_oc     {ntim}{nplt}f  acft_hx       1         -     h{17}      "acft_oc"     "aircraft modeled oc"    "ug/m^3 @ 1013 hPa, 273K"
+state    real    acft_co     {ntim}{nplt}f  acft_hx       1         -     h{17}      "acft_co"     "aircraft modeled co"    "ppb"
+state    real    acft_co2    {ntim}{nplt}f  acft_hx       1         -     h{17}      "acft_co2"    "aircraft modeled co2"   "ppm"
+state    real    acft_ch4    {ntim}{nplt}f  acft_hx       1         -     h{17}      "acft_ch4"    "aircraft modeled ch4"   "ppb"
+
+state    real    acft_sulf    {ntim}{nplt}f  acft_hx       1         -     h{17}      "acft_sulf"    "aircraft modeled sulfate"   "ppmv"
+state    real    acft_pblh     {ntim}{nplt}f  acft_hx       1         -     h{17}      "acft_pblh"    "aircraft modeled pblh"   "m"
+state    real    acft_hgt      {ntim}{nplt}f  acft_hx       1         -     h{17}      "acft_hgt"    "aircraft modeled hgt"   "m"
+state    real    acft_t_phy    {ntim}{nplt}f  acft_hx       1         -     h{17}      "acft_t_phy"    "aircraft modeled t_phy"   "K"
+state    real    acft_wspd     {ntim}{nplt}f  acft_hx       1         -     h{17}      "acft_wspd"    "aircraft modeled wspd"   "m/2"
+state    real    acft_qv       {ntim}{nplt}f  acft_hx       1         -     h{17}      "acft_qv"    "aircraft modeled qv"   "kg kg^-1"
 
 
-
-state    real     i_acft_avg         {ntim}  misc           1         -      h{17}      "i_acft_avg"        "acft_obs grid location"             ""
-state    real     j_acft_avg         {ntim}  misc           1         -      h{17}      "j_acft_avg"        "acft_obs grid location"             ""
-state    real     k_acft_avg         {ntim}  misc           1         -      h{17}      "k_acft_avg"        "acft_obs grid location"             ""
-state    real     p_acft_avg         {ntim}  misc           1         -      h{17}      "p_acft_avg"        "acft_obs pressure"             "hPa"
-state    integer  acft_obs_count     {ntim}  misc           1         -      h{17}      "acft_obs_count" "acft_obs count"             ""
-state    real     BC_acft_avg        {ntim}  misc           1         -      h{17}      "BC_acft_avg"        "acft_obs black carbon"             "ug/m^3"
-state    real     var_BC_acft_avg    {ntim}  misc           1         -      h{17}      "var_BC_acft_avg"        "acft_obs black carbon variance"             "ug^2/m^6"
-state    real     weight_BC_acft_avg    {ntim}  misc           1         -  h{17}      "weight_BC_acft_avg"        "acft_obs black carbon adj. forcing weight"             ""
+state    real    -             {ntim}{nplt}f  g_acft_hx       1         -     -          -  "aircraft model concentrations" ""
+state    real    g_acft_bc     {ntim}{nplt}f  g_acft_hx       1         -     h{17}      "g_acft_bc"     "aircraft modeled bc"    "ug/m^3 @ 1013 hPa, 273K"
+state    real    g_acft_oc     {ntim}{nplt}f  g_acft_hx       1         -     h{17}      "g_acft_oc"     "aircraft modeled oc"    "ug/m^3 @ 1013 hPa, 273K"
+state    real    g_acft_co     {ntim}{nplt}f  g_acft_hx       1         -     h{17}      "g_acft_co"     "aircraft modeled co"    "ppb"
+state    real    g_acft_co2    {ntim}{nplt}f  g_acft_hx       1         -     h{17}      "g_acft_co2"    "aircraft modeled co2"   "ppm"
+state    real    g_acft_ch4    {ntim}{nplt}f  g_acft_hx       1         -     h{17}      "g_acft_ch4"    "aircraft modeled ch4"   "ppb"
 
 
-state    real    acft_hx    {ntim}{nat}  misc       1         -     h{17}       "acft_hx" "aircraft_hx" "multiple"
-state    real    g_acft_hx    {ntim}{nat}  misc       1         -     -       "g_acft_hx" "g_acft_hx" "multiple"
-state    real    a_acft_hx    {ntim}{nat}  misc       1         -     -       "a_acft_hx" "a_acft_hx" "multiple"
-rconfig  integer p_acft_bc    namelist,chem           1         2     -       "p_acft_bc" "index for aircraft_hx black carbon"              "ug/m^3"
-rconfig  integer p_acft_sulf  namelist,chem           1         3     -       "p_acft_sulf" "index for aircraft_hx sulfate"                 "ppmv"
-rconfig  integer p_acft_pblh  namelist,chem           1         4     -       "p_acft_pblh" "index for aircraft_hx PBLH"                    "m"
-rconfig  integer p_acft_hgt   namelist,chem           1         5     -       "p_acft_hgt" "index for aircraft_hx HGT"                    "m"
-rconfig  integer p_acft_t_phy namelist,chem           1         6     -       "p_acft_t_phy" "index for aircraft_hx Temperature"            "K"
-rconfig  integer p_acft_wspd  namelist,chem           1         7     -       "p_acft_wspd" "index for aircraft_hx Windspeed"               "m/s"
-rconfig  integer p_acft_qv    namelist,chem           1         8     -       "p_acft_qv" "index for aircraft_hx Water vapor mixing ratio"  "kg kg^-1"
-
-
-state    real  i_acft  {nacft}  misc           1         -      h{17}      "i_acft"        "acft_obs grid location"             ""
-state    real  j_acft  {nacft}  misc           1         -      h{17}      "j_acft"        "acft_obs grid location"             ""
-state    real  k_acft  {nacft}  misc           1         -      h{17}      "k_acft"        "acft_obs grid location"             ""
-state    real  p_acft  {nacft}  misc           1         -      h{17}      "p_acft"        "acft_obs pressure"             "hPa"
-state    real  ti_acft {nacft}  misc           1         -      h{17}      "ti_acft"        "acft_obs start itime"             ""
-state    real  tf_acft {nacft}  misc           1         -      h{17}      "tf_acft"        "acft_obs end itime"             ""
-state    real  BC_acft {nacft}  misc           1         -      h{17}      "BC_acft"        "acft_obs black carbon"             "ug/m^3"
+state    real    -             {ntim}{nplt}f  a_acft_hx       1         -     -          -  "aircraft model concentrations" ""
+state    real    a_acft_bc     {ntim}{nplt}f  a_acft_hx       1         -     h{17}      "a_acft_bc"     "aircraft modeled bc"    "ug/m^3 @ 1013 hPa, 273K"
+state    real    a_acft_oc     {ntim}{nplt}f  a_acft_hx       1         -     h{17}      "a_acft_oc"     "aircraft modeled oc"    "ug/m^3 @ 1013 hPa, 273K"
+state    real    a_acft_co     {ntim}{nplt}f  a_acft_hx       1         -     h{17}      "a_acft_co"     "aircraft modeled co"    "ppb"
+state    real    a_acft_co2    {ntim}{nplt}f  a_acft_hx       1         -     h{17}      "a_acft_co2"    "aircraft modeled co2"   "ppm"
+state    real    a_acft_ch4    {ntim}{nplt}f  a_acft_hx       1         -     h{17}      "a_acft_ch4"    "aircraft modeled ch4"   "ppb"
 
 # deposition velocities
 #
@@ -3849,4 +3874,14 @@ package   wrfplus_bb      biomass_burn_opt==98             -          state:mean
 package   sc_wrfplus_bb         scale_burn_opt==98             -          scalebb:scbb_so2,scbb_oc,scbb_bc;g_scalebb:g_scbb_so2,g_scbb_oc,g_scbb_bc;a_scalebb:a_scbb_so2,a_scbb_oc,a_scbb_bc
 #package   wrfplus_bb      biomass_burn_opt==98             -          state:mean_fct_agtf,mean_fct_agef,mean_fct_agsv,mean_fct_aggr,firesize_agtf,firesize_agef,firesize_agsv,firesize_aggr;ebu:ebu_pm25,ebu_pm10,ebu_so2,ebu_oc,ebu_bc,ebu_sulf,ebu_dms;ebu_in:ebu_in_pm25,ebu_in_pm10,ebu_in_so2,ebu_in_oc,ebu_in_bc,ebu_in_sulf,ebu_in_dms
 #package   sc_wrfplus_bb         scale_burn_opt==98             -          scalebb:scbb_pm25,scbb_pm10,scbb_so2,scbb_oc,scbb_bc,scbb_sulf,scbb_dms;g_scalebb:g_scbb_pm25,g_scbb_pm10,g_scbb_so2,g_scbb_oc,g_scbb_bc,g_scbb_sulf,g_scbb_dms;a_scalebb:a_scbb_pm25,a_scbb_pm10,a_scbb_so2,a_scbb_oc,a_scbb_bc,a_scbb_sulf,a_scbb_dms
+
+package   bc_only          chemda_opt==1                      -          acft_hx:acft_bc;g_acft_hx:g_acft_bc;a_acft_hx:a_acft_bc;surf_hx:surf_bc;g_surf_hx:g_surf_bc;a_surf_hx:a_surf_bc
+package   oc_only          chemda_opt==2                      -          acft_hx:acft_oc;g_acft_hx:g_acft_oc;a_acft_hx:a_acft_oc;surf_hx:surf_oc;g_surf_hx:g_surf_oc;a_surf_hx:a_surf_oc
+package   co_only          chemda_opt==3                      -          acft_hx:acft_co;g_acft_hx:g_acft_co;a_acft_hx:a_acft_co;surf_hx:surf_co;g_surf_hx:g_surf_co;a_surf_hx:a_surf_co
+package   co2_only         chemda_opt==4                      -          acft_hx:acft_co2;g_acft_hx:g_acft_co2;a_acft_hx:a_acft_co2;surf_hx:surf_co2;g_surf_hx:g_surf_co2;a_surf_hx:a_surf_co2
+package   ch4_only         chemda_opt==5                      -          acft_hx:acft_ch4;g_acft_hx:g_acft_ch4;a_acft_hx:a_acft_ch4;surf_hx:surf_ch4;g_surf_hx:g_surf_ch4;a_surf_hx:a_surf_ch4
+
+package   all_acft         chemda_opt==10                     -          acft_hx:acft_bc,acft_oc,acft_co,acft_co2,acft_ch4;g_acft_hx:g_acft_bc,g_acft_oc,g_acft_co,g_acft_co2,g_acft_ch4;a_acft_hx:a_acft_bc,a_acft_oc,a_acft_co,a_acft_co2,a_acft_ch4
+package   all_surf         chemda_opt==11                     -          surf_hx:surf_bc,surf_oc,surf_co,surf_co2,surf_ch4;g_surf_hx:g_surf_bc,g_surf_oc,g_surf_co,g_surf_co2,g_surf_ch4;a_surf_hx:a_surf_bc,a_surf_oc,a_surf_co,a_surf_co2,a_surf_ch4
+
 

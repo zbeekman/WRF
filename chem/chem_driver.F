@@ -26,11 +26,13 @@
   USE module_ftuv_driver, only : ftuv_timestep_init
   USE module_data_soa_vbs, only: ldrog_vbs
   USE module_aer_opt_out,only: aer_opt_out
-#if ( WRFPLUS !=1 )
+
   USE module_dep_simple
+  USE module_ctrans_grell
+
+#if ( WRFPLUS !=1 )
   USE module_aerosols_sorgam
   USE module_gocart_so2so4
-  USE module_ctrans_grell
   USE module_wetscav_driver, only: wetscav_driver
   USE module_wetdep_ls, only:wetdep_ls
 #endif
@@ -45,8 +47,9 @@
                                      chem_dbg,      &
 #endif
                                      get_last_gas,mozcart_lbc_set
-#if ( WRFPLUS !=1 )
+
   USE module_upper_bc_driver, only: upper_bc_driver
+#if ( WRFPLUS !=1 )
   USE module_tropopause,      only: tropopause_driver
   USE module_cu_camzm_driver, only: zm_conv_tend_2
   USE module_cam_mam_gas_wetdep_driver, only: cam_mam_gas_wetdep_driver
@@ -712,7 +715,7 @@
 #if ( WRFPLUS == 1 )
               scaleant,grid%scaleant_frq,grid%stepscaleant,grid%num_ant_steps,        &
               scalebb,grid%scalebb_frq,grid%stepscalebb,grid%num_bb_steps,            &
-              grid%check_count, grid%checkpoint_interval,                             &
+              grid%check_count, grid%checkpoint_interval,                                  &
 #endif
               ebu , ebu_in,grid%mean_fct_agtf,grid%mean_fct_agef,grid%mean_fct_agsv,       &
               grid%mean_fct_aggr,grid%firesize_agtf, &
@@ -770,7 +773,12 @@
 
               ids,ide, jds,jde, kds,kde,                                                   &
               ims,ime, jms,jme, kms,kme,                                                   &
-              its,ite,jts,jte,kts,kte)
+              its,ite,jts,jte,kts,kte &
+#if ( WRFPLUS == 1 )
+              , cycle_count=grid%cycle_count, cycle_interval=grid%cycle_interval           &
+#endif
+              )
+
 #if ( WRFPLUS !=1 )
               if( config_flags%chem_opt == MOZART_KPP .or. &
                   config_flags%chem_opt == MOZCART_KPP .or. &
@@ -1005,7 +1013,7 @@
 
       end if
 
-#if ( WRFPLUS != 1 )
+!#if ( WRFPLUS != 1 ) ! Still need this for nonlinear model
 !
 !   convective transport/wet deposition
 !
@@ -1069,7 +1077,7 @@
 ! Calculate rate of n2o5 hydrolysis 
      call wrf_debug(15,'calling calc_het_n2o5')
 
-#endif
+!#endif
 
 !
 ! For the chemistry tracer mode, only emissions and vertical mixing are done.
