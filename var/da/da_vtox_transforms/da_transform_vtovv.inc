@@ -44,9 +44,7 @@ subroutine da_transform_vtovv(grid, cv_size, be, cv, vv)
    mz = be % v1 % mz
    s(3)=s(1)+mz-1
    if( use_rf .and. mz > 0 .and. len_scaling1(1) /= 0.0) then
-      write(*,'(a30,3i4,2x,e15.5)') "vv%v1(its+3,jts+3,kts+3)", its+3, jts+3, kts+3, vv%v1(its+3,jts+3,kts+3)
       call da_transform_through_rf(grid, mz, be % v1 % rf_alpha, be % v1 % val, vv % v1)
-      write(*,'(a30,3i4,2x,e15.5)') "vv%v1(its+3,jts+3,kts+3)", its+3, jts+3, kts+3, vv%v1(its+3,jts+3,kts+3)
    elseif( mz > 0 ) then
       s(4)=s(2)+nij(0,0,2)*nij(0,1,2)*mz-1
       call da_transform_through_wavelet(grid,mz,be%wsd(:,:,s(1):s(3)),cv(s(2):s(4)),vv%v1)

@@ -29,10 +29,8 @@ subroutine da_vertical_transform(grid, string, be, vertical_wgt, vv, vp)
       !------------------------------------------------------------------- 
 
       if (be % v1 % mz > 0) then
-         write(*,'(a30,3i4,2x,e15.5)') "vv%v1(its+3,jts+3,kts+3)", its+3, jts+3, kts+3, vv%v1(its+3,jts+3,kts+3)
          call da_transform_vvtovp (grid, be % v1 % evec, be % v1 % val, vertical_wgt, &
             vv % v1, vp % v1, be % v1 % mz, kte) ! psi, stream function
-         write(*,'(a30,3i4,2x,e15.5)') "vp%v1(its+3,jts+3,kts+3)", its+3, jts+3, kts+3, vp%v1(its+3,jts+3,kts+3)
       else
          vp % v1(its:ite,jts:jte,kts:kte) = 0.0
       end if
@@ -179,10 +177,8 @@ subroutine da_vertical_transform(grid, string, be, vertical_wgt, vv, vp)
       !------------------------------------------------------------------- 
 
       if (be % v1 % mz > 0) then
-         write(*,'(a30,3i4,2x,e15.5)') "inv_vp%v1(its+3,jts+3,kts+3)", its+3, jts+3, kts+3, vp%v1(its+3,jts+3,kts+3) 
          call da_transform_vvtovp_inv (grid, be % v1 % evec, be % v1 % val, vertical_wgt, &
             vp % v1, vv % v1, be % v1 % mz, kte)
-         write(*,'(a30,4i4,2x,e15.5)') "inv_vv%v1(its+3,jts+3,kts+3)", be%v1%mz, its+3, jts+3, kts+3, vv%v1(its+3,jts+3,kts+3)
       end if
 
       if (be % v2 % mz > 0) then

@@ -3,8 +3,6 @@ subroutine da_transform_vptox_inv(grid, vp, be, ep)
    !-----------------------------------------------------------------------
    ! Purpose: Inverse of balance (physical) transform of increment
    ! 
-   ! Method: 
-   !
    ! Author: Zhiquan (Jake) Liu,  NCAR/MMM,  2015-9
    !-----------------------------------------------------------------------
 
@@ -52,7 +50,6 @@ subroutine da_transform_vptox_inv(grid, vp, be, ep)
    ! Chi --> Chi_u
    !--------------------
    if (cv_options /= 7) then
-      !write(*,'(a30,3i4,2x,e15.5)') "inv_Chi(its+3,jts+3,kts+3)", its+3, grid%j_start(ij)+3, kts+3, vp%v2(its+3,grid%j_start(ij)+3,kts+3)
       do k = kts, kte
          do j = grid%j_start(ij), grid%j_end(ij)
             do i = its, ite
@@ -60,13 +57,11 @@ subroutine da_transform_vptox_inv(grid, vp, be, ep)
             end do
          end do
       end do
-      !write(*,'(a30,3i4,2x,e15.5)') "inv_Chiu(its+3,jts+3,kts+3)", its+3, grid%j_start(ij)+3, kts+3, vp%v2(its+3,grid%j_start(ij)+3,kts+3)
    end if
   
    ! 2.2 T --> T_u
    !-------------------
    if (cv_options /= 7) then ! - balance contri. from psi
-      !write(*,'(a30,3i4,2x,e15.5)') "inv_T(its+3,jts+3,kts+3)", its+3, grid%j_start(ij)+3, kts+3, vp%v3(its+3,grid%j_start(ij)+3,kts+3)
       do k1 = kts, kte
          do k = kts, kte
             do j = grid%j_start(ij), grid%j_end(ij)
@@ -77,7 +72,6 @@ subroutine da_transform_vptox_inv(grid, vp, be, ep)
             end do
          end do
       end do
-      !write(*,'(a30,3i4,2x,e15.5)') "inv_Tu(its+3,jts+3,kts+3)", its+3, grid%j_start(ij)+3, kts+3, vp%v3(its+3,grid%j_start(ij)+3,kts+3)
    end if
 
    if ( cv_options == 6 ) then ! - balance contri. from Chi_u 
@@ -101,7 +95,6 @@ subroutine da_transform_vptox_inv(grid, vp, be, ep)
    !end do
 
    if (cv_options /= 7) then ! - balance contri. from psi
-      !write(*,'(a30,2i4,2x,e15.5)') "inv_Ps(its+3,jts+3,1)", its+3, grid%j_start(ij)+3, vp%v5(its+3,grid%j_start(ij)+3,1)
       do k = kts,kte
          do j = grid%j_start(ij), grid%j_end(ij)
             do i = its, ite
@@ -110,7 +103,6 @@ subroutine da_transform_vptox_inv(grid, vp, be, ep)
             end do
          end do
       end do
-      !write(*,'(a30,2i4,2x,e15.5)') "inv_Psu(its+3,jts+3,1)", its+3, grid%j_start(ij)+3, vp%v5(its+3,grid%j_start(ij)+3,1)
    end if
 
    if ( cv_options == 6 ) then ! - balance contri. from Chi_u

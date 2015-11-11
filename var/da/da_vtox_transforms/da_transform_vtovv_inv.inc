@@ -1,7 +1,9 @@
 subroutine da_transform_vtovv_inv(grid, cv_size, be, cv, vv)
 
    !-----------------------------------------------------------------------
-   ! Purpose: TBD
+   ! Purpose: perform inverse transform of horizontal recursive filter
+   !
+   ! Author:  Zhiquan (Jake) Liu, NCAR/MMM, 2015-09
    !-----------------------------------------------------------------------
 
    implicit none
@@ -25,18 +27,15 @@ subroutine da_transform_vtovv_inv(grid, cv_size, be, cv, vv)
 
 
    !-------------------------------------------------------------------------
-   ! [2.0] Perform VToVV Transform:
+   ! [2.0] Perform inverse of VToVV Transform:
    !-------------------------------------------------------------------------
 
    ! [2.1] Transform 1st control variable:
    mz = be % v1 % mz
    !s(3)=s(1)+mz-1
    !if( do_normalize )call da_transform_rescale(mz,be%sd(:,:,s(1):s(3)),vv%v1)
-   print *, "use_rf, mz, len_scaling1(1)=",use_rf, mz, len_scaling1(1)
    if( use_rf .and. mz > 0 .and. len_scaling1(1) /= 0.0) then
-      write(*,'(a30,3i4,2x,e15.5)') "inv_vv%v1(its+3,jts+3,kts+3)", its+3, jts+3, kts+3, vv%v1(its+3,jts+3,kts+3)
       call da_transform_through_rf_inv(grid, mz, be % v1 % rf_alpha, be % v1 % val, vv % v1)
-      write(*,'(a30,3i4,2x,e15.5)') "inv_vv%v1(its+3,jts+3,kts+3)", its+3, jts+3, kts+3, vv%v1(its+3,jts+3,kts+3)
    !elseif( mz > 0 ) then
    !   s(4)=s(2)+nij(0,0,2)*nij(0,1,2)*mz-1
    !   call da_transform_through_wavelet_inv(grid,mz,be%wsd(:,:,s(1):s(3)),cv(s(2):s(4)),vv%v1)
