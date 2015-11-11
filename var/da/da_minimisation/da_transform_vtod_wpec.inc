@@ -31,7 +31,7 @@ subroutine da_transform_vtod_wpec(cv_size, be, ep, cv, vp, vv, vp6, vv6, xbx, gr
       call da_transform_vtox(grid, cv_size, xbx, be, ep, cv, vv, vp)
       call da_transform_xtoxa_all(grid)
 
-      call da_balance_equation_lin(grid, xbx)
+      call da_wpec_constraint_lin(grid, xbx)
 
 
    if (trace_use) call da_trace_exit("da_transform_vtod_wpec")

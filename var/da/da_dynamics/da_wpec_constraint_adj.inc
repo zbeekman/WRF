@@ -1,7 +1,7 @@
-subroutine da_balance_equation_adj(grid, xbx, phi_b, u, v)
+subroutine da_wpec_constraint_adj(grid, xbx)
 
    !---------------------------------------------------------------------------
-   ! Purpose: Adjoint of da_balance_equation
+   ! Purpose: Calculates ADM of balance equation G(x)
    !---------------------------------------------------------------------------
 
    implicit none
@@ -9,9 +9,11 @@ subroutine da_balance_equation_adj(grid, xbx, phi_b, u, v)
    type(domain), intent(inout)               :: grid
 
    type (xbx_type),intent(in) :: xbx              ! Header & non-gridded vars.
-   real, intent(in)    :: phi_b(ims:ime,jms:jme,kms:kme) ! Balanced mass increment.
-   real, intent(inout) :: u(ims:ime,jms:jme,kms:kme) ! u wind comp. (dot pts)
-   real, intent(inout) :: v(ims:ime,jms:jme,kms:kme) ! v wind comp. (dot pts)
+
+   real :: p(ims:ime,jms:jme,kms:kme) ! pressure increment.
+   real :: geoh(ims:ime,jms:jme,kms:kme) ! geopotential height increment.
+   real :: u(ims:ime,jms:jme,kms:kme) ! u wind comp. (dot pts)
+   real :: v(ims:ime,jms:jme,kms:kme) ! v wind comp. (dot pts)
 
    integer             :: i, j, k          ! Loop counters.
    integer             :: is, ie           ! 1st dim. end points.
@@ -21,18 +23,19 @@ subroutine da_balance_equation_adj(grid, xbx, phi_b, u, v)
                                        coefy, &   ! Multiplicative coefficient.
                                        term_x, &  ! Balance eqn x term
                                        term_y     ! Balance eqn y term
+   real    :: phi_b_x(ims:ime,jms:jme) ! Balance eqn x term
+   real    :: phi_b_y(ims:ime,jms:jme) ! Balance eqn y term
 
-   real, dimension(ims:ime,jms:jme,kms:kme) :: del2phi_b  ! Del**2 phi_b/M**2
+   
    real                       :: coeff1, coeff2   ! Multiplicative coefficient.
 
-   if (trace_use) call da_trace_entry("da_balance_equation_adj")
+   if (trace_use) call da_trace_entry("da_wpec_constraint_adj")
 
    !---------------------------------------------------------------------------
    ! [1.0] Initialise:
    !---------------------------------------------------------------------------
 
-   ! Computation to check for edge of domain:
-   is = its-1; ie = ite+1; js = jts-1; je = jte+1
+   is = ims; ie = ime; js = jms; je = jme
    if (.not. global .and. its == ids) is = ids+1
    if (.not. global .and. ite == ide) ie = ide-1
    if (jts == jds ) js = jds+1
@@ -45,8 +48,8 @@ subroutine da_balance_equation_adj(grid, xbx, phi_b, u, v)
       write (unit=message(1),fmt='(A,I3)') ' needs work for fg_format  = ',fg_format
       call da_error(__FILE__,__LINE__,message(1:1))
    else if (fg_format == fg_format_wrf_arw_regional) then
-      coefx(is:ie,js:je) = grid%xb%coefz(is:ie,js:je)
-      coefy(is:ie,js:je) = coefx(is:ie,js:je)
+      coefx(is:ie,js:je) = grid%xb%coefx(is:ie,js:je)
+      coefy(is:ie,js:je) = grid%xb%coefy(is:ie,js:je)
    else if (fg_format == fg_format_wrf_nmm_regional) then
       write (unit=message(1),fmt='(A,I3)') ' needs work for fg_format  = ',fg_format
       call da_error(__FILE__,__LINE__,message(1:1))
@@ -54,45 +57,60 @@ subroutine da_balance_equation_adj(grid, xbx, phi_b, u, v)
       write (unit=message(1),fmt='(A,I3)') ' Wrong FG_FORMAT = ',fg_format
       call da_error(__FILE__,__LINE__,message(1:1))
    end if
+   
+   u(:,:,:)      =  0.0
+   v(:,:,:)      =  0.0
+   p(:,:,:)      =  0.0
+   geoh(:,:,:)   =  0.0
 
-   ! [1.1] Multiplicative coefficent for conversion RHS->Del**2 phi_b/M**2:
+   do k = kts, kte
 
-   del2phi_b(:,:,:) = 0.0
+      term_x(ims:ime,jms:jme) = 0.0
+      term_y(ims:ime,jms:jme) = 0.0
+      phi_b_x(ims:ime,jms:jme) = 0.0
+      phi_b_y(ims:ime,jms:jme) = 0.0
 
    !---------------------------------------------------------------------------
-   ! [3.0] Solve Del**2 phi_b = RHS for phi_b:
+   ! [3.0] Solve Grad_p for balance eqn :
    !---------------------------------------------------------------------------
 
-   call da_solve_poissoneqn_fst_adj(grid,xbx, phi_b, del2phi_b)
+      do j = je, js, -1
+         do i = ie, is, -1
+         phi_b_x(i,j)=  phi_b_x(i,j) + grid%xa%grad_p_x(i,j,k)
+         phi_b_y(i,j)=  phi_b_y(i,j) + grid%xa%grad_p_y(i,j,k)
+         term_x(i,j) =  term_x(i,j)  + grid%xa%grad_p_x(i,j,k) 
+         term_y(i,j) =  term_y(i,j)  + grid%xa%grad_p_y(i,j,k)
+         end do
+      end do
 
    !---------------------------------------------------------------------------
    ! [2.0] Calculate RHS of balance equation in gridpt space:
    !---------------------------------------------------------------------------
 
-   do k = kts, kte
-      ! [2.4] Del**2 Phi_b boundary conditions (null as zero boundary conditions):
-
-      ! [2.3] Take divergence to get Del**2 phi_b/M**2:
-
-      term_x(ims:ime,jms:jme) = 0.0
-      term_y(ims:ime,jms:jme) = 0.0
+      ! [2.3] Include phi_b terms in balance eqn
 
       do j = je, js, -1
          do i = ie, is, -1
-            coeff1 = coefx(i,j) * del2phi_b(i,j,k)
-            coeff2 = coefy(i,j) * del2phi_b(i,j,k)
+            coeff1 = coefx(i,j) * phi_b_x(i,j)
+            coeff2 = coefy(i,j) * phi_b_y(i,j)
 
-            term_x(i+1,j) = term_x(i+1,j) - coeff1
-            term_x(i-1,j) = term_x(i-1,j) + coeff1
-            term_y(i,j+1) = term_y(i,j+1) - coeff2
-            term_y(i,j-1) = term_y(i,j-1) + coeff2
+            p(i+1,j,k) = p(i+1,j,k) + coeff1
+            p(i-1,j,k) = p(i-1,j,k) - coeff1
+            p(i,j+1,k) = p(i,j+1,k) + coeff2
+            p(i,j-1,k) = p(i,j-1,k) - coeff2
+
+            geoh(i+1,j,k) = geoh(i+1,j,k) + coeff1 * grid%xb % rho(i,j,k)
+            geoh(i-1,j,k) = geoh(i-1,j,k) - coeff1 * grid%xb % rho(i,j,k)
+            geoh(i,j+1,k) = geoh(i,j+1,k) + coeff2 * grid%xb % rho(i,j,k)
+            geoh(i,j-1,k) = geoh(i,j-1,k) - coeff2 * grid%xb % rho(i,j,k)
+
          end do
       end do
 
       ! [2.2] Include cyclostrophic terms in balance eqn if requested:
 
       if (balance_type == balance_cyc .OR. balance_type == balance_geocyc ) then
-         call da_balance_cycloterm_adj (grid%xb%rho(:,:,k),grid%xb%u(:,:,k),&
+         call da_wpec_constraint_cycloterm_adj (grid%xb%rho(:,:,k),grid%xb%u(:,:,k),&
             grid%xb%v(:,:,k), u(:,:,k), v(:,:,k), grid%xb%coefx(:,:), grid%xb%coefy(:,:),&
             term_x(:,:), term_y(:,:))
       end if
@@ -101,13 +119,20 @@ subroutine da_balance_equation_adj(grid, xbx, phi_b, u, v)
       ! [2.1] Calculate geostrophic terms in balance eqn:
  
       if (balance_type == balance_geo .OR. balance_type == balance_geocyc ) then
-         call da_balance_geoterm_adj (grid%xb%cori, grid%xb%rho(:,:,k), term_x, term_y, &
+         call da_wpec_constraint_geoterm_adj (grid%xb%cori, grid%xb%rho(:,:,k), term_x, term_y, &
             u(:,:,k), v(:,:,k))
       end if
+
    end do
 
-   if (trace_use) call da_trace_exit("da_balance_equation_adj")
+   grid%xa%u=u
+   grid%xa%v=v
+   grid%xa%p=p
+   grid%xa%geoh=geoh
 
-end subroutine da_balance_equation_adj
+
+   if (trace_use) call da_trace_exit("da_wpec_constraint_adj")
+
+end subroutine da_wpec_constraint_adj
 
 

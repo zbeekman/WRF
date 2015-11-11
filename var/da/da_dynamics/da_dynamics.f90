@@ -34,10 +34,8 @@ module da_dynamics
 #include "da_balance_cycloterm.inc"
 #include "da_balance_equation_adj.inc"
 #include "da_balance_equation_lin.inc"
-#include "da_balance_equation.inc"
 #include "da_balance_geoterm_adj.inc"
 #include "da_balance_geoterm_lin.inc"
-#include "da_balance_geoterm.inc"
 #include "da_hydrostaticp_to_rho_adj.inc"
 #include "da_hydrostaticp_to_rho_lin.inc"
 #include "da_psichi_to_uv.inc"
@@ -48,6 +46,15 @@ module da_dynamics
 #include "da_w_adjustment_adj.inc"
 #include "da_uv_to_vorticity.inc"
 #include "da_wz_base.inc"           
+#include "da_wpec_constraint.inc"
+#include "da_wpec_constraint_adj.inc"
+#include "da_wpec_constraint_cycloterm.inc"
+#include "da_wpec_constraint_cycloterm_adj.inc"
+#include "da_wpec_constraint_cycloterm_lin.inc"
+#include "da_wpec_constraint_geoterm.inc"
+#include "da_wpec_constraint_geoterm_adj.inc"
+#include "da_wpec_constraint_geoterm_lin.inc"
+#include "da_wpec_constraint_lin.inc"
 
 end module da_dynamics
 

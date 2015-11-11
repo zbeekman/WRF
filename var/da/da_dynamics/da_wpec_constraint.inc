@@ -1,4 +1,4 @@
-subroutine da_balance_equation(grid, xbx)
+subroutine da_wpec_constraint(grid, xbx)
 
    !---------------------------------------------------------------------------
    !  Purpose: Calculates balance equation G(x)
@@ -26,7 +26,7 @@ subroutine da_balance_equation(grid, xbx)
    
 
 
-   if (trace_use) call da_trace_entry("da_balance_equation")
+   if (trace_use) call da_trace_entry("da_wpec_constraint")
 
    !---------------------------------------------------------------------------
    ! [1.0] Initialise i and set multiplicative constants
@@ -75,14 +75,14 @@ subroutine da_balance_equation(grid, xbx)
       ! [2.1] Include geostrophic terms in balance eqn if requested:
 
       if (balance_type == balance_geo .OR. balance_type == balance_geocyc ) then
-         call da_balance_geoterm (grid%xb % cori, grid%xb % rho(:,:,k), grid%xb %u(:,:,k), grid%xb %v(:,:,k), &
+         call da_wpec_constraint_geoterm (grid%xb % cori, grid%xb % rho(:,:,k), grid%xb %u(:,:,k), grid%xb %v(:,:,k), &
             term_x, term_y)
       end if
       
       ! [2.2] Include cyclostrophic terms in balance eqn if requested:
 
       if (balance_type == balance_cyc .OR. balance_type == balance_geocyc ) then
-         call da_balance_cycloterm (grid%xb % rho(:,:,k), grid%xb % u(:,:,k),   &
+         call da_wpec_constraint_cycloterm (grid%xb % rho(:,:,k), grid%xb % u(:,:,k),   &
             grid%xb % v(:,:,k), grid%xb % coefx(:,:), grid%xb % coefy(:,:), &
             term_x, term_y)
       end if
@@ -108,8 +108,8 @@ subroutine da_balance_equation(grid, xbx)
     end do
 
 
-   if (trace_use) call da_trace_exit("da_balance_equation")
+   if (trace_use) call da_trace_exit("da_wpec_constraint")
 
-end subroutine da_balance_equation
+end subroutine da_wpec_constraint
 
 

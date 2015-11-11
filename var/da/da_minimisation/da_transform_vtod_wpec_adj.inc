@@ -37,7 +37,7 @@ subroutine da_transform_vtod_wpec_adj(cv_size, be, ep, cv, vp, vv, vp6, vv6, xbx
 
       call da_zero_x(grid%xa)
 
-      call da_balance_equation_adj(grid, xbx)
+      call da_wpec_constraint_adj(grid, xbx)
 
       call da_transform_xtoxa_adj_all(grid)
 
