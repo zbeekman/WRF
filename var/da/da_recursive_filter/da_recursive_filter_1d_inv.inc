@@ -12,6 +12,9 @@ subroutine da_recursive_filter_1d_inv(pass, alpha, field, n)
    !                    Meteorological Fields: Applications to NESDIS Operational Processing. 
    !                    J. Appl. Meteor., 34, 3-15. 
    !
+   ! Dale Barker etal., 2004, A 3DVAR data assimilation system for use with MM5, 
+   !                          NCAR Tech Note 393.
+   !
    ! Author: Zhiquan (Jake) Liu, NCAR/MMM, 2015-09 
    !---------------------------------------------------------------------------
 
@@ -53,6 +56,7 @@ subroutine da_recursive_filter_1d_inv(pass, alpha, field, n)
    !-------------------------------------------------------------------------
 
    ! use turning conditions as in the appendix of Hayden & Purser (1995):
+   ! also see Barker etal., 2004, chapter 5a.
 
    if (pass == 1) then
      b(1) = (c(1)-alpha*c(2))/one_alpha

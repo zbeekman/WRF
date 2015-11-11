@@ -1,13 +1,13 @@
 subroutine da_transform_through_rf_inv(grid, mz,rf_alpha, val, field, scaling)
 
    !---------------------------------------------------------------------------
-   ! Purpose: Control variable transform through the recursive filter.
+   ! Purpose: Inverse transform of the recursive filter.
+   !          Based on da_transform_through_rf_adj
    !
-   ! Method: 1) Transform to nondimensional v_hat space.
-   !         2) Perform recursive filter in non-dimensional space (ds = 1).
-   !         3) Scale recursive filter output.
-   !         4) Transform filtered field to dimensional space.
-   !         5) Optionally scale by background error.
+   ! Author:  Zhiquan (Jake) Liu, NCAR/MMM, 2015-09
+   ! 
+   ! Method: 1) Apply inverse filter first in y-direction.
+   !         2) then apply inverse filter in x-direction
    !---------------------------------------------------------------------------
 
    implicit none
@@ -41,6 +41,19 @@ subroutine da_transform_through_rf_inv(grid, mz,rf_alpha, val, field, scaling)
       do j = grid%j_start(ij), grid%j_end(ij)
          do i = its, ite
             p_x(i,j) = sqrt(grid%xb%grid_box_area(i,j))
+         end do
+      end do
+   end do
+   !$OMP END PARALLEL DO
+
+   !$OMP PARALLEL DO &
+   !$OMP PRIVATE ( ij, m, i, j )
+   do ij = 1 , grid%num_tiles
+      do m = 1, mz
+         do j = grid%j_start(ij), grid%j_end(ij)
+            do i = its, ite
+               grid%xp%v1z(i,j,m) = 0.0
+            end do
          end do
       end do
    end do
@@ -81,7 +94,7 @@ subroutine da_transform_through_rf_inv(grid, mz,rf_alpha, val, field, scaling)
    !$OMP END PARALLEL DO
 
    ! [4.1] Apply (i',j',k -> i',j,k') (grid%xp%v1z -> grid%xp%v1y)
-   ! convert vertical column to y-stripe
+   ! convert z-strip to y-stripe
 
    call da_transpose_z2y (grid)
 
@@ -140,7 +153,7 @@ subroutine da_transform_through_rf_inv(grid, mz,rf_alpha, val, field, scaling)
    !$OMP END PARALLEL DO
 
    ! [2.1] Apply (i,j',k' -> i',j',k) (grid%xp%v1x -> grid%xp%v1z)
-   ! convert from x-stripe to vertical column
+   ! convert from x-stripe to normal z-strip
 
    call da_transpose_x2z (grid)
 
