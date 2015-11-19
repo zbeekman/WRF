@@ -26,7 +26,6 @@ subroutine da_wpec_constraint_lin(grid, xbx)
    real    :: phi_b_y(ims:ime,jms:jme) ! Balance eqn y term
    
 
-
    if (trace_use) call da_trace_entry("da_wpec_constraint_lin")
 
    !---------------------------------------------------------------------------
@@ -89,9 +88,23 @@ subroutine da_wpec_constraint_lin(grid, xbx)
       ! [2.2] Include cyclostrophic terms in balance eqn if requested:
 
       if (balance_type == balance_cyc .OR. balance_type == balance_geocyc ) then
-         call da_wpec_constraint_cycloterm_lin (grid%xb % rho(:,:,k), grid%xb % u(:,:,k),   &
-            grid%xb % v(:,:,k), u(:,:,k), v(:,:,k), grid%xb % coefx(:,:), grid%xb % coefy(:,:), &
-            term_x(:,:), term_y(:,:))
+
+         do j = js, je
+            do i = is, ie
+               term_x(i,j) = term_x(i,j) + grid%xb%rho(i,j,k) * &
+                   ( coefx(i,j)*u(i,j,k) * ( grid%xb%u(i+1,j,k) - grid%xb%u(i-1,j,k)) + &
+                     coefy(i,j)*v(i,j,k) * ( grid%xb%u(i,j+1,k) - grid%xb%u(i,j-1,k)) + &
+                     coefx(i,j)*grid%xb%u(i,j,k) * ( u(i+1,j,k) - u(i-1,j,k)) + &
+                     coefy(i,j)*grid%xb%v(i,j,k) * ( u(i,j+1,k) - u(i,j-1,k)))
+
+               term_y(i,j) = term_y(i,j) + grid%xb%rho(i,j,k) * &
+                   ( coefx(i,j)*u(i,j,k) * ( grid%xb%v(i+1,j,k) - grid%xb%v(i-1,j,k)) + &
+                     coefy(i,j)*v(i,j,k) * ( grid%xb%v(i,j+1,k) - grid%xb%v(i,j-1,k)) + &
+                     coefx(i,j)*grid%xb%u(i,j,k) * ( v(i+1,j,k) - v(i-1,j,k)) + &
+                     coefy(i,j)*grid%xb%v(i,j,k) * ( v(i,j+1,k) - v(i,j-1,k)))
+            end do
+         end do
+
       end if
 
       ! [2.3] Include phi_b terms in balance eqn

@@ -48,7 +48,6 @@ module da_dynamics
 #include "da_wpec_constraint_adj.inc"
 #include "da_wpec_constraint_cycloterm.inc"
 #include "da_wpec_constraint_cycloterm_adj.inc"
-#include "da_wpec_constraint_cycloterm_lin.inc"
 #include "da_wpec_constraint_geoterm.inc"
 #include "da_wpec_constraint_lin.inc"
 
