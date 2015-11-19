@@ -44,7 +44,6 @@ subroutine da_wpec_constraint_lin(grid, xbx)
    else if( fg_format == fg_format_wrf_arw_regional) then
       coefx = grid%xb%coefx
       coefy = grid%xb%coefy
-
    else if (fg_format == fg_format_wrf_arw_global) then
       write (unit=message(1),fmt='(A,I3)') ' needs work for fg_format_wrf_arw_global  = ',fg_format
       call da_error(__FILE__,__LINE__,message(1:1))
@@ -58,18 +57,18 @@ subroutine da_wpec_constraint_lin(grid, xbx)
 
    ! [1.1] 
 
-   u      =   grid%xa%u
-   v      =   grid%xa%v
-   p      =   grid%xa%p
-   geoh   =   grid%xa%geoh
+   u       = grid%xa%u
+   v       = grid%xa%v
+   p       = grid%xa%p
+   geoh    = grid%xa%geoh
+   phi_b_x = 0.0
+   phi_b_y = 0.0
 
  
    do k = kts, kte
 
-      term_x(ims:ime,jms:jme) = 0.0
-      term_y(ims:ime,jms:jme) = 0.0
-      phi_b_x(ims:ime,jms:jme) = 0.0
-      phi_b_y(ims:ime,jms:jme) = 0.0
+      term_x = 0.0
+      term_y = 0.0
 
       !---------------------------------------------------------------------------
       ! [2.0] Calculate RHS of balance equation in gridpoint space:
@@ -78,8 +77,13 @@ subroutine da_wpec_constraint_lin(grid, xbx)
       ! [2.1] Include geostrophic terms in balance eqn if requested:
 
       if (balance_type == balance_geo .OR. balance_type == balance_geocyc ) then
-         call da_wpec_constraint_geoterm_lin (grid%xb % cori, grid%xb % rho(:,:,k), u(:,:,k), v(:,:,k), &
-            term_x, term_y)
+
+         ! [2.1.1] Calculate term_x = -f rho v~:
+         term_x = term_x - grid%xb%rho(:,:,k) * grid%xb%cori * v(:,:,k)
+
+         ! [2.1.2] Calculate term_y = f rho u~:
+         term_y = term_y + grid%xb%rho(:,:,k) * grid%xb%cori * u(:,:,k)
+
       end if
       
       ! [2.2] Include cyclostrophic terms in balance eqn if requested:

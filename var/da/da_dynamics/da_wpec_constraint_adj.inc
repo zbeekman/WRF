@@ -42,14 +42,14 @@ subroutine da_wpec_constraint_adj(grid, xbx)
    if (jte == jde ) je = jde-1
 
    if (fg_format == fg_format_kma_global) then
-      coefx(is:ie,js:je) = grid%xb%coefx(is:ie,js:je)
-      coefy(is:ie,js:je) = grid%xb%coefy(is:ie,js:je)
+      coefx = grid%xb%coefx
+      coefy = grid%xb%coefy
+   else if (fg_format == fg_format_wrf_arw_regional) then
+      coefx = grid%xb%coefx
+      coefy = grid%xb%coefy
    else if (fg_format == fg_format_wrf_arw_global) then
       write (unit=message(1),fmt='(A,I3)') ' needs work for fg_format  = ',fg_format
       call da_error(__FILE__,__LINE__,message(1:1))
-   else if (fg_format == fg_format_wrf_arw_regional) then
-      coefx(is:ie,js:je) = grid%xb%coefx(is:ie,js:je)
-      coefy(is:ie,js:je) = grid%xb%coefy(is:ie,js:je)
    else if (fg_format == fg_format_wrf_nmm_regional) then
       write (unit=message(1),fmt='(A,I3)') ' needs work for fg_format  = ',fg_format
       call da_error(__FILE__,__LINE__,message(1:1))
@@ -58,10 +58,10 @@ subroutine da_wpec_constraint_adj(grid, xbx)
       call da_error(__FILE__,__LINE__,message(1:1))
    end if
    
-   u(:,:,:)      =  0.0
-   v(:,:,:)      =  0.0
-   p(:,:,:)      =  0.0
-   geoh(:,:,:)   =  0.0
+   u       = 0.0
+   v       = 0.0
+   p       = 0.0
+   geoh    = 0.0
 
    do k = kts, kte
 
@@ -71,7 +71,7 @@ subroutine da_wpec_constraint_adj(grid, xbx)
       phi_b_y(ims:ime,jms:jme) = 0.0
 
    !---------------------------------------------------------------------------
-   ! [3.0] Solve Grad_p for balance eqn :
+   ! [2.0] Solve Grad_p for balance eqn
    !---------------------------------------------------------------------------
 
       do j = je, js, -1
@@ -84,10 +84,10 @@ subroutine da_wpec_constraint_adj(grid, xbx)
       end do
 
    !---------------------------------------------------------------------------
-   ! [2.0] Calculate RHS of balance equation in gridpt space:
+   ! [3.0] Calculate RHS of balance equation in gridpt space
    !---------------------------------------------------------------------------
 
-      ! [2.3] Include phi_b terms in balance eqn
+      ! [3.1] Include phi_b terms in balance eqn
 
       do j = je, js, -1
          do i = ie, is, -1
@@ -107,7 +107,7 @@ subroutine da_wpec_constraint_adj(grid, xbx)
          end do
       end do
 
-      ! [2.2] Include cyclostrophic terms in balance eqn if requested:
+      ! [3.2] Include cyclostrophic terms in balance eqn if requested:
 
       if (balance_type == balance_cyc .OR. balance_type == balance_geocyc ) then
          call da_wpec_constraint_cycloterm_adj (grid%xb%rho(:,:,k),grid%xb%u(:,:,k),&
@@ -116,11 +116,15 @@ subroutine da_wpec_constraint_adj(grid, xbx)
       end if
 
       
-      ! [2.1] Calculate geostrophic terms in balance eqn:
+      ! [3.3] Calculate geostrophic terms in balance eqn:
  
       if (balance_type == balance_geo .OR. balance_type == balance_geocyc ) then
-         call da_wpec_constraint_geoterm_adj (grid%xb%cori, grid%xb%rho(:,:,k), term_x, term_y, &
-            u(:,:,k), v(:,:,k))
+         ! [3.3.1] Calculate term_y = f rho u~:
+         u(:,:,k) = u(:,:,k) + grid%xb%rho(:,:,k) * grid%xb%cori * term_y
+
+         ! [3.3.2] Calculate term_x = -f rho v~:
+         v(:,:,k) = v(:,:,k) - grid%xb%rho(:,:,k) * grid%xb%cori * term_x
+
       end if
 
    end do
