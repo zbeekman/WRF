@@ -26,9 +26,6 @@ subroutine da_wpec_constraint_adj(grid, xbx)
    real    :: phi_b_x(ims:ime,jms:jme) ! Balance eqn x term
    real    :: phi_b_y(ims:ime,jms:jme) ! Balance eqn y term
 
-   
-   real                       :: coeff1, coeff2   ! Multiplicative coefficient.
-
    if (trace_use) call da_trace_entry("da_wpec_constraint_adj")
 
    !---------------------------------------------------------------------------
@@ -65,44 +62,38 @@ subroutine da_wpec_constraint_adj(grid, xbx)
 
    do k = kts, kte
 
-      term_x(ims:ime,jms:jme) = 0.0
-      term_y(ims:ime,jms:jme) = 0.0
-      phi_b_x(ims:ime,jms:jme) = 0.0
-      phi_b_y(ims:ime,jms:jme) = 0.0
+      term_x = 0.0
+      term_y = 0.0
+      phi_b_x = 0.0
+      phi_b_y = 0.0
 
-   !---------------------------------------------------------------------------
-   ! [2.0] Solve Grad_p for balance eqn
-   !---------------------------------------------------------------------------
+      !---------------------------------------------------------------------------
+      ! [2.0] Solve Grad_p for balance eqn
+      !---------------------------------------------------------------------------
 
-      do j = je, js, -1
-         do i = ie, is, -1
-         phi_b_x(i,j)=  phi_b_x(i,j) + grid%xa%grad_p_x(i,j,k)
-         phi_b_y(i,j)=  phi_b_y(i,j) + grid%xa%grad_p_y(i,j,k)
-         term_x(i,j) =  term_x(i,j)  + grid%xa%grad_p_x(i,j,k) 
-         term_y(i,j) =  term_y(i,j)  + grid%xa%grad_p_y(i,j,k)
-         end do
-      end do
+      phi_b_x = phi_b_x + grid%xa%grad_p_x(:,:,k)
+      phi_b_y = phi_b_y + grid%xa%grad_p_y(:,:,k)
+      term_x = term_x  + grid%xa%grad_p_x(:,:,k)
+      term_y = term_y  + grid%xa%grad_p_y(:,:,k)
 
-   !---------------------------------------------------------------------------
-   ! [3.0] Calculate RHS of balance equation in gridpt space
-   !---------------------------------------------------------------------------
+      !---------------------------------------------------------------------------
+      ! [3.0] Calculate RHS of balance equation in gridpt space
+      !---------------------------------------------------------------------------
 
       ! [3.1] Include phi_b terms in balance eqn
 
       do j = je, js, -1
          do i = ie, is, -1
-            coeff1 = coefx(i,j) * phi_b_x(i,j)
-            coeff2 = coefy(i,j) * phi_b_y(i,j)
 
-            p(i+1,j,k) = p(i+1,j,k) + coeff1
-            p(i-1,j,k) = p(i-1,j,k) - coeff1
-            p(i,j+1,k) = p(i,j+1,k) + coeff2
-            p(i,j-1,k) = p(i,j-1,k) - coeff2
+            p(i+1,j,k) = p(i+1,j,k) + coefx(i,j) * phi_b_x(i,j)
+            p(i-1,j,k) = p(i-1,j,k) - coefx(i,j) * phi_b_x(i,j)
+            p(i,j+1,k) = p(i,j+1,k) + coefy(i,j) * phi_b_y(i,j)
+            p(i,j-1,k) = p(i,j-1,k) - coefy(i,j) * phi_b_y(i,j)
 
-            geoh(i+1,j,k) = geoh(i+1,j,k) + coeff1 * grid%xb % rho(i,j,k)
-            geoh(i-1,j,k) = geoh(i-1,j,k) - coeff1 * grid%xb % rho(i,j,k)
-            geoh(i,j+1,k) = geoh(i,j+1,k) + coeff2 * grid%xb % rho(i,j,k)
-            geoh(i,j-1,k) = geoh(i,j-1,k) - coeff2 * grid%xb % rho(i,j,k)
+            geoh(i+1,j,k) = geoh(i+1,j,k) + coefx(i,j) * phi_b_x(i,j) * grid%xb % rho(i,j,k)
+            geoh(i-1,j,k) = geoh(i-1,j,k) - coefx(i,j) * phi_b_x(i,j) * grid%xb % rho(i,j,k)
+            geoh(i,j+1,k) = geoh(i,j+1,k) + coefy(i,j) * phi_b_y(i,j) * grid%xb % rho(i,j,k)
+            geoh(i,j-1,k) = geoh(i,j-1,k) - coefy(i,j) * phi_b_y(i,j) * grid%xb % rho(i,j,k)
 
          end do
       end do
@@ -128,6 +119,11 @@ subroutine da_wpec_constraint_adj(grid, xbx)
       end if
 
    end do
+
+   !---------------------------------------------------------------------------
+   ! [4.0] Store results in grid%xa structure
+   !---------------------------------------------------------------------------
+
 
    grid%xa%u=u
    grid%xa%v=v
