@@ -91,12 +91,14 @@ subroutine da_wpec_constraint_lin(grid, xbx)
 
          do j = js, je
             do i = is, ie
+               ! [2.2.1] Calculate term_x = rho M ( u'du/dx + v'du/dy + udu'/dx + vdu'/dy )
                term_x(i,j) = term_x(i,j) + grid%xb%rho(i,j,k) * &
                    ( coefx(i,j)*u(i,j,k) * ( grid%xb%u(i+1,j,k) - grid%xb%u(i-1,j,k)) + &
                      coefy(i,j)*v(i,j,k) * ( grid%xb%u(i,j+1,k) - grid%xb%u(i,j-1,k)) + &
                      coefx(i,j)*grid%xb%u(i,j,k) * ( u(i+1,j,k) - u(i-1,j,k)) + &
                      coefy(i,j)*grid%xb%v(i,j,k) * ( u(i,j+1,k) - u(i,j-1,k)))
 
+               ! [2.2.2] Calculate term_y = rho M ( u'dv/dx + v'dv/dy + udv'/dx + vdv'/dy )
                term_y(i,j) = term_y(i,j) + grid%xb%rho(i,j,k) * &
                    ( coefx(i,j)*u(i,j,k) * ( grid%xb%v(i+1,j,k) - grid%xb%v(i-1,j,k)) + &
                      coefy(i,j)*v(i,j,k) * ( grid%xb%v(i,j+1,k) - grid%xb%v(i,j-1,k)) + &

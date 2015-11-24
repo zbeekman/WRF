@@ -22,7 +22,7 @@ subroutine da_wpec_constraint_cycloterm_adj (rho, ub, vb, u, v, coefx, coefy, te
    integer              :: js, je                       ! 2nd dim. end points.
    real                 :: data(ims:ime,jms:jme)        ! Work array.
 
-   real                 :: var, varb, uar
+   real                 :: var, uar
 
    if (trace_use) call da_trace_entry("da_wpec_constraint_cycloterm_adj")
 
@@ -53,10 +53,10 @@ subroutine da_wpec_constraint_cycloterm_adj (rho, ub, vb, u, v, coefx, coefy, te
 
          u(i,j) = u(i,j) + coefx(i,j)*data(i,j)*( vb(i+1,j) - vb(i-1,j) ) 
          v(i,j) = v(i,j) + coefy(i,j)*data(i,j)*( vb(i,j+1) - vb(i,j-1) ) 
-         v(i+1,j) = v(i+1,j) + uar                 
-         v(i-1,j) = v(i-1,j) - uar                 
-         v(i,j+1) = v(i,j+1) + var                  
-         v(i,j-1) = v(i,j-1) - var                  
+         v(i+1,j) = v(i+1,j) + uar
+         v(i-1,j) = v(i-1,j) - uar
+         v(i,j+1) = v(i,j+1) + var
+         v(i,j-1) = v(i,j-1) - var
       end do
    end do
    
@@ -77,9 +77,9 @@ subroutine da_wpec_constraint_cycloterm_adj (rho, ub, vb, u, v, coefx, coefy, te
 
          u(i,j) = u(i,j) + coefx(i,j)*( ub(i+1,j) - ub(i-1,j) ) * data(i,j)
          v(i,j) = v(i,j) + coefy(i,j)*( ub(i,j+1) - ub(i,j-1) ) * data(i,j)
-         u(i+1,j) = u(i+1,j) + uar                 
-         u(i-1,j) = u(i-1,j) - uar                 
-         u(i,j+1) = u(i,j+1) + var                   
+         u(i+1,j) = u(i+1,j) + uar
+         u(i-1,j) = u(i-1,j) - uar
+         u(i,j+1) = u(i,j+1) + var
          u(i,j-1) = u(i,j-1) - var  
       end do
    end do
@@ -87,5 +87,4 @@ subroutine da_wpec_constraint_cycloterm_adj (rho, ub, vb, u, v, coefx, coefy, te
    if (trace_use) call da_trace_exit("da_wpec_constraint_cycloterm_adj")
 
 end subroutine da_wpec_constraint_cycloterm_adj
-
 
