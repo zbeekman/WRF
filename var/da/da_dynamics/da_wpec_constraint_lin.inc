@@ -9,11 +9,6 @@ subroutine da_wpec_constraint_lin(grid, xbx)
    type(domain),   intent(inout) :: grid
    type(xbx_type), intent(in)    :: xbx                            ! Header & non-gridded vars.
 
-   real   :: u(ims:ime,jms:jme,kms:kme)     ! u wind comp.
-   real   :: v(ims:ime,jms:jme,kms:kme)     ! v wind comp.
-   real   :: p(ims:ime,jms:jme,kms:kme)     ! pressure increment.
-   real   :: geoh(ims:ime,jms:jme,kms:kme)  ! geopotential height increment.
-
    integer :: i, j, k                 ! Loop counters.
    integer :: is, ie                  ! 1st dim. end points.
    integer :: js, je                  ! 2nd dim. end points.
@@ -32,7 +27,7 @@ subroutine da_wpec_constraint_lin(grid, xbx)
    ! [1.0] Initialise i and set multiplicative constants
    !---------------------------------------------------------------------------
 
-   is = ims; ie = ime; js = jms; je = jme
+   is = its; ie = ite; js = jts; je = jte
    if (.not.global .and. its == ids) is = ids+1
    if (.not.global .and. ite == ide) ie = ide-1
    if (jts == jds ) js = jds+1; if (jte == jde) je = jde-1
@@ -56,10 +51,6 @@ subroutine da_wpec_constraint_lin(grid, xbx)
 
    ! [1.1] 
 
-   u       = grid%xa%u
-   v       = grid%xa%v
-   p       = grid%xa%p
-   geoh    = grid%xa%geoh
    phi_b_x = 0.0
    phi_b_y = 0.0
 
@@ -78,10 +69,10 @@ subroutine da_wpec_constraint_lin(grid, xbx)
       if (balance_type == balance_geo .OR. balance_type == balance_geocyc ) then
 
          ! [2.1.1] Calculate term_x = -f rho v~:
-         term_x = term_x - grid%xb%rho(:,:,k) * grid%xb%cori * v(:,:,k)
+         term_x = term_x - grid%xb%rho(:,:,k) * grid%xb%cori * grid%xa%v(:,:,k)
 
          ! [2.1.2] Calculate term_y = f rho u~:
-         term_y = term_y + grid%xb%rho(:,:,k) * grid%xb%cori * u(:,:,k)
+         term_y = term_y + grid%xb%rho(:,:,k) * grid%xb%cori * grid%xa%u(:,:,k)
 
       end if
       
@@ -93,17 +84,17 @@ subroutine da_wpec_constraint_lin(grid, xbx)
             do i = is, ie
                ! [2.2.1] Calculate term_x = rho M ( u'du/dx + v'du/dy + udu'/dx + vdu'/dy )
                term_x(i,j) = term_x(i,j) + grid%xb%rho(i,j,k) * &
-                   ( coefx(i,j)*u(i,j,k) * ( grid%xb%u(i+1,j,k) - grid%xb%u(i-1,j,k)) + &
-                     coefy(i,j)*v(i,j,k) * ( grid%xb%u(i,j+1,k) - grid%xb%u(i,j-1,k)) + &
-                     coefx(i,j)*grid%xb%u(i,j,k) * ( u(i+1,j,k) - u(i-1,j,k)) + &
-                     coefy(i,j)*grid%xb%v(i,j,k) * ( u(i,j+1,k) - u(i,j-1,k)))
+                   ( coefx(i,j)*grid%xa%u(i,j,k) * ( grid%xb%u(i+1,j,k) - grid%xb%u(i-1,j,k)) + &
+                     coefy(i,j)*grid%xa%v(i,j,k) * ( grid%xb%u(i,j+1,k) - grid%xb%u(i,j-1,k)) + &
+                     coefx(i,j)*grid%xb%u(i,j,k) * ( grid%xa%u(i+1,j,k) - grid%xa%u(i-1,j,k)) + &
+                     coefy(i,j)*grid%xb%v(i,j,k) * ( grid%xa%u(i,j+1,k) - grid%xa%u(i,j-1,k)))
 
                ! [2.2.2] Calculate term_y = rho M ( u'dv/dx + v'dv/dy + udv'/dx + vdv'/dy )
                term_y(i,j) = term_y(i,j) + grid%xb%rho(i,j,k) * &
-                   ( coefx(i,j)*u(i,j,k) * ( grid%xb%v(i+1,j,k) - grid%xb%v(i-1,j,k)) + &
-                     coefy(i,j)*v(i,j,k) * ( grid%xb%v(i,j+1,k) - grid%xb%v(i,j-1,k)) + &
-                     coefx(i,j)*grid%xb%u(i,j,k) * ( v(i+1,j,k) - v(i-1,j,k)) + &
-                     coefy(i,j)*grid%xb%v(i,j,k) * ( v(i,j+1,k) - v(i,j-1,k)))
+                   ( coefx(i,j)*grid%xa%u(i,j,k) * ( grid%xb%v(i+1,j,k) - grid%xb%v(i-1,j,k)) + &
+                     coefy(i,j)*grid%xa%v(i,j,k) * ( grid%xb%v(i,j+1,k) - grid%xb%v(i,j-1,k)) + &
+                     coefx(i,j)*grid%xb%u(i,j,k) * ( grid%xa%v(i+1,j,k) - grid%xa%v(i-1,j,k)) + &
+                     coefy(i,j)*grid%xb%v(i,j,k) * ( grid%xa%v(i,j+1,k) - grid%xa%v(i,j-1,k)))
             end do
          end do
 
@@ -112,8 +103,8 @@ subroutine da_wpec_constraint_lin(grid, xbx)
       ! [2.3] Include phi_b terms in balance eqn
       do j = js, je
          do i = is, ie
-            phi_b_x(i,j) = coefx(i,j)*(p(i+1,j,k)-p(i-1,j,k) + grid%xb % rho(i,j,k)*(geoh(i+1,j,k)-geoh(i-1,j,k)) )
-            phi_b_y(i,j) = coefy(i,j)*(p(i,j+1,k)-p(i,j-1,k) + grid%xb % rho(i,j,k)*(geoh(i,j+1,k)-geoh(i,j-1,k)) )                 
+            phi_b_x(i,j) = coefx(i,j)*(grid%xa%p(i+1,j,k)-grid%xa%p(i-1,j,k) + grid%xb % rho(i,j,k)*(grid%xa%geoh(i+1,j,k)-grid%xa%geoh(i-1,j,k)) )
+            phi_b_y(i,j) = coefy(i,j)*(grid%xa%p(i,j+1,k)-grid%xa%p(i,j-1,k) + grid%xb % rho(i,j,k)*(grid%xa%geoh(i,j+1,k)-grid%xa%geoh(i,j-1,k)) )                 
          end do
       end do
 

@@ -26,13 +26,16 @@ subroutine da_wpec_constraint_adj(grid, xbx)
    real    :: phi_b_x(ims:ime,jms:jme) ! Balance eqn x term
    real    :: phi_b_y(ims:ime,jms:jme) ! Balance eqn y term
 
+   real                 :: data(ims:ime,jms:jme)        ! Work array.
+   real                 :: var, uar
+
    if (trace_use) call da_trace_entry("da_wpec_constraint_adj")
 
    !---------------------------------------------------------------------------
    ! [1.0] Initialise:
    !---------------------------------------------------------------------------
 
-   is = ims; ie = ime; js = jms; je = jme
+   is = its; ie = ite; js = jts; je = jte
    if (.not. global .and. its == ids) is = ids+1
    if (.not. global .and. ite == ide) ie = ide-1
    if (jts == jds ) js = jds+1
@@ -71,10 +74,10 @@ subroutine da_wpec_constraint_adj(grid, xbx)
       ! [2.0] Solve Grad_p for balance eqn
       !---------------------------------------------------------------------------
 
-      phi_b_x = phi_b_x + grid%xa%grad_p_x(:,:,k)
-      phi_b_y = phi_b_y + grid%xa%grad_p_y(:,:,k)
-      term_x = term_x  + grid%xa%grad_p_x(:,:,k)
-      term_y = term_y  + grid%xa%grad_p_y(:,:,k)
+      phi_b_x = grid%xa%grad_p_x(:,:,k)
+      phi_b_y = grid%xa%grad_p_y(:,:,k)
+      term_x = grid%xa%grad_p_x(:,:,k)
+      term_y = grid%xa%grad_p_y(:,:,k)
 
       !---------------------------------------------------------------------------
       ! [3.0] Calculate RHS of balance equation in gridpt space
@@ -101,9 +104,40 @@ subroutine da_wpec_constraint_adj(grid, xbx)
       ! [3.2] Include cyclostrophic terms in balance eqn if requested:
 
       if (balance_type == balance_cyc .OR. balance_type == balance_geocyc ) then
-         call da_wpec_constraint_cycloterm_adj (grid%xb%rho(:,:,k),grid%xb%u(:,:,k),&
-            grid%xb%v(:,:,k), u(:,:,k), v(:,:,k), grid%xb%coefx(:,:), grid%xb%coefy(:,:),&
-            term_x(:,:), term_y(:,:))
+
+         ! [3.2.1] Calculate adjoint of term_y = rho M ( u'dv/dx + v'dv/dy + udv'/dx + vdv'/dy ):
+         data = grid%xb%rho(:,:,k) * term_y
+
+         do j = je, js, -1
+            do i = ie, is, -1
+               uar = coefx(i,j) * grid%xb%u(i,j,k) * data(i,j)
+               var = coefy(i,j) * grid%xb%v(i,j,k) * data(i,j)
+
+                u(i,j,k) = u(i,j,k) + coefx(i,j)*data(i,j)*( grid%xb%v(i+1,j,k) - grid%xb%v(i-1,j,k) )
+                v(i,j,k) = v(i,j,k) + coefy(i,j)*data(i,j)*( grid%xb%v(i,j+1,k) - grid%xb%v(i,j-1,k) )
+                v(i+1,j,k) = v(i+1,j,k) + uar
+                v(i-1,j,k) = v(i-1,j,k) - uar
+                v(i,j+1,k) = v(i,j+1,k) + var
+                v(i,j-1,k) = v(i,j-1,k) - var
+            end do
+         end do
+
+         ! [3.2.2] Calculate adjoint of term_x = rho M ( u'du/dx + v'du/dy + udu'/dx + vdu'/dy ):
+         data = grid%xb%rho(:,:,k) * term_x
+
+         do j = je, js, -1
+            do i = ie, is, -1
+               uar = coefx(i,j) * grid%xb%u(i,j,k) * data(i,j)
+               var = coefy(i,j) * grid%xb%v(i,j,k) * data(i,j)
+
+                u(i,j,k) = u(i,j,k) + coefx(i,j)*( grid%xb%u(i+1,j,k) - grid%xb%u(i-1,j,k) ) * data(i,j)
+                v(i,j,k) = v(i,j,k) + coefy(i,j)*( grid%xb%u(i,j+1,k) - grid%xb%u(i,j-1,k) ) * data(i,j)
+                u(i+1,j,k) = u(i+1,j,k) + uar
+                u(i-1,j,k) = u(i-1,j,k) - uar
+                u(i,j+1,k) = u(i,j+1,k) + var
+                u(i,j-1,k) = u(i,j-1,k) - var
+            end do
+         end do
       end if
 
       
