@@ -169,8 +169,7 @@ subroutine da_calculate_j(it, iter, cv_size, cv_size_jb, cv_size_je, cv_size_jp,
       grid%xa%grad_p_x(:,:,:)=0.0
       grid%xa%grad_p_y(:,:,:)=0.0
 
-      call da_transform_vtod_wpec(cv_size, be, grid%ep, xhat+cv, grid%vp, &
-              grid%vv, grid%vp6, grid%vv6, xbx, grid, config_flags)
+      call da_transform_vtod_wpec(cv_size, be, grid%ep, xhat+cv, grid%vp, grid%vv, xbx, grid)
 
       do i=its,ite
          do jj=jts,jte

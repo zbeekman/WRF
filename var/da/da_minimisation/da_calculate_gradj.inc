@@ -121,14 +121,12 @@ subroutine da_calculate_gradj(it, iter, cv_size, cv_size_jb, cv_size_je, cv_size
       grid%xa%grad_p_x(:,:,:)=0.0
       grid%xa%grad_p_y(:,:,:)=0.0
 
-      call da_transform_vtod_wpec(cv_size, be, grid%ep, cv, grid%vp, &
-              grid%vv, grid%vp6, grid%vv6, xbx, grid, config_flags)
+      call da_transform_vtod_wpec(cv_size, be, grid%ep, cv, grid%vp, grid%vv, xbx, grid)
 
       grid%xa%grad_p_x=(grid%xa%grad_p_x)/wpec_factor
       grid%xa%grad_p_y=(grid%xa%grad_p_y)/wpec_factor
 
-      call da_transform_vtod_wpec_adj(cv_size, be, grid%ep, grad_jd,  &
-              grid%vp, grid%vv, grid%vp6, grid%vv6, xbx, grid, config_flags, .true.)
+      call da_transform_vtod_wpec_adj(cv_size, be, grid%ep, grad_jd, grid%vp, grid%vv, xbx, grid)
 
    end if
 
