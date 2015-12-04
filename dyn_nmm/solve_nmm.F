@@ -104,7 +104,7 @@
 !zhang's doing
       INTEGER,SAVE :: NTSD_restart1,NTSD_restart2,NTSD_restart3
 #endif
-      LOGICAL :: multi_storm
+      LOGICAL :: multi_storm, no_ocean
 #endif
 #ifdef NMM_FIND_LOAD_IMBALANCE
       integer, save :: cpu
@@ -786,7 +786,8 @@
 !-----------------------------------------------------------------------
 #ifdef HWRF
       CALL nl_get_multi_storm(1,multi_storm)
-      IF ( .NOT. multi_storm ) THEN
+      CALL nl_get_no_ocean(1,no_ocean)
+      IF ( .NOT. multi_storm .OR. no_ocean) THEN
         write(message,*)' No Ocean Coupling Run'
         call wrf_debug(1,trim(message))
 ! Coupling insertion:->
@@ -1556,7 +1557,8 @@
 !*** GET SSTs FROM DMITRY's COUPLER ON TO THE PARENT AND NESTED GRID
 !-------------------------------------------------------------------------------------
       CALL nl_get_multi_storm(1,multi_storm)
-      IF ( .NOT. multi_storm ) THEN
+      CALL nl_get_no_ocean(1,no_ocean)
+      IF ( .NOT. multi_storm .OR. no_ocean ) THEN
         write(message,*)' No Ocean Coupling Run'
         call wrf_debug(1,trim(message))
       ELSE
@@ -1662,7 +1664,8 @@
 !
 !
       CALL nl_get_multi_storm(1,multi_storm)
-      IF ( .NOT. multi_storm ) THEN
+      CALL nl_get_no_ocean(1,no_ocean)
+      IF ( .NOT. multi_storm .OR. no_ocean ) THEN
         write(message,*)' No Ocean Coupling Run'
         call wrf_debug(1,trim(message))
       ELSE
@@ -2533,7 +2536,8 @@
 !
 !
       CALL nl_get_multi_storm(1,multi_storm)
-      IF ( .NOT. multi_storm ) THEN
+      CALL nl_get_no_ocean(1,no_ocean)
+      IF ( .NOT. multi_storm .OR. no_ocean ) THEN
         write(message,*)' No Ocean Coupling Run'
         call wrf_debug(1,trim(message))
       ELSE

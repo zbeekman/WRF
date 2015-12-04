@@ -526,6 +526,7 @@ USE module_mp_radar
           KRR=KRR+1
 #ifdef HWRF
        !jm couldn't resolve this difference on my own so added ifdef 20151203
+          if (xland(i,j).eq.1.and.(ivgtyp(i,j).eq.19.or.ivgtyp(i,j).eq.1))then
 #else
           if (xland(i,j).lt.1.5)then
 #endif
