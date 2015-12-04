@@ -1,3 +1,4 @@
+#define HRD_MULTIPLE_STORMS
 !-----------------------------------------------------------------------
 !
 !NCEP_MESO:MEDIATION_LAYER:SOLVER
@@ -103,6 +104,7 @@
 !zhang's doing
       INTEGER,SAVE :: NTSD_restart1,NTSD_restart2,NTSD_restart3
 #endif
+      LOGICAL :: multi_storm
 #endif
 #ifdef NMM_FIND_LOAD_IMBALANCE
       integer, save :: cpu
@@ -299,8 +301,8 @@
 !-----------------------------------------------------------------------
 !
 !!!!! IF(WRF_DM_ON_MONITOR() )THEN
-        WRITE(MESSAGE,125)grid%ntsd,grid%ntsd*GRID%DT/3600.
-  125   FORMAT(' SOLVE_NMM: TIMESTEP IS ',I5,'   TIME IS ',F7.3,' HOURS')
+        WRITE(MESSAGE,125)grid%id,grid%ntsd,grid%ntsd*GRID%DT/3600.
+  125   FORMAT(' SOLVE_NMM: ',I3,' TIMESTEP IS ',I5,'   TIME IS ',F7.3,' HOURS')
         CALL WRF_MESSAGE(TRIM(MESSAGE))
 !!!!  ENDIF
 !
@@ -783,22 +785,24 @@
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
 #ifdef HWRF
-#ifdef HRD_MULTIPLE_STORMS
-      write(message,*)' No Ocean Coupling Run'
-      call wrf_message(trim(message))
-#else
+      CALL nl_get_multi_storm(1,multi_storm)
+      IF ( .NOT. multi_storm ) THEN
+        write(message,*)' No Ocean Coupling Run'
+        call wrf_debug(1,trim(message))
 ! Coupling insertion:->
-      btimx=now_time()
-      call ATM_TSTEP_INIT(NTSD_current,grid%NPHS,GRID%ID,grid%NPHS*grid%dt, &
-      ids,idf,jds,jdf,its,ite,jts,jte,ims,ime,jms,jme,           &
-                       kds,kde,kts,kte,kms,kme,                  &
-                       grid%HLON,grid%HLAT,grid%VLON,grid%VLAT,grid%sm,                   &
-                       grid%i_parent_start,grid%j_parent_start,  &
-                       grid%guessdtc,grid%dtc)
-      sst_tim=sst_tim+now_time()-btimx
+      ELSE
+        btimx=now_time()
+        call ATM_TSTEP_INIT(NTSD_current,grid%NPHS,GRID%ID,grid%NPHS*grid%dt, &
+        ids,idf,jds,jdf,its,ite,jts,jte,ims,ime,jms,jme,           &
+                         kds,kde,kts,kte,kms,kme,                  &
+                         grid%HLON,grid%HLAT,grid%VLON,grid%VLAT,grid%sm,                   &
+                         grid%i_parent_start,grid%j_parent_start,  &
+                         grid%guessdtc,grid%dtc)
+        sst_tim=sst_tim+now_time()-btimx
+      ENDIF
 !<-:coupling insertion
 !
-#endif
+
 #endif
 !-----------------------------------------------------------------------
 !***  PRESSURE TENDENCY, SIGMA DOT, VERTICAL PART OF OMEGA-ALPHA
@@ -1551,16 +1555,17 @@
 !-------------------------------------------------------------------------------------
 !*** GET SSTs FROM DMITRY's COUPLER ON TO THE PARENT AND NESTED GRID
 !-------------------------------------------------------------------------------------
-#ifdef HRD_MULTIPLE_STORMS
-      write(message,*)' No Ocean Coupling Run'
-      call wrf_message(trim(message))
-#else
+      CALL nl_get_multi_storm(1,multi_storm)
+      IF ( .NOT. multi_storm ) THEN
+        write(message,*)' No Ocean Coupling Run'
+        call wrf_debug(1,trim(message))
+      ELSE
 ! Coupling insertion:->
         btimx=now_time()
         CALL ATM_GETSST(grid%sst,grid%sm)
         sst_tim=sst_tim+now_time()-btimx
 !<-:Coupling insertion
-#endif
+      ENDIF
 #endif
 !----------------------------------------------------------------------
 !***  TURBULENT PROCESSES 
@@ -1639,8 +1644,6 @@
 !
         turbl_tim=turbl_tim+now_time()-btimx
 #ifdef HWRF
-
-
 !------------------------------------------------------------------------------
 !*** ATMOSPHERIC MODEL OUTPUTS FROM PARENT AND NESTED GRID FOR DMITRYs COUPLER
 !------------------------------------------------------------------------------
@@ -1658,25 +1661,24 @@
 
 !
 !
-
-#ifdef HRD_MULTIPLE_STORMS
-      write(message,*)' No Ocean Coupling Run'
-      call wrf_message(trim(message))
-#else
+      CALL nl_get_multi_storm(1,multi_storm)
+      IF ( .NOT. multi_storm ) THEN
+        write(message,*)' No Ocean Coupling Run'
+        call wrf_debug(1,trim(message))
+      ELSE
 ! Coupling insertion:->
-      btimx=now_time()
-      call ATM_DOFLUXES(grid%twbs,grid%qwbs,grid%rlwin,grid%rswin,grid%radot,grid%rswout, &
-      grid%taux,grid%tauy,grid%pint,grid%prec,grid%u10,grid%v10)
-      flux_tim=flux_tim+now_time()-btimx
+        btimx=now_time()
+        call ATM_DOFLUXES(grid%twbs,grid%qwbs,grid%rlwin,grid%rswin,grid%radot,grid%rswout, &
+        grid%taux,grid%tauy,grid%pint,grid%prec,grid%u10,grid%v10)
+        flux_tim=flux_tim+now_time()-btimx
 !<-:Coupling insertion
 !
 
-      IF(GRID%ID .EQ. 1 .AND. MOD(grid%ntsd,grid%NPHS)==0)THEN
-        btimx=now_time()
-        flux_tim=flux_tim+now_time()-btimx
+        IF(GRID%ID .EQ. 1 .AND. MOD(grid%ntsd,grid%NPHS)==0)THEN
+          btimx=now_time()
+          flux_tim=flux_tim+now_time()-btimx
+        ENDIF
       ENDIF
-
-#endif
 #endif
 !
 #ifdef NMM_FIND_LOAD_IMBALANCE
@@ -2530,21 +2532,22 @@
 !
 !
 !
-#ifdef HRD_MULTIPLE_STORMS
-      write(message,*)' No Ocean Coupling Run'
-      call wrf_message(trim(message))
-#else
+      CALL nl_get_multi_storm(1,multi_storm)
+      IF ( .NOT. multi_storm ) THEN
+        write(message,*)' No Ocean Coupling Run'
+        call wrf_debug(1,trim(message))
+      ELSE
 ! Coupling insertion:->
-      btimx=now_time()
-      call ATM_SENDFLUXES
-      flux_tim=flux_tim+now_time()-btimx
+        btimx=now_time()
+        call ATM_SENDFLUXES
+        flux_tim=flux_tim+now_time()-btimx
 !<-:Coupling insertion
 !
 ! Kwon's doing to check heat flux
 !
 !  IF(grid%id==2)WRITE(0,*)'AFTER ATM_SENDFLUX grid%qwbs grid%twbs AT 10 10 ',grid%ntsd,grid%qwbs(10,10),grid%twbs(10,10)
 !
-#endif
+      ENDIF
 #endif
 
 !--------------------------------------------------------------------------------------------------------------

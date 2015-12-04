@@ -489,7 +489,12 @@ USE module_mp_radar
          KRR=0
          DO KR=p_ff8i01,p_ff8i33
           KRR=KRR+1
+#ifdef HWRF
+       !jm couldn't resolve this difference on my own so added ifdef 20151203
+          if (xland(i,j).eq.1.and.(ivgtyp(i,j).eq.19.or.ivgtyp(i,j).eq.1))then
+#else
           if (xland(i,j).lt.1.5)then
+#endif
              chem_new(I,K,J,KR)=FCCNR_CON(KRR)*FACTZ
           else
              chem_new(I,K,J,KR)=FCCNR_MAR(KRR)*FACTZ
@@ -519,7 +524,11 @@ USE module_mp_radar
          KRR=0
          DO kr=p_ff8i01,p_ff8i33
           KRR=KRR+1
+#ifdef HWRF
+       !jm couldn't resolve this difference on my own so added ifdef 20151203
+#else
           if (xland(i,j).lt.1.5)then
+#endif
              chem_new(I,K,J,KR)=FCCNR_CON(KRR)*FACTZ
           else
              chem_new(I,K,J,KR)=FCCNR_MAR(KRR)*FACTZ
