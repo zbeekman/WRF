@@ -725,6 +725,7 @@
 !- RLWIN/RSWIN - downward longwave/shortwave at the surface (also TOTLWDN/TOTSWDN in RADIATION)
      &                ,PD,RES,PINT,T,Q,CWM,F_ICE,F_RAIN,SR              &
      &                ,Q2,U,V,THS,TSFC,SST,PREC,SNO                     &
+     &                ,SCURX,SCURY                                      &
      &                ,FIS,Z0,MZ0,Z0BASE,USTAR,MIXHT,PBLH,LPBL,EL_MYJ   &   !MZ0: MOMENTUM Z0 (KWON)
      &                ,MOIST,RMOL,MOL                                   &
      &                ,EXCH_H,EXCH_M,F,AKHS,AKMS,AKHS_OUT,AKMS_OUT      &
@@ -756,6 +757,9 @@
      &                ,HPBL2D, EVAP2D, HEAT2D,RC2D                      &  !Kwon S&P
      &                ,SFCHEADRT,INFXSRT,SOLDRAIN                       &  !Hydrology, no-op right now
      &                ,cd_out,ch_out                                    &
+     &                ,ulowl, vlowl                                     &
+     &                ,zkmax, ribn                                      &
+     &                ,charn, msang                                     &
      &                ,IDS,IDE,JDS,JDE,KDS,KDE                          &
      &                ,IMS,IME,JMS,JME,KMS,KME                          &
      &                ,IPS,IPE,JPS,JPE,KPS,KPE                          &
@@ -890,9 +894,12 @@
                                                     ,SFCEXC,SMSTAV      &
                                                     ,SOILTB,TWBS
 !
+      REAL,DIMENSION(IMS:IME,JMS:JME),INTENT(IN)  :: scurx, scury
 
       REAL,DIMENSION(IMS:IME,JMS:JME),INTENT(INOUT) :: cd_out,ch_out
       REAL,DIMENSION(IMS:IME,JMS:JME),INTENT(OUT) :: taux, tauy
+      REAL,DIMENSION(IMS:IME,JMS:JME),INTENT(INOUT) :: zkmax, ribn
+      REAL,DIMENSION(IMS:IME,JMS:JME),INTENT(IN) :: charn, msang
       REAL,DIMENSION(IMS:IME,JMS:JME,KMS:KME),INTENT(IN) :: PINT
 !
       REAL,DIMENSION(IMS:IME,JMS:JME,KMS:KME),INTENT(INOUT) :: CWM      &
@@ -974,6 +981,8 @@
      &                                          ,T_PHY,TH_PHY,TKE       &
      &                                          ,DUDT_GWD,DVDT_GWD      & ! GWD
      &                                          ,U_PHY,V_PHY,Z
+
+      REAL,DIMENSION(IMS:IME,JMS:JME), INTENT(OUT) :: ULOWL, VLOWL
 !
       REAL,DIMENSION(:,:,:,:),ALLOCATABLE :: MOIST_TRANS
 !
@@ -1264,6 +1273,10 @@
             V_PHY(I,K,J)=(V(I+IHE(J),J,K)+V(I+IHW(J),J,K)               &
      &                   +V(I,J+1,K)+V(I,J-1,K))                        &
      &                   *0.25
+          IF ( K == KTS ) THEN
+             ULOWL(I,J) = U_PHY(I,K,J)
+             VLOWL(I,J) = V_PHY(I,K,J)
+          ENDIF 
           ENDDO
         ENDDO
       ENDDO
@@ -1377,6 +1390,8 @@
      &          ,PBLH=PBLH,PI_PHY=PI_PHY,PSHLTR=PSHLTR,PSIH=PSIH        &
      &          ,PSIM=PSIM,P_PHY=P_PHY,Q10=Q10,Q2=Q2X,QFX=QWBS,TAUX=TAUX,TAUY=TAUY,QSFC=QS  &
      &          ,QSHLTR=QSHLTR,QZ0=QZ0                                  &
+     &          ,ZKMAX=ZKMAX,RIBN=RIBN                                  &
+     &          ,CHARN=CHARN,MSANG=MSANG,SCURX=SCURX,SCURY=SCURY        &
      &          ,ICOEF_SF=CONFIG_FLAGS%ICOEF_SF                         &
      &          ,LCURR_SF=CONFIG_FLAGS%LCURR_SF                         &!for gfdl-sf drag
      &          ,cd_out=grid%cd_out,ch_out=grid%ch_out
@@ -1571,6 +1586,7 @@
 !BSF &               ,RQRBLTEN=RQRBLTEN,RQSBLTEN=RQSBLTEN             & !BSF
 !BSF &               ,RQGBLTEN=RQGBLTEN                               & !BSF
      &               ,TSK=TSFC,XLAND=XLAND,ZNT=Z0                     &
+     &               ,MSANG=MSANG,SCURX=SCURX,SCURY=SCURY,LCURR_SF=CONFIG_FLAGS%LCURR_SF &
 #ifdef HWRF
      &               ,MZNT=MZ0                                        &
 #endif
