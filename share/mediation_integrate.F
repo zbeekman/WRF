@@ -44,7 +44,7 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
    INTEGER                                    :: ialarm
    INTEGER                                    :: rc
    TYPE(WRFU_Time) :: currTime, startTime
-#ifdef HWRF
+#if ( HWRF == 1 )
    INTEGER :: hr, min, sec, ms,julyr,julday
    REAL :: GMT
 #endif
@@ -171,7 +171,7 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
    CALL WRFU_ClockGet( grid%domain_clock, CurrTime=currTime, StartTime=startTime )
    IF ( ( WRFU_AlarmIsRinging( grid%alarms( RESTART_ALARM ), rc=rc ) ) .AND. &
         ( currTime .NE. startTime ) ) THEN
-#ifdef HWRF
+#if ( HWRF == 1 )
 !zhang's doing
      CALL domain_clock_get( grid, current_time=CurrTime )
      CALL WRFU_TimeGet( CurrTime, YY=julyr, dayOfYear=julday, H=hr, M=min, S=sec, MS=ms, rc=rc)
@@ -791,7 +791,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
 
    END INTERFACE
 
-#ifdef HWRF
+#if ( HWRF == 1 )
 !zhang's doing test
    if (config_flags%restart .or. nest%analysis) then
    nest%first_force = .true.
@@ -926,7 +926,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
       nest%imask_xystag = 0 
     ENDIF
 
-#ifdef HWRF
+#if ( HWRF == 1 )
    CALL med_interp_domain( parent, nest )
 #else
     CALL domain_clock_get( parent, start_time=strt_time, current_time=cur_time )
@@ -971,7 +971,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
     ENDIF
     
 
-#ifdef HWRF
+#if ( HWRF == 1 )
 !zhang's doing: else for analysis or restart option
 
 !zhang test
@@ -1259,7 +1259,7 @@ SUBROUTINE med_last_solve_io ( grid , config_flags )
    TYPE (grid_config_rec_type) , INTENT(IN)   :: config_flags
   ! Local
    INTEGER                                    :: rc
-#ifdef HWRF
+#if ( HWRF == 1 )
 !zhang's doing
    TYPE(WRFU_Time) :: CurrTime  !zhang new
    INTEGER :: hr, min, sec, ms,julyr,julday
@@ -1290,7 +1290,7 @@ SUBROUTINE med_last_solve_io ( grid , config_flags )
 
 ! - RESTART OUTPUT
    IF( WRFU_AlarmIsRinging( grid%alarms( RESTART_ALARM ), rc=rc ) ) THEN
-#ifdef HWRF
+#if ( HWRF == 1 )
 !zhang's doing
 !zhang new     CALL ESMF_TimeGet( grid%current_time, YY=julyr, dayOfYear=julday, H=hr, M=min, S=sec, MS=ms, rc=rc)
      CALL domain_clock_get( grid, current_time=CurrTime )
@@ -1314,7 +1314,7 @@ END SUBROUTINE med_last_solve_io
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#ifdef HWRF
+#if ( HWRF == 1 )
 !==================================================================================
 !  Added for the NMM 3d var. This is simply an extension of med_restart_out.
 !  The file is simply called wrfanal***. This is gopal's doing
@@ -1579,7 +1579,7 @@ END SUBROUTINE med_boundary_out
 #endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#ifdef HWRF
+#if ( HWRF == 1 )
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !zhang's doing
 SUBROUTINE med_restart_in ( grid , config_flags )
@@ -1672,7 +1672,7 @@ SUBROUTINE med_hist_out ( grid , stream, config_flags )
      CALL wrf_error_fatal( message )
    ENDIF
 
-#ifdef HWRF
+#if ( HWRF == 1 )
        ! HWRF special: auxhist2 and auxhist3 are duplicates of
        ! history (0), so there is no point in outputting more than one of
        ! them at the same time.  Prefer 0 over 2, and 2 over 3:
@@ -2868,7 +2868,7 @@ END SUBROUTINE med_read_wrf_chem_emissopt3
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#ifdef HWRF
+#if ( HWRF == 1 )
 !zhang's doing for outputing restart namelist parameters
 RECURSIVE SUBROUTINE med_namelist_out ( grid , config_flags )
   ! Driver layer

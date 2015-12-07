@@ -1,5 +1,13 @@
 !WRF:DRIVER_LAYER:IO
 !
+#if ( HWRF == 1 )
+# include "module_io_quilt_new.F"
+#else
+# include "module_io_quilt_old.F"
+#endif
+
+#if 0
+
 #define DEBUG_LVL 50
 !#define mpi_x_comm_size(i,j,k)  Mpi_Comm_Size ( i,j,k ) ; write(0,*) __LINE__
 #define mpi_x_comm_size(i,j,k)  Mpi_Comm_Size ( i,j,k )
@@ -2668,11 +2676,11 @@ okay_to_w = .false.
 #if ( DA_CORE != 1 )
           IF (coupler_on) CALL cpl_set_dm_communicator( mpi_comm_local )
 #endif
-#ifdef HWRF
+#if ( HWRF == 1 )
           call ATM_SET_COMM(mpi_comm_local)
 #endif
        ELSE
-#ifdef HWRF
+#if ( HWRF == 1 )
           call ATM_LEAVE_COUPLING()
 #endif
 #if ( DA_CORE != 1 )
@@ -5171,3 +5179,5 @@ SUBROUTINE collect_on_comm_debug2(file,line,var,tag,sz,hdr_rec_size, &
 !  write(0,*)'collect_on_comm_debug2 ',trim(file),line,'returning for ',trim(var)
   RETURN
 END
+
+#endif

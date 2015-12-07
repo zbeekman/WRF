@@ -489,7 +489,7 @@ USE module_mp_radar
          KRR=0
          DO KR=p_ff8i01,p_ff8i33
           KRR=KRR+1
-#ifdef HWRF
+#if ( HWRF == 1 )
        !jm couldn't resolve this difference on my own so added ifdef 20151203
           if (xland(i,j).eq.1.and.(ivgtyp(i,j).eq.19.or.ivgtyp(i,j).eq.1))then
 #else
@@ -524,7 +524,7 @@ USE module_mp_radar
          KRR=0
          DO kr=p_ff8i01,p_ff8i33
           KRR=KRR+1
-#ifdef HWRF
+#if ( HWRF == 1 )
        !jm couldn't resolve this difference on my own so added ifdef 20151203
           if (xland(i,j).eq.1.and.(ivgtyp(i,j).eq.19.or.ivgtyp(i,j).eq.1))then
 #else

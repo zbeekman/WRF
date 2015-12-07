@@ -71,7 +71,7 @@ IF ( phase == 1 ) THEN
 #ifdef DM_PARALLEL
 !CALL disable_quilting
 
-#ifdef HWRF 
+#if ( HWRF == 1 ) 
 ! jm 20150807
 ! jm this was moved to here so that the coupler can divide up the tasks before the model starts doing it for quilting, nesting etc.
 ! jm the idea is that the atmosphere will see only the communicator with the tasks it is supposed to use for that stuff

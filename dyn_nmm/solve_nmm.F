@@ -28,7 +28,7 @@
                                               ,NTASKS_Y
       USE MODULE_COMM_DM
 #endif
-#ifdef HWRF
+#if ( HWRF == 1 )
       USE MODULE_SWATH,                 ONLY : UPDATE_INTEREST
       USE MODULE_HIFREQ,                ONLY: HIFREQ_WRITE, HIFREQ_OPEN
 #endif
@@ -94,7 +94,7 @@
       LOGICAL :: advect_q2
       INTEGER :: I,ICLTEND,IDF,IRTN,J,JC,JDF,K,KDF,LB,N_MOIST &
      &          ,NTSD_current,L
-#ifdef HWRF
+#if ( HWRF == 1 )
 #ifdef HRD_MULTIPLE_STORMS
 !XUEJIN's doing
       INTEGER, PARAMETER                    :: max_simulation_domains=11 !The max number of domains in the HWRF simulation. Currently hard-coded to 5 storms. This should eventually be replaced with CONFIG_FLAGS%MAX_DOM.
@@ -148,7 +148,7 @@
      &,            radiation_tim,rdtemp_tim,turbl_tim,cltend_tim        &
      &,            cucnvc_tim,gsmdrive_tim,hdiff_tim,bocoh_tim          &
      &,            pfdht_tim,ddamp_tim,bocov_tim,uv_htov_tim,sum_tim    &
-#ifdef HWRF
+#if ( HWRF == 1 )
      &,            sst_tim,flux_tim,hifreq_tim                          &
 #endif
      &,            diag_tim,adjppt_tim,tornado_tim                      
@@ -234,7 +234,7 @@
 !
       IF(NTSD_current==0)THEN
         IF(GRID%RESTART.AND.GRID%TSTART>0.)THEN
-#ifdef HWRF
+#if ( HWRF == 1 )
 #ifdef HRD_MULTIPLE_STORMS
 !XUEJIN's doing
           do kid1=1,max_simulation_domains
@@ -252,7 +252,7 @@
         ELSE
           IHRST=GRID%GMT
           grid%nstart_hour=IHRST
-#ifdef HWRF
+#if ( HWRF == 1 )
 #ifdef HRD_MULTIPLE_STORMS
 !XUEJIN's doing
           NTSD_restart1=0
@@ -267,7 +267,7 @@
 #endif
         ENDIF
       ENDIF
-#ifdef HWRF
+#if ( HWRF == 1 )
 #ifdef HRD_MULTIPLE_STORMS
 !XUEJIN's doing
       do kid1=1,max_simulation_domains
@@ -466,7 +466,7 @@
         adjppt_tim=0.
         diag_tim=0.
         tornado_tim=0.
-#ifdef HWRF
+#if ( HWRF == 1 )
         sst_tim=0.
         flux_tim=0.
         hifreq_tim=0.
@@ -628,7 +628,7 @@
 !-----------------------------------------------------------------------
 !***  UPDATE AREA OF INTEREST
 !-----------------------------------------------------------------------
-#ifdef HWRF
+#if ( HWRF == 1 )
      if(size(grid%precip_swath)>1 .and. grid%update_interest) then
         call update_interest(grid,config_flags)
         grid%update_interest=.false.
@@ -656,7 +656,7 @@
      &            ,ITS,ITE,JTS,JTE,KTS,KTE)
 !-----------------------------------------------------------------------
 !
-!!#ifdef HWRF
+!!#if ( HWRF == 1 )
 !!!zhang
 !!      IF(NTSD_current==0)THEN
 !!#else
@@ -766,7 +766,7 @@
 !       exch_tim_max=exch_tim_max+et_max
 !-----------------------------------------------------------------------
 !
-#ifdef HWRF
+#if ( HWRF == 1 )
 !zhang's doing
        if(GRID%RESTART) then
        FIRST=.FALSE.
@@ -784,7 +784,7 @@
  2000 CONTINUE
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
-#ifdef HWRF
+#if ( HWRF == 1 )
       CALL nl_get_multi_storm(1,multi_storm)
       CALL nl_get_no_ocean(1,no_ocean)
       IF ( .NOT. multi_storm .OR. no_ocean) THEN
@@ -1442,7 +1442,7 @@
         NTSD_rad=grid%ntsd+1
       ENDIF
 !
-#ifdef HWRF
+#if ( HWRF == 1 )
 !emc_2010_bugfix_h50
 ! remove this - not needed for V3.2
 !      call nl_get_start_hour(1,IHRST)
@@ -1551,7 +1551,7 @@
       rdtemp_tim=rdtemp_tim+now_time()-btimx
 !
 !
-#ifdef HWRF
+#if ( HWRF == 1 )
 !
 !-------------------------------------------------------------------------------------
 !*** GET SSTs FROM DMITRY's COUPLER ON TO THE PARENT AND NESTED GRID
@@ -1645,7 +1645,7 @@
 !                     ***  NOTE  ***
 !
         turbl_tim=turbl_tim+now_time()-btimx
-#ifdef HWRF
+#if ( HWRF == 1 )
 !------------------------------------------------------------------------------
 !*** ATMOSPHERIC MODEL OUTPUTS FROM PARENT AND NESTED GRID FOR DMITRYs COUPLER
 !------------------------------------------------------------------------------
@@ -1869,7 +1869,7 @@
 
 
 #if (NMM_CORE==1)
-!#ifdef HWRF
+!#if ( HWRF == 1 )
 !-------------------------------------------------------------------------------------
 !       This is gopal's doing for HWRFSAS
 
@@ -2032,7 +2032,7 @@
 !
       CALL HDIFF(grid%ntsd,GRID%DT,grid%fis,grid%dy_nmm,grid%hdac,grid%hdacv         &
      &          ,grid%hbm2,grid%deta1,GRID%SIGMA                       &
-#ifdef HWRF
+#if ( HWRF == 1 )
      &          ,grid%t,grid%q,grid%u,grid%v,grid%q2,grid%z,grid%w,grid%sm,grid%sice,grid%h_diff    &
 #else
      &          ,grid%t,grid%q,grid%u,grid%v,grid%q2,grid%z,grid%w,grid%sm,grid%sice                &
@@ -2385,7 +2385,7 @@
              cucnvc_tim + gsmdrive_tim + hdiff_tim + bocoh_tim +           &
              pfdht_tim + ddamp_tim + bocov_tim + uv_htov_tim + diag_tim +  &
              tornado_tim
-#ifdef HWRF
+#if ( HWRF == 1 )
         sum_tim = sum_tim + sst_tim + flux_tim + hifreq_tim
 #endif
 #if defined(NMM_FIND_LOAD_IMBALANCE)
@@ -2448,7 +2448,7 @@
         call wrf_message(trim(message))
         write(message,17)' tornado_tim=',tornado_tim,' pct=',tornado_tim/sum_tim*100.
         call wrf_message(trim(message))
-#ifdef HWRF
+#if ( HWRF == 1 )
         write(message,17)' sst_tim=',sst_tim,' pct=',sst_tim/sum_tim*100.
         call wrf_message(trim(message))
         write(message,17)' flux_tim=',flux_tim,' pct=',flux_tim/sum_tim*100.
@@ -2505,7 +2505,7 @@
      diag_tim=diag_tim+now_time()-btimx
    ENDIF
 #endif
-#ifdef HWRF
+#if ( HWRF == 1 )
    hwrfx_mlsp: if(grid%vortex_tracker /= 1) then
      btimx=now_time()
 
@@ -2528,7 +2528,7 @@
 
 !#define COPY_OUT
 !#include "scalar_derefs.inc"
-#ifdef HWRF
+#if ( HWRF == 1 )
 !-----------------------------------------------------------------------
 !*** ACCUMULATED ATMOSPHERIC MODEL FLUXES FOR DMITRYs COUPLER
 !-----------------------------------------------------------------------
@@ -2567,7 +2567,7 @@
         tornado_tim=tornado_tim+now_time()-btimx
      ENDIF
 
-#ifdef HWRF
+#if ( HWRF == 1 )
      IF(grid%ntornado==0 .or. mod(grid%NTSD,grid%ntornado)==0) then
       have_best: if(size(grid%best_mslp)>1) then
          have_membrane: if(size(grid%membrane_mslp)>1) then
@@ -2655,7 +2655,7 @@
               MOIST(I,J,K,P_QR)=QR
 
               IF (ETAMP_PHYSICS) THEN
-#ifdef HWRF
+#if ( HWRF == 1 )
                  MOIST(I,J,K,P_QI)=QI
                  MOIST(I,J,K,P_QS)=0.
 #else

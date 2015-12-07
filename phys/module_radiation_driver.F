@@ -150,7 +150,7 @@ CONTAINS
                                        ,SWRADSCHEME, GSFCSWSCHEME       &
                                        ,GFDLSWSCHEME, CAMLWSCHEME, CAMSWSCHEME &
                                        ,HELDSUAREZ                      &
-#ifdef HWRF
+#if ( HWRF == 1 )
                                        ,HWRFSWSCHEME, HWRFLWSCHEME  &
 #endif
                                        ,goddardlwscheme                 & 
@@ -176,7 +176,7 @@ CONTAINS
    USE module_ra_rrtmg_swf  , ONLY : rrtmg_swrad_fast
    USE module_ra_cam        , ONLY : camrad
    USE module_ra_gfdleta    , ONLY : etara
-#ifdef HWRF
+#if ( HWRF == 1 )
    USE module_ra_hwrf
 #endif
    USE module_ra_hs         , ONLY : hsrad
@@ -712,7 +712,7 @@ CONTAINS
      INTEGER, PARAMETER:: taer_asy_opt = 3                               !  input option for aerosol asy
 
 
-#ifdef HWRF
+#if ( HWRF == 1 )
    CHARACTER(len=255) :: wrf_err_message
 #endif
 
@@ -1349,7 +1349,7 @@ CONTAINS
                CALL wrf_error_fatal('Can not call ETARA (1b). Missing moisture fields.')
              ENDIF
 
-#ifdef HWRF
+#if ( HWRF == 1 )
        CASE (HWRFLWSCHEME)
 
              CALL wrf_debug (100, 'CALL hwrflw')
@@ -2027,7 +2027,7 @@ CONTAINS
                CALL wrf_error_fatal('Can not call ETARA (2b). Missing moisture fields.')
              ENDIF
 
-#ifdef HWRF
+#if ( HWRF == 1 )
       CASE (HWRFSWSCHEME)
 
              CALL wrf_debug (100, 'CALL hwrfsw')
