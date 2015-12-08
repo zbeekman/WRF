@@ -4125,6 +4125,8 @@ endif
       USE module_domain, ONLY : domain, get_ijk_from_grid
       USE module_configure, ONLY : grid_config_rec_type
       USE module_dm, ONLY : ntasks, ntasks_x, ntasks_y, itrace, local_communicator, &
+                            nest_task_offsets, nest_pes_x, nest_pes_y, which_kid,   &
+                            intercomm_active, mpi_comm_to_kid, mpi_comm_to_mom,     &
                             mytask, get_dm_max_halo_width
       USE module_timing
       IMPLICIT NONE
@@ -4153,6 +4155,7 @@ endif
       INTEGER icoord, jcoord, idim_cd, jdim_cd, pgr 
       INTEGER thisdomain_max_halo_width
       INTEGER local_comm, myproc, nproc
+      INTEGER ioffset, ierr
 
       CALL wrf_get_dm_communicator ( local_comm )
       CALL wrf_get_myproc( myproc )
@@ -4220,7 +4223,7 @@ endif
       USE module_domain, ONLY : domain, get_ijk_from_grid
       USE module_configure, ONLY : grid_config_rec_type
       USE module_dm, ONLY : ntasks, ntasks_x, ntasks_y, itrace, local_communicator, &
-                            mytask, get_dm_max_halo_width !,                          &
+                            mytask, get_dm_max_halo_width, which_kid
                             ! push_communicators_for_domain,pop_communicators_for_domain
       USE module_comm_nesting_dm, ONLY : halo_interp_down_sub
       IMPLICIT NONE
@@ -4404,7 +4407,8 @@ endif
       USE module_comm_dm, ONLY: halo_em_horiz_interp_sub
       USE module_dm, ONLY : ntasks, ntasks_x, ntasks_y, itrace, local_communicator, &
                             mytask, get_dm_max_halo_width,                          &
-                            nest_pes_x, nest_pes_y
+                            nest_task_offsets, mpi_comm_to_kid, mpi_comm_to_mom,    &
+                            which_kid, nest_pes_x, nest_pes_y, intercomm_active
       USE module_timing
       IMPLICIT NONE
 !
@@ -4436,6 +4440,7 @@ endif
       INTEGER icoord, jcoord, idim_cd, jdim_cd, pgr 
       INTEGER thisdomain_max_halo_width
       INTEGER local_comm, myproc, nproc
+      INTEGER ioffset
 
       CALL wrf_get_dm_communicator ( local_comm )
       CALL wrf_get_myproc( myproc )
@@ -4566,6 +4571,15 @@ endif
                                      ,pig,pjg,retval )
 !call wrf_debug(0,'/external/RSL_LITE/module_dm.F, back from rsl_lite_to_child_info')
       ENDDO
+
+      ! determine which communicator and offset to use
+      IF ( intercomm_active( grid%id ) ) THEN        ! I am parent
+        local_comm = mpi_comm_to_kid( which_kid(ngrid%id), grid%id )
+        ioffset = nest_task_offsets(ngrid%id)
+      ELSE IF ( intercomm_active( ngrid%id ) ) THEN  ! I am nest
+        local_comm = mpi_comm_to_mom( ngrid%id )
+        ioffset = nest_task_offsets(ngrid%id)
+      ENDIF
 
 !call wrf_debug(0,'/external/RSL_LITE/module_dm.F, calling rsl_lite_bcast')
       CALL rsl_lite_bcast_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &

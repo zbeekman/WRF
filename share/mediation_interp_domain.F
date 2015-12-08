@@ -158,7 +158,7 @@ SUBROUTINE med_interp_domain ( parent_grid , nested_grid )
 
   grid => nested_grid%intermediate_grid
   CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
-  IF ( grid%active_this_task )) THEN
+  IF ( grid%active_this_task ) THEN
 #  if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
   CALL dealloc_space_field ( grid )
   ENDIF
