@@ -654,7 +654,8 @@ character*120 sysline
 ! infinite loop until shutdown message received
 ! This is the main request-handling loop.  I/O quilt servers stay in this loop 
 ! until the model run ends.  
-okay_to_w = .false.
+      okay_to_w = .FALSE.
+
       DO WHILE (.TRUE.)  ! {
 
 !<DESCRIPTION>
@@ -1433,7 +1434,7 @@ okay_to_w = .false.
                                             DataHandle , code )
                   icurs = icurs + hdrbufsize
                 CASE DEFAULT
-                  WRITE(mess,*)'quilt: bad tag: ',get_hdr_tag( bigbuf(icurs/itypesize) ),' icurs ',icurs/itypesize
+                  WRITE(mess,*)' quilt: int_field: bad tag: ',get_hdr_tag( bigbuf(icurs/itypesize) ),' icurs ',icurs/itypesize
                   CALL wrf_error_fatal( mess )
               END SELECT
 
@@ -2446,7 +2447,7 @@ okay_to_w = .false.
                                             DataHandle , code )
                   icurs = icurs + hdrbufsize
                 CASE DEFAULT
-                  WRITE(mess,*)'quilt: bad tag: ',                            &
+                  WRITE(mess,*)__LINE__,' quilt: io_sync: bad tag: ',                            &
                                get_hdr_tag( obuf(icurs/itypesize) ),' icurs ',&
                                icurs/itypesize
                   CALL wrf_error_fatal( mess )
@@ -2598,7 +2599,7 @@ okay_to_w = .false.
       LOGICAL esmf_coupling
       CHARACTER*256 message
 
-!!!!! needed to sneak-peak the namelist to get parent_id
+!!!!! needed to sneak-peek the namelist to get parent_id
 ! define as temporaries
 #include <namelist_defines.inc>
 
@@ -2704,7 +2705,7 @@ okay_to_w = .false.
         nest_pes_x(1:max_dom) = n_x
         nest_pes_y(1:max_dom) = n_y
         READ ( 27 , NML = dm_task_split, IOSTAT=io_status )
-! we need to sneak-peak the parent_id namelist setting, ,which is in the "domains" section
+! we need to sneak-peek the parent_id namelist setting, ,which is in the "domains" section
 ! of the namelist.  That namelist is registry generated, so the registry-generated information
 ! is #included above.
         CLOSE ( 27 )
@@ -2723,7 +2724,7 @@ okay_to_w = .false.
       CALL mpi_x_comm_size( mpi_comm_here, ntasks, ierr ) ;
 
 
-!!!!! end of needed to sneak-peak the namelist
+!!!!! end of needed to sneak-peek the namelist
 
 ! set up the arrays associating quilt tasks to domains and check to make sure it will work
 ! role_for_task( maxprocs ) = 0 if compute, otherwise id of grid for which's it's a server
@@ -2787,13 +2788,13 @@ ENDDO
 
       call init_module_wrf_error(on_io_server=.true.)
 
-! compute node should be true for any compute node and false for every server node
       CALL MPI_Comm_dup( mpi_comm_here, comdup, ierr )
       ! throw away the I/O server tasks; mpi_comm_local will now be only all the compute tasks for all domains
       CALL MPI_Comm_split(comdup,role_for_task(mytask+1),mytask,mpi_comm_local, ierr )
 
 
       CALL wrf_set_dm_communicator( mpi_comm_local ) ! split_communicators will see this 
+! compute node should be true for any compute node and false for every server node
       IF ( compute_node ) THEN
 #if ( DA_CORE != 1 )
           IF (coupler_on) CALL cpl_set_dm_communicator( mpi_comm_local )
