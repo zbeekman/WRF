@@ -1953,6 +1953,7 @@ write(0,*)__FILE__,__LINE__,' nest_task_offsets ',nest_task_offsets
             icolor(j+1) = 1
           ENDDO
           IF ( icolor(mytask+1) .EQ. 1 ) inthisone = .TRUE.
+write(0,*)__FILE__,__LINE__,mytask+1,icolor(mytask+1),inthisone
           CALL MPI_Comm_dup(mpi_comm_here,comdup,ierr)
           CALL MPI_Comm_split(comdup,icolor(mytask+1),mytask,mpi_comm_local,ierr)
           IF ( inthisone ) THEN
@@ -1969,6 +1970,7 @@ write(0,*)__FILE__,__LINE__,' nest_task_offsets ',nest_task_offsets
         DO i = 1, max_dom
           local_communicator_store(i) = comms_i_am_in(i)
           domain_active_this_task(i) = ( local_communicator_store(i) .NE. MPI_UNDEFINED )
+write(0,*)__FILE__,__LINE__,i,comms_i_am_in(i), domain_active_this_task(i)
           IF ( local_communicator_store(i) .NE. MPI_UNDEFINED ) THEN
              CALL MPI_Comm_size( local_communicator_store(i), ntasks_store(i), ierr )
              CALL MPI_Comm_rank( local_communicator_store(i), mytask_store(i), ierr )

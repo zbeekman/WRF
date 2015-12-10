@@ -126,6 +126,7 @@ SUBROUTINE med_interp_domain ( parent_grid , nested_grid )
   grid => nested_grid%intermediate_grid
 #  if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
 
+write(0,*)__FILE__,__LINE__,' grid%active_this_task ',grid%active_this_task
     CALL alloc_space_field ( grid, grid%id , 1 , 2 , .TRUE. , grid%active_this_task,  &
                            grid%sd31, grid%ed31, grid%sd32, grid%ed32, grid%sd33, grid%ed33, &
                            grid%sm31,  grid%em31,  grid%sm32,  grid%em32,  grid%sm33,  grid%em33, &
@@ -135,6 +136,7 @@ SUBROUTINE med_interp_domain ( parent_grid , nested_grid )
                            grid%sm31x, grid%em31x, grid%sm32x, grid%em32x, grid%sm33x, grid%em33x, &   ! x-xpose
                            grid%sm31y, grid%em31y, grid%sm32y, grid%em32y, grid%sm33y, grid%em33y  &   ! y-xpose
     )
+write(0,*)__FILE__,__LINE__,' back from alloc_space_field '
 # endif
 
   grid => parent_grid
@@ -285,6 +287,7 @@ SUBROUTINE med_interp_domain_small ( parent_grid , nested_grid )
   grid => nested_grid%intermediate_grid
 #  if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
 
+write(0,*)__FILE__,__LINE__,' intercomm_active( grid%id ) ',intercomm_active( grid%id ),grid%id
   CALL alloc_space_field ( grid, grid%id , 1 , 2 , .TRUE. , intercomm_active( grid%id ),   &
                            grid%sd31, grid%ed31, grid%sd32, grid%ed32, grid%sd33, grid%ed33, &
                            grid%sm31,  grid%em31,  grid%sm32,  grid%em32,  grid%sm33,  grid%em33, &
@@ -294,6 +297,7 @@ SUBROUTINE med_interp_domain_small ( parent_grid , nested_grid )
                            grid%sm31x, grid%em31x, grid%sm32x, grid%em32x, grid%sm33x, grid%em33x, &   ! x-xpose
                            grid%sm31y, grid%em31y, grid%sm32y, grid%em32y, grid%sm33y, grid%em33y  &   ! y-xpose
     )
+write(0,*)__FILE__,__LINE__,' back from alloc_space_field '
 # endif
 
   grid => parent_grid
