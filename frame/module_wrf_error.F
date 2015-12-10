@@ -40,7 +40,7 @@ MODULE module_wrf_error
   ! Defaults: Non-MPI configurations and HWRF turn OFF stderr.
   !    MPI configurations other than HWRF turn ON stderr.
 
-#if ( HWRF == 1 )
+#if ( HWRF != 1 )
   integer :: stderrlog=1 ! 1/T = send to write(0,...) if buffered=0
 #else
   integer :: stderrlog=0! 1/T = send to write(0,...) if buffered=0

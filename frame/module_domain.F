@@ -595,6 +595,8 @@ CONTAINS
          active = active_this_task
       ENDIF
 
+write(0,*)__FILE__,__LINE__,' active ', domain_id, active
+
 ! This next step uses information that is listed in the registry as namelist_derived
 ! to properly size the domain and the patches; this in turn is stored in the new_grid
 ! data structure
@@ -776,9 +778,9 @@ CONTAINS
 !      IF (active) THEN
         ! only allocate state if this set of tasks actually computes that domain, jm 20140822
       new_grid%active_this_task = active
-!debug write(0,*)__FILE__,__LINE__,'new_grid%id ',new_grid%id
-!debug write(0,*)__FILE__,__LINE__,'new_grid%active_this_task ',new_grid%active_this_task
-!debug write(0,*)__FILE__,__LINE__,'new_grid%is_intermediate ',new_grid%is_intermediate
+write(0,*)__FILE__,__LINE__,'new_grid%id ',new_grid%id
+write(0,*)__FILE__,__LINE__,'new_grid%active_this_task ',new_grid%active_this_task
+write(0,*)__FILE__,__LINE__,'new_grid%is_intermediate ',new_grid%is_intermediate
       CALL alloc_space_field ( new_grid, domain_id , 3 , 3 , .FALSE. , active,     &
                                sd1, ed1, sd2, ed2, sd3, ed3,       &
                                sm1,  em1,  sm2,  em2,  sm3,  em3,  &
@@ -1343,10 +1345,6 @@ CONTAINS
 #if (NMM_CORE == 1)
       IF ( grid%id .EQ. 1 ) &
           CALL wrf_message ( 'DYNAMICS OPTION: nmm dyncore' )
-#endif
-#if (COAMPS_CORE == 1)
-        IF ( grid%id .EQ. 1 ) &
-          CALL wrf_message ( 'DYNAMICS OPTION: coamps dyncore' )
 #endif
 
       CALL set_scalar_indices_from_config( id , idum1 , idum2 )

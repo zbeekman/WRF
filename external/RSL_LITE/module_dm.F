@@ -1446,7 +1446,7 @@ ENDIF
 #endif
    END SUBROUTINE wrf_dm_sum_integers
 
-#ifdef HWRF
+#if ( HWRF == 1 )
    SUBROUTINE wrf_dm_minloc_real ( val, lat, lon, z, idex, jdex )
 #ifndef STUBMPI
       use mpi
@@ -1677,7 +1677,7 @@ ENDIF
     END SUBROUTINE wrf_dm_minval_integer
 
    SUBROUTINE hwrf_coupler_init
-#ifdef HWRF
+#if ( HWRF == 1 )
 # ifndef STUBMPI
       IMPLICIT NONE
       INCLUDE 'mpif.h'
@@ -1794,7 +1794,7 @@ ENDIF
         ENDIF
 #endif
 #  endif
-#ifdef HWRF
+#if ( HWRF == 1 )
 !!!!! jm 20150807 note that for HWRF, this will not be called here because of the call to hwrf_coupler_init (defined above) in init_modules
 !!!!        CALL atm_cmp_start( mpi_comm_here )   ! atmospheric side of HWRF coupler will split MPI_COMM_WORLD and return communicator as argument
 #endif
@@ -1876,6 +1876,13 @@ ENDIF
       CALL mpi_bcast( nest_pes_x, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( nest_pes_y, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
 
+write(0,*)__FILE__,__LINE__,' tasks_per_split ',tasks_per_split
+write(0,*)__FILE__,__LINE__,' nproc_x ',nproc_x
+write(0,*)__FILE__,__LINE__,' nproc_y ',nproc_y
+write(0,*)__FILE__,__LINE__,' comm_start ',comm_start
+write(0,*)__FILE__,__LINE__,' nest_pes_x ',nest_pes_x
+write(0,*)__FILE__,__LINE__,' nest_pes_y ',nest_pes_y
+
       nkids = 1
       which_kid = 0
       DO i = 2, max_dom
@@ -1910,6 +1917,8 @@ ENDIF
           num_compute_tasks = (comm_start(nest_id)+nest_pes_x(nest_id)*nest_pes_y(nest_id))
         ENDIF
       ENDDO
+write(0,*)__FILE__,__LINE__,' num_compute_tasks ',num_compute_tasks
+write(0,*)__FILE__,__LINE__,' nest_task_offsets ',nest_task_offsets
 
       IF ( .TRUE. ) THEN
 !jm Additional code here to set up communicator for this domain and tables
@@ -4034,8 +4043,8 @@ END
                                 cids, cide, cjds, cjde, ckds, ckde,    &
                                 cims, cime, cjms, cjme, ckms, ckme,    &
                                 cips, cipe, cjps, cjpe, ckps, ckpe    )
-      				
-      !KAL this is the original WRF code				
+                                
+      !KAL this is the original WRF code                                
       !CALL get_ijk_from_grid (  grid ,                   &
       !                          cids, cide, cjds, cjde, ckds, ckde,    &
       !                          cims, cime, cjms, cjme, ckms, ckme,    &
@@ -4052,12 +4061,12 @@ END
 if (ngrid%vert_refine_method .NE. 0) then
 
       !KAL calculating the vertical coordinate for parent and nest grid (code from ndown)
-      ! assume that the parent and nest have the same p_top value (as in ndown)	
+      ! assume that the parent and nest have the same p_top value (as in ndown) 
       
 !KAL ckde is equal to e_vert of the coarse grid. There are e_vert-1 u points.  The coarse 1D grid here is e_vert+1,
 !    so it is the e_vert-1 points from the coarse grid, plus a surface point plus a top point.  Extrapolation coefficients
 !    are used to get the surface and top points to fill out the pro_u_c 1D array of u values from the coarse grid.     
-  		
+                
       hsca_m = 6.7 !KAL scale height of the atmosphere
       p_top_m = ngrid%p_top
       p_surf_m = 1.e5
@@ -4092,7 +4101,7 @@ endif
                                 cids, cide, cjds, cjde, ckds, ckde,    &
                                 cims, cime, cjms, cjme, ckms, ckme,    &
                                 cips, cipe, cjps, cjpe, ckps, ckpe    )
-			 			      
+                                                      
       CALL get_ijk_from_grid (  grid ,              &
                                 ids, ide, jds, jde, kds, kde,    &
                                 ims, ime, jms, jme, kms, kme,    &
@@ -4104,7 +4113,7 @@ if (ngrid%vert_refine_method .NE. 0) then
 #include "nest_forcedown_interp_vert.inc"
 
 endif
-			       
+                               
 
 #include "HALO_FORCE_DOWN.inc"
 
@@ -4288,12 +4297,12 @@ endif
 if (ngrid%vert_refine_method .NE. 0) then
 
       !KAL calculating the vertical coordinate for parent and nest grid (code from ndown)
-      ! assume that the parent and nest have the same p_top value (as in ndown)	
+      ! assume that the parent and nest have the same p_top value (as in ndown) 
       
 !KAL ckde is equal to e_vert of the coarse grid. There are e_vert-1 u points.  The coarse 1D grid here is e_vert+1,
 !    so it is the e_vert-1 points from the coarse grid, plus a surface point plus a top point.  Extrapolation coefficients
 !    are used to get the surface and top points to fill out the pro_u_c 1D array of u values from the coarse grid.     
-  		
+                
       hsca_m = 6.7 !KAL scale height of the atmosphere
       p_top_m = ngrid%p_top
       p_surf_m = 1.e5
@@ -4343,51 +4352,54 @@ if (ngrid%vert_refine_method .NE. 0) then
 
 
       !KAL finish off the 1-D variables (t_base, u_base, v_base, qv_base, and z_base) (move this out of here if alt_u_c and alt_u_n are calculated elsewhere)
-      CALL vert_interp_vert_nesting_1d ( &	   
-					ngrid%t_base,						&    ! CD field
-					ids, ide, kds, kde, jds, jde,				&    ! CD dims
-					ims, ime, kms, kme, jms, jme,				&    ! CD dims
-					ips, ipe, kps, MIN( (kde-1), kpe ), jps, jpe,		&    ! CD dims
-					pgrid%s_vert, pgrid%e_vert,				&    ! vertical dimension of the parent grid
-					pgrid%cf1, pgrid%cf2, pgrid%cf3, pgrid%cfn, pgrid%cfn1, &    ! coarse grid extrapolation constants 
-					alt_u_c, alt_u_n)					     ! coordinates for parent and nest
-      CALL vert_interp_vert_nesting_1d ( &	   
-					ngrid%u_base,						&    ! CD field
-					ids, ide, kds, kde, jds, jde,				&    ! CD dims
-					ims, ime, kms, kme, jms, jme,				&    ! CD dims
-					ips, ipe, kps, MIN( (kde-1), kpe ), jps, jpe,		&    ! CD dims
-					pgrid%s_vert, pgrid%e_vert,				&    ! vertical dimension of the parent grid
-					pgrid%cf1, pgrid%cf2, pgrid%cf3, pgrid%cfn, pgrid%cfn1, &    ! coarse grid extrapolation constants 
-					alt_u_c, alt_u_n)					     ! coordinates for parent and nest
-      CALL vert_interp_vert_nesting_1d ( &	   
-					ngrid%v_base,						&    ! CD field
-					ids, ide, kds, kde, jds, jde,				&    ! CD dims
-					ims, ime, kms, kme, jms, jme,				&    ! CD dims
-					ips, ipe, kps, MIN( (kde-1), kpe ), jps, jpe,		&    ! CD dims
-					pgrid%s_vert, pgrid%e_vert,				&    ! vertical dimension of the parent grid
-					pgrid%cf1, pgrid%cf2, pgrid%cf3, pgrid%cfn, pgrid%cfn1, &    ! coarse grid extrapolation constants 
-					alt_u_c, alt_u_n)					     ! coordinates for parent and nest
-      CALL vert_interp_vert_nesting_1d ( &	   
-					ngrid%qv_base,  					&    ! CD field
-					ids, ide, kds, kde, jds, jde,				&    ! CD dims
-					ims, ime, kms, kme, jms, jme,				&    ! CD dims
-					ips, ipe, kps, MIN( (kde-1), kpe ), jps, jpe,		&    ! CD dims
-					pgrid%s_vert, pgrid%e_vert,				&    ! vertical dimension of the parent grid
-					pgrid%cf1, pgrid%cf2, pgrid%cf3, pgrid%cfn, pgrid%cfn1, &    ! coarse grid extrapolation constants 
-					alt_u_c, alt_u_n)					     ! coordinates for parent and nest
-      CALL vert_interp_vert_nesting_1d ( &	   
-					ngrid%z_base,						&    ! CD field
-					ids, ide, kds, kde, jds, jde,				&    ! CD dims
-					ims, ime, kms, kme, jms, jme,				&    ! CD dims
-					ips, ipe, kps, MIN( (kde-1), kpe ), jps, jpe,		&    ! CD dims
-					pgrid%s_vert, pgrid%e_vert,				&    ! vertical dimension of the parent grid
-					pgrid%cf1, pgrid%cf2, pgrid%cf3, pgrid%cfn, pgrid%cfn1, &    ! coarse grid extrapolation constants 
-					alt_u_c, alt_u_n)					     ! coordinates for parent and nest
+      CALL vert_interp_vert_nesting_1d ( &         
+                                        ngrid%t_base,                                           &    ! CD field
+                                        ids, ide, kds, kde, jds, jde,                           &    ! CD dims
+                                        ims, ime, kms, kme, jms, jme,                           &    ! CD dims
+                                        ips, ipe, kps, MIN( (kde-1), kpe ), jps, jpe,           &    ! CD dims
+                                        pgrid%s_vert, pgrid%e_vert,                             &    ! vertical dimension of the parent grid
+                                        pgrid%cf1, pgrid%cf2, pgrid%cf3, pgrid%cfn, pgrid%cfn1, &    ! coarse grid extrapolation constants 
+                                        alt_u_c, alt_u_n)                                            ! coordinates for parent and nest
+      CALL vert_interp_vert_nesting_1d ( &         
+                                        ngrid%u_base,                                           &    ! CD field
+                                        ids, ide, kds, kde, jds, jde,                           &    ! CD dims
+                                        ims, ime, kms, kme, jms, jme,                           &    ! CD dims
+                                        ips, ipe, kps, MIN( (kde-1), kpe ), jps, jpe,           &    ! CD dims
+                                        pgrid%s_vert, pgrid%e_vert,                             &    ! vertical dimension of the parent grid
+                                        pgrid%cf1, pgrid%cf2, pgrid%cf3, pgrid%cfn, pgrid%cfn1, &    ! coarse grid extrapolation constants 
+                                        alt_u_c, alt_u_n)                                            ! coordinates for parent and nest
+      CALL vert_interp_vert_nesting_1d ( &         
+                                        ngrid%v_base,                                           &    ! CD field
+                                        ids, ide, kds, kde, jds, jde,                           &    ! CD dims
+                                        ims, ime, kms, kme, jms, jme,                           &    ! CD dims
+                                        ips, ipe, kps, MIN( (kde-1), kpe ), jps, jpe,           &    ! CD dims
+                                        pgrid%s_vert, pgrid%e_vert,                             &    ! vertical dimension of the parent grid
+                                        pgrid%cf1, pgrid%cf2, pgrid%cf3, pgrid%cfn, pgrid%cfn1, &    ! coarse grid extrapolation constants 
+                                        alt_u_c, alt_u_n)                                            ! coordinates for parent and nest
+      CALL vert_interp_vert_nesting_1d ( &         
+                                        ngrid%qv_base,                                          &    ! CD field
+                                        ids, ide, kds, kde, jds, jde,                           &    ! CD dims
+                                        ims, ime, kms, kme, jms, jme,                           &    ! CD dims
+                                        ips, ipe, kps, MIN( (kde-1), kpe ), jps, jpe,           &    ! CD dims
+                                        pgrid%s_vert, pgrid%e_vert,                             &    ! vertical dimension of the parent grid
+                                        pgrid%cf1, pgrid%cf2, pgrid%cf3, pgrid%cfn, pgrid%cfn1, &    ! coarse grid extrapolation constants 
+                                        alt_u_c, alt_u_n)                                            ! coordinates for parent and nest
+      CALL vert_interp_vert_nesting_1d ( &         
+                                        ngrid%z_base,                                           &    ! CD field
+                                        ids, ide, kds, kde, jds, jde,                           &    ! CD dims
+                                        ims, ime, kms, kme, jms, jme,                           &    ! CD dims
+                                        ips, ipe, kps, MIN( (kde-1), kpe ), jps, jpe,           &    ! CD dims
+                                        pgrid%s_vert, pgrid%e_vert,                             &    ! vertical dimension of the parent grid
+                                        pgrid%cf1, pgrid%cf2, pgrid%cf3, pgrid%cfn, pgrid%cfn1, &    ! coarse grid extrapolation constants 
+                                        alt_u_c, alt_u_n)                                            ! coordinates for parent and nest
 
 endif
-	
+        
+        CALL push_communicators_for_domain( grid%id )
 
 #include "HALO_INTERP_DOWN.inc"
+
+        CALL pop_communicators_for_domain
 
 #  include "nest_interpdown_interp.inc"
 
@@ -5483,9 +5495,9 @@ ENDIF
 #if (NMM_NEST == 1)
       USE module_comm_nesting_dm, ONLY : halo_force_down_sub
       use module_comm_dm, only: HALO_NMM_INTERP_INFO_sub
-#ifdef HWRF
+# if ( HWRF == 1 )
       use module_comm_dm, only: HALO_NMM_FORCE_DOWN_SST_sub
-#endif
+# endif
 #endif
       IMPLICIT NONE
 !
@@ -5543,9 +5555,9 @@ IF ( ngrid%active_this_task ) THEN
 
       CALL push_communicators_for_domain( grid%id )
 
-#ifdef HWRF
+#if ( HWRF == 1 )
         IF(ngrid%force_sst(1) == 1) then
-#include "HALO_NMM_FORCE_DOWN_SST.inc"
+# include "HALO_NMM_FORCE_DOWN_SST.inc"
         ENDIF
 #endif
 

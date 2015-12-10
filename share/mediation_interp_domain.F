@@ -149,6 +149,7 @@ SUBROUTINE med_interp_domain ( parent_grid , nested_grid )
   grid => nested_grid%intermediate_grid
   CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
   
+write(0,*)__FILE__,__LINE__,' shape(grid%moist) ', shape(grid%moist) 
   CALL interp_domain_em_part2 ( grid, nested_grid, parent_grid, config_flags   &
 !
 #     include "actual_new_args.inc"
