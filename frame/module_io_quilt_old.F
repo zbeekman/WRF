@@ -550,7 +550,9 @@ logical okay_to_w
 character*120 sysline
 
       dom_id = 1 ! always a valid assumption for domain id for this netcdf setting
+write(0,*)__FILE__,__LINE__
       CALL model_to_grid_config_rec ( dom_id , model_config_rec , config_flags )
+write(0,*)__FILE__,__LINE__
 
 ! If we've been built with PNETCDF_QUILT defined then we use parallel I/O
 ! within the group of I/O servers rather than gathering the data onto the
@@ -563,6 +565,7 @@ character*120 sysline
       RETURN
 #endif
 
+write(0,*)__FILE__,__LINE__
 ! Call ext_pkg_ioinit() routines to initialize I/O packages.  
       SysDepInfo = " "
 #ifdef NETCDF
@@ -589,8 +592,10 @@ character*120 sysline
       CALL ext_gr2_ioinit( SysDepInfo, ierr)
 #endif
 
+write(0,*)__FILE__,__LINE__
       call_server_ready = .true. ! = true when the server is ready for a new file
 
+write(0,*)__FILE__,__LINE__
       okay_to_commit = .false.
       stored_write_record = .false.
       ninbuf = 0
@@ -627,7 +632,9 @@ character*120 sysline
 ! This is the main request-handling loop.  I/O quilt servers stay in this loop 
 ! until the model run ends.  
 okay_to_w = .false.
+write(0,*)__FILE__,__LINE__
       DO WHILE (.TRUE.)  ! {
+write(0,*)__FILE__,__LINE__
 
 !<DESCRIPTION>
 ! Each I/O server receives requests from its compute tasks.  Each request
@@ -655,7 +662,9 @@ okay_to_w = .false.
         ! first element of reduced is obufsize, second is DataHandle 
         ! if needed (currently needed only for ioclose).
         reduced_dummy = 0
+write(0,*)__FILE__,__LINE__
         CALL mpi_x_reduce( reduced_dummy, reduced, 2, MPI_INTEGER, MPI_SUM, mytask_io_group, mpi_comm_io_groups(1), ierr )
+write(0,*)__FILE__,__LINE__
         obufsize = reduced(1)
 !CALL end_timing("MPI_Reduce at top of forever loop") 
 !JMDEBUGwrite(0,*)'obufsize = ',obufsize
@@ -2581,46 +2590,43 @@ okay_to_w = .false.
       INTEGER ntasks, mytask, ierr, io_status
 #  if defined(_OPENMP) && defined(MPI2_THREAD_SUPPORT)
       INTEGER thread_support_provided, thread_support_requested
-#endif
+#  endif
       INTEGER mpi_comm_here, temp_poll
       LOGICAL mpi_inited
       LOGICAL esmf_coupling
 
 !TODO:  Change this to run-time switch
-#ifdef ESMFIO
+#  ifdef ESMFIO
       esmf_coupling = .TRUE.
-#else
+#  else
       esmf_coupling = .FALSE.
-#endif
+#  endif
 
       quilting_enabled = .FALSE.
       IF ( disable_quilt ) RETURN
 
+write(0,*)__FILE__,__LINE__
       DO i = 1,int_num_handles
         okay_to_write(i) = .FALSE.
         int_handle_in_use(i) = .FALSE.
         server_for_handle(i) = 0 
         int_num_bytes_to_write(i) = 0
       ENDDO
+write(0,*)__FILE__,__LINE__
 
       CALL MPI_INITIALIZED( mpi_inited, ierr )
+write(0,*)__FILE__,__LINE__
       IF ( .NOT. mpi_inited ) THEN
-#  if defined(_OPENMP) && defined(MPI2_THREAD_SUPPORT)
-        thread_support_requested = MPI_THREAD_FUNNELED
-        CALL mpi_init_thread ( thread_support_requested, thread_support_provided, ierr )
-        IF ( thread_support_provided .lt. thread_support_requested ) THEN
-           CALL WRF_ERROR_FATAL( "failed to initialize MPI thread support")
-        ENDIF
-#  else
-        CALL mpi_init ( ierr )
-#  endif
-        CALL wrf_set_dm_communicator( MPI_COMM_WORLD )
-        CALL wrf_termio_dup
+        CALL WRF_ERROR_FATAL( "module_io_quilt_old.F : MPI not init'd" )
       ENDIF
-      CALL wrf_get_dm_communicator( mpi_comm_here )
+write(0,*)__FILE__,__LINE__
+      CALL wrf_get_dm_quilt_comm( mpi_comm_here )   ! jm 20151212
 
+write(0,*)__FILE__,__LINE__,mpi_comm_here
       CALL MPI_Comm_rank ( mpi_comm_here, mytask, ierr ) ;
+write(0,*)__FILE__,__LINE__
       CALL mpi_x_comm_size( mpi_comm_here, ntasks, ierr ) ;
+write(0,*)__FILE__,__LINE__
 
       IF ( mytask .EQ. 0 ) THEN
         OPEN ( unit=27, file="namelist.input", form="formatted", status="old" )
@@ -2645,12 +2651,15 @@ okay_to_w = .false.
         endif
       ENDIF
 
+write(0,*)__FILE__,__LINE__
       CALL mpi_bcast( nio_tasks_per_group  , 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( nio_groups , 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( temp_poll , 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+write(0,*)__FILE__,__LINE__
 
       poll_servers = (temp_poll == 1)
 
+write(0,*)__FILE__,__LINE__
       CALL setup_quilt_servers( nio_tasks_per_group,            &
                                 mytask,               &
                                 ntasks,               &
@@ -2659,28 +2668,26 @@ okay_to_w = .false.
                                 mpi_comm_here,        &
                                 mpi_comm_local,       &
                                 mpi_comm_io_groups)
+write(0,*)__FILE__,__LINE__
 
       call init_module_wrf_error(on_io_server=.true.)
 
        ! provide the communicator for the integration tasks to RSL
        IF ( compute_node ) THEN
           CALL wrf_set_dm_communicator( mpi_comm_local )
-#if ( DA_CORE != 1 )
+#  if ( DA_CORE != 1 )
           IF (coupler_on) CALL cpl_set_dm_communicator( mpi_comm_local )
-#endif
-#if ( HWRF == 1 )
-          call ATM_SET_COMM(mpi_comm_local)
-#endif
+#  endif
        ELSE
-#if ( HWRF == 1 )
-          call ATM_LEAVE_COUPLING()
-#endif
-#if ( DA_CORE != 1 )
+#  if ( DA_CORE != 1 )
           IF (coupler_on) CALL cpl_set_dm_communicator( MPI_COMM_NULL )
-#endif
+#  endif
+write(0,*)__FILE__,__LINE__
           CALL quilt    ! will not return on io server tasks
+write(0,*)__FILE__,__LINE__
        ENDIF
 #endif
+write(0,*)__FILE__,__LINE__
       RETURN
     END SUBROUTINE init_module_wrf_quilt
 

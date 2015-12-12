@@ -52,6 +52,7 @@ MODULE module_dm
    INTEGER :: local_iocommunicator        = MPI_UNDEFINED
    INTEGER :: local_communicator_x        = MPI_UNDEFINED
    INTEGER :: local_communicator_y        = MPI_UNDEFINED ! subcommunicators for rows and cols of mesh
+   INTEGER :: local_quilt_comm            = MPI_UNDEFINED ! added 20151212 jm
    LOGICAL :: dm_debug_flag = .FALSE.
 ! for parallel nesting, 201408, jm
    INTEGER intercomm_to_mom( max_domains ), intercomm_to_kid( max_nests, max_domains )
@@ -933,7 +934,8 @@ ENDIF
 
 #if ( defined(SGIALTIX) && (! defined(MOVE_NESTS) ) ) || ( defined(FUJITSU_FX10) && (! defined(MOVE_NESTS) ) )
          ! allocate space for the intermediate domain
-         CALL alloc_space_field ( intermediate_grid, intermediate_grid%id , 1, 2 , .TRUE., intercomm_active( intermediate_grid%id ), &   ! use same id as nest
+!         CALL alloc_space_field ( intermediate_grid, intermediate_grid%id , 1, 2 , .TRUE., intercomm_active( intermediate_grid%id ), &   ! use same id as nest
+         CALL alloc_space_field ( intermediate_grid, intermediate_grid%id , 1, 2 , .TRUE., nest%active_this_task, &   ! use same id as nest
                                c_sd1, c_ed1, c_sd2, c_ed2, c_sd3, c_ed3,       &
                                c_sm1,  c_em1,  c_sm2,  c_em2,  c_sm3,  c_em3,  &
                                c_sp1,  c_ep1,  c_sp2,  c_ep2,  c_sp3,  c_ep3,  &
@@ -1822,6 +1824,7 @@ ENDIF
       CALL mpi_bcast( nio_groups , 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( max_dom, 1 , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( parent_id, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
+#if ( HWRF == 1 )
 ! check to make sure that if nio_tasks_per_group is non-zero for any domain it has to be non-zero for all of them
       i = MAXVAL(nio_tasks_per_group(1:max_dom))
       IF ( i .GT. 0 .AND. nio_groups .GT. 0 ) THEN
@@ -1837,6 +1840,12 @@ ENDIF
       DO id = 1, max_dom
         num_io_tasks = num_io_tasks + nio_tasks_per_group(id)*nio_groups
       ENDDO
+#else
+        num_io_tasks = nio_tasks_per_group(1)*nio_groups
+#endif
+write(0,*)__FILE__,__LINE__,' num_io_tasks ',num_io_tasks
+write(0,*)__FILE__,__LINE__,' nio_tasks_per_group(1) ',nio_tasks_per_group(1)
+write(0,*)__FILE__,__LINE__,' nio_groups ',nio_groups
       CALL nl_set_max_dom(1,max_dom)  ! quilting wants to see this too
 
       IF ( mytask .EQ. 0 ) THEN
@@ -1917,8 +1926,6 @@ write(0,*)__FILE__,__LINE__,' nest_pes_y ',nest_pes_y
           num_compute_tasks = (comm_start(nest_id)+nest_pes_x(nest_id)*nest_pes_y(nest_id))
         ENDIF
       ENDDO
-write(0,*)__FILE__,__LINE__,' num_compute_tasks ',num_compute_tasks
-write(0,*)__FILE__,__LINE__,' nest_task_offsets ',nest_task_offsets
 
       IF ( .TRUE. ) THEN
 !jm Additional code here to set up communicator for this domain and tables
@@ -1967,10 +1974,13 @@ write(0,*)__FILE__,__LINE__,mytask+1,icolor(mytask+1),inthisone
 
 ! assign domains to communicators
         local_communicator = MPI_UNDEFINED
+#if ( HWRF != 1 )
+        CALL wrf_set_dm_quilt_comm( mpi_comm_here )   ! used by module_io_quilt_old.F
+#endif
+write(0,*)__FILE__,__LINE__,' local_communicator ',local_communicator
         DO i = 1, max_dom
           local_communicator_store(i) = comms_i_am_in(i)
           domain_active_this_task(i) = ( local_communicator_store(i) .NE. MPI_UNDEFINED )
-write(0,*)__FILE__,__LINE__,i,comms_i_am_in(i), domain_active_this_task(i)
           IF ( local_communicator_store(i) .NE. MPI_UNDEFINED ) THEN
              CALL MPI_Comm_size( local_communicator_store(i), ntasks_store(i), ierr )
              CALL MPI_Comm_rank( local_communicator_store(i), mytask_store(i), ierr )
@@ -3151,6 +3161,23 @@ END
       retval = ntasks_y
       RETURN
    END SUBROUTINE wrf_get_dm_ntasks_y
+
+! added 20151212
+   SUBROUTINE wrf_set_dm_quilt_comm ( communicator )
+      USE module_dm , ONLY : local_quilt_comm
+      IMPLICIT NONE
+      INTEGER , INTENT(IN) :: communicator
+      local_quilt_comm = communicator
+      RETURN
+   END SUBROUTINE wrf_set_dm_quilt_comm
+
+   SUBROUTINE wrf_get_dm_quilt_comm ( communicator )
+      USE module_dm , ONLY : local_quilt_comm
+      IMPLICIT NONE
+      INTEGER , INTENT(OUT) :: communicator
+      communicator = local_quilt_comm
+      RETURN
+   END SUBROUTINE wrf_get_dm_quilt_comm
 
 
 !!!!!!!!!!!!!!!!!!!!!!! PATCH TO GLOBAL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

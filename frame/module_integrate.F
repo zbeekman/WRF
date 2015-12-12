@@ -284,8 +284,6 @@ RECURSIVE SUBROUTINE integrate ( grid )
 
    ! This allows us to reference the current grid from anywhere beneath 
    ! this point for debugging purposes.  
-write(0,*)__FILE__,__LINE__,' grid%id ', grid%id
-write(0,*)__FILE__,__LINE__,' grid%active_this_task ',grid%active_this_task
    CALL set_current_grid_ptr( grid )
    CALL push_communicators_for_domain( grid%id )
 

@@ -25,7 +25,6 @@ SUBROUTINE init_modules( phase )
    USE module_cpl, ONLY : coupler_on, cpl_init
 #endif
 
-
 ! <DESCRIPTION>
 ! This routine USES the modules in WRF and then calls the init routines
 ! they provide to perform module specific initializations at the
@@ -69,8 +68,6 @@ IF ( phase == 1 ) THEN
  CALL init_module_ext_internal  !! must be called before quilt
 #endif
 #ifdef DM_PARALLEL
-!CALL disable_quilting
-
 #if ( HWRF == 1 ) 
 ! jm 20150807
 ! jm this was moved to here so that the coupler can divide up the tasks before the model starts doing it for quilting, nesting etc.
@@ -79,12 +76,20 @@ IF ( phase == 1 ) THEN
  CALL hwrf_coupler_init
 #endif
 
+#if ( HWRF == 1 )
  CALL init_module_wrf_quilt    !! this *must* be called before init_module_dm
-
  ! We must never reach this line or phase 2 in an I/O server.
-
  CALL split_communicator
+#else
+write(0,*)__FILE__,__LINE__
+ CALL split_communicator
+write(0,*)__FILE__,__LINE__
+ CALL init_module_wrf_quilt    !! this *must* be called before init_module_dm
+write(0,*)__FILE__,__LINE__
+#endif
+
  CALL init_module_dm
+write(0,*)__FILE__,__LINE__
 #endif
 ELSE
  CALL init_module_wrf_error ! must be called after init_module_dm

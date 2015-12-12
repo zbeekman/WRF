@@ -448,9 +448,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
 
 
 ! fill in entire fine grid domain with interpolated coarse grid data
-write(0,*)__FILE__,__LINE__,parent%id,nest%id
      CALL med_interp_domain( parent, nest )
-write(0,*)__FILE__,__LINE__
 
 !  De-reference dimension information stored in the grid data structure.
      CALL get_ijk_from_grid (  nest ,                   &
