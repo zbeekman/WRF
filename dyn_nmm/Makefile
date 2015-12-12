@@ -62,3 +62,8 @@ include ../configure.wrf
 clean:
 	@ echo 'use the clean script'
 
+# DEPENDENCIES : only dependencies after this line (don't remove the word DEPENDENCIES)
+
+include depend.dyn_nmm
+
+# DO NOT DELETE
