@@ -9,7 +9,8 @@
 #ifdef IBM_REDUCE_BUG_WORKAROUND
 #define mpi_x_reduce(sb,rb,c,dt,op,r,com,ierr) reduce_add_integer(sb,rb,c,r,com)
 #else
-#define mpi_x_reduce(sb,rb,c,dt,op,r,com,ierr) MPI_Reduce(sb,rb,c,dt,op,r,com,ierr)
+!#define mpi_x_reduce(sb,rb,c,dt,op,r,com,ierr) MPI_Reduce(sb,rb,c,dt,op,r,com,ierr)
+#define mpi_x_reduce(sb,rb,c,dt,op,r,com,ierr) MPI_Reduce(sb,rb,c,dt,op,r,com,ierr) ; write(0,*)__LINE__
 #endif
 
 MODULE module_wrf_quilt
@@ -307,6 +308,10 @@ MODULE module_wrf_quilt
 
       nio = nio_tasks_per_group
       ncompute_tasks = ntasks - (nio * n_groups)
+write(0,*)__FILE__,__LINE__,' n_groups    ',n_groups
+write(0,*)__FILE__,__LINE__,' nio    ',nio
+write(0,*)__FILE__,__LINE__,' ntasks ',ntasks
+write(0,*)__FILE__,__LINE__,' ncompute_tasks ',ncompute_tasks
       IF ( ncompute_tasks .LT. nio ) THEN 
         WRITE(mess,'("Not enough tasks to have ",I3," groups of ",I3," I/O tasks. No quilting.")')n_groups,nio
         nio            = 0
@@ -340,6 +345,7 @@ MODULE module_wrf_quilt
         ENDDO
         ii = ii+1
       ENDDO
+write(0,*)__FILE__,__LINE__,' icolor ', icolor
       CALL MPI_Comm_dup(mpi_comm_wrld,comdup,ierr)
       CALL MPI_Comm_split(comdup,icolor(mytask+1),mytask,mpi_comm_local,ierr)
 
@@ -662,10 +668,10 @@ write(0,*)__FILE__,__LINE__
         ! first element of reduced is obufsize, second is DataHandle 
         ! if needed (currently needed only for ioclose).
         reduced_dummy = 0
-write(0,*)__FILE__,__LINE__
+write(0,*)__FILE__,__LINE__,mytask_io_group, mpi_comm_io_groups(1)
         CALL mpi_x_reduce( reduced_dummy, reduced, 2, MPI_INTEGER, MPI_SUM, mytask_io_group, mpi_comm_io_groups(1), ierr )
-write(0,*)__FILE__,__LINE__
         obufsize = reduced(1)
+write(0,*)__FILE__,__LINE__,obufsize
 !CALL end_timing("MPI_Reduce at top of forever loop") 
 !JMDEBUGwrite(0,*)'obufsize = ',obufsize
 ! Negative obufsize will trigger I/O server exit.  
@@ -715,14 +721,17 @@ write(0,*)__FILE__,__LINE__
 ! Allocate buffer obuf to be big enough for the data the compute tasks
 ! will send.  Note: obuf is size in *bytes* so we need to pare this 
 ! down, since the buffer is INTEGER.  
+write(0,*)__FILE__,__LINE__,obufsize
         IF ( obufsize .GT. 0 ) THEN
           ALLOCATE( obuf( (obufsize+1)/itypesize ) )
 
 ! let's roll; get the data from the compute procs and put in obuf
+write(0,*)__FILE__,__LINE__,obufsize
           CALL collect_on_comm_debug(__FILE__,__LINE__, mpi_comm_io_groups(1),        &
                                 onebyte,                      &
                                 dummy, 0,                     &
                                 obuf, obufsize )
+write(0,*)__FILE__,__LINE__
 !          CALL end_timing( "quilt on server: collecting data from compute procs" )
         ELSE
           ! Necessarily, the compute processes send the ioclose signal,
@@ -751,6 +760,7 @@ write(0,*)__FILE__,__LINE__
              call_server_ready=.true.
           endif
         ENDIF
+write(0,*)__FILE__,__LINE__
 
 !write(0,*)'calling init_store_piece_of_field'
 ! Now all messages received from the compute clients are stored in 
@@ -774,6 +784,7 @@ write(0,*)__FILE__,__LINE__
         num_field_training_msgs = 0 
         DO WHILE ( icurs .lt. obufsize ) ! {
           hdr_tag = get_hdr_tag( obuf ( icurs / itypesize ) )
+write(0,*)__FILE__,__LINE__,' hdr_tag ',hdr_tag
           SELECT CASE ( hdr_tag )
             CASE ( int_field )
               CALL int_get_write_field_header ( obuf(icurs/itypesize), hdrbufsize, itypesize, ftypesize,  &
@@ -2946,7 +2957,7 @@ LOGICAL FUNCTION  use_input_servers()
   RETURN
 END FUNCTION use_input_servers
 
-SUBROUTINE wrf_quilt_open_for_write_begin( FileName , Comm_compute, Comm_io, SysDepInfo, &
+SUBROUTINE wrf_quilt_open_for_write_begin( FileName , gridid, Comm_compute, Comm_io, SysDepInfo, &
                                      DataHandle , io_form_arg, Status )
 !<DESCRIPTION>
 ! Instruct the I/O quilt servers to begin data definition ("training") phase
@@ -2960,6 +2971,7 @@ SUBROUTINE wrf_quilt_open_for_write_begin( FileName , Comm_compute, Comm_io, Sys
   INCLUDE 'mpif.h'
 #include "intio_tags.h"
   CHARACTER *(*), INTENT(IN)  :: FileName
+  INTEGER ,       INTENT(IN)  :: gridid
   INTEGER ,       INTENT(IN)  :: Comm_compute , Comm_io
   CHARACTER *(*), INTENT(IN)  :: SysDepInfo
   INTEGER ,       INTENT(OUT) :: DataHandle
@@ -2971,6 +2983,7 @@ SUBROUTINE wrf_quilt_open_for_write_begin( FileName , Comm_compute, Comm_io, Sys
   REAL dummy
   INTEGER, EXTERNAL :: use_package
 
+write(0,*)__FILE__,__LINE__,' io_form_arg ', io_form_arg
   CALL wrf_debug ( DEBUG_LVL, 'in wrf_quilt_open_for_write_begin' ) 
   CALL int_get_fresh_handle(i)
   okay_to_write(i) = .false.
@@ -2981,6 +2994,7 @@ SUBROUTINE wrf_quilt_open_for_write_begin( FileName , Comm_compute, Comm_io, Sys
 
   CALL MPI_TYPE_SIZE( MPI_INTEGER, itypesize, ierr )
 
+write(0,*)__FILE__,__LINE__,io_form_arg
   SELECT CASE(use_package(io_form_arg))
 
 #ifdef PNETCDF_QUILT
@@ -2995,22 +3009,28 @@ SUBROUTINE wrf_quilt_open_for_write_begin( FileName , Comm_compute, Comm_io, Sys
 #endif
   CASE DEFAULT
 
+write(0,*)__FILE__,__LINE__,wrf_dm_on_monitor()
      IF ( wrf_dm_on_monitor() ) THEN
+write(0,*)__FILE__,__LINE__
         CALL int_gen_ofwb_header( hdrbuf, hdrbufsize, itypesize, &
                                   locFileName,locSysDepInfo,io_form_arg,DataHandle )
+write(0,*)__FILE__,__LINE__
      ELSE
+write(0,*)__FILE__,__LINE__
         CALL int_gen_noop_header( hdrbuf, hdrbufsize, itypesize )
+write(0,*)__FILE__,__LINE__
      ENDIF
+write(0,*)__FILE__,__LINE__
 
   END SELECT
 
   iserver = get_server_id ( DataHandle )
-!JMDEBUGwrite(0,*)'wrf_quilt_open_for_write_begin iserver = ', iserver
+write(0,*)'wrf_quilt_open_for_write_begin iserver = ', iserver
   CALL get_mpi_comm_io_groups( comm_io_group , iserver )
-!JMDEBUGwrite(0,*)'wrf_quilt_open_for_write_begin comm_io_group  = ', comm_io_group 
+write(0,*)'wrf_quilt_open_for_write_begin comm_io_group  = ', comm_io_group 
 
   CALL mpi_x_comm_size( comm_io_group , tasks_in_group , ierr )
-!JMDEBUGwrite(0,*)'mpi_x_comm_size tasks_in_group ',tasks_in_group, ierr
+write(0,*)'mpi_x_comm_size tasks_in_group ',tasks_in_group, ierr
 
 !!JMTIMING  CALL start_timing
   ! send the size of my local buffer to the i/o task (reduced_dummy doesnt mean anything on client side)
@@ -3021,14 +3041,17 @@ SUBROUTINE wrf_quilt_open_for_write_begin( FileName , Comm_compute, Comm_io, Sys
 #else
   IF ( wrf_dm_on_monitor() )  reduced(2) = i 
 #endif
+write(0,*)__FILE__,__LINE__,tasks_in_group-1, comm_io_group
   CALL mpi_x_reduce( reduced, reduced_dummy, 2, MPI_INTEGER, MPI_SUM, tasks_in_group-1, comm_io_group, ierr )
 !!JMTIMING   CALL end_timing("MPI_Reduce in wrf_quilt_open_for_write_begin")
 
   ! send data to the i/o processor
+write(0,*)__FILE__,__LINE__,ierr
   CALL collect_on_comm_debug(__FILE__,__LINE__, comm_io_group,            &
                         onebyte,                       &
                         hdrbuf, hdrbufsize , &
                         dummy, 0 )
+write(0,*)__FILE__,__LINE__ 
 
   Status = 0
 
@@ -3055,12 +3078,14 @@ SUBROUTINE wrf_quilt_open_for_write_commit( DataHandle , Status )
   INTEGER i, itypesize, tasks_in_group, ierr, comm_io_group
   REAL dummy
 
+write(0,*)__FILE__,__LINE__
   CALL wrf_debug ( DEBUG_LVL, 'in wrf_quilt_open_for_write_commit' ) 
   IF ( DataHandle .GE. 1 .AND. DataHandle .LE. int_num_handles ) THEN
     IF ( int_handle_in_use( DataHandle ) ) THEN
       okay_to_write( DataHandle ) = .true.
     ENDIF
   ENDIF
+write(0,*)__FILE__,__LINE__
 
   CALL MPI_TYPE_SIZE( MPI_INTEGER, itypesize, ierr )
 
@@ -5147,12 +5172,12 @@ SUBROUTINE collect_on_comm_debug(file,line, comm_io_group,   &
   INTEGER hdrbuf(*), outbuf(*)
   INTEGER hdrbufsize, outbufsize 
 
-  !write(0,*)'collect_on_comm_debug ',trim(file),line,sze,hdrbufsize,outbufsize
+  write(0,*)'collect_on_comm_debug ',trim(file),line,sze,hdrbufsize,outbufsize
   CALL collect_on_comm( comm_io_group,                       &
                         sze,                                 &
                         hdrbuf, hdrbufsize ,                 &
                         outbuf, outbufsize                   )
-  !write(0,*)trim(file),line,'returning'
+  write(0,*)trim(file),line,'returning'
   RETURN
 END
 
@@ -5170,11 +5195,11 @@ SUBROUTINE collect_on_comm_debug2(file,line,var,tag,sz,hdr_rec_size, &
   INTEGER hdrbuf(*), outbuf(*)
   INTEGER hdrbufsize, outbufsize
 
-!  write(0,*)'collect_on_comm_debug2 ',trim(file),line,trim(var),tag,sz,hdr_rec_size,sze,hdrbufsize,outbufsize
+  write(0,*)'collect_on_comm_debug2 ',trim(file),line,trim(var),tag,sz,hdr_rec_size,sze,hdrbufsize,outbufsize
   CALL collect_on_comm( comm_io_group,                       &
                         sze,                                 &
                         hdrbuf, hdrbufsize ,                 &
                         outbuf, outbufsize                   )
-!  write(0,*)'collect_on_comm_debug2 ',trim(file),line,'returning for ',trim(var)
+  write(0,*)'collect_on_comm_debug2 ',trim(file),line,'returning for ',trim(var)
   RETURN
 END
