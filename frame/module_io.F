@@ -193,7 +193,11 @@ SUBROUTINE wrf_ioexit( Status )
   CALL ext_pio_ioexit  ( ierr(12) )
 #endif
  
-  IF ( use_output_servers() ) CALL wrf_quilt_ioexit( ierr(11) )
+  IF ( use_output_servers() ) THEN
+write(0,*)__FILE__,__LINE__,' calling wrf_quilt_ioexit '
+      CALL wrf_quilt_ioexit( ierr(11) )
+write(0,*)__FILE__,__LINE__,' back from wrf_quilt_ioexit '
+  ENDIF
   minerr = MINVAL(ierr)
   maxerr = MAXVAL(ierr)
   IF ( minerr < 0 ) THEN

@@ -1235,14 +1235,16 @@ write(0,*)__FILE__,__LINE__,' hdr_tag ',hdr_tag
                   icurs = icurs + hdrbufsize
 
                   IF ( DataHandle .GE. 1 ) THEN
-!JMDEBUGwrite(0,*)'closing DataHandle ',DataHandle,' io_form ',io_form(DataHandle)
+write(0,*)'closing DataHandle ',DataHandle,' io_form ',io_form(DataHandle)
 
                   SELECT CASE (use_package(io_form(DataHandle)))
 #ifdef NETCDF
                     CASE ( IO_NETCDF   )
                       CALL ext_ncd_inquire_filename( handle(DataHandle), fname, fstat, Status )
                       IF ( fstat .EQ. WRF_FILE_OPENED_FOR_WRITE .OR. fstat .EQ. WRF_FILE_OPENED_NOT_COMMITTED ) THEN
+write(0,*)'calling ext_ncd_ioclose ',DataHandle,handle(DataHandle)
                         CALL ext_ncd_ioclose(handle(DataHandle),Status)
+write(0,*)'back fr ext_ncd_ioclose ',Status
                       ENDIF
 #endif
 #ifdef PNETCDF
@@ -3455,17 +3457,22 @@ SUBROUTINE wrf_quilt_ioexit( Status )
        ! Not using server polling, so just access servers in numeric order.
        actual_iserver=iserver
     endif
-
+write(0,*)__FILE__,__LINE__,actual_iserver
     CALL get_mpi_comm_io_groups( comm_io_group , actual_iserver )
+write(0,*)__FILE__,__LINE__,comm_io_group
 
     CALL mpi_x_comm_size( comm_io_group , tasks_in_group , ierr )
+write(0,*)__FILE__,__LINE__,tasks_in_group
     CALL mpi_comm_rank( comm_io_group , me , ierr )
+write(0,*)__FILE__,__LINE__,me
 
 ! BY SENDING A NEGATIVE SIZE WE GET THE SERVERS TO SHUT DOWN
     hdrbufsize = -100 
     reduced = 0
     IF ( me .eq. 0 ) reduced(1) = hdrbufsize 
+write(0,*)__FILE__,__LINE__,reduced
     CALL mpi_x_reduce( reduced, reduced_dummy, 2, MPI_INTEGER, MPI_SUM, tasks_in_group-1, comm_io_group, ierr )
+write(0,*)__FILE__,__LINE__,' back from mpi_x_reduce'
 
   ENDDO
   Status = 0
