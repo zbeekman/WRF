@@ -81,15 +81,11 @@ IF ( phase == 1 ) THEN
  ! We must never reach this line or phase 2 in an I/O server.
  CALL split_communicator
 #else
-write(0,*)__FILE__,__LINE__
  CALL split_communicator
-write(0,*)__FILE__,__LINE__
  CALL init_module_wrf_quilt    !! this *must* be called before init_module_dm
-write(0,*)__FILE__,__LINE__
 #endif
 
  CALL init_module_dm
-write(0,*)__FILE__,__LINE__
 #endif
 ELSE
  CALL init_module_wrf_error ! must be called after init_module_dm

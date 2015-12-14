@@ -194,9 +194,7 @@ SUBROUTINE wrf_ioexit( Status )
 #endif
  
   IF ( use_output_servers() ) THEN
-write(0,*)__FILE__,__LINE__,' calling wrf_quilt_ioexit '
       CALL wrf_quilt_ioexit( ierr(11) )
-write(0,*)__FILE__,__LINE__,' back from wrf_quilt_ioexit '
   ENDIF
   minerr = MINVAL(ierr)
   maxerr = MAXVAL(ierr)
@@ -257,8 +255,6 @@ SUBROUTINE wrf_open_for_write_begin( FileName , grid, SysDepInfo, &
   CALL nl_get_ncd_nofill( 1 , ncd_nofill )
 
   io_form = io_form_for_dataset( DataSet )
-write(0,*)__FILE__,__LINE__,' io_form ',io_form
-write(0,*)__FILE__,__LINE__,' use_output_servers_for(io_form) ',use_output_servers_for(io_form)
 
   Status = 0
   Hndl = -1
@@ -425,19 +421,14 @@ write(0,*)__FILE__,__LINE__,' use_output_servers_for(io_form) ',use_output_serve
   ELSE ! use_output_servers_for(io_form)
     IF ( io_form .GT. 0 ) THEN
       IF ( ncd_nofill ) THEN
-write(0,*)__FILE__,__LINE__,Comm_compute, Comm_io,io_form
         CALL wrf_quilt_open_for_write_begin ( FileName , grid%id, Comm_compute, Comm_io, TRIM(SysDepInfo) // ",NOFILL=.TRUE.", &
                                               Hndl , io_form, Status )
-write(0,*)__FILE__,__LINE__,Status
       ELSE
-write(0,*)__FILE__,__LINE__,Comm_compute, Comm_io,io_form
         CALL wrf_quilt_open_for_write_begin ( FileName , grid%id, Comm_compute, Comm_io, SysDepInfo, &
                                               Hndl , io_form, Status )
-write(0,*)__FILE__,__LINE__,Status
       ENDIF
     ENDIF
   ENDIF
-write(0,*)__FILE__,__LINE__,' call add_new_handle ',Hndl, io_form,DataHandle
   CALL add_new_handle( Hndl, io_form, .TRUE., DataHandle )
 END SUBROUTINE wrf_open_for_write_begin
 
@@ -468,8 +459,6 @@ SUBROUTINE wrf_open_for_write_commit( DataHandle , Status )
 
   Status = 0
   CALL get_handle ( Hndl, io_form , for_out, DataHandle )
-write(0,*)__FILE__,__LINE__,' get_handle ',Hndl, io_form , for_out, DataHandle
-write(0,*)__FILE__,__LINE__,' wrf_open_for_write_commit ',Hndl,io_form
   CALL set_first_operation( DataHandle )
   IF ( Hndl .GT. -1 ) THEN
     IF ( multi_files( io_form ) .OR. .NOT. (for_out .AND. use_output_servers_for(io_form)) ) THEN
@@ -541,9 +530,7 @@ write(0,*)__FILE__,__LINE__,' wrf_open_for_write_commit ',Hndl,io_form
           Status = 0
       END SELECT
     ELSE IF ( io_form .GT. 0 .AND. for_out .AND. use_output_servers_for(io_form) ) THEN
-write(0,*)__FILE__,__LINE__,' calling wrf_quilt_open_for_write_commit ',Hndl
       CALL wrf_quilt_open_for_write_commit ( Hndl , Status )
-write(0,*)__FILE__,__LINE__,' back from wrf_quilt_open_for_write_commit ',Hndl
     ELSE
       Status = 0
     ENDIF

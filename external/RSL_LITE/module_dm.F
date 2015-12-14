@@ -1843,9 +1843,6 @@ ENDIF
 #else
         num_io_tasks = nio_tasks_per_group(1)*nio_groups
 #endif
-write(0,*)__FILE__,__LINE__,' num_io_tasks ',num_io_tasks
-write(0,*)__FILE__,__LINE__,' nio_tasks_per_group(1) ',nio_tasks_per_group(1)
-write(0,*)__FILE__,__LINE__,' nio_groups ',nio_groups
       CALL nl_set_max_dom(1,max_dom)  ! quilting wants to see this too
 
       IF ( mytask .EQ. 0 ) THEN
@@ -1884,13 +1881,6 @@ write(0,*)__FILE__,__LINE__,' nio_groups ',nio_groups
       CALL mpi_bcast( comm_start, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( nest_pes_x, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
       CALL mpi_bcast( nest_pes_y, max_domains , MPI_INTEGER , 0 , mpi_comm_here, ierr )
-
-write(0,*)__FILE__,__LINE__,' tasks_per_split ',tasks_per_split
-write(0,*)__FILE__,__LINE__,' nproc_x ',nproc_x
-write(0,*)__FILE__,__LINE__,' nproc_y ',nproc_y
-write(0,*)__FILE__,__LINE__,' comm_start ',comm_start
-write(0,*)__FILE__,__LINE__,' nest_pes_x ',nest_pes_x
-write(0,*)__FILE__,__LINE__,' nest_pes_y ',nest_pes_y
 
       nkids = 1
       which_kid = 0
@@ -1960,7 +1950,6 @@ write(0,*)__FILE__,__LINE__,' nest_pes_y ',nest_pes_y
             icolor(j+1) = 1
           ENDDO
           IF ( icolor(mytask+1) .EQ. 1 ) inthisone = .TRUE.
-write(0,*)__FILE__,__LINE__,mytask+1,icolor(mytask+1),inthisone
           CALL MPI_Comm_dup(mpi_comm_here,comdup,ierr)
           CALL MPI_Comm_split(comdup,icolor(mytask+1),mytask,mpi_comm_local,ierr)
           IF ( inthisone ) THEN
@@ -1977,7 +1966,6 @@ write(0,*)__FILE__,__LINE__,mytask+1,icolor(mytask+1),inthisone
 #if ( HWRF != 1 )
         CALL wrf_set_dm_quilt_comm( mpi_comm_here )   ! used by module_io_quilt_old.F
 #endif
-write(0,*)__FILE__,__LINE__,' local_communicator ',local_communicator
         DO i = 1, max_dom
           local_communicator_store(i) = comms_i_am_in(i)
           domain_active_this_task(i) = ( local_communicator_store(i) .NE. MPI_UNDEFINED )
