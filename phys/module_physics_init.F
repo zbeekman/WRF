@@ -979,7 +979,7 @@ ENDIF
    IF(mminlu_loc .ne. '    ')THEN
 !-- initialize surface properties
 
-     CALL landuse_init(id,lu_index, snowc, albedo, albbck, snoalb, mavail, emiss, embck, &
+     CALL landuse_init(lu_index, snowc, albedo, albbck, snoalb, mavail, emiss, embck, &
                 znt, Z0, thc, xland, xice, xicem, julday, cen_lat, iswater, &
                 TRIM ( mminlu_loc ) ,                               &
                 landuse_ISICE, landuse_LUCATS,                      &
@@ -1065,7 +1065,7 @@ ENDIF
                 its=its, ite=ite, jts=jts, jte=jte, kts=kts, kte=kte                    )
 
    CALL wrf_debug ( 200 , 'module_start: phy_init: Before call to bl_init' )
-   CALL bl_init(id,STEPBL,BLDT,DT,RUBLTEN,RVBLTEN,RTHBLTEN,        &
+   CALL bl_init(STEPBL,BLDT,DT,RUBLTEN,RVBLTEN,RTHBLTEN,        &
                 RQVBLTEN,RQCBLTEN,RQIBLTEN,TSK,TMN,             &
                 config_flags,restart,UST,LOWLYR,TSLB,ZS,DZS,    &
                 num_soil_layers,TKE_PBL,mfshconv,               &
@@ -1334,7 +1334,7 @@ ENDIF
    END SUBROUTINE phy_init
 
 !=====================================================================
-   SUBROUTINE landuse_init(id,lu_index, snowc, albedo, albbck, snoalb, mavail, emiss, embck, &
+   SUBROUTINE landuse_init(lu_index, snowc, albedo, albbck, snoalb, mavail, emiss, embck, &
                 znt,Z0,thc,xland, xice, xicem, julday, cen_lat, iswater, mminlu,  &
                 ISICE, LUCATS, LUSEAS, ISN,                         &
                 fractional_seaice,                                  &
@@ -1345,11 +1345,9 @@ ENDIF
                 its, ite, jts, jte, kts, kte                       )
 
    USE module_wrf_error
-USE module_dm, ONLY : local_communicator
    IMPLICIT NONE
 
 !---------------------------------------------------------------------
-   INTEGER , INTENT(IN)           :: id
    INTEGER , INTENT(IN)           :: ids, ide, jds, jde, kds, kde,   &
                                      ims, ime, jms, jme, kms, kme,   &
                                      its, ite, jts, jte, kts, kte
@@ -1601,7 +1599,6 @@ USE module_dm, ONLY : local_communicator
         lu_state(curs) = THERIN(cats,seas)        ; curs = curs + 1
       ENDDO
     ENDDO
-   CALL wrf_debug( 100 , 'end of landuse_init' )
 !
 !-- fds (07/2010)
 !-- SSIB's 12-category vegetation parameters are defined in module_ssib_veg
@@ -1764,7 +1761,7 @@ USE module_dm, ONLY : local_communicator
 !   note that CAM option will still do the same. 
 !   n_ozmixm: no of months; levsiz: = 59, vertical dim
 !   Read in CAM ozone data, and interpolate data to model grid
-!   Interpolation of aerosols is done on domain 1 only
+!   Interpolation is done on domain 1 only
 
 #if (EM_CORE==1) 
    IF ( config_flags%o3input .EQ. 2 .AND. id .EQ. 1 ) THEN
@@ -1978,7 +1975,7 @@ USE module_dm, ONLY : local_communicator
 
    END SUBROUTINE ra_init
 
-   SUBROUTINE bl_init(id,STEPBL,BLDT,DT,RUBLTEN,RVBLTEN,RTHBLTEN,  &
+   SUBROUTINE bl_init(STEPBL,BLDT,DT,RUBLTEN,RVBLTEN,RTHBLTEN,  &
                 RQVBLTEN,RQCBLTEN,RQIBLTEN,TSK,TMN,             &
                 config_flags,restart,UST,LOWLYR,TSLB,ZS,DZS,    &
                 num_soil_layers,TKE_PBL,mfshconv,               &
@@ -2156,7 +2153,6 @@ USE module_dm, ONLY : local_communicator
 !--------------------------------------------------------------------
    IMPLICIT NONE
 !--------------------------------------------------------------------
-integer,intent(in) :: id
    TYPE (grid_config_rec_type) ::     config_flags
    LOGICAL , INTENT(IN)        :: restart
    LOGICAL, INTENT(IN)         ::   FNDSOILW, FNDSNOWH
@@ -2659,7 +2655,7 @@ integer,intent(in) :: id
 
 #endif
       CASE (LSMSCHEME)
-          CALL LSMINIT(id,VEGFRA,SNOW,SNOWC,SNOWH,CANWAT,SMSTAV,  &
+          CALL LSMINIT(VEGFRA,SNOW,SNOWC,SNOWH,CANWAT,SMSTAV,  &
                      SMSTOT, SFCRUNOFF,UDRUNOFF,ACSNOW,        &
                      ACSNOM,IVGTYP,ISLTYP,TSLB,SMOIS,SH2O,ZS,DZS, &
                      MMINLU,                                   &
@@ -2793,7 +2789,7 @@ CALL lsm_mosaic_init(IVGTYP,config_flags%ISWATER,config_flags%ISURBAN,config_fla
              config_flags%num_land_cat .ne. 24 .and. config_flags%num_land_cat .ne. 28 .and. & ! USGS
              config_flags%num_land_cat .ne. 40 .and. config_flags%num_land_cat .ne. 50 )     & ! NLCD
           CALL wrf_error_fatal ( 'module_physics_init: PX LSM option requires USGS, MODIS, or NLCD' )
-          CALL LSMINIT(id,VEGFRA,SNOW,SNOWC,SNOWH,CANWAT,SMSTAV,  &
+          CALL LSMINIT(VEGFRA,SNOW,SNOWC,SNOWH,CANWAT,SMSTAV,  &
                      SMSTOT, SFCRUNOFF,UDRUNOFF,ACSNOW,        &
                      ACSNOM,IVGTYP,ISLTYP,TSLB,SMOIS,SH2O,ZS,DZS, &
                      MMINLU,                                   &

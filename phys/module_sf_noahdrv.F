@@ -1590,7 +1590,7 @@ CONTAINS
    END SUBROUTINE lsm
 !------------------------------------------------------
 
-  SUBROUTINE LSMINIT(id,VEGFRA,SNOW,SNOWC,SNOWH,CANWAT,SMSTAV,    &
+  SUBROUTINE LSMINIT(VEGFRA,SNOW,SNOWC,SNOWH,CANWAT,SMSTAV,    &
                      SMSTOT, SFCRUNOFF,UDRUNOFF,ACSNOW,        &
                      ACSNOM,IVGTYP,ISLTYP,TSLB,SMOIS,SH2O,ZS,DZS, &
                      MMINLU,                                   &
@@ -1601,7 +1601,6 @@ CONTAINS
                      ims,ime, jms,jme, kms,kme,                &
                      its,ite, jts,jte, kts,kte                 )
 
-integer,intent(in) :: id
    INTEGER,  INTENT(IN   )   ::     ids,ide, jds,jde, kds,kde,  &
                                     ims,ime, jms,jme, kms,kme,  &
                                     its,ite, jts,jte, kts,kte
@@ -1690,10 +1689,13 @@ integer,intent(in) :: id
      ENDDO
    ENDDO
    IF ( errflag .EQ. 1 ) THEN
-!      CALL wrf_error_fatal( "module_sf_noahdrv.F: lsminit: out of range value "// &
-!                            "of ISLTYP. Is this field in the input?" )
+#if ( HWRF == 1 ) 
       CALL wrf_message( "WARNING: message only; was fatal. module_sf_noahdrv.F: lsminit: out of range value "// &
                             "of ISLTYP. Is this field in the input?" )
+#else
+      CALL wrf_error_fatal( "module_sf_noahdrv.F: lsminit: out of range value "// &
+                            "of ISLTYP. Is this field in the input?" )
+#endif
    ENDIF
 
 ! initialize soil liquid water content SH2O
