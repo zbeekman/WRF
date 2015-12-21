@@ -6,7 +6,11 @@ SUBROUTINE med_feedback_domain ( parent_grid , nested_grid )
    USE module_domain
    USE module_configure
    USE module_intermediate_nmm
-   USE module_dm, only: local_communicator, intercomm_active!,push_communicators_for_domain,pop_communicators_for_domain
+#ifdef DM_PARALLEL
+   USE module_dm, ONLY: local_communicator, intercomm_active
+#else
+   USE module_dm, ONLY: intercomm_active
+#endif
    IMPLICIT NONE
    TYPE(domain), POINTER :: parent_grid , nested_grid
    TYPE(domain), POINTER :: grid
@@ -137,7 +141,6 @@ SUBROUTINE med_feedback_domain ( parent_grid , nested_grid )
    parent_grid%ht_coarse = parent_grid%ht
    grid => nested_grid%intermediate_grid
 #  if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
-!   IF ( intercomm_active( grid%id ) ) THEN
    CALL alloc_space_field ( grid, grid%id , 1 , 2 , .TRUE. , intercomm_active( grid%id ),    &
                             grid%sd31, grid%ed31, grid%sd32, grid%ed32, grid%sd33, grid%ed33, &
                             grid%sm31,  grid%em31,  grid%sm32,  grid%em32,  grid%sm33,  grid%em33, &
@@ -147,7 +150,6 @@ SUBROUTINE med_feedback_domain ( parent_grid , nested_grid )
                             grid%sm31x, grid%em31x, grid%sm32x, grid%em32x, grid%sm33x, grid%em33x, &   ! x-xpose
                             grid%sm31y, grid%em31y, grid%sm32y, grid%em32y, grid%sm33y, grid%em33y  &   ! y-xpose
      )
-!   ENDIF
 #  endif
    CALL wrf_dm_nestexchange_init
   IF ( nested_grid%active_this_task ) THEN

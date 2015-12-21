@@ -22,6 +22,8 @@ MODULE module_wrf_top
 
 #ifdef DM_PARALLEL
    USE module_dm, ONLY : wrf_dm_initialize,wrf_get_hostid,domain_active_this_task,mpi_comm_allcompute
+#else
+   USE module_dm, ONLY : domain_active_this_task
 #endif
 
    USE module_cpl, ONLY : coupler_on, cpl_finalize, cpl_defdomain
@@ -320,11 +322,7 @@ CHARACTER*512 mminlu_loc
    CALL       wrf_message ( program_name )
    CALL       wrf_debug ( 100 , 'wrf: calling alloc_and_configure_domain ' )
    CALL alloc_and_configure_domain ( domain_id  = 1 ,                  &
-#ifdef DM_PARALLEL
                                active_this_task = domain_active_this_task(1), &
-#else
-                               active_this_task = .TRUE.               &
-#endif
                                      grid       = head_grid ,          &
                                      parent     = null_domain ,        &
                                      kid        = -1                   )

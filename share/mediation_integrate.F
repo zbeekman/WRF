@@ -296,8 +296,10 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
    USE module_io_domain
    USE module_configure , ONLY : grid_config_rec_type
    USE module_utility
-   USE module_dm, ONLY :                                                              local_communicator, &
+#ifdef DM_PARALLEL
+   USE module_dm, ONLY : local_communicator,                                     &
                          mpi_comm_to_mom, mpi_comm_to_kid, which_kid
+#endif
   ! Model layer
 
    IMPLICIT NONE
@@ -577,9 +579,11 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
        CALL pop_communicators_for_domain
      ENDIF
 
+#ifdef DM_PARALLEL
      CALL push_communicators_for_domain( parent%id )
      CALL MPI_Barrier( local_communicator, ierr )     
      CALL pop_communicators_for_domain
+#endif
 
      IF ( parent%active_this_task ) THEN
      CALL push_communicators_for_domain( parent%id )
@@ -896,6 +900,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
     IF ( nest%active_this_task .AND. parent%active_this_task ) THEN
     nest%PSTD=parent%PSTD
     ENDIF
+#ifdef DM_PARALLEL
     IF ( nest%active_this_task .OR. parent%active_this_task ) THEN
       IF ( parent%active_this_task ) THEN
         CALL BYTE_BCAST( parent%PSTD, KME*RWORDSIZE, mpi_comm_to_kid( which_kid( nest%id ) , parent%id ) )
@@ -903,6 +908,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
         CALL BYTE_BCAST( nest%PSTD, KME*RWORDSIZE, mpi_comm_to_mom( nest%id ) )
       ENDIF
     ENDIF
+#endif
 
     IF ( nest%active_this_task ) THEN
       nest%KZMAX=KME

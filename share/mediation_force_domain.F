@@ -8,9 +8,12 @@ SUBROUTINE med_force_domain ( parent_grid , nested_grid )
    USE module_domain
    USE module_configure
    USE module_intermediate_nmm
+#ifdef DM_PARALLEL
    USE module_dm, ONLY : intercomm_active, &
                          mpi_comm_to_kid, mpi_comm_to_mom, which_kid
-                         !push_communicators_for_domain,pop_communicators_for_domain, &
+#else
+   USE module_dm, ONLY : intercomm_active
+#endif
 
    IMPLICIT NONE
    TYPE(domain), POINTER :: parent_grid , nested_grid
@@ -138,8 +141,6 @@ SUBROUTINE med_force_domain ( parent_grid , nested_grid )
 ! ----------------------------------------------------------
 !    Interface definitions for COAMPS (placeholder)
 ! ----------------------------------------------------------
-#if (COAMPS_CORE == 1)
-#endif
    END INTERFACE
 ! ----------------------------------------------------------
 ! End of Interface blocks

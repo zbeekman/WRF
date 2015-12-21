@@ -5,7 +5,6 @@ SUBROUTINE med_interp_domain ( parent_grid , nested_grid )
    USE module_domain
    USE module_configure
    USE module_timing
-   USE module_dm, ONLY : intercomm_active
 
    IMPLICIT NONE
    TYPE(domain), POINTER :: parent_grid , nested_grid
@@ -234,7 +233,9 @@ SUBROUTINE med_interp_domain_small ( parent_grid , nested_grid )
    USE module_domain
    USE module_configure
    USE module_timing
+#if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
    USE module_dm, ONLY : intercomm_active
+#endif
    IMPLICIT NONE
    TYPE(domain), POINTER :: parent_grid , nested_grid
    TYPE(domain), POINTER :: grid
