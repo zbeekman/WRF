@@ -579,7 +579,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags )
        CALL pop_communicators_for_domain
      ENDIF
 
-#ifdef DM_PARALLEL
+#if defined(DM_PARALLEL) && ! defined(STUBMPI)
      CALL push_communicators_for_domain( parent%id )
      CALL MPI_Barrier( local_communicator, ierr )     
      CALL pop_communicators_for_domain

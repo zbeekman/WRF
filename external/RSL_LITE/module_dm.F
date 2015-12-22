@@ -17,7 +17,11 @@ MODULE module_dm
 #endif
 
    IMPLICIT NONE
+#ifndef STUBMPI
    INCLUDE 'mpif.h'
+#else
+   INTEGER, PARAMETER :: MPI_UNDEFINED = -1
+#endif
 
 #if ( NMM_CORE == 1 ) || ( WRF_CHEM == 1 ) 
    INTEGER, PARAMETER :: max_halo_width = 6
@@ -4228,8 +4232,10 @@ endif
       ENDIF
 
       IF ( grid%active_this_task .OR. ngrid%active_this_task ) THEN
+#ifndef STUBMPI
         CALL mpi_comm_rank(local_comm,myproc,ierr)
         CALL mpi_comm_size(local_comm,nproc,ierr)
+#endif
         CALL rsl_lite_bcast_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
                                           nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       & 
                                           ioffset, local_comm )
@@ -5091,8 +5097,10 @@ ENDIF
       ENDIF
 
       IF ( grid%active_this_task .OR. ngrid%active_this_task ) THEN
+#ifndef STUBMPI
         CALL mpi_comm_rank(local_comm,myproc,ierr)
         CALL mpi_comm_size(local_comm,nproc,ierr)
+#endif
 !call tracebackqq()
         CALL rsl_lite_merge_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
                                           nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       & 
@@ -5282,8 +5290,10 @@ ENDIF
       ENDIF
 
       IF ( grid%active_this_task .OR. ngrid%active_this_task ) THEN
+#ifndef STUBMPI
         CALL mpi_comm_rank(local_comm,myproc,ierr)
         CALL mpi_comm_size(local_comm,nproc,ierr)
+#endif
 !CALL tracebackqq()
         CALL rsl_lite_bcast_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
                                         nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       & 
@@ -5484,8 +5494,10 @@ ENDIF
       ENDIF
 
       IF ( grid%active_this_task .OR. ngrid%active_this_task ) THEN
+#ifndef STUBMPI
         CALL mpi_comm_rank(local_comm,myproc,ierr)
         CALL mpi_comm_size(local_comm,nproc,ierr)
+#endif
         CALL rsl_lite_bcast_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
                                         nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       & 
                                         ioffset, local_comm )
@@ -6044,8 +6056,10 @@ ENDIF
       ENDIF
 
       IF ( grid%active_this_task .OR. ngrid%active_this_task ) THEN
+#ifndef STUBMPI
         CALL mpi_comm_rank(local_comm,myproc,ierr)
         CALL mpi_comm_size(local_comm,nproc,ierr)
+#endif
         CALL rsl_lite_merge_msgs( myproc, nest_pes_x(grid%id)*nest_pes_y(grid%id),         &
                                           nest_pes_x(ngrid%id)*nest_pes_y(ngrid%id),       &
                                           ioffset, local_comm )
