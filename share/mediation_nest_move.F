@@ -1758,7 +1758,7 @@ SUBROUTINE reconcile_nest_positions_over_tasks ( grid )
    USE module_configure, ONLY : grid_config_rec_type, model_config_rec, model_to_grid_config_rec
    USE module_state_description
 #ifdef DM_PARALLEL
-   USE module_dm, ONLY : wrf_dm_move_nest, &
+   USE module_dm, ONLY : wrf_dm_move_nest, nest_task_offsets,mpi_comm_to_kid,mpi_comm_to_mom, which_kid &
                         ,comm_start, nest_pes_x, nest_pes_y,local_communicator
    IMPLICIT NONE
    TYPE(domain) , POINTER                     :: grid, result_grid
