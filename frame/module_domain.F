@@ -731,7 +731,7 @@ CONTAINS
          parent%nests(kid)%ptr => new_grid
          new_grid%child_of_parent(1) = kid    ! note assumption that nest can have only 1 parent
          parent%num_nests = parent%num_nests + 1
-#if ( NMM == 1 ) 
+#if ( NMM_CORE == 1 ) 
 !jm 20150810, this replaces the compile-time logic associated with the CPP constant HRD_MULTIPLE_STORMS
 ! used in solve_nmm of the HWRF version to decide whether or not to call the coupler.  If there is more than
 ! one nest to a parent then that implies there are multiple storms, so we turn off the coupling.
