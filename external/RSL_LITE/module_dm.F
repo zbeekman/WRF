@@ -275,6 +275,10 @@ ENDIF
       mytask = 0
       mytask_x = 0
       mytask_y = 0
+      nest_pes_x = 1
+      nest_pes_y = 1
+      intercomm_active = .TRUE.
+      domain_active_this_task = .TRUE.
 #endif
       CALL nl_set_nproc_x ( 1, ntasks_x )
       CALL nl_set_nproc_y ( 1, ntasks_y )
