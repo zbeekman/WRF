@@ -192,82 +192,26 @@ CONTAINS
       IMPLICIT NONE
 #ifndef STUBMPI
       INCLUDE 'mpif.h'
-      INTEGER :: local_comm, local_comm_per, local_comm_x, local_comm_y, local_comm2, new_local_comm, group, newgroup, p, p1, ierr,itmp
+      INTEGER :: local_comm_per, local_comm_x, local_comm_y, local_comm2, new_local_comm, group, newgroup, p, p1, ierr,itmp
       INTEGER, ALLOCATABLE, DIMENSION(:) :: ranks
       INTEGER comdup
       INTEGER, DIMENSION(2) :: dims, coords
       LOGICAL, DIMENSION(2) :: isperiodic
       LOGICAL :: reorder_mesh
 
-      CALL wrf_get_dm_communicator ( local_comm )
-IF ( local_comm .EQ. MPI_UNDEFINED ) THEN
-!IF ( .TRUE. ) THEN
-      CALL mpi_comm_size( local_comm, ntasks, ierr )
-      CALL nl_get_reorder_mesh( 1, reorder_mesh )
-      CALL compute_mesh( ntasks, ntasks_x, ntasks_y )
-      WRITE( wrf_err_message , * )'Ntasks in X ',ntasks_x,', ntasks in Y ',ntasks_y
-      CALL wrf_message( wrf_err_message )
+      CALL instate_communicators_for_domain(1)
 
-      CALL mpi_comm_rank( local_comm, mytask, ierr )
-! extra code to reorder the communicator 20051212jm
-      IF ( reorder_mesh ) THEN
-        ALLOCATE (ranks(ntasks))
-        CALL mpi_comm_dup ( local_comm , local_comm2, ierr )
-        CALL mpi_comm_group ( local_comm2, group, ierr )
-        DO p1=1,ntasks
-          p = p1 - 1
-          ranks(p1) = mod( p , ntasks_x ) * ntasks_y + p / ntasks_x  
-        ENDDO
-        CALL mpi_group_incl( group, ntasks, ranks, newgroup, ierr )
-        DEALLOCATE (ranks)
-        CALL mpi_comm_create( local_comm2, newgroup, new_local_comm , ierr )
-      ELSE
-        new_local_comm = local_comm
-      ENDIF
-! end extra code to reorder the communicator 20051212jm
-      dims(1) = ntasks_y  ! rows
-      dims(2) = ntasks_x  ! columns
-      isperiodic(1) = .false.
-      isperiodic(2) = .false.
-      CALL mpi_cart_create( new_local_comm, 2, dims, isperiodic, .false., local_comm, ierr )
-      dims(1) = ntasks_y  ! rows
-      dims(2) = ntasks_x  ! columns
+      CALL wrf_get_dm_communicator ( new_local_comm )
+      dims(1) = nest_pes_y(1)  ! rows
+      dims(2) = nest_pes_x(1)  ! columns
       isperiodic(1) = .true.
       isperiodic(2) = .true.
       CALL mpi_cart_create( new_local_comm, 2, dims, isperiodic, .false., local_comm_per, ierr )
-! debug
-      CALL mpi_comm_rank( local_comm_per, mytask, ierr )
-      CALL mpi_cart_coords( local_comm_per, mytask, 2, coords, ierr )
+      local_communicator_periodic_store(1) = local_comm_per
+! set all the domains' periodic communicators to this one <- kludge, 20151223, splitting domains won't work for period bc's
+      local_communicator_periodic_store = local_comm_per
+      local_communicator_periodic = local_comm_per
 
-      CALL mpi_comm_rank( local_comm, mytask, ierr )
-      CALL mpi_comm_size( local_comm, itmp, ierr )
-      CALL mpi_cart_coords( local_comm, mytask, 2, coords, ierr )
-
-      mytask_x = coords(2)   ! col task (x)
-      mytask_y = coords(1)   ! row task (y)
-      CALL nl_set_nproc_x ( 1, ntasks_x )
-      CALL nl_set_nproc_y ( 1, ntasks_y )
-
-! 20061228 set up subcommunicators for processors in X, Y coords of mesh
-! note that local_comm_x has all the processors in a row (X=0:nproc_x-1);
-! in other words, local_comm_x has all the processes with the same rank in Y
-      CALL MPI_Comm_dup( new_local_comm, comdup, ierr )
-      IF ( ierr .NE. 0 ) CALL wrf_error_fatal('MPI_Comm_dup fails in 20061228 mod')
-
-      CALL MPI_Comm_split(comdup,mytask_y,mytask,local_comm_x,ierr)
-      IF ( ierr .NE. 0 ) CALL wrf_error_fatal('MPI_Comm_split fails for x in 20061228 mod')
-
-      CALL MPI_Comm_split(comdup,mytask_x,mytask,local_comm_y,ierr)
-      IF ( ierr .NE. 0 ) CALL wrf_error_fatal('MPI_Comm_split fails for y in 20061228 mod')
-
-! end 20061228
-      CALL wrf_set_dm_communicator ( local_comm )
-      local_communicator_x_store(1) = local_comm_x
-      local_communicator_y_store(1) = local_comm_y
-ELSE
-      CALL wrf_message("wrf_dm_initialize: skipping.  Local comm already init'd")
-      CALL instate_communicators_for_domain(1)
-ENDIF
 #else
       ntasks = 1
       ntasks_x = 1
