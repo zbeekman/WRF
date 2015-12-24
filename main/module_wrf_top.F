@@ -334,7 +334,7 @@ CHARACTER*512 mminlu_loc
                                      parent     = null_domain ,        &
                                      kid        = -1 ,                 &
                                      iau_opt    = 0                    )
-   CALL       wrf_debug ( 100 , 'wrf: calling model_to_grid_config_rec ' )
+   CALL       wrf_debug ( 100 , 'BZhang iau=0 wrf: calling model_to_grid_config_rec ' )
    CALL model_to_grid_config_rec ( head_grid%id , model_config_rec , config_flags )
    CALL       wrf_debug ( 100 , 'wrf: calling set_scalar_indices_from_config ' )
    CALL set_scalar_indices_from_config ( head_grid%id , idum1, idum2 )
@@ -347,7 +347,7 @@ CHARACTER*512 mminlu_loc
                                        parent     = null_domain ,        &
                                        kid        = -1 ,                 &
                                        iau_opt    = iau_opt              )
-     CALL       wrf_debug ( 100 , 'wrf: calling model_to_grid_config_rec ' )
+     CALL       wrf_debug ( 100 , 'BZhang iau=1 wrf: calling model_to_grid_config_rec ' )
      CALL model_to_grid_config_rec ( iau_grid%id , model_config_rec , config_flags )
      CALL       wrf_debug ( 100 , 'wrf: calling set_scalar_indices_from_config, inside ' )
      CALL set_scalar_indices_from_config ( iau_grid%id , idum1, idum2 )
@@ -397,10 +397,12 @@ CHARACTER*512 mminlu_loc
 !</DESCRIPTION>
 
  IF ( domain_active_this_task(1) ) THEN
+   CALL       wrf_debug ( 100 , 'BZhang iau=0 wrf: med_initialdata_input ' )
    CALL med_initialdata_input( head_grid , config_flags , 0 )
 
    IF ( iau_opt .eq. 1 ) THEN
      CALL Setup_Timekeeping (iau_grid)
+     CALL       wrf_debug ( 100 , 'BZhang iau=1 wrf: med_initialdata_input ' )
      CALL med_initialdata_input( iau_grid , config_flags, iau_opt )
      CALL iau_copy_arrays( iau_grid, head_grid )
    ENDIF

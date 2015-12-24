@@ -26,7 +26,7 @@ SUBROUTINE med_calc_model_time ( grid , config_flags )
 
 END SUBROUTINE med_calc_model_time
 
-SUBROUTINE med_before_solve_io ( grid , config_flags )
+SUBROUTINE med_before_solve_io ( grid , config_flags, iau_opt )
   ! Driver layer
    USE module_state_description
    USE module_domain    , ONLY : domain, domain_clock_get
@@ -40,6 +40,7 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
   ! Arguments
    TYPE(domain)                               :: grid
    TYPE (grid_config_rec_type) , INTENT(IN)   :: config_flags
+   INTEGER,INTENT(IN) :: iau_opt
   ! Local
    INTEGER                                    :: ialarm
    INTEGER                                    :: rc
@@ -85,7 +86,7 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
    ENDIF
 
    IF( WRFU_AlarmIsRinging( grid%alarms( INPUTOUT_ALARM ), rc=rc ) ) THEN
-     CALL med_filter_out  ( grid , config_flags )
+     CALL med_filter_out  ( grid , config_flags, iau_opt )
      CALL WRFU_AlarmRingerOff( grid%alarms( INPUTOUT_ALARM ), rc=rc )
    ENDIF
 
@@ -254,7 +255,7 @@ SUBROUTINE med_pre_nest_initial ( parent , newid , config_flags, iau_opt )
 
    CALL domain_clock_get( parent, current_timestr=timestr, start_time=strt_time, current_time=cur_time )
    IF ( iau_opt.eq.1 ) THEN
-     CALL construct_filename2a ( rstname , config_flags%iau_inname , newid , 2 , timestr )
+     CALL construct_filename2a ( rstname , config_flags%iaurst_inname , newid , 2 , timestr )
    ELSE
      CALL construct_filename2a ( rstname , config_flags%rst_inname , newid , 2 , timestr )
    ENDIF
@@ -656,7 +657,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags, iau_opt )
 
      CALL domain_clock_get( nest, current_timestr=timestr )
      IF ( iau_opt.eq.1 ) THEN
-       CALL construct_filename2a ( rstname , config_flags%iau_inname , nest%id , 2 , timestr )
+       CALL construct_filename2a ( rstname , config_flags%iaurst_inname , nest%id , 2 , timestr )
      ELSE
        CALL construct_filename2a ( rstname , config_flags%rst_inname , nest%id , 2 , timestr )
      ENDIF
@@ -962,7 +963,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags, iau_opt )
 
      CALL domain_clock_get( nest, current_timestr=timestr )
      IF ( iau_opt.eq.1 ) THEN
-       CALL construct_filename2a ( rstname , config_flags%iau_inname , nest%id , 2 , timestr )
+       CALL construct_filename2a ( rstname , config_flags%iaurst_inname , nest%id , 2 , timestr )
      ELSE
        CALL construct_filename2a ( rstname , config_flags%rst_inname , nest%id , 2 , timestr )
      ENDIF
@@ -1012,12 +1013,11 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags, iau_opt )
     CALL nl_set_julyr (nest%id, config_flags%julyr)       
     CALL nl_set_julday ( nest%id , config_flags%julday )
 !zhang test ends
-    IF ( nest%active_this_task) THEN
-     CALL model_to_grid_config_rec ( nest%id , model_config_rec , nest_config_flags )
-     CALL push_communicators_for_domain( nest%id )
-     CALL med_analysis_out ( nest, nest_config_flags, iau_opt )
-     CALL pop_communicators_for_domain
-    ENDIF
+    CALL model_to_grid_config_rec ( nest%id , model_config_rec , nest_config_flags )
+    CALL push_communicators_for_domain( nest%id )
+    call wrf_debug(1000,'mediation_integrate.F: BZhang before med_analysis_out ...')
+    CALL med_analysis_out ( nest, nest_config_flags, iau_opt )
+    CALL pop_communicators_for_domain
 
    ELSE
 
@@ -1026,16 +1026,16 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags, iau_opt )
 !------------------------------------------------------------------------------------
 
 !zhang's doing
-  IF ( nest%active_this_task) THEN
   IF( nest%analysis .and. .not. config_flags%restart)THEN
    CALL push_communicators_for_domain( nest%id )
+   call wrf_debug(1000,'mediation_integrate.F: BZhang before med_analysis_in ...')
    CALL med_analysis_in ( nest, config_flags, iau_opt )
    CALL pop_communicators_for_domain
   ELSE IF (config_flags%restart)THEN
    CALL push_communicators_for_domain( nest%id )
+   call wrf_debug(1000,'mediation_integrate.F: BZhang before med_restart_in ...')
    CALL med_restart_in ( nest, config_flags, iau_opt )
    CALL pop_communicators_for_domain
-  ENDIF
   ENDIF
 !end of zhang's doing
 
@@ -1075,7 +1075,7 @@ SUBROUTINE med_nest_initial ( parent , nest , config_flags, iau_opt )
     CALL pop_communicators_for_domain
   ENDIF
 
-    nest%analysis=.FALSE.
+    if(iau_opt.eq.0) nest%analysis=.FALSE.
     CALL nl_set_analysis( nest%id, nest%analysis)
 
   ENDIF
@@ -1308,7 +1308,7 @@ SUBROUTINE med_last_solve_io ( grid , config_flags, iau_opt )
    ENDIF
 
    IF( WRFU_AlarmIsRinging( grid%alarms( INPUTOUT_ALARM ), rc=rc ) ) THEN
-     CALL med_filter_out  ( grid , config_flags )
+     CALL med_filter_out  ( grid , config_flags, iau_opt )
    ENDIF
 
 ! registry-generated file of the following 
@@ -1390,7 +1390,7 @@ SUBROUTINE med_analysis_in ( grid , config_flags, iau_opt )
    CALL domain_clock_get( grid, current_timestr=timestr )
 !Banglin only for reading
    IF ( iau_opt.eq.1 ) THEN
-     CALL construct_filename2a ( rstname ,config_flags%iau_inname, grid%id , 2 , timestr )
+     CALL construct_filename2a ( rstname ,config_flags%iauanl_outname, grid%id , 2 , timestr )
    ELSE
      CALL construct_filename2a ( rstname ,config_flags%anl_outname, grid%id , 2 , timestr )
    ENDIF
@@ -1666,7 +1666,7 @@ SUBROUTINE med_restart_in ( grid , config_flags, iau_opt )
 !zhang's doing   CALL wrf_timetoa ( CurrTime, timestr )
    CALL domain_clock_get( grid, current_timestr=timestr )
    IF ( iau_opt.eq.1 ) THEN
-     CALL construct_filename2a ( rstname ,config_flags%iau_inname, grid%id , 2 , timestr )
+     CALL construct_filename2a ( rstname ,config_flags%iaurst_outname, grid%id , 2 , timestr )
    ELSE
      CALL construct_filename2a ( rstname ,config_flags%rst_outname, grid%id , 2 , timestr )
    ENDIF
@@ -1835,7 +1835,7 @@ SUBROUTINE med_auxinput_in ( grid , stream, config_flags )
    RETURN
 END SUBROUTINE med_auxinput_in
 
-SUBROUTINE med_filter_out ( grid , config_flags )
+SUBROUTINE med_filter_out ( grid , config_flags, iau_opt )
   ! Driver layer
    USE module_domain    , ONLY : domain , domain_clock_get
    USE module_io_domain
@@ -1849,6 +1849,7 @@ SUBROUTINE med_filter_out ( grid , config_flags )
   ! Arguments
    TYPE(domain)                               :: grid
    TYPE (grid_config_rec_type) , INTENT(IN)   :: config_flags
+   INTEGER,INTENT(IN) :: iau_opt
 
    LOGICAL, EXTERNAL :: wrf_dm_on_monitor
    CHARACTER*80                           :: rstname , outname
@@ -1865,7 +1866,11 @@ SUBROUTINE med_filter_out ( grid , config_flags )
    END IF
 
      CALL domain_clock_get( grid, current_timestr=timestr )
-     CALL construct_filename2a ( outname , config_flags%input_outname , grid%id , 2 , timestr )
+     IF ( iau_opt.eq.1 ) THEN
+       CALL construct_filename2a ( outname , config_flags%iau_outname , grid%id , 2 , timestr )
+     ELSE
+       CALL construct_filename2a ( outname , config_flags%input_outname , grid%id , 2 , timestr )
+     ENDIF
 
      WRITE ( message , '("med_filter_out 1: opening ",A," for writing. ")') TRIM ( outname )
      CALL wrf_debug( 1, message )

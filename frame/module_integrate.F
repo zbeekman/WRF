@@ -187,11 +187,12 @@ RECURSIVE SUBROUTINE integrate ( grid )
      END SUBROUTINE med_calc_model_time
        ! mediation-supplied routine that gives mediation layer opportunity to 
        ! perform I/O before the call to the solve routine
-     SUBROUTINE med_before_solve_io ( grid , config_flags )
+     SUBROUTINE med_before_solve_io ( grid , config_flags, iau_opt )
        USE module_domain
        USE module_configure
        TYPE (domain) grid
        TYPE (grid_config_rec_type) config_flags
+       INTEGER,INTENT(IN) :: iau_opt
      END SUBROUTINE med_before_solve_io
        ! mediation-supplied routine that gives mediation layer opportunity to 
        ! perform I/O after the call to the solve routine
@@ -307,24 +308,10 @@ ENDIF
             a_nest_was_opened = .false.
             ! for each nest whose time has come...
             DO WHILE ( nests_to_open( grid , nestid , kid ) )
-               ! nestid is index into model_config_rec (module_configure) of the grid
-               ! to be opened; kid is index into an open slot in grid's list of children
-               a_nest_was_opened = .true.
-               CALL med_pre_nest_initial ( grid , nestid , config_flags, iau_opt )
-               CALL alloc_and_configure_domain ( domain_id  = nestid ,   &
-! better if this were not ifdef'd here, try moving into module_dm? see comment above. jm 20140828
-#ifdef DM_PARALLEL
-                                           active_this_task = domain_active_this_task( nestid ), &
-#endif
-                                                 grid       = new_nest , &
-                                                 parent     = grid ,     &
-                                                 kid        = kid ,      &
-                                                 iau_opt    = 0          )
-               CALL Setup_Timekeeping (new_nest)
-               CALL med_nest_initial ( grid , new_nest , config_flags, 0 )
                IF ( iau_opt.eq.1 ) THEN
+               a_nest_was_opened = .true.
                  call wrf_debug(1000,'module_integrate.F: Banglin before med_pre_nest_initial ( grid.. iau ')
-                 CALL med_pre_nest_initial ( grid , nestid , config_flags, 0 )
+                 CALL med_pre_nest_initial ( grid , nestid , config_flags, iau_opt )
                  call wrf_debug(1000,'module_integrate.F: Banglin before alloc_and_configure_domain ( domain_id  = iau...')
                  CALL alloc_and_configure_domain ( domain_id  = nestid ,   &
 ! better if this were not ifdef'd here, try moving into module_dm? see comment above. jm 20140828
@@ -339,6 +326,28 @@ ENDIF
                  CALL Setup_Timekeeping (iau_nest)
                  call wrf_debug(1000,'module_integrate.F: Banglin before med_nest_initial ( grid inside iau ...')
                  CALL med_nest_initial ( grid , iau_nest , config_flags, iau_opt )
+               ENDIF
+
+               ! nestid is index into model_config_rec (module_configure) of the grid
+               ! to be opened; kid is index into an open slot in grid's list of children
+               a_nest_was_opened = .true.
+               call wrf_debug(1000,'module_integrate.F: Banglin before med_pre_nest_initial ( grid.. iau=0 ')
+               CALL med_pre_nest_initial ( grid , nestid , config_flags, 0 )
+               CALL alloc_and_configure_domain ( domain_id  = nestid ,   &
+! better if this were not ifdef'd here, try moving into module_dm? see comment above. jm 20140828
+#ifdef DM_PARALLEL
+                                           active_this_task = domain_active_this_task( nestid ), &
+#endif
+                                                 grid       = new_nest , &
+                                                 parent     = grid ,     &
+                                                 kid        = kid ,      &
+                                                 iau_opt    = 0          )
+               call wrf_debug(1000,'module_integrate.F: Banglin before Setup_Timekeeping(new_nest)')
+               CALL Setup_Timekeeping (new_nest)
+               call wrf_debug(1000,'module_integrate.F: Banglin before med_nest_initial ( grid iau=0 ...')
+               CALL med_nest_initial ( grid , new_nest , config_flags, 0 )
+
+               IF ( iau_opt.eq.1 ) THEN
                  call wrf_debug(1000,'module_integrate.F: Banglin before iau_copy_arrays(iau_nest, new_nest )')
                  CALL iau_copy_arrays( iau_nest, new_nest )
                ENDIF
@@ -358,7 +367,7 @@ IF ( grid%active_this_task ) THEN
             ! Accumulation calculation for DFI
               CALL dfi_accumulate ( grid )
 
-              CALL med_before_solve_io ( grid , config_flags )
+              CALL med_before_solve_io ( grid , config_flags, 0 )
 ENDIF ! active_this_task
 
             grid_ptr => grid

@@ -81,7 +81,9 @@ use module_io
 #include "fine_stream_input.inc"
 
         CALL close_dataset ( fid , config_flags , "DATASET=INPUT" )
-        CALL       wrf_debug ( 1000 , 'wrf main: Banglin after calling close_dataset' )
+        
+        WRITE( message , '("wrf main: Banglin: opening ",A," for reading")' ) TRIM ( inpname )
+        CALL wrf_debug( 1000 , message )
         IF ( wrf_dm_on_monitor() ) THEN
           WRITE ( message , FMT = '("processing wrfinput file (stream 0) for domain ",I8)' ) grid%id
           CALL end_timing ( TRIM(message) )
@@ -139,7 +141,7 @@ use module_io
 
      CALL domain_clock_get( grid, current_timestr=timestr )
      IF ( iau_opt.eq.1 ) THEN
-        CALL construct_filename2a ( rstname , config_flags%iau_inname , grid%id , 2 , timestr )
+        CALL construct_filename2a ( rstname , config_flags%iaurst_inname , grid%id , 2 , timestr )
      ELSE
         CALL construct_filename2a ( rstname , config_flags%rst_inname , grid%id , 2 , timestr )
      ENDIF

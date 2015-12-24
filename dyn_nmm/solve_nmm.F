@@ -185,6 +185,8 @@
       INTEGER :: KS                                                        ! species index in 4d tracer array
 !
       REAL,SAVE :: SUMDRRW
+      REAL :: iau_length
+      iau_length = 0.5
 !
 !-----------------------------------------------------------------------
 !
@@ -342,8 +344,8 @@
 !-----------------------------------------------------------------------
 !
       IF ( iau_opt .eq. 1) THEN
-      IF ( grid%ntsd*GRID%DT/3600. .LE. 3.0) THEN
-        scale=GRID%DT/(3600.0*6.0)
+      IF ( grid%ntsd*GRID%DT/3600. .LE. iau_length) THEN
+        scale=GRID%DT/(3600.0*iau_length)
         DO J=JMS,JME
         DO I=IMS,IME
           DO K=KMS,KME
