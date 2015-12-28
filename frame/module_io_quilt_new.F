@@ -2695,6 +2695,10 @@ character*120 sysline
       DO id = 1, max_dom
         num_io_tasks = num_io_tasks + nio_tasks_per_group(id)*nio_groups
       ENDDO
+      IF ( ntasks-num_io_tasks .LE. 0 ) THEN
+        WRITE(message,*)'Initing quilting: not enough compute tasks left over after allocating ',num_io_tasks,' i/o servers'
+        CALL wrf_error_fatal( TRIM(message) )
+      ENDIF
       IF ( mytask .EQ. 0 ) THEN
         OPEN ( unit=27, file="namelist.input", form="formatted", status="old" )
         comm_start = -1   ! use this to find how many communicators have actually been defined
