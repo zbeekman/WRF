@@ -1869,6 +1869,7 @@ CONTAINS
         ENDIF
       ENDDO
 
+# if ( DA_CORE != 1 )
       IF ( .TRUE. ) THEN
 !jm Additional code here to set up communicator for this domain and tables
 !jm mapping individual domain task IDs to the original local communicator
@@ -2021,6 +2022,7 @@ CONTAINS
       ENDIF
 
       CALL instate_communicators_for_domain(1)
+# endif
 
 #else
       intercomm_active = .TRUE.
