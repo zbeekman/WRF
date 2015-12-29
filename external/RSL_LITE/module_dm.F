@@ -2022,6 +2022,30 @@ CONTAINS
 
       CALL instate_communicators_for_domain(1)
 
+#else
+      intercomm_active = .TRUE.
+      domain_active_this_task = .TRUE.
+      ntasks_stack = 1
+      ntasks_y_stack = 1
+      ntasks_x_stack = 1
+      mytask_stack = 0
+      mytask_x_stack = 0
+      mytask_y_stack = 0
+      ntasks_store = 1
+      ntasks_y_store = 1
+      ntasks_x_store = 1
+      mytask_store = 0
+      mytask_x_store = 0
+      mytask_y_store = 0
+      ntasks = 1
+      ntasks_y = 1
+      ntasks_x = 1
+      mytask = 0
+      mytask_x = 0
+      mytask_y = 0
+      nest_pes_x = 1
+      nest_pes_y = 1
+      CALL instate_communicators_for_domain(1)
 #endif
    END SUBROUTINE split_communicator
 

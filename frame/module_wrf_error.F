@@ -305,6 +305,9 @@ SUBROUTINE wrf_error_fatal3( file_str, line, str )
   CALL esmf_finalize(endflag=ESMF_END_ABORT)
 #endif
 
+#ifdef TRACEBACKQQ
+  CALL tracebackqq
+#endif
   CALL wrf_abort
 END SUBROUTINE wrf_error_fatal3
 
