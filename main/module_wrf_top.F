@@ -114,9 +114,9 @@ CONTAINS
      INTEGER i, myproc, nproc, hostid, loccomm, ierr, buddcounter, mydevice, save_comm
      INTEGER, ALLOCATABLE :: hostids(:), budds(:)
      CHARACTER*512 hostname
-CHARACTER*512 mminlu_loc
+     CHARACTER*512 mminlu_loc
 #ifdef _ACCEL
-     integer :: it, nt, in, devnum
+     INTEGER :: it, nt, in, devnum
 #endif
 #if defined(DM_PARALLEL) && !defined(STUBMPI) && ( defined(RUN_ON_GPU) || defined(_ACCEL))
      include "mpif.h"

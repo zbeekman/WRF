@@ -391,7 +391,7 @@ MODULE module_wrf_quilt
 #endif
          if(nio_groups==1) then
             poll_servers=.false.
-            call wrf_message('Server polling is useless with one io group.  Disabled poll_servers.')
+            call wrf_message('Server polling is does not work with one io group.  Disabled poll_servers.')
          endif
 #ifdef PNETCDF_QUILT
       endif
@@ -2565,6 +2565,9 @@ okay_to_w = .false.
 
     SUBROUTINE init_module_wrf_quilt
       USE module_wrf_error, only: init_module_wrf_error
+#if defined( DM_PARALLEL ) && !defined( STUBMPI )
+      USE module_dm, only: mpi_comm_allcompute
+#enidf
 !<DESCRIPTION>
 ! Both client (compute) and server tasks call this routine to initialize the 
 ! module.  Routine setup_quilt_servers() is called from this routine to 
@@ -2654,6 +2657,9 @@ okay_to_w = .false.
 
        ! provide the communicator for the integration tasks to RSL
        IF ( compute_node ) THEN
+#if defined( DM_PARALLEL ) && !defined( STUBMPI )
+          mpi_comm_allcompute = mpi_comm_local
+#endif
           CALL wrf_set_dm_communicator( mpi_comm_local )
 #  if ( DA_CORE != 1 )
           IF (coupler_on) CALL cpl_set_dm_communicator( mpi_comm_local )
