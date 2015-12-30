@@ -1720,6 +1720,8 @@ CONTAINS
       INTEGER :: mytask_me_and_mom, ntasks_me_and_mom, remote_leader
       LOGICAL :: inthisone
       LOGICAL :: mytask_is_nest, mytask_is_par,isperiodic(3)
+! for new quilting
+      LOGICAL :: quilting_is_turned_off
 
 !!!!! needed to sneak-peek the registry to get parent_id 
 ! define as temporaries
@@ -1795,7 +1797,14 @@ CONTAINS
         num_io_tasks = num_io_tasks + nio_tasks_per_group(id)*nio_groups
       ENDDO
 #else
-      num_io_tasks = nio_tasks_per_group(1)*nio_groups
+      CALL quilting_disabled( quilting_is_turned_off )
+      IF ( quilting_is_turned_off ) THEN
+        num_io_tasks = 0
+        nio_tasks_per_group  = 0
+        nio_groups = 1
+      ELSE
+        num_io_tasks = nio_tasks_per_group(1)*nio_groups
+      ENDIF
 #endif
       CALL nl_set_max_dom(1,max_dom)  ! quilting wants to see this too
 

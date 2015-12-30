@@ -2894,6 +2894,18 @@ SUBROUTINE disable_quilting
   RETURN
 END SUBROUTINE disable_quilting
 
+SUBROUTINE quilting_disabled( reslt )
+!<DESCRIPTION>
+! Call this in programs that you never want to be quilting (e.g. real)
+! Must call before call to init_module_wrf_quilt().  
+!</DESCRIPTION>
+  USE module_wrf_quilt
+  LOGICAL, INTENT(OUT) :: reslt
+  reslt = disable_quilt
+write(0,*)__FILE__,__LINE__,disable_quilt
+  RETURN
+END SUBROUTINE quilting_disabled
+
 LOGICAL FUNCTION  use_output_servers_for(ioform)
 !<DESCRIPTION>
 ! Returns .TRUE. if I/O quilt servers are in-use for write operations
