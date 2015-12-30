@@ -1084,6 +1084,7 @@ endif
                       ,grid%rv_up,grid%rc_up,grid%u_up,grid%v_up,grid%frac_up            &
                       ,grid%ccn_conc                                          & ! RAS
                       ,grid%QKE                                               &!JOE-for mynn
+                      ,grid%qc_bl,grid%cldfra_bl                              & !JOE: subgrid bl clouds
                       ,grid%landusef,grid%landusef2,grid%mosaic_cat_index                            & ! danli mosaic 
                       ,grid%TSK_mosaic,grid%TSLB_mosaic,grid%SMOIS_mosaic,grid%SH2O_mosaic           & ! danli mosaic
                       ,grid%CANWAT_mosaic,grid%SNOW_mosaic,grid%SNOWH_mosaic,grid%SNOWC_mosaic       & ! danli mosaic

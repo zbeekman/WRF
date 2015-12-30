@@ -75,6 +75,7 @@ CONTAINS
      &          ,ua_phys,flx4,fvb,fbur,fgsn                                  &
 #if (EM_CORE==1)
      &          ,ch,tsq,qsq,cov,Sh3d,el_pbl,bl_mynn_cloudpdf          & ! MYNN
+     &          ,bl_sgcloud,qc_bl,cldfra_bl,bri                       & ! MYNN
      &          ,fgdp,dfgdp,vdfg,grav_settling                        & ! Katata - fog dep
 #endif
      &          ,lakedepth2d,  savedtke12d,  snowdp2d,   h2osno2d       & !lake
@@ -905,7 +906,7 @@ CONTAINS
 
 #if ( EM_CORE==1)
    REAL, DIMENSION( ims:ime , jms:jme ), &
-        &OPTIONAL, INTENT(INOUT   ):: ch
+        &OPTIONAL, INTENT(INOUT   ):: ch,BRi
 
 !Katata-added - extra in-output                                                                                                                                                              
    REAL, DIMENSION( ims:ime , jms:jme ), OPTIONAL, INTENT(INOUT):: fgdp,dfgdp,vdfg                                                                                                           
@@ -913,8 +914,9 @@ CONTAINS
 !Katata-end
 
    REAL, DIMENSION( ims:ime , kms:kme, jms:jme ), &
-        &OPTIONAL, INTENT(IN   ):: tsq,qsq,cov,Sh3d,el_pbl
-   INTEGER, OPTIONAL, INTENT(IN)                                :: bl_mynn_cloudpdf
+        &OPTIONAL, INTENT(IN   ):: tsq,qsq,cov,Sh3d,el_pbl,qc_bl,cldfra_bl
+   INTEGER, OPTIONAL, INTENT(IN)                                :: bl_mynn_cloudpdf, &
+                                                                   bl_sgcloud
 #endif
 
 
@@ -2144,6 +2146,7 @@ CONTAINS
                svp1,svp2,svp3,svpt0,ep_1,ep_2,karman,              &
                &itimestep,ch,th_phy,pi_phy,qc_curr,rho,            &
                &tsq,qsq,cov,Sh3d,el_pbl,qcg,                       &
+               &bl_sgcloud,qc_bl,cldfra_bl,BRi,                    &
                XICE,SST,TSK_SEA,                                   &
                CHS2_SEA,CHS_SEA,CPM_SEA,CQS2_SEA,FLHC_SEA,FLQC_SEA,&
                HFX_SEA,LH_SEA,QFX_SEA,QGH_SEA,QSFC_SEA,ZNT_SEA,    &
@@ -2162,6 +2165,7 @@ CONTAINS
                svp1,svp2,svp3,svpt0,ep_1,ep_2,karman,              &
                &itimestep,ch,th_phy,pi_phy,qc_curr,rho,            &
                &tsq,qsq,cov,Sh3D,el_pbl,qcg,                       &
+               &bl_sgcloud,qc_bl,cldfra_bl,BRi,                    &
                ids,ide, jds,jde, kds,kde,                          &
                ims,ime, jms,jme, kms,kme,                          &
                i_start(ij),i_end(ij),j_start(ij),j_end(ij),kts,kte,&
@@ -4547,6 +4551,7 @@ CONTAINS
                      SVP1,SVP2,SVP3,SVPT0,EP1,EP2,KARMAN,          &
                &itimestep,ch,th3d,pi3d,qc3d,rho,                   &
                &tsq,qsq,cov,Sh3d,el_pbl,qcg,                       &
+               &bl_sgcloud,qc_bl,cldfra_bl,BRi,                    &
 XICE,SST,TSK_SEA,                                                  &
 CHS2_SEA,CHS_SEA,CPM_SEA,CQS2_SEA,FLHC_SEA,FLQC_SEA,               &
 HFX_SEA,LH_SEA,QFX_SEA,QGH_SEA,QSFC_SEA,ZNT_SEA,                   &
@@ -4563,7 +4568,7 @@ TICE2TSK_IF2COLD,XICE_THRESHOLD,                                   &
                                        ims,ime, jms,jme, kms,kme,  &
                                        its,ite, jts,jte, kts,kte
 
-     INTEGER,  INTENT(IN )   ::        ISFFLX,bl_mynn_cloudpdf
+     INTEGER,  INTENT(IN )   ::        ISFFLX,bl_mynn_cloudpdf,bl_sgcloud
      REAL,     INTENT(IN )   ::        SVP1,SVP2,SVP3,SVPT0
      REAL,     INTENT(IN )   ::        EP1,EP2,KARMAN
 
@@ -4592,7 +4597,7 @@ TICE2TSK_IF2COLD,XICE_THRESHOLD,                                   &
                                                              HFX, &
                                                              QFX, &
                                                               LH, &
-                                                         MOL,RMOL,TSK
+                                                         MOL,RMOL,TSK,BRi
 
      REAL,     DIMENSION( ims:ime, jms:jme )                    , &
                INTENT(INOUT)   ::                 GZ1OZ0,WSPD,BR, &
@@ -4628,7 +4633,8 @@ TICE2TSK_IF2COLD,XICE_THRESHOLD,                                   &
      REAL,     DIMENSION( ims:ime, jms:jme ), INTENT(INOUT) :: ch
      REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(IN) ::     &
                                                              &QC3D,&
-                            &th3d,pi3d,tsq,qsq,cov,Sh3d,el_pbl
+                            &th3d,pi3d,tsq,qsq,cov,Sh3d,el_pbl,&
+                                              &qc_bl,cldfra_bl
 
      REAL, OPTIONAL, DIMENSION( ims:ime, jms:jme )              , &
                INTENT(OUT)     ::                   ck,cka,cd,cda
@@ -4801,6 +4807,7 @@ TICE2TSK_IF2COLD,XICE_THRESHOLD,                                   &
                SVP1,SVP2,SVP3,SVPT0,EP1,EP2,KARMAN,                &
                &itimestep,ch,th3d,pi3d,qc3d,rho,                   &
                &tsq,qsq,cov,sh3d,el_pbl,qcg,                       &
+               &bl_sgcloud,qc_bl,cldfra_bl,BRi,                    &
                ids,ide, jds,jde, kds,kde,                          &
                ims,ime, jms,jme, kms,kme,                          &
                its,ite, jts,jte, kts,kte,                          &
@@ -4887,6 +4894,7 @@ TICE2TSK_IF2COLD,XICE_THRESHOLD,                                   &
                SVP1,SVP2,SVP3,SVPT0,EP1,EP2,KARMAN,                &
                &itimestep,CH_SEA,th3d,pi3d,qc3d,rho,               &
                &tsq,qsq,cov,sh3d,el_pbl,qcg,                       &
+               &bl_sgcloud,qc_bl,cldfra_bl,BRi,                    &
                ids,ide, jds,jde, kds,kde,                          &
                ims,ime, jms,jme, kms,kme,                          &
                its,ite, jts,jte, kts,kte,                          &

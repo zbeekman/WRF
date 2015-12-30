@@ -207,6 +207,7 @@ CONTAINS
                          ,rv_up, rc_up, u_up, v_up, frac_up    & ! Optional for qnse
                          ,ccn_conc                             & ! RAS
                          ,QKE                                  & !for MYNN
+                         ,qc_bl,cldfra_bl                      & !for MYNN
                          ,landusef,landusef2,mosaic_cat_index                                                 & ! danli mosaic
                          ,TSK_mosaic,TSLB_mosaic,SMOIS_mosaic,SH2O_mosaic                                     & ! danli mosaic
                          ,CANWAT_mosaic,SNOW_mosaic,SNOWH_mosaic,SNOWC_mosaic                                 & ! danli mosaic
@@ -330,7 +331,7 @@ CONTAINS
              CLDFRA_OLD
 
    REAL,     DIMENSION( ims:ime , kms:kme , jms:jme ) , OPTIONAL, INTENT(INOUT) :: & ! ckay for subgrid cloud
-             cldfra_dp, cldfra_sh
+             cldfra_dp, cldfra_sh, cldfra_bl
 
    REAL,     DIMENSION( ims:ime , jms:jme ) , INTENT(INOUT) ::         &
              GSW,ALBEDO,ALBBCK,GLW,EMISS,EMBCK                          !EMBCK new
@@ -421,7 +422,7 @@ CONTAINS
           INTENT(INOUT   ) ::                                        &
                                gd_cloud, gd_cloud2,                  &
                                gd_cloud_a, gd_cloud2_a,              &
-                               QC_CU, QI_CU
+                               QC_CU, QI_CU, QC_BL
 
    REAL,  DIMENSION( ims:ime ,  jms:jme )         ,         &
           INTENT(INOUT   ) ::                                        &
@@ -697,6 +698,7 @@ CONTAINS
    INTEGER :: ISURBAN
    INTEGER :: sf_urban_physics
    INTEGER :: sf_ocean_physics
+   INTEGER :: bl_sgcloud
    REAL    :: oml_hml0
    INTEGER :: LakeModel
    LOGICAL :: usemonalb
@@ -754,6 +756,7 @@ integer myproc
    obs_twindo=config_flags%obs_twindo
    oml_hml0=config_flags%oml_hml0
    sf_ocean_physics=config_flags%sf_ocean_physics
+   bl_sgcloud=config_flags%bl_sgcloud
 #else
    obs_twindo_cg=0
    obs_twindo=0
@@ -836,6 +839,18 @@ integer myproc
    END IF
 #endif
    CALL nl_set_icloud_cu ( id , icloud_cu )
+
+!..Initialize subgrid-scale BL clouds
+   if (config_flags%bl_sgcloud >= 1 )then
+      do j=jts,jtf
+        do k=kts,ktf
+          do i=its,itf
+             cldfra_bl(i,k,j) = 0.
+             qc_bl(i,k,j) = 0.
+          end do
+        end do
+      end do
+   endif
 
   IF(.not.restart)THEN !{
 !-- initialize common variables
