@@ -2567,7 +2567,7 @@ okay_to_w = .false.
       USE module_wrf_error, only: init_module_wrf_error
 #if defined( DM_PARALLEL ) && !defined( STUBMPI )
       USE module_dm, only: mpi_comm_allcompute
-#enidf
+#endif
 !<DESCRIPTION>
 ! Both client (compute) and server tasks call this routine to initialize the 
 ! module.  Routine setup_quilt_servers() is called from this routine to 
