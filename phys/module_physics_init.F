@@ -1028,8 +1028,8 @@ integer myproc
       ENDIF
    ENDIF
    
-  ENDIF !}
 #endif
+  ENDIF !}
 
 !-- convert zfull and zhalf to sigma values for ra_init (Eta CO2 needs these)
 !-- zfull/zhalf may be either zeta or eta
