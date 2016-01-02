@@ -2181,7 +2181,7 @@ CONTAINS
 
           zagl = zagl + dz(k)
           !ls = MIN(MAX(zagl,25.),300.)
-          ls = el(k)
+          ls = MIN(el(k),300.)
                   ! CB02 use 900 m as a (constant) free-atmosphere length scale. 
                   ! The form above was selected based on HRRR tests.
 
@@ -3783,7 +3783,7 @@ ENDIF
                IF ( sh(k) < 0. .OR. sh(k)> 200. .OR. &
                  & qke(i,k,j) < -1. .OR. qke(i,k,j)> 200. .OR. &
                  & el_pbl(i,k,j) < 0. .OR. el_pbl(i,k,j)> 2000. .OR. &
-                 & ABS(vt(k)) > 0.8 .OR. ABS(vq(k)) > 1500. .OR. &
+                 & ABS(vt(k)) > 0.8 .OR. ABS(vq(k)) > 3000. .OR. &
                  & exch_m(i,k,j) < 0. .OR. exch_m(i,k,j)> 2000. .OR. &
                  & vdfg(i,j) < 0. .OR. vdfg(i,j)>5. .OR. &
                  & ABS(HFX(i,j))>1000. .OR. ABS(QFX(i,j))>.001) THEN
@@ -4177,7 +4177,7 @@ ENDIF
 ! if surface buoyancy is positive we do integration otherwise not, and make sure that 
 ! PBLH > twice the height of the surface layer (set at z0 = 50m)
  
-  IF ( fltv > 0.005 .AND. PBLH > 100.) then
+  IF ( fltv > 0.002 .AND. PBLH > 100.) then
     !PRINT*," Conditions met to run mass-flux scheme",fltv,pblh
     ! get entrainment coefficient
     ! get dz/L0
@@ -4197,10 +4197,10 @@ ENDIF
       do k=kts+1,kte
         ENT(k,i)=real(ENTi(k,i))*Ent0/(ZW(k)-ZW(k-1))  !eq (13) in Suselj et al. (2013, jas)
         ! WA TEST 11/12/15 Add some small deterministic background entrainment
-        ENT(k,i) = max(ENT(k,i),0.002)
+        ENT(k,i) = max(ENT(k,i),0.001)
       enddo
     enddo
-    
+
 !    print *,'Entrainment:',ENT   
        
     ! set initial conditions for updrafts
@@ -4238,10 +4238,10 @@ ENDIF
        !Alternatively, initialize parcel over lowest 50m
        UPQT(1,I) = 0.
        UPTHL(1,I)= 0.
-       k50=1
+       k50=1 !for now, keep at lowest model layer...
        DO k=1,k50
-         UPQT(1,I) = UPQT(1,I) +QT(k) +0.58*UPW(1,I)*sigmaQT/sigmaW*EXP(-ZW(k)/100.)
-         UPTHV(1,I)= UPTHV(1,I)+THV(k)+0.58*UPW(1,I)*sigmaTH/sigmaW*EXP(-ZW(k)/100.)
+         UPQT(1,I) = UPQT(1,I) +QT(k) +0.58*UPW(1,I)*sigmaQT/sigmaW !*EXP(-ZW(k)/100.)
+         UPTHV(1,I)= UPTHV(1,I)+THV(k)+0.58*UPW(1,I)*sigmaTH/sigmaW !*EXP(-ZW(k)/100.)
        ENDDO
        UPQT(1,I) = UPQT(1,I)/REAL(k50)
        UPTHV(1,I)= UPTHV(1,I)/REAL(k50)
@@ -4270,7 +4270,6 @@ ENDIF
           QKEn=QKE(k)*(1-EntExp)+UPQKE(K-1,I)*EntExp
 
           ! get thvn,qcn
-          ! For stability reasons, do not allow parcel to saturate below 200 m
           call condensation_edmf(QTn,THLn,(P(K)+P(K-1))/2.,ZW(k),THVn,QCn)
      
           B=g*(0.5*(THVn+UPTHV(k-1,I))/THV(k-1) - 1.0)
@@ -4366,14 +4365,13 @@ ENDIF
 !     qc_bl1d(k)=0.
 !     cldfra_bl1d(k)=0.
 
-      qc_bl1d(k) = MAX(qc_bl1d(k), edmf_qc(k))
-
       IF (cldfra_opt == 0) THEN
          IF(edmf_qc(k)>0.0)THEN
             !Chaboureau and Bechtold (2005, JGR)
             diffqt=edmf_qt(k)-qt(k)
             if(ABS(diffqt) < 1.0E-6)diffqt = 1.0E-6
-            sigq = MAX(edmf_a(k)*(1.-edmf_a(k))*diffqt**2 , 1.0e-8)
+            !sigq = MAX(edmf_a(k)*(1.-edmf_a(k))*diffqt**2 , 1.0e-8)
+            sigq = MAX(edmf_a(k)*diffqt**2 , 1.0e-8)
             sigq = sqrt(sigq)
 
             xl = xl_blend(tk(k))                ! obtain blended heat capacity
@@ -4387,18 +4385,20 @@ ENDIF
             qmq = a * (qt(k) - qsat_tl)         ! saturation deficit/excess;
                                                 !   the numerator of Q1
             mf_cf = min(max(0.5 + 0.36 * atan(1.55*(qmq/sigq)),0.0),1.0)
+            !IF ( wrf_at_debug_level(MYNN_DBG_LVL) ) THEN
+            !   print*,"In MYNN, StEM edmf"
+            !   print*,"  CB: qt=",qt(k)," qsat=",qsat_tl," satdef=",qt(k) - qsat_tl
+            !   print*,"  CB: sigq=",sigq," qmq=",qmq," tlk=",tlk
+            !   print*,"  CB: mf_cf=",mf_cf," cldfra_bl=",cldfra_bl1d(k)," edmf_a=",edmf_a(k)
+            !ENDIF
             !add use of updraft area.
-            IF(edmf_qc(k) > 1.0E-8) mf_cf=MAX(mf_cf,edmf_a(k))
+            mf_cf=MAX(mf_cf,edmf_a(k))
             cldfra_bl1d(k) = MAX(cldfra_bl1d(k), mf_cf)
-            IF ( wrf_at_debug_level(MYNN_DBG_LVL) ) THEN
-               print*,"In MYNN, StEM edmf"
-               print*,"CB: qt=",qt(k)," qsat=",qsat_tl," satdef=",qt(k) - qsat_tl
-               print*,"CB: sigq=",sigq," qmq=",qmq," tlk=",tlk
-               print*,"CB: mf_cf=",mf_cf," cldfra_bl1d(k)=",cldfra_bl1d(k)
-            ENDIF
+            qc_bl1d(k) = MAX(qc_bl1d(k), edmf_qc(k))
          ENDIF
       ELSEIF(cldfra_opt == 1) THEN
          !Randall and Xu
+         qc_bl1d(k) = MAX(qc_bl1d(k), edmf_qc(k))
          if(F_qc .and. .not. F_qi)then
            satvp = 3.80*exp(17.27*(th(k)-273.)/ &
                    (th(k)-36.))/(.01*p(k))
@@ -4909,15 +4909,12 @@ real :: diff,exn,t,qs,qcold
      if (abs(QC-QCOLD)<Diff) exit
   enddo
 
-  !Do not allow saturation below 200 m
-  if(zagl < 200.)QC=0.
-
   T=exn*(THL+xlv/cp*QC)
   QS=qsat_blend(T,P)
   QC=max(QT-QS,0.)
 
-  !Do not allow saturation below 200 m
-  if(zagl < 200.)QC=0.
+  !Do not allow saturation below 100 m
+  if(zagl < 100.)QC=0.
 
   !THV=(THL+xlv/cp*QC).*(1+(1-rvovrd)*(QT-QC)-QC);
   THV=(THL+xlv/cp*QC)*(1.+QT*(rvovrd-1.)-rvovrd*QC)
@@ -5136,8 +5133,8 @@ SUBROUTINE SCALE_AWARE(dx,PBL1,Psig_bl,Psig_shcu)
      REAL,DIMENSION(kts:kte), INTENT(IN) :: u,v,th,thl,qt,qv,qc,thv,p,pi1d
      REAL,DIMENSION(kts:kte), INTENT(IN) :: qke
      REAL,DIMENSION(kts:kte+1), INTENT(IN) :: zw  !height at full-sigma
-     REAL,DIMENSION(kts:kte+1), INTENT(IN) :: rho  !density
-     REAL,DIMENSION(kts:kte+1), INTENT(IN) :: dfh  !diffusivity for heat
+     REAL,DIMENSION(kts:kte), INTENT(IN) :: rho  !density
+     REAL,DIMENSION(kts:kte), INTENT(IN) :: dfh  !diffusivity for heat
      REAL, INTENT(IN) :: dt,ust,flt,flq,flqv,flqc,hfx,qfx,tsk,pblh,dx,znt,ep_2,psig
      LOGICAL, OPTIONAL :: f_qc,f_qi
 
@@ -5233,7 +5230,7 @@ SUBROUTINE SCALE_AWARE(dx,PBL1,Psig_bl,Psig_shcu)
    logical is_convective
    ! Vars for cloud fraction calculation
    real, dimension( kts:kte) :: sigq, qst, satdef
-   real sigq2, rst
+   real sigq2, rst, cldfra_sum
 
 !----------------------------------------------------------------------
 ! Grid staggering:  Matlab version has mass and turbulence levels.
@@ -5270,7 +5267,7 @@ SUBROUTINE SCALE_AWARE(dx,PBL1,Psig_bl,Psig_shcu)
 
       IF ( wrf_at_debug_level(MYNN_DBG_LVL) ) THEN
            WRITE ( mynn_message , FMT='(A)' ) &
-           ' MYNN; in TEMF_MF'
+           ' MYNN; in TEMF_MF, beginning'
            CALL wrf_debug ( 0 , mynn_message )
       ENDIF
 
@@ -5285,10 +5282,14 @@ SUBROUTINE SCALE_AWARE(dx,PBL1,Psig_bl,Psig_shcu)
       s_awqke= 0.
       edmf_a = 0.
       edmf_w = 0.
-      edmf_qt= 0.
-      edmf_thl=0.
+      edmf_qt= 0. !qt
+      edmf_thl=0. !thl
       edmf_ent=0.
-      edmf_qc= 0.
+      edmf_qc= 0. !qc
+      edmf_u=0.
+      edmf_v=0.
+      edmf_qke=0.
+ 
       z0t = znt
 
       do k = kts,kte
@@ -5379,7 +5380,7 @@ SUBROUTINE SCALE_AWARE(dx,PBL1,Psig_bl,Psig_shcu)
       !print *,"In TEMF_MF wstr,hfx,dthdz(1:2),h0 = ", wstr,hfx,dthdz(1),dthdz(2),h0
       IF ( wrf_at_debug_level(MYNN_DBG_LVL) ) THEN
          WRITE ( mynn_message , FMT='(A,F5.1,F6.1,F5.1,F5.1,F5.1)' ) &
-         ' MYNN; in TEMF_MF:', wstr,hfx,dthdz(1),dthdz(2),h0
+         ' MYNN; in TEMF_MF: wstr,hfx,dtdz1,dtdz2,h0:', wstr,hfx,dthdz(1),dthdz(2),h0
          CALL wrf_debug ( 0 , mynn_message )
       ENDIF
 
@@ -5412,11 +5413,12 @@ SUBROUTINE SCALE_AWARE(dx,PBL1,Psig_bl,Psig_shcu)
                epsmf(k,nu) = Cepsmf * (1+0.0625*(floor(nu - Nupd/2.))) ! WA for eight updrafts
             end do
             !print *,"In TEMF_MF Cepsmf, epsmf = ", Cepsmf, epsmf(1,:)
-            IF ( wrf_at_debug_level(MYNN_DBG_LVL) ) THEN
-               WRITE ( mynn_message , FMT='(A,F8.4,10F8.4)' ) &
-               ' MYNN; in TEMF_MF, Cepsmf, epsmf =:', Cepsmf, epsmf(1,1:10)
-               CALL wrf_debug ( 0 , mynn_message )
-            ENDIF
+            !IF ( wrf_at_debug_level(MYNN_DBG_LVL) ) THEN
+            !   WRITE ( mynn_message , FMT='(A,F8.4)' ) &
+            !   ' MYNN; in TEMF_MF, Cepsmf, epsmf(1:13,nu)=', Cepsmf
+            !   CALL wrf_debug ( 0 , mynn_message )
+            !   print*,"    epsmf(1:13,nu)=",epsmf(1:13,nu)
+            !ENDIF
 
             ! Initialize updraft
             thlUPD(1,nu) = thetal(1) + Cw*wstr
@@ -5497,7 +5499,7 @@ SUBROUTINE SCALE_AWARE(dx,PBL1,Psig_bl,Psig_shcu)
                      chemUPD(k,ic,nu) = chemUPD(k-1,ic,nu) + dchemUPDdz(k-1,ic,nu) * dzm(k-1)
                   enddo
 #endif
-               else
+               else ! above hmax
                   thlUPD(k,nu) = thetal(k)
                   qtUPD(k,nu) = qtot(k)
                   wUPD_dry(k,nu) = 0.
@@ -5513,16 +5515,17 @@ SUBROUTINE SCALE_AWARE(dx,PBL1,Psig_bl,Psig_shcu)
 #endif
                end if
 
-            IF ( wrf_at_debug_level(MYNN_DBG_LVL) ) THEN
-               IF ( ABS(wUPD(k,nu))>10. ) THEN
-                 WRITE ( mynn_message , FMT='(A,3F9.2,2F9.4)' ) &
-                 ' MYNN, in TEMF_MF, huge w:', wUPD(k,nu), wUPD(k-1,nu),wstr,epsmf(k,nu),Bmoist(k-1)
-                 CALL wrf_debug ( 0 , mynn_message )
+               IF ( wrf_at_debug_level(MYNN_DBG_LVL) ) THEN
+                 IF ( ABS(wUPD(k,nu))>10. ) THEN
+                   WRITE ( mynn_message , FMT='(A,2I3)' ) &
+                   ' MYNN, in TEMF_MF, huge w at (nu,k):', nu,k
+                   CALL wrf_debug ( 0 , mynn_message )
+                   print *,"     thlUPD(1:k,nu) = ", thlUPD(1:k,nu)
+                   print *,"     wUPD(1:k,nu)   = ", wUPD(1:k,nu)
+                   print *,"     Bmoist(1:k-1)  = ", Bmoist(1:k-1)
+                   print *,"     epsmf(1:k,nu)  = ", epsmf(1:k,nu)
+                 ENDIF
                ENDIF
-               print *,"In TEMF_MF thlUPD(1) = ", thlUPD(1,1:10)
-               print *,"In TEMF_MF thlUPD(2) = ", thlUPD(2,1:10)
-               print *,"In TEMF_MF thlUPD(3) = ", thlUPD(3,1:10)
-            ENDIF
 
             ENDDO !end-k
 
@@ -5679,10 +5682,11 @@ SUBROUTINE SCALE_AWARE(dx,PBL1,Psig_bl,Psig_shcu)
 
          ! Add updraft areas into edmf_a, etc.
          ! Add cloud fractions into cldfra_bl1d
-         cldfra_bl1d(1) = 0.0
+         !cldfra_bl1d(1) = 0.0
          cfm_temfx = 0.0
          do k = 2,kte
-            cldfra_bl1d(k) = 0.0
+            !cldfra_bl1d(k) = 0.0
+            cldfra_sum = 0.0
             edmf_a(k) = 0.0
             edmf_w(k) = 0.0
             edmf_thl(k) = 0.0
@@ -5691,6 +5695,7 @@ SUBROUTINE SCALE_AWARE(dx,PBL1,Psig_bl,Psig_shcu)
             edmf_u(k) = 0.0
             edmf_v(k) = 0.0
             edmf_qke(k) = 0.0
+            edmf_ent(k) = 0.0
 #if (WRF_CHEM == 1)
             do ic = 1,nchem
                edmf_chem(k,ic) = 0.0
@@ -5706,20 +5711,24 @@ SUBROUTINE SCALE_AWARE(dx,PBL1,Psig_bl,Psig_shcu)
                edmf_u(k) = edmf_u(k) + aUPD(k,nu)*UUPD(k,nu)
                edmf_v(k) = edmf_v(k) + aUPD(k,nu)*VUPD(k,nu)
                edmf_qke(k) = edmf_qke(k) + aUPD(k,nu)*TEUPD(k,nu)
-               cldfra_bl1d(k) = cldfra_bl1d(k) + cldfraUPD(k,nu)
+               edmf_ent(k) = edmf_ent(k) + aUPD(k,nu)*epsmf(k,nu)
+               !cldfra_bl1d(k) = cldfra_bl1d(k) + cldfraUPD(k,nu)
+               cldfra_sum = cldfra_sum + cldfraUPD(k,nu)
 #if (WRF_CHEM == 1)
                do ic = 1,nchem
-                  edmf_chem(k,ic) = edmf_chem(k) + aUPD(k,nu)*chemUPD(k,ic,nu)
+                  edmf_chem(k,ic) = edmf_chem(k,ic) + aUPD(k,nu)*chemUPD(k,ic,nu)
                enddo
 #endif
             end do
+            cldfra_bl1d(k) = MAX(cldfra_bl1d(k),cldfra_sum)
+
             IF ( wrf_at_debug_level(MYNN_DBG_LVL) ) THEN
-               print *,"In TEMF_MF edmf_w = ", edmf_w(1:10)
-               print *,"In TEMF_MF edmf_a = ", edmf_a(1:10)
-               print *,"In TEMF_MF edmf_thl = ", edmf_thl(1:10)
-               print *,"In TEMF_MF aUPD(2,:) = ", aUPD(2,:)
-               print *,"In TEMF_MF wUPD(2,:) = ", wUPD(2,:)
-               print *,"In TEMF_MF thlUPD(2,:) = ", thlUPD(2,:)
+            !   print *,"In TEMF_MF edmf_w = ", edmf_w(1:10)
+            !   print *,"In TEMF_MF edmf_a = ", edmf_a(1:10)
+            !   print *,"In TEMF_MF edmf_thl = ", edmf_thl(1:10)
+            !   print *,"In TEMF_MF aUPD(2,:) = ", aUPD(2,:)
+            !   print *,"In TEMF_MF wUPD(2,:) = ", wUPD(2,:)
+            !   print *,"In TEMF_MF thlUPD(2,:) = ", thlUPD(2,:)
             ENDIF
             if (edmf_a(k)>0.) then
                edmf_w(k)=edmf_w(k)/edmf_a(k)
@@ -5736,7 +5745,7 @@ SUBROUTINE SCALE_AWARE(dx,PBL1,Psig_bl,Psig_shcu)
                enddo
 #endif
             endif
-            qc_bl1d(k) = edmf_qc(k)
+            qc_bl1d(k) = MAX(qc_bl1d(k),edmf_qc(k))
             ! Put max value so far into cfm
             if (zt(k) <= hmax) then
                cfm_temfx = max(cldfra_bl1d(k),cfm_temfx)
@@ -5784,10 +5793,10 @@ SUBROUTINE SCALE_AWARE(dx,PBL1,Psig_bl,Psig_shcu)
          s_awv  = 0.
          s_awqke= 0.
          edmf_qc(1) = qc(1)
-         qc_bl1d(1) = qc(1)
+         !qc_bl1d(1) = qc(1)
          do k = kts+1,kte-1
             edmf_qc(k) = qc(k-1)
-            qc_bl1d(k) = qc(k-1)
+            !qc_bl1d(k) = qc(k-1)
          end do
 #if (WRF_CHEM == 1)
          do ic = 1,nchem
@@ -5796,18 +5805,18 @@ SUBROUTINE SCALE_AWARE(dx,PBL1,Psig_bl,Psig_shcu)
 #endif
       end if
       edmf_qc(kte) = qc(kte)
-      qc_bl1d(kte) = qc(kte)
+      !qc_bl1d(kte) = qc(kte)
 
-      IF ( wrf_at_debug_level(MYNN_DBG_LVL) ) THEN
-         print *,"After TEMF_MF, s_aw = ", s_aw(1:5)
-         print *,"After TEMF_MF, s_awthl = ", s_awthl(1:5)
-         print *,"After TEMF_MF, s_awqt = ", s_awqt(1:5)
-         print *,"After TEMF_MF, s_awqc = ", s_awqc(1:5)
-         print *,"After TEMF_MF, s_awqv = ", s_awqv(1:5)
-         print *,"After TEMF_MF, s_awu = ", s_awu(1:5)
-         print *,"After TEMF_MF, s_awv = ", s_awv(1:5)
-         print *,"After TEMF_MF, s_awqke = ", s_awqke(1:5)
-      ENDIF
+      !IF ( wrf_at_debug_level(MYNN_DBG_LVL) ) THEN
+      !   print *,"After TEMF_MF, s_aw = ", s_aw(1:5)
+      !   print *,"After TEMF_MF, s_awthl = ", s_awthl(1:5)
+      !   print *,"After TEMF_MF, s_awqt = ", s_awqt(1:5)
+      !   print *,"After TEMF_MF, s_awqc = ", s_awqc(1:5)
+      !   print *,"After TEMF_MF, s_awqv = ", s_awqv(1:5)
+      !   print *,"After TEMF_MF, s_awu = ", s_awu(1:5)
+      !   print *,"After TEMF_MF, s_awv = ", s_awv(1:5)
+      !   print *,"After TEMF_MF, s_awqke = ", s_awqke(1:5)
+      !ENDIF
 
 END SUBROUTINE temf_mf
 
