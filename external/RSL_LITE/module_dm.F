@@ -2416,7 +2416,7 @@ END MODULE module_dm
 
    SUBROUTINE push_communicators_for_domain( id )
       USE module_dm
-      INTEGER, OPTIONAL, INTENT(IN) :: id   ! if specified also does an instate for grid id
+      INTEGER, INTENT(IN) :: id   ! if specified also does an instate for grid id
       IF ( communicator_stack_cursor .GE. max_domains ) CALL wrf_error_fatal("push_communicators_for_domain would excede stacksize") 
       communicator_stack_cursor = communicator_stack_cursor + 1
 
@@ -2433,9 +2433,7 @@ END MODULE module_dm
       mytask_x_stack( communicator_stack_cursor )       =    mytask_x
       mytask_y_stack( communicator_stack_cursor )       =    mytask_y
 
-      IF ( PRESENT( id ) ) THEN
-        CALL instate_communicators_for_domain( id )
-      ENDIF
+      CALL instate_communicators_for_domain( id )
    END SUBROUTINE push_communicators_for_domain
    SUBROUTINE pop_communicators_for_domain
       USE module_dm
