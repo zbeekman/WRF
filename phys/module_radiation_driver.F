@@ -151,7 +151,7 @@ CONTAINS
                                        ,SWRADSCHEME, GSFCSWSCHEME       &
                                        ,GFDLSWSCHEME, CAMLWSCHEME, CAMSWSCHEME &
                                        ,HELDSUAREZ                      &
-#ifdef HWRF
+#if ( HWRF == 1 )
                                        ,HWRFSWSCHEME, HWRFLWSCHEME  &
 #endif
                                        ,goddardlwscheme                 & 
@@ -177,7 +177,7 @@ CONTAINS
    USE module_ra_rrtmg_swf  , ONLY : rrtmg_swrad_fast
    USE module_ra_cam        , ONLY : camrad
    USE module_ra_gfdleta    , ONLY : etara
-#ifdef HWRF
+#if ( HWRF == 1 )
    USE module_ra_hwrf
 #endif
    USE module_ra_hs         , ONLY : hsrad
@@ -714,7 +714,7 @@ CONTAINS
      INTEGER, PARAMETER:: taer_asy_opt = 3                               !  input option for aerosol asy
 
 
-#ifdef HWRF
+#if ( HWRF == 1 )
    CHARACTER(len=255) :: wrf_err_message
 #endif
 
@@ -928,6 +928,10 @@ CONTAINS
       allocate(ssaaer_sw(1, 1, 1, 1))
       allocate(asyaer_sw(1, 1, 1, 1))
    ENDIF
+   ! Stubs to ensure these variables are not passed in unallocated:
+   if(.not.allocated(tauaer_sw)) allocate(tauaer_sw(1, 1, 1, 1))
+   if(.not.allocated(ssaaer_sw)) allocate(ssaaer_sw(1, 1, 1, 1))
+   if(.not.allocated(asyaer_sw)) allocate(asyaer_sw(1, 1, 1, 1))
 
 !---------------
 ! Calculate constant for short wave radiation
@@ -1387,7 +1391,7 @@ CONTAINS
                CALL wrf_error_fatal('Can not call ETARA (1b). Missing moisture fields.')
              ENDIF
 
-#ifdef HWRF
+#if ( HWRF == 1 )
        CASE (HWRFLWSCHEME)
 
              CALL wrf_debug (100, 'CALL hwrflw')
@@ -2065,7 +2069,7 @@ CONTAINS
                CALL wrf_error_fatal('Can not call ETARA (2b). Missing moisture fields.')
              ENDIF
 
-#ifdef HWRF
+#if ( HWRF == 1 )
       CASE (HWRFSWSCHEME)
 
              CALL wrf_debug (100, 'CALL hwrfsw')
@@ -3030,9 +3034,9 @@ CONTAINS
 !BSF - For HWRF MP option; (qc = liquid, qi = cloud ice+snow)
 !         IF ( F_QC .and. F_QI .and. .not. F_QS ) THEN
 #if (HWRF == 1)
-         IF ( mp_physics==fer_mp_hires .or. &
-              mp_physics==fer_mp_hires_advect .or. &
-              mp_physics==etamp_hwrf) THEN
+         IF ( mp_physics .eq. FER_MP_HIRES .or. &
+	      mp_physics .eq. FER_MP_HIRES_ADVECT .or. &
+	      mp_physics .eq. ETAMP_HWRF) THEN
 #else
          IF ( mp_physics .eq. FER_MP_HIRES .or. &
               mp_physics==fer_mp_hires_advect) THEN
@@ -4552,7 +4556,7 @@ END SUBROUTINE aer_p_int
       END DO
 
       DO j=jts,jte
-         DO k=kts,kte-1
+         DO k=kts,kte
             DO i=its,ite
                rhoa = p_phy(i,k,j)/(287.*t_phy(i,k,j))
                t_idx = MAX(1, MIN(nint(10.999-0.0333*t_phy(i,k,j)),4))

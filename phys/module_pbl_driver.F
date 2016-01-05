@@ -55,7 +55,7 @@ CONTAINS
 #if (NMM_CORE==1)
                  ,DISHEAT                                          &
                  ,HPBL2D, EVAP2D, HEAT2D, RC2D                     &   !Kwon FOR SHAL. CON.
-#ifdef HWRF
+#if ( HWRF == 1 )
                  ,VAR_RIC                                          &   !Kwon for Variable Ric
 #endif
                  ,DKU3D,DKT3D                                      &
@@ -384,7 +384,7 @@ CONTAINS
    REAL, DIMENSION( ims:ime , jms:jme , kms:kme ),                         &
                    INTENT(OUT) ::  DKU3D,DKT3D                      !Kwon duffusivity
 #endif
-#if (HWRF==1)
+#if ( HWRF == 1 )
    REAL,       INTENT(IN)         ::   VAR_RIC                       !Kwon for variable Ric
    integer,intent(in) :: ens_random_seed
    real,intent(in) :: ens_pblamp
@@ -550,7 +550,9 @@ CONTAINS
 
    REAL,    DIMENSION( ims:ime , jms:jme ), &
         &OPTIONAL, INTENT(IN) ::  &
-        & qcg, rmol, ch
+        & qcg,  ch
+   REAL,    DIMENSION( ims:ime , jms:jme ), &
+        &OPTIONAL, INTENT(INOUT) ::  rmol
    
 
 
@@ -1293,7 +1295,7 @@ CONTAINS
 #if (NMM_CORE==1)
               ,DISHEAT=DISHEAT                                      &
 #endif
-#if (HWRF==1)
+#if ( HWRF == 1 )
               ,ALPHA=gfs_alpha                                      &
               ,HPBL2D=HPBL2D, EVAP2D=EVAP2D, HEAT2D=HEAT2D          &   !Kwon add FOR SHAL. CON.
               ,VAR_RIC=VAR_RIC                                      &   !Kwon for variable Ric
@@ -1534,7 +1536,7 @@ CONTAINS
               ,UST=UST, HFX=HFX, QFX=QFX, TSK=tsk                               &
               ,PSFC=PSFC, EP1=EP_1, G=g, ROVCP=rcp,RD=r_D,CPD=cp                 &
               ,PBLH=pblh, KPBL2D=kpbl, EXCH_H=exch_h, REGIME=regime              &
-              ,GZ1OZ0=gz1oz0,WSPD=wspd,PSIM=psim, MUT=mut                        &
+              ,GZ1OZ0=gz1oz0,WSPD=wspd,PSIM=psim, MUT=mut, RMOL=rmol             &
               ,RUBLTEN=rublten,RVBLTEN=rvblten,RTHBLTEN=rthblten                 &
               ,RQVBLTEN=rqvblten,RQCBLTEN=rqcblten,RQIBLTEN=rqiblten             &
               ,IDS=ids,IDE=ide,JDS=jds,JDE=jde,KDS=kds,KDE=kde                   &

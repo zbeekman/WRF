@@ -47,7 +47,7 @@ CONTAINS
                   XICE_THRESHOLD,                               &
                   RDLAI2D,USEMONALB,                            &
                   RIB,                                          & !?
-                  NOAHRES,                                      &
+                  NOAHRES,opt_thcnd,                            &
 ! Noah UA changes
                   ua_phys,flx4_2d,fvb_2d,fbur_2d,fgsn_2d,       &
                   ids,ide, jds,jde, kds,kde,                    &
@@ -324,6 +324,7 @@ CONTAINS
                                                            ZNT
    REAL,    DIMENSION( ims:ime, jms:jme )                     , &
             INTENT(OUT)      ::                         NOAHRES
+   INTEGER, INTENT(IN)       ::                         OPT_THCND
 
 ! Noah UA changes
    LOGICAL,                                INTENT(IN)  :: UA_PHYS
@@ -986,7 +987,7 @@ CONTAINS
                  RIBB,                                             &
                  SMCWLT,SMCDRY,SMCREF,SMCMAX,NROOT,                &
                  sfcheadrt(i,j),                                   &    !I
-                 INFXSRT(i,j),ETPND1,AOASIS                        &    !O
+                 INFXSRT(i,j),ETPND1,OPT_THCND,AOASIS              &    !O
                  )
 
 #ifdef WRF_HYDRO
@@ -1680,7 +1681,7 @@ CONTAINS
      DO i = its,itf
        IF ( ISLTYP( i,j ) .LT. 1 ) THEN
          errflag = 1
-         WRITE(err_message,*)"module_sf_noahlsm.F: lsminit: out of range ISLTYP ",i,j,ISLTYP( i,j )
+         WRITE(err_message,*)"module_sf_noahdrv.F: lsminit: out of range ISLTYP ",i,j,ISLTYP( i,j )
          CALL wrf_message(err_message)
        ENDIF
        IF(.not.RDMAXALB) THEN
@@ -1689,8 +1690,13 @@ CONTAINS
      ENDDO
    ENDDO
    IF ( errflag .EQ. 1 ) THEN
-      CALL wrf_error_fatal( "module_sf_noahlsm.F: lsminit: out of range value "// &
+#if ( HWRF == 1 ) 
+      CALL wrf_message( "WARNING: message only; was fatal. module_sf_noahdrv.F: lsminit: out of range value "// &
                             "of ISLTYP. Is this field in the input?" )
+#else
+      CALL wrf_error_fatal( "module_sf_noahdrv.F: lsminit: out of range value "// &
+                            "of ISLTYP. Is this field in the input?" )
+#endif
    ENDIF
 
 ! initialize soil liquid water content SH2O
@@ -2097,7 +2103,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                   XICE_THRESHOLD,                               &
                   RDLAI2D,USEMONALB,                            &
                   RIB,                                          & !?
-                  NOAHRES,                                      &
+                  NOAHRES,OPT_THCND,                            &
                  NLCAT,landusef,landusef2,                       & ! danli mosaic
                  sf_surface_mosaic,mosaic_cat,mosaic_cat_index,  & ! danli mosaic 
                  TSK_mosaic,QSFC_mosaic,                         & ! danli mosaic 
@@ -2395,6 +2401,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                                                            ZNT
    REAL,    DIMENSION( ims:ime, jms:jme )                     , &
             INTENT(OUT)      ::                         NOAHRES
+   INTEGER,                                INTENT(IN)  :: OPT_THCND
 
 ! Noah UA changes
    LOGICAL,                                INTENT(IN)  :: UA_PHYS
@@ -3202,7 +3209,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                        RIBB,                                             &
                        SMCWLT,SMCDRY,SMCREF,SMCMAX,NROOT,                &
                        sfcheadrt(i,j),                                   &    !I
-                       INFXSRT(i,j),ETPND1,AOASIS                        &    !O
+                       INFXSRT(i,j),ETPND1,OPT_THCND,AOASIS              &    !O
                        )
       
 #ifdef WRF_HYDRO
@@ -4077,7 +4084,7 @@ SUBROUTINE lsm_mosaic(DZ8W,QV3D,P8W3D,T3D,TSK,                      &
                        RIBB,                                             &
                        SMCWLT,SMCDRY,SMCREF,SMCMAX,NROOT,                &
                        sfcheadrt(i,j),                                   &    !I
-                       INFXSRT(i,j),ETPND1,AOASIS                        &    !O
+                       INFXSRT(i,j),ETPND1,OPT_THCND,AOASIS              &    !O
                        )
       
 #ifdef WRF_HYDRO

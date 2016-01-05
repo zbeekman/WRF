@@ -12,7 +12,7 @@ MODULE module_physics_init
 
    USE module_state_description
    USE module_model_constants
-   USE module_configure, ONLY : grid_config_rec_type
+   USE module_configure, ONLY : grid_config_rec_type ! , p_qnn, f_qnn
 !  USE module_ssib_veg , ONLY : init_module_ssib_veg !fds (SSiB constants)
    !Local data for CAM's MG MP scheme
    integer  :: ixcldliq, ixcldice, ixnumliq, ixnumice
@@ -98,6 +98,7 @@ CONTAINS
                          CHXY, FWETXY, SNEQVOXY, ALBOLDXY, QSNOWXY,       & ! Optional Noah-MP
                          WSLAKEXY, ZWTXY, WAXY, WTXY, LFMASSXY, RTMASSXY, & ! Optional Noah-MP
                          STMASSXY, WOODXY, STBLCPXY, FASTCPXY,            & ! Optional Noah-MP
+                         GRAINXY, GDDXY,                                  & ! Optional Noah-MP
                          XSAIXY, LAI,                                     & ! Optional Noah-MP
                          T2MVXY, T2MBXY, CHSTARXY ,                       & ! Optional Noah-MP
                          SMOISEQ  ,SMCWTDXY ,RECHXY, DEEPRECHXY, AREAXY,  & ! Optional Noah-MP 
@@ -221,7 +222,7 @@ CONTAINS
                          ,G_URB2D_mosaic,RN_URB2D_mosaic                                                      & ! danli mosaic 
                          ,TS_URB2D_mosaic                                                                     & ! danli mosaic 
                          ,TS_RUL2D_mosaic                                                                     & ! danli mosaic
-                         ,P_QNN, F_QNN   &
+!                        ,P_QNN, F_QNN   &
                          )
 
 !-----------------------------------------------------------------
@@ -456,6 +457,8 @@ CONTAINS
    REAL,    OPTIONAL, DIMENSION(ims:ime,jms:jme) :: RTMASSXY
    REAL,    OPTIONAL, DIMENSION(ims:ime,jms:jme) :: STMASSXY
    REAL,    OPTIONAL, DIMENSION(ims:ime,jms:jme) :: WOODXY
+   REAL,    OPTIONAL, DIMENSION(ims:ime,jms:jme) :: GRAINXY
+   REAL,    OPTIONAL, DIMENSION(ims:ime,jms:jme) :: GDDXY
    REAL,    OPTIONAL, DIMENSION(ims:ime,jms:jme) :: STBLCPXY
    REAL,    OPTIONAL, DIMENSION(ims:ime,jms:jme) :: FASTCPXY
    REAL,    OPTIONAL, DIMENSION(ims:ime,jms:jme) :: XSAIXY
@@ -478,8 +481,8 @@ CONTAINS
    REAL,    OPTIONAL, DIMENSION(ims:ime,jms:jme), INTENT(IN) :: PEXPXY
 
 !   REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),  OPTIONAL,  INTENT(INOUT ) ::   qnn_curr
-   integer, optional, intent(in) :: p_qnn
-   LOGICAL, OPTIONAL, intent(in) :: f_qnn
+!  integer, optional, intent(in) :: p_qnn
+!  LOGICAL, OPTIONAL, intent(in) :: f_qnn
 
    INTEGER , OPTIONAL,  INTENT(OUT) :: STEPWTD
    REAL , OPTIONAL, INTENT(IN) :: WTDDT
@@ -816,7 +819,14 @@ integer myproc
    CALL nl_get_iswater(id,iswater)
    CALL nl_get_isice(id,isice)
    CALL nl_get_isurban(id,isurban)
-   CALL nl_get_mminlu( 1, mminlu_loc )
+!jm   CALL nl_get_mminlu( 1, mminlu_loc )
+   CALL nl_get_mminlu( id, mminlu_loc )
+#if (NMM_CORE == 1 && HWRF == 1 )
+   IF ( trim(mminlu_loc) .eq. "" ) THEN
+     CALL wrf_message('WARNING:   MMINLU NOT SET, USING USGS')
+     MMINLU_LOC = 'USGS'
+   ENDIF
+#endif
    CALL wrf_debug(100,'after nl_get_iswater, nl_get_isice, nl_get_mminlu_loc')
 !-- temporary fix by ww
    landuse_ISICE = isice
@@ -1011,6 +1021,7 @@ integer myproc
                 its, ite, jts, jte, kts, kte                       )
    ENDIF
 
+#if 0
    IF ( f_qnn ) THEN
 ! Initialize simple ccn field
      IF ( .not. Any(scalar(:,:,:,p_qnn) > 1.0 ) ) THEN ! initialize ccn if not already done
@@ -1034,7 +1045,7 @@ integer myproc
         ENDDO
       ENDIF
    ENDIF
-   
+#endif
   ENDIF !}
 
 !-- convert zfull and zhalf to sigma values for ra_init (Eta CO2 needs these)
@@ -1137,6 +1148,7 @@ integer myproc
                 CHXY, FWETXY, SNEQVOXY, ALBOLDXY, QSNOWXY,      &
                 WSLAKEXY, ZWTXY, WAXY, WTXY, LFMASSXY, RTMASSXY,&
                 STMASSXY, WOODXY, STBLCPXY, FASTCPXY,           &
+                GRAINXY, GDDXY,                                 &
                 XSAIXY, LAI,                                    &
                 SMOISEQ, SMCWTDXY, RECHXY, DEEPRECHXY, AREAXY,  &
                 WTDDT, STEPWTD, QRFSXY ,QSPRINGSXY ,QSLATXY,   &
@@ -1470,6 +1482,7 @@ integer myproc
           'module_physics_init.F: LANDUSE_INIT: open failure for LANDUSE.TBL'
           CALL wrf_error_fatal ( message )
         END IF
+        REWIND(landuse_unit)
       ENDIF
 
 ! Read info from file LANDUSE.TBL
@@ -1507,6 +1520,7 @@ integer myproc
       ENDIF
       CALL wrf_dm_bcast_bytes (end_of_file, LWORDSIZE )
       IF ( .NOT. end_of_file ) THEN
+        CALL wrf_dm_bcast_bytes (lucats,  IWORDSIZE )
         CALL wrf_dm_bcast_string(lutype, 256)
         CALL wrf_dm_bcast_bytes (lucats,  IWORDSIZE )
         CALL wrf_dm_bcast_bytes (luseas,  IWORDSIZE )
@@ -2043,6 +2057,7 @@ integer myproc
                 CHXY, FWETXY, SNEQVOXY, ALBOLDXY, QSNOWXY,      &
                 WSLAKEXY, ZWTXY, WAXY, WTXY, LFMASSXY, RTMASSXY,&
                 STMASSXY, WOODXY, STBLCPXY, FASTCPXY,           &
+                GRAINXY, GDDXY,                                 &
                 XSAIXY, LAI,                                    &
                 SMOISEQ, SMCWTDXY, RECHXY, DEEPRECHXY, AREAXY,  &
                 WTDDT, STEPWTD,QRFSXY ,QSPRINGSXY ,QSLATXY,     &
@@ -2316,6 +2331,8 @@ integer myproc
    REAL,    OPTIONAL, DIMENSION(ims:ime,jms:jme) :: RTMASSXY
    REAL,    OPTIONAL, DIMENSION(ims:ime,jms:jme) :: STMASSXY
    REAL,    OPTIONAL, DIMENSION(ims:ime,jms:jme) :: WOODXY
+   REAL,    OPTIONAL, DIMENSION(ims:ime,jms:jme) :: GRAINXY
+   REAL,    OPTIONAL, DIMENSION(ims:ime,jms:jme) :: GDDXY
    REAL,    OPTIONAL, DIMENSION(ims:ime,jms:jme) :: STBLCPXY
    REAL,    OPTIONAL, DIMENSION(ims:ime,jms:jme) :: FASTCPXY
    REAL,    OPTIONAL, DIMENSION(ims:ime,jms:jme) :: XSAIXY
@@ -2798,6 +2815,7 @@ CALL lsm_mosaic_init(IVGTYP,config_flags%ISWATER,config_flags%ISURBAN,config_fla
                      fwetxy   ,sneqvoxy ,alboldxy ,qsnowxy  ,wslakexy ,zwtxy    ,waxy     , &
                      wtxy     ,tsnoxy   ,zsnsoxy  ,snicexy  ,snliqxy  ,lfmassxy ,rtmassxy , &
                      stmassxy ,woodxy   ,stblcpxy ,fastcpxy ,xsaixy   ,lai      ,           &
+                     grainxy  ,gddxy    ,                                                   &
                      t2mvxy   ,t2mbxy   ,chstarxy ,            &
                      num_soil_layers, restart,                 &
                      allowed_to_read, iopt_run ,               &

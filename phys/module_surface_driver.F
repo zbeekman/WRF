@@ -54,11 +54,13 @@ CONTAINS
      &          ,pxlsm_smois_init, pxlsm_soil_nudge                   & ! PX-LSM
      &          ,idveg    ,iopt_crs  ,iopt_btr  ,iopt_run  ,iopt_sfc  ,iopt_frz     &
      &          ,iopt_inf ,iopt_rad  ,iopt_alb  ,iopt_snf  ,iopt_tbot ,iopt_stc     &
+     &          ,iopt_gla ,iopt_rsf                                                 &
      &          ,isnowxy  ,tvxy      ,tgxy      ,canicexy  ,canliqxy  ,eahxy        &
      &          ,tahxy    ,cmxy      ,chxy      ,fwetxy    ,sneqvoxy  ,alboldxy     &
      &          ,qsnowxy  ,wslakexy  ,zwtxy     ,waxy      ,wtxy      ,tsnoxy       &
      &          ,zsnsoxy  ,snicexy   ,snliqxy   ,lfmassxy  ,rtmassxy  ,stmassxy     &
      &          ,woodxy   ,stblcpxy  ,fastcpxy  ,xsaixy    ,taussxy                 &
+     &          ,grainxy  ,gddxy                                                    &
      &          ,t2mvxy   ,t2mbxy    ,q2mvxy    ,q2mbxy                             &
      &          ,tradxy   ,neexy     ,gppxy     ,nppxy     ,fvegxy    ,runsfxy      &
      &          ,runsbxy  ,ecanxy    ,edirxy    ,etranxy   ,fsaxy     ,firaxy       &
@@ -71,6 +73,7 @@ CONTAINS
      &          ,smcwtdxy ,rechxy   ,deeprechxy,fdepthxy,areaxy   ,rivercondxy, riverbedxy &
      &          ,eqzwt    ,pexpxy   ,qrfxy    ,qspringxy,qslatxy  ,qrfsxy   ,qspringsxy &
      &          ,smoiseq  ,wtddt    ,stepwtd                                            &
+     &          ,opt_thcnd                                                 &
            ! Noah UA changes
      &          ,ua_phys,flx4,fvb,fbur,fgsn                                  &
 #if (EM_CORE==1)
@@ -820,7 +823,8 @@ CONTAINS
 !  NoahMP specific fields
 
    INTEGER, OPTIONAL, INTENT(IN) ::    idveg, iopt_crs, iopt_btr, iopt_run, iopt_sfc , iopt_frz, &
-                                    iopt_inf, iopt_rad, iopt_alb, iopt_snf, iopt_tbot, iopt_stc
+                                    iopt_inf, iopt_rad, iopt_alb, iopt_snf, iopt_tbot, iopt_stc, &
+				    iopt_gla, iopt_rsf
 
    INTEGER, OPTIONAL, DIMENSION(ims:ime , jms:jme),                    INTENT(INOUT) :: ISNOWXY
    REAL,    OPTIONAL, DIMENSION(ims:ime ,-2:num_soil_layers, jms:jme), INTENT(INOUT) :: ZSNSOXY
@@ -828,6 +832,7 @@ CONTAINS
    REAL,    OPTIONAL, DIMENSION(ims:ime , jms:jme),                    INTENT(INOUT) ::                    &
            TVXY,    TGXY,CANICEXY,CANLIQXY,   EAHXY,   TAHXY,    CMXY,    CHXY,  FWETXY,SNEQVOXY,ALBOLDXY, &
         QSNOWXY,WSLAKEXY,   ZWTXY,    WAXY,    WTXY,LFMASSXY,RTMASSXY,STMASSXY,  WOODXY,STBLCPXY,FASTCPXY, &
+	GRAINXY,   GDDXY,                                                                                  &
 	 XSAIXY, TAUSSXY,  T2MVXY,  T2MBXY,  Q2MVXY,  Q2MBXY,  TRADXY,   NEEXY,   GPPXY,                   &
           NPPXY,  FVEGXY, RUNSFXY, RUNSBXY,  ECANXY,  EDIRXY, ETRANXY,   FSAXY,  FIRAXY,  APARXY,   PSNXY, &
 	  SAVXY,   SAGXY, RSSUNXY, RSSHAXY,  BGAPXY,  WGAPXY,   TGVXY,   TGBXY,   CHVXY,   CHBXY,   SHGXY, &
@@ -843,6 +848,7 @@ CONTAINS
     SMCWTDXY,   RECHXY, DEEPRECHXY, FDEPTHXY,  AREAXY,  RIVERCONDXY, RIVERBEDXY,  &
     EQZWT,      PEXPXY, QRFXY,      QSPRINGXY, QSLATXY, QRFSXY,      QSPRINGSXY                         
 
+   INTEGER, INTENT(IN )::   OPT_THCND
 ! Noah UA changes
    LOGICAL, INTENT(IN) :: ua_phys
    REAL, DIMENSION(ims:ime , jms:jme), INTENT(OUT) ::  flx4,fvb,fbur,fgsn
@@ -1935,7 +1941,7 @@ CONTAINS
                xland,hfx,qfx,lh,tsk,flhc,flqc,qgh,qsfc,rmol,       &
                u10,v10,                                            &
                gz1oz0,wspd,br,isfflx,dx,                           &
-               svp1,svp2,svp3,svpt0,ep_1,ep_2,karman,              &
+               svp1,svp2,svp3,svpt0,ep_1,ep_2,karman,itimestep,    &
                ids,ide, jds,jde, kds,kde,                          &
                ims,ime, jms,jme, kms,kme,                          &
                i_start(ij),i_end(ij), j_start(ij),j_end(ij), kts,kte    )
@@ -2484,7 +2490,7 @@ CONTAINS
                 xice_threshold,                                 &
                 rdlai2d,usemonalb,                              &
                 br,                                             & !?
-                NOAHRES,                                        &
+                NOAHRES,opt_thcnd,                              &
                 NLCAT,landusef,landusef2,                       & ! danli mosaic
                 sf_surface_mosaic,mosaic_cat,mosaic_cat_index,  & ! danli mosaic 
                 TSK_mosaic,QSFC_mosaic,                         & ! danli mosaic 
@@ -2577,7 +2583,7 @@ CONTAINS
                 xice_threshold,                                 &
                 rdlai2d,usemonalb,                              &
                 br,                                             & !?
-                  NOAHRES,                                      &
+                NOAHRES,opt_thcnd,                              &
                 ua_phys,flx4,fvb,fbur,fgsn,                     &
                 ids,ide, jds,jde, kds,kde,                      &
                 ims,ime, jms,jme, kms,kme,                      &
@@ -2835,7 +2841,7 @@ CONTAINS
 		  XLAND,     XICE,     XICE_THRESHOLD,                        &
                   IDVEG, IOPT_CRS, IOPT_BTR, IOPT_RUN,  IOPT_SFC,   IOPT_FRZ, &
 	       IOPT_INF, IOPT_RAD, IOPT_ALB, IOPT_SNF, IOPT_TBOT,   IOPT_STC, &
-	        IZ0TLND,                                                      &
+	       IOPT_GLA, IOPT_RSF,  IZ0TLND,                                            &
 		  T_PHY,  QV_CURR,    U_PHY,    V_PHY,    SWDOWN,        GLW, &
 		    P8W,   RAINBL,       SR,                                  &
 		    TSK,      HFX,      QFX,       LH,    GRDFLX,     SMSTAV, &
@@ -2848,7 +2854,7 @@ CONTAINS
 		QSNOWXY, WSLAKEXY,    ZWTXY,     WAXY,      WTXY,     TSNOXY, &
 		ZSNSOXY,  SNICEXY,  SNLIQXY, LFMASSXY,  RTMASSXY,   STMASSXY, &
 		 WOODXY, STBLCPXY, FASTCPXY,      LAI,    XSAIXY,    TAUSSXY, &
-	        SMOISEQ, SMCWTDXY,DEEPRECHXY,  RECHXY,                        & ! IN/OUT Noah MP only
+	        SMOISEQ, SMCWTDXY,DEEPRECHXY,  RECHXY,   GRAINXY,      GDDXY, & ! IN/OUT Noah MP only
 	         T2MVXY,   T2MBXY,   Q2MVXY,   Q2MBXY,                        &
                  TRADXY,    NEEXY,    GPPXY,    NPPXY,    FVEGXY,    RUNSFXY, &
 	        RUNSBXY,   ECANXY,   EDIRXY,  ETRANXY,     FSAXY,     FIRAXY, &
@@ -3189,7 +3195,7 @@ CONTAINS
                      psfc, gsw, glw, rainbl, emiss,                  &
                      ITIMESTEP, curr_secs, num_soil_layers, DT,      &
                      anal_interval, xland, xice, albbck, albedo,     &
-                     snoalb, smois, tslb, mavail,T2, Q2,             &
+                     snoalb, smois, tslb, mavail,T2, Q2, qsfc,       &
                      zs, dzs, psih,                                  &
                      landusef,soilctop,soilcbot,vegfra, vegf_px,     &
                      isltyp,ra,rs,lai,imperv,canfra,nlcat,nscat,     &
@@ -6242,7 +6248,7 @@ HFX_SEA, LH_SEA, QFX_SEA, QGH_SEA, QSFC_SEA, TSK_SEA,  &
                      XLAND,HFX,QFX,LH,TSK_LOCAL,FLHC,FLQC,QGH,QSFC,RMOL, &
                      U10,V10,                                      &
                      GZ1OZ0,WSPD,BR,ISFFLX,DX,                     &
-                     SVP1,SVP2,SVP3,SVPT0,EP1,EP2,KARMAN,          &
+                     SVP1,SVP2,SVP3,SVPT0,EP1,EP2,KARMAN,ITIMESTEP,&
                      ids,ide, jds,jde, kds,kde,                    &
                      ims,ime, jms,jme, kms,kme,                    &
                      its,ite, jts,jte, kts,kte                     )
@@ -6300,7 +6306,7 @@ HFX_SEA, LH_SEA, QFX_SEA, QGH_SEA, QSFC_SEA, TSK_SEA,  &
                      XLAND_SEA,HFX_SEA,QFX_SEA,LH_SEA,TSK_SEA,FLHC_SEA,FLQC_SEA,QGH_SEA,QSFC_SEA,RMOL_SEA, &
                      U10_SEA,V10_SEA,                              &
                      GZ1OZ0_SEA,WSPD_SEA,BR_SEA,ISFFLX,DX,         &
-                     SVP1,SVP2,SVP3,SVPT0,EP1,EP2,KARMAN,          &
+                     SVP1,SVP2,SVP3,SVPT0,EP1,EP2,KARMAN,ITIMESTEP,&
                      ids,ide, jds,jde, kds,kde,                    &
                      ims,ime, jms,jme, kms,kme,                    &
                      its,ite, jts,jte, kts,kte                     )

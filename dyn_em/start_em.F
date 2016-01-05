@@ -971,6 +971,7 @@ endif
                       grid%CHXY, grid%FWETXY, grid%SNEQVOXY, grid%ALBOLDXY, grid%QSNOWXY,       &   ! Optional Noah-MP
                       grid%WSLAKEXY, grid%ZWTXY, grid%WAXY, grid%WTXY, grid%LFMASSXY, grid%RTMASSXY, & ! Optional Noah-MP
                       grid%STMASSXY, grid%WOODXY, grid%STBLCPXY, grid%FASTCPXY,                 &   ! Optional Noah-MP
+                      grid%GRAINXY, grid%GDDXY,                                                 &   ! Optional Noah-MP
                       grid%XSAIXY,grid%LAI,                                                     &   ! Optional Noah-MP
                       grid%T2MVXY, grid%T2MBXY, grid%CHSTARXY,                                  &   ! Optional Noah-MP
                       grid%SMOISEQ  ,grid%SMCWTDXY ,grid%RECHXY, grid%DEEPRECHXY, grid%AREAXY,  & ! Optional Noah-MP
@@ -1099,7 +1100,7 @@ endif
                       ,grid%G_URB2D_mosaic,grid%RN_URB2D_mosaic                                      & ! danli mosaic 
                       ,grid%TS_URB2D_mosaic                                                          & ! danli mosaic 
                       ,grid%TS_RUL2D_mosaic                                                          & ! danli mosaic
-                     , P_QNN=P_QNN, F_QNN=F_QNN          &
+!                    , P_QNN=P_QNN, F_QNN=F_QNN          &
                       )
        ENDIF   !tgs
 
