@@ -5,7 +5,17 @@ MODULE module_integrate
 
 CONTAINS
 
-RECURSIVE SUBROUTINE integrate ( grid )
+!---------------------------------------------------------------------------------------------------------------------
+! modified by juanxiong he
+!---------------------------------------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+   RECURSIVE    SUBROUTINE integrate ( grid, radiation)   
+#else
+   RECURSIVE SUBROUTINE integrate ( grid )
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! added by juanxiong he
+!---------------------------------------------------------------------------------------------------------------------
 
 
 
@@ -22,6 +32,17 @@ RECURSIVE SUBROUTINE integrate ( grid )
    !  Input data.
 
    TYPE(domain) , POINTER :: grid
+
+
+!---------------------------------------------------------------------------------------------------------------------
+! added by juanxiong he
+!---------------------------------------------------------------------------------------------------------------------   
+#ifdef CESMCOUPLED
+   logical, optional :: radiation   
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! added by juanxiong he
+!---------------------------------------------------------------------------------------------------------------------
 
 ! module_integrate:integrate
 ! <DESCRIPTION> 
@@ -156,14 +177,37 @@ RECURSIVE SUBROUTINE integrate ( grid )
    LOGICAL , EXTERNAL                     :: wrf_dm_on_monitor
    INTEGER                                :: idum1 , idum2 , ierr , open_status
    LOGICAL                                :: should_do_last_io
+!---------------------------------------------------------------------------------------------------------------------
+! added by juanxiong he
+!---------------------------------------------------------------------------------------------------------------------       
+#ifdef CESMCOUPLED
+   LOGICAL                                :: lradiation
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! added by juanxiong he
+!---------------------------------------------------------------------------------------------------------------------       
 
    ! interface
    INTERFACE
        ! mediation-supplied solver
+!---------------------------------------------------------------------------------------------------------------------
+! added by juanxiong he
+!---------------------------------------------------------------------------------------------------------------------       
+#ifdef CESMCOUPLED
+     SUBROUTINE solve_interface ( grid, radiation )
+       USE module_domain
+       TYPE (domain) grid
+       logical,optional::radiation
+     END SUBROUTINE solve_interface
+#else
      SUBROUTINE solve_interface ( grid )
        USE module_domain
        TYPE (domain) grid
      END SUBROUTINE solve_interface
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! added by juanxiong he
+!---------------------------------------------------------------------------------------------------------------------     
        ! mediation-supplied routine to allow driver to pass time information
        ! down to mediation/model layer
      SUBROUTINE med_calc_model_time ( grid , config_flags )
@@ -269,17 +313,67 @@ RECURSIVE SUBROUTINE integrate ( grid )
 
    ! This allows us to reference the current grid from anywhere beneath 
    ! this point for debugging purposes.  
-   CALL set_current_grid_ptr( grid )
+ 
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!---------------------------------------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+   lradiation = .false.
+   if (present(radiation)) then
+      lradiation = radiation
+   endif
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!-----------------------------------------------------------------------------------------------------------------
+
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!-----------------------------------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+    CALL set_current_grid_ptr( grid )   
+#else
+   if(grid%itimestep.eq.0) CALL set_current_grid_ptr( grid )
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!-----------------------------------------------------------------------------------------------------------------
 
    IF ( .NOT. domain_clockisstoptime( grid ) ) THEN
-      CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!-----------------------------------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+      CALL model_to_grid_config_rec( grid%id , model_config_rec , config_flags )
+#else
+      if(grid%itimestep.eq.0) CALL model_to_grid_config_rec( grid%id , model_config_rec , config_flags )
       IF ( config_flags%grid_allowed ) THEN
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!-----------------------------------------------------------------------------------------------------------------
          CALL domain_clockprint ( 150, grid, 'DEBUG:  top of integrate(),' )
-         DO WHILE ( .NOT. domain_clockisstopsubtime(grid) )
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!-----------------------------------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else
+      DO WHILE ( .NOT. domain_clockisstopsubtime(grid) )
+#endif      
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!-------------------------------------------------------------------------------
             IF ( wrf_dm_on_monitor() ) THEN
                CALL start_timing
             END IF
             CALL med_setup_step ( grid , config_flags )
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!-------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else
             a_nest_was_opened = .false.
             ! for each nest whose time has come...
             DO WHILE ( nests_to_open( grid , nestid , kid ) )
@@ -301,11 +395,36 @@ RECURSIVE SUBROUTINE integrate ( grid )
             IF ( a_nest_was_opened ) THEN
                CALL set_overlaps ( grid )   ! find overlapping and set pointers
             END IF
+#endif
+!-------------------------------------------------------------------------------
+! added by Juanxiong He
+!---------------------------------------------------------------------------------------------------------------------        
 
             ! Accumulation calculation for DFI
             CALL dfi_accumulate ( grid )
 
             CALL med_before_solve_io ( grid , config_flags )
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!---------------------------------------------------------------------------------------------------------------------        
+#ifdef CESMCOUPLED
+               CALL set_current_grid_ptr( grid )
+               CALL wrf_debug( 100 , 'module_integrate: calling solve interface ' )
+               CALL solve_interface ( grid,lradiation )
+               if(lradiation) then 
+   	          IF ( wrf_dm_on_monitor() ) THEN
+                     CALL domain_clock_get ( grid, current_timestr=message2 )
+                     WRITE ( message , FMT = '("main: time ",A," on domain ",I3)' ) TRIM(message2), grid%id
+                     CALL end_timing ( TRIM(message) )
+                  END IF
+                  return
+	       endif 
+               CALL domain_clockadvance ( grid )
+               CALL wrf_debug( 100 , 'module_integrate: back from solve interface ' )
+               ! print lots of time-related information for testing
+               ! switch this on with namelist variable self_test_domain
+               CALL domain_time_test( grid, 'domain_clockadvance' )
+#else     
             grid_ptr => grid
             DO WHILE ( ASSOCIATED( grid_ptr ) )
                CALL set_current_grid_ptr( grid_ptr )
@@ -318,9 +437,19 @@ RECURSIVE SUBROUTINE integrate ( grid )
                CALL domain_time_test( grid_ptr, 'domain_clockadvance' )
                grid_ptr => grid_ptr%sibling
             END DO
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!---------------------------------------------------------------------------------------------------------------------        
             CALL set_current_grid_ptr( grid )
             CALL med_calc_model_time ( grid , config_flags )
             CALL med_after_solve_io ( grid , config_flags )
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!---------------------------------------------------------------------------------------------------------------------        
+#ifdef CESMCOUPLED
+
+#else      
             grid_ptr => grid
             DO WHILE ( ASSOCIATED( grid_ptr ) )
                DO kid = 1, max_nests
@@ -354,6 +483,10 @@ RECURSIVE SUBROUTINE integrate ( grid )
                grid_ptr => grid_ptr%sibling
             END DO
             CALL set_current_grid_ptr( grid )
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!---------------------------------------------------------------------------------------------------------------------   
             !  Report on the timing for a single time step.
             IF ( wrf_dm_on_monitor() ) THEN
                CALL domain_clock_get ( grid, current_timestr=message2 )
@@ -369,8 +502,30 @@ RECURSIVE SUBROUTINE integrate ( grid )
                CALL end_timing ( TRIM(message) )
             END IF
             CALL med_endup_step ( grid , config_flags )
-         END DO
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!-----------------------------------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
 
+#else
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!-----------------------------------------------------------------------------------------------------------------
+         END DO
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!-----------------------------------------------------------------------------------------------------------------
+
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!-----------------------------------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+       if( domain_clockisstopsubtime(grid)) then
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!-----------------------------------------------------------------------------------------------------------------
          ! Accumulation calculation for DFI
          CALL dfi_accumulate ( grid )
 
@@ -394,7 +549,25 @@ RECURSIVE SUBROUTINE integrate ( grid )
                CALL med_last_solve_io ( grid , config_flags )
             ENDIF
          ENDIF
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!-----------------------------------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+       elseif (RESTART_NOW) then
+         CALL med_restart_out ( grid , config_flags )
+       endif
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!-----------------------------------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else
       ENDIF
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!-----------------------------------------------------------------------------------------------------------------
    END IF
    
 END SUBROUTINE integrate

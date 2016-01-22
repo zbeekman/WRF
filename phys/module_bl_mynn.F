@@ -35,6 +35,10 @@ MODULE module_bl_mynn
 
   USE module_state_description, only: param_first_scalar, &
        &p_qc, p_qr, p_qi, p_qs, p_qg, p_qnc, p_qni
+
+! RASM/Seefeldt addition to address PGI compiler issue with erf
+  USE error_function, only : erf
+
 !-------------------------------------------------------------------
   IMPLICIT NONE
 !-------------------------------------------------------------------
@@ -1627,7 +1631,8 @@ CONTAINS
          &q2p,pt,rac,qt
     INTEGER :: i,j,k
 
-    REAL :: erf
+! RASM/Seefeldt addition to address PGI compiler issue with erf
+!    REAL :: erf
 
     !JOE: NEW VARIABLES FOR ALTERNATE SIGMA
     REAL::dth,dqw,dzk

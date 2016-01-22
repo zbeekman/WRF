@@ -90,6 +90,24 @@ SUBROUTINE microphysics_driver(                                          &
                       ,TH_OLD                                            &
                       ,QV_OLD                                            &
                       ,xlat,xlong,ivgtyp                                 &
+!-----------------------------------------------------------------------------
+! Alice DuVivier, Mimi Hughes - April 2014
+! Need ice and liquid droplet sizes to couple Morrison to radiation
+! Need latitude and droplet concentration too
+!-----------------------------------------------------------------------------
+                      ,EFFCS,EFFIS                                       &
+                      ,DRPCON                                            &
+!-----------------------------------------------------------------------------
+! end Alice DuVivier, Mimi Hughes
+!----------------------------------------------------------------------------- 
+!-----------------------------------------------------------------------------
+! Amy Solomon- Feb 2015
+! Use rasm_physics to control RASM physics options
+!-----------------------------------------------------------------------------
+                      ,rasm_physics                                      &
+!-----------------------------------------------------------------------------
+! end Amy Solomon
+!----------------------------------------------------------------------------- 
 
                                                    )
 ! Framework
@@ -469,8 +487,25 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                  ,kext_ft_qic,kext_ft_qip,kext_ft_qid &
                  ,kext_ft_qs,kext_ft_qg                           &
                  ,qnwfa_curr,qnifa_curr                           & ! Added by G. Thompson
-                 ,qvolg_curr,qvolh_curr
+                 ,qvolg_curr,qvolh_curr                           &
+!-----------------------------------------------------------------------------
+! Mimi Hughes - October 2013
+! Need ice and liquid droplet sizes to couple Morrison to radiation
+!-----------------------------------------------------------------------------
+                 ,EFFCS,EFFIS         
+!-----------------------------------------------------------------------------
+! end Mimi Hughes
+!-----------------------------------------------------------------------------
 
+!-----------------------------------------------------------------------------
+! Alice DuVivier - April 2014
+! Need Droplet concentration calculations
+!-----------------------------------------------------------------------------
+   REAL, DIMENSION( ims:ime, jms:jme),                            &
+         INTENT(INOUT ) ::                                DRPCON
+!-----------------------------------------------------------------------------
+! end Alice DuVivier
+!-----------------------------------------------------------------------------
 
 
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                  &
@@ -509,7 +544,15 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                                                       ,GRAUPELNCV &
                                                           ,HAILNC &
                                                          ,HAILNCV
-   INTEGER,OPTIONAL,INTENT(IN   )    ::                        id
+   INTEGER,OPTIONAL,INTENT(IN   )    ::                        id &
+!-----------------------------------------------------------------------------
+! Amy Solomon- Feb 2015
+! Use rasm_physics to control RASM microphysics options
+!-----------------------------------------------------------------------------
+                                                    ,rasm_physics                                     
+!-----------------------------------------------------------------------------
+! end Amy Solomon
+!-----------------------------------------------------------------------------
 
    REAL , DIMENSION( ims:ime , jms:jme ) , OPTIONAL ,             &
          INTENT(IN)   ::                                       ht
@@ -978,6 +1021,24 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                  ,EVAPPROD=evapprod,RAINPROD=rainprod               &
 #endif
                  ,PRECR=precr,PRECI=preci,PRECS=precs,PRECG=precg   & ! jdf for wrf-chem
+!-----------------------------------------------------------------------------
+! Alice DuVivier, Mimi Hughes - April 2014
+! Need ice and liquid droplet sizes to couple Morrison to radiation
+! Need latitude for droplet concentration calculation
+!-----------------------------------------------------------------------------
+                    ,EFFCS=EFFCS,EFFIS=EFFIS             &
+                    ,XLAT=XLAT,XLAND=XLAND,DRPCON=DRPCON           &
+!-----------------------------------------------------------------------------
+! end Alice DuVivier, Mimi Hughes
+!----------------------------------------------------------------------------- 
+!-----------------------------------------------------------------------------
+! Amy Solomon- Feb 2015
+! Use namelist parameter rasm_physics to control RASM physics options 
+!-----------------------------------------------------------------------------
+                 ,RASM_PHYSICS=RASM_PHYSICS              &
+!-----------------------------------------------------------------------------
+! end Amy Solomon
+!----------------------------------------------------------------------------- 
                                                                     )
         ELSE
            Call wrf_error_fatal( 'arguments not present for calling morrison two moment')

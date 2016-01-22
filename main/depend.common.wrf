@@ -339,7 +339,6 @@ module_ra_cam_support.o: module_cam_support.o \
 
 module_ra_cam.o: module_ra_cam_support.o \
 		 module_cam_support.o \
-     module_ra_rasm.o  \
 		 module_ra_clWRF_support.o \
                 ../frame/module_wrf_error.o
 
@@ -663,7 +662,6 @@ module_radiation_driver.o: \
                 module_ra_flg.o \
                 module_ra_aerosol.o \
                 module_mp_thompson.o \
-      	        module_ra_rasm.o  \
 		../frame/module_driver_constants.o \
 		../frame/module_state_description.o \
 		../frame/module_dm.o \
@@ -672,7 +670,6 @@ module_radiation_driver.o: \
 		../frame/module_wrf_error.o \
 		../frame/module_configure.o \
 		../share/module_bc.o  \
-		../main/module_wrf_top.o \
 		../share/module_model_constants.o 
 
 module_surface_driver.o: \
@@ -835,7 +832,6 @@ module_mp_wdm6.o :\
 		module_mp_radar.o
 
 module_mp_morr_two_moment.o :\
-    module_ra_rasm.o  \
 		module_mp_radar.o
 
 module_mp_wsm3.o :\
@@ -1211,17 +1207,11 @@ tc_em.o: \
 
 
 
-#--------------------------------------------------------------------
-# Amy Solomon- Feb 2015
-# modified for RASM coupling
-#--------------------------------------------------------------------
-wrf.o:  atm_comp_mct.o
+wrf.o:  ../main/module_wrf_top.o
 
-wrf_ESMFMod.o:  act_comp_mct.o
+wrf_ESMFMod.o:  ../main/module_wrf_top.o
 
 wrf_SST_ESMF.o:  wrf_ESMFMod.o
-
-wrf_instance.o: $(OBJROOT)/csm_share/seq_comm_mct.o
 
 module_wrf_top.o: ../frame/module_machine.o \
                   ../frame/module_domain.o \
@@ -1233,30 +1223,6 @@ module_wrf_top.o: ../frame/module_machine.o \
                   ../frame/module_state_description.o \
                   ../frame/module_cpl.o \
                   $(ESMF_MOD_DEPENDENCE)
-
-atm_comp_mct.o: ../frame/module_machine.o \
-		../frame/module_domain.o \
-		../frame/module_integrate.o \
-		../frame/module_driver_constants.o \
-		../frame/module_configure.o \
-		../frame/module_timing.o \
-		../frame/module_wrf_error.o \
-		../frame/module_state_description.o\
-		../frame/module_dm.o \
-		../frame/module_comm_dm.o \
-		../share/module_io_domain.o \
-		../share/module_io_wrf.o \
-		../frame/module_io.o \
-                ../phys/module_ra_rasm.o \
-		module_wrf_top.o \
-		wrf_instance.o \
-		$(OBJROOT)/csm_share/seq_flds_mod.o \
-		$(OBJROOT)/csm_share/seq_infodata_mod.o \
-		$(OBJROOT)/csm_share/seq_timemgr_mod.o \
-		$(OBJROOT)/csm_share/seq_cdata_mod.o \
-		$(OBJROOT)/csm_share/mct_mod.o \
-		$(ESMF_MOD_DEPENDENCE)
-#		$(OBJROOT)/csm_share/esmf_mod.o \
 
 # End of DEPENDENCIES for main
 

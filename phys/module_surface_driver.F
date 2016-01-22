@@ -1792,6 +1792,15 @@ CONTAINS
            PRESENT(mol)        .AND.  PRESENT(regime)  .AND.    &
                                                       .TRUE. ) THEN
          CALL wrf_debug( 100, 'in SFCLAY' )
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!
+! This change comments out fracational sea ice wrapper for YSU surface layer
+! scheme (SFCLAYSCHEME). - Matt Higgins - 21 Sep 2010
+!---------------------------------------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else
          IF ( FRACTIONAL_SEAICE == 1 ) THEN
             CALL SFCLAY_SEAICE_WRAPPER(u_phytmp,v_phytmp,t_phy,qv_curr,&
                  p_phy,dz8w,cp,g,rcp,r_d,xlv,psfc,chs,chs2,cqs2,cpm, &
@@ -1811,6 +1820,10 @@ CONTAINS
                  ustm,ck,cka,cd,cda,isftcflx,iz0tlnd,                &
                  sf_surface_physics  )
          ELSE
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! end Juanxiong He
+!---------------------------------------------------------------------------------------------------------------------
          CALL SFCLAY(u_phytmp,v_phytmp,t_phy,qv_curr,              &
                p_phy,dz8w,cp,g,rcp,r_d,xlv,psfc,chs,chs2,cqs2,cpm, &
                znt,ust,pblh,mavail,zol,mol,regime,psim,psih,fm,fhh, &
@@ -1831,7 +1844,17 @@ CONTAINS
            end do
            end do
 #endif
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He and Amy Solomon- Feb 2015
+!---------------------------------------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else
          ENDIF
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! end Juanxiong He and Amy Solomon
+!---------------------------------------------------------------------------------------------------------------------
        ELSE
          CALL wrf_error_fatal('Lacking arguments for SFCLAY in surface driver')
        ENDIF
@@ -1844,6 +1867,15 @@ CONTAINS
            PRESENT(mol)        .AND.  PRESENT(regime)  .AND.    &
                                                       .TRUE. ) THEN
          CALL wrf_debug( 100, 'in SFCLAY' )
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!
+! This change comments out fracational sea ice wrapper for YSU surface layer
+! scheme (SFCLAYSCHEME). - Matt Higgins - 21 Sep 2010
+!---------------------------------------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else
          IF ( FRACTIONAL_SEAICE == 1 ) THEN
             CALL SFCLAYREV_SEAICE_WRAPPER(u_phytmp,v_phytmp,t_phy,qv_curr,&
                  p_phy,dz8w,cp,g,rcp,r_d,xlv,psfc,chs,chs2,cqs2,cpm, &
@@ -1863,6 +1895,10 @@ CONTAINS
                  ustm,ck,cka,cd,cda,isftcflx,iz0tlnd,                &
                  sf_surface_physics  )
          ELSE
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! end Juanxiong He
+!---------------------------------------------------------------------------------------------------------------------
          CALL SFCLAYREV(u_phytmp,v_phytmp,t_phy,qv_curr,&
                p_phy,dz8w,cp,g,rcp,r_d,xlv,psfc,chs,chs2,cqs2,cpm, &
                znt,ust,pblh,mavail,zol,mol,regime,psim,psih,fm,fhh, &
@@ -1883,7 +1919,17 @@ CONTAINS
            end do
            end do
 #endif
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He and Amy Solomon- Feb 2015
+!---------------------------------------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else
          ENDIF
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! end Juanxiong He and Amy Solomon
+!---------------------------------------------------------------------------------------------------------------------
        ELSE
          CALL wrf_error_fatal('Lacking arguments for SFCLAY in surface driver')
        ENDIF
@@ -1932,6 +1978,14 @@ CONTAINS
                                                       .TRUE. ) THEN
 
         CALL wrf_debug(100,'in MYJSFC')
+!------------------------------------------------------------------------
+! Matt Higgins - 28 Sep 2010
+! This change comments out fractional sea ice wrapper for MYJ
+! surface layer layer scheme (MYJSFCSCHEME).
+!------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else
         IF ( FRACTIONAL_SEAICE == 1 ) THEN
            CALL MYJSFC_SEAICE_WRAPPER(itimestep,ht,dz8w,             &
                 p_phy,p8w,th_phy,t_phy,                              &
@@ -1957,6 +2011,10 @@ CONTAINS
                 ims,ime, jms,jme, kms,kme,                           &
                 i_start(ij),i_end(ij), j_start(ij),j_end(ij), kts,kte    )
         ELSE
+#endif
+!------------------------------------------------------------------------
+! end Higgins modification
+!------------------------------------------------------------------------
             CALL MYJSFC(itimestep,ht,dz8w,                         &
               p_phy,p8w,th_phy,t_phy,                              &
               qv_curr,qc_curr,                                      &
@@ -1983,7 +2041,19 @@ CONTAINS
          END DO
 #endif         
 
+!------------------------------------------------------------------------
+! Matt Higgins - 28 Sep 2010
+! This change comments out fractional sea ice wrapper for MYJ
+! surface layer layer scheme (MYJSFCSCHEME).
+!------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else
         ENDIF
+#endif
+!------------------------------------------------------------------------
+! end Higgins modification
+!------------------------------------------------------------------------
        ELSE
          CALL wrf_error_fatal('Lacking arguments for MYJSFC in surface driver')
        ENDIF
@@ -2317,6 +2387,15 @@ CONTAINS
      ENDDO
      !$OMP END PARALLEL DO
 
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!
+! These conditional compliation statements prevent the LSMs from being 
+! compiled or run. - Matt Higgins - 21 Sep 2010
+!---------------------------------------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else
      IF (ISFFLX.EQ.0 ) GOTO 430
      !$OMP PARALLEL DO   &
      !$OMP PRIVATE ( ij, i, j, k ) firstprivate(frpcpn)
@@ -3711,6 +3790,10 @@ CONTAINS
      !$OMP END PARALLEL DO
    ENDIF
 #endif
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! end Juanxiong He
+!---------------------------------------------------------------------------------------------------------------------
 ! adding a lake model -- 07/02/2010
    IF ( LakeModel == 1 ) THEN
  

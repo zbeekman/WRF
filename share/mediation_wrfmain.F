@@ -45,8 +45,19 @@ use module_io
    TYPE (grid_config_rec_type) , INTENT(IN)   :: config_flags
   ! Local
    INTEGER                :: fid , ierr , myproc
-   CHARACTER (LEN=80)     :: inpname , rstname, timestr
-   CHARACTER (LEN=80)     :: message
+!-----------------------------------------------------------------------------
+! Mark Seefeldt - Oct 2015
+!-----------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+   CHARACTER (LEN=256)     :: inpname , rstname, timestr
+   CHARACTER (LEN=256)     :: message
+#else
+   CHARACTER (LEN=80)      :: inpname , rstname, timestr
+   CHARACTER (LEN=80)      :: message
+#endif
+!-----------------------------------------------------------------------------
+! end Mark Seefeldt
+!-----------------------------------------------------------------------------
    LOGICAL                :: restart
    LOGICAL, EXTERNAL      :: wrf_dm_on_monitor
 

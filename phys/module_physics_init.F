@@ -2526,6 +2526,14 @@ integer myproc
 
 !-- initialize surface layer scheme
 
+!-----------------------------------------------------------------
+! Juanxiong He
+! Don't initialize surface layer schemes when coupled in RASM 
+!-----------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else
+
    sfclay_select: SELECT CASE(config_flags%sf_sfclay_physics)
 
       CASE (SFCLAYSCHEME)
@@ -2867,6 +2875,10 @@ CALL lsm_mosaic_init(IVGTYP,config_flags%ISWATER,config_flags%ISURBAN,config_fla
       CASE DEFAULT
 
    END SELECT sfc_select
+#endif
+!-----------------------------------------------------------------
+! end Juanxiong He 
+!-----------------------------------------------------------------
 
 #if ( EM_CORE == 1 )
    IF(PRESENT(SF_OCEAN_PHYSICS))THEN

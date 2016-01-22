@@ -32,6 +32,17 @@ MODULE module_domain
    USE module_utility
    USE module_domain_type
 
+!-------------------------------------------------------------------------------
+! Amy Solomon- Feb 2015 
+! added for RASM coupling
+!-------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+   USE ESMF
+#endif
+!-------------------------------------------------------------------------------
+! end Amy Solomon
+!-------------------------------------------------------------------------------
+
    ! In WRFV3, the module_domain_type is defined
    ! in a separaate source file, frame/module_domain_type.F
    ! This enables splitting off the alloc_space_field routine
@@ -2365,34 +2376,85 @@ CONTAINS
         CALL domain_clock_get( grid, start_time=startTime )
         IF ( interval_only ) THEN
            grid%io_intervals( alarm_id ) = interval
+!-------------------------------------------------------------------------------
+!added by Juanxiong He
+!-------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+           grid%alarms( alarm_id ) = &
+             WRFU_AlarmCreate( name='interval_only',clock=grid%domain_clock, &
+                               RingInterval=interval,   &
+                               rc=rc )
+#else
            grid%alarms( alarm_id ) = &
              WRFU_AlarmCreate( clock=grid%domain_clock, &
                                RingInterval=interval,   &
                                rc=rc )
+#endif
+!-------------------------------------------------------------------------------
+!added by Juanxiong He
+!------------------------------------------------------------------------------- 
+
         ELSE IF ( no_args ) THEN
            grid%alarms( alarm_id ) = &
+!-------------------------------------------------------------------------------
+!added by Juanxiong He
+!------------------------------------------------------------------------------- 
+#ifdef CESMCOUPLED
+             WRFU_AlarmCreate( name='no_args',clock=grid%domain_clock, &
+                               RingTime=startTime,      &
+                               rc=rc )
+#else
              WRFU_AlarmCreate( clock=grid%domain_clock, &
                                RingTime=startTime,      &
                                rc=rc )
+#endif
+!-------------------------------------------------------------------------------
+!added by Juanxiong He
+!------------------------------------------------------------------------------- 
+
         ELSE IF ( all_args ) THEN
            grid%io_intervals( alarm_id ) = interval
            grid%alarms( alarm_id ) = &
+!-------------------------------------------------------------------------------
+!added by Juanxiong He
+!-------------------------------------------------------------------------------  
+#ifdef CESMCOUPLED
+             WRFU_AlarmCreate( name='all_args',clock=grid%domain_clock,  &
+                               RingTime=startTime + begin_time, &
+                               RingInterval=interval,           &
+                               StopTime=startTime + end_time,   &
+                               rc=rc )
+#else
              WRFU_AlarmCreate( clock=grid%domain_clock,         &
                                RingTime=startTime + begin_time, &
                                RingInterval=interval,           &
                                StopTime=startTime + end_time,   &
                                rc=rc )
+#endif      
+!-------------------------------------------------------------------------------
+!added by Juanxiong He
+!------------------------------------------------------------------------------- 
+
         ENDIF
         IF ( rc /= WRFU_SUCCESS ) THEN
           CALL wrf_error_fatal ( &
             'domain_alarm_create:  WRFU_AlarmCreate() failed' )
         ENDIF
-        CALL WRFU_AlarmRingerOff( grid%alarms( alarm_id ) , rc=rc )
-        IF ( rc /= WRFU_SUCCESS ) THEN
-          CALL wrf_error_fatal ( &
-            'domain_alarm_create:  WRFU_AlarmRingerOff() failed' )
-        ENDIF
         grid%alarms_created( alarm_id ) = .TRUE.
+!-------------------------------------------------------------------------------
+!reset the PrevRingTime for all alarm signal except restart_alarm
+!added by Juanxiong He
+!-------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+       if(all_args) then
+        rc=grid%domain_clock%clockint%NumAlarms
+        grid%domain_clock%clockint%AlarmList(rc)%alarmint%PrevRingTime=&
+        grid%domain_clock%clockint%AlarmList(rc)%alarmint%RingTime
+      endif
+#endif
+!-------------------------------------------------------------------------------
+!added by Juanxiong He
+!-------------------------------------------------------------------------------      
       END SUBROUTINE domain_alarm_create
 
 

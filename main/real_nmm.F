@@ -96,7 +96,18 @@ PROGRAM real_data
 
 !!!!   CALL init_modules
    CALL init_modules(1)   ! Phase 1 returns after MPI_INIT() (if it is called)
+!--------------------------------------------------------------------
+! Amy Solomon- Feb 2015
+! modified for RASM coupling
+!--------------------------------------------------------------------
+#ifdef CESMCOUPLED
+   CALL WRFU_Initialize( defaultCalKind=WRFU_CALKIND_GREGORIAN, rc=rc )
+#else
    CALL WRFU_Initialize( defaultCalKind=WRFU_CAL_GREGORIAN, rc=rc )
+#endif
+!--------------------------------------------------------------------
+! end Amy Solomon
+!--------------------------------------------------------------------
    CALL init_modules(2)   ! Phase 2 resumes after MPI_INIT() (if it is called)
 
    !  The configuration switches mostly come from the NAMELIST input.

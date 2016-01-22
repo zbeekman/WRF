@@ -3,6 +3,13 @@
 
 PROGRAM wrf
 
+!--------------------------------------------------------------------
+! Amy Solomon- Feb 2015
+! modified for RASM coupling
+!--------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else
    USE module_wrf_top, only : wrf_init, wrf_dfi, wrf_run, wrf_finalize
 
 !<DESCRIPTION>
@@ -32,6 +39,7 @@ PROGRAM wrf
 
   ! WRF model clean-up.  This calls MPI_FINALIZE() for DM parallel runs.  
   CALL wrf_finalize
+#endif
 
 END PROGRAM wrf
 

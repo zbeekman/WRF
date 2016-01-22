@@ -1027,9 +1027,21 @@ CONTAINS
       CHS=AKHS
       CHS2=AKHS02
       CQS2=AKHS02
+!----------------------------------------------------------------------
+! Matt Higgins - 21 Sep 2010
+! Conditional compilation prevents sensible and latent heat flux from
+! being calculated by module.
+!----------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else
       HFX=-RLOW*CP*HSFLX
       QFX=-RLOW*HLFLX*WETM
       FLX_LH=XLV*QFX
+#endif
+!----------------------------------------------------------------------
+! end Higgins modification
+!----------------------------------------------------------------------
       FLHC=RLOW*CP*AKHS
       FLQC=RLOW*AKHS*WETM
 !!!   QGH=PQ0/PSHLTR*EXP(A2S*(TSK-A3S)/(TSK-A4S))

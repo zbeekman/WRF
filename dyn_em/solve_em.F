@@ -1,6 +1,16 @@
 !WRF:MEDIATION_LAYER:SOLVER
 
+!--------------------------------------------------
+! modified by Juanxiong He and Amy Solomon Feb 2015
+!--------------------------------------------------
+#ifdef CESMCOUPLED
+SUBROUTINE solve_em ( grid , config_flags, radiation  &
+#else
 SUBROUTINE solve_em ( grid , config_flags  &
+#endif
+!--------------------------------------------------
+! end Juanxiong He and Amy Solomon
+!--------------------------------------------------
 ! Arguments generated from Registry
 #include "dummy_new_args.inc"
 !
@@ -76,6 +86,17 @@ SUBROUTINE solve_em ( grid , config_flags  &
    USE module_avgflx_em, ONLY : zero_avgflx, upd_avgflx
    USE module_cpl, ONLY : coupler_on, cpl_settime, cpl_store_input
 
+!--------------------------------------------------
+! Amy Solomon Feb 2015
+! RASM added module
+! variables for RASM statistics
+!--------------------------------------------------
+   USE module_streams
+   USE module_diag_misc
+!--------------------------------------------------
+! end Amy Solomon
+!--------------------------------------------------
+
    IMPLICIT NONE
 
    !  Input data.
@@ -87,6 +108,16 @@ SUBROUTINE solve_em ( grid , config_flags  &
 
    !  Structure that contains run-time configuration (namelist) data for domain
    TYPE (grid_config_rec_type) , INTENT(IN)          :: config_flags
+
+!-----------------------  
+! added by Juanxiong He 
+!-----------------------  
+#ifdef CESMCOUPLED
+   logical :: radiation   
+#endif
+!-----------------------  
+! end Juanxiong He 
+!-----------------------  
 
    ! Local data
 
@@ -175,6 +206,17 @@ SUBROUTINE solve_em ( grid , config_flags  &
    INTEGER, PARAMETER                         :: precision = 100
    INTEGER                                    :: num, den
    TYPE(WRFU_TimeInterval)                    :: dtInterval, intervaltime,restartinterval
+
+!-------------------------------------------------------
+! Amy Solomon- Feb 2015
+! variables for RASM statistics
+!-------------------------------------------------------
+   TYPE(WRFU_Time)    :: stepTime           ! current time associated with current simulation step
+   INTEGER            :: freq_out           ! interval type
+   INTEGER            :: stats_interval     ! avg history interval
+!-------------------------------------------------------
+! end Amy Solomon
+!-------------------------------------------------------
 
 ! Define benchmarking timers if -DBENCH is compiled
 #include <bench_solve_em_def.h>
@@ -696,8 +738,17 @@ BENCH_END(set_phys_bc_tim)
                              , tke_tend                         &
                              , config_flags%use_adaptive_time_step &
                              , curr_secs                        &
+!--------------------------------------------------
+! modified by Juanxiong He and Amy Solomon Feb 2015
+!--------------------------------------------------
+#ifndef CESMCOUPLED
                              , psim , psih , wspd , gz1oz0      &
-                             , br , chklowq                     &
+                             , br                               &
+#endif
+!--------------------------------------------------
+! end Juanxiong He and Amy Solomon Feb 2015
+!--------------------------------------------------
+                             , chklowq                          &
                              , cu_act_flag , hol , th_phy       &
                              , pi_phy , p_phy , grid%t_phy      &
                              , dz8w , p8w , t8w                 &
@@ -710,7 +761,26 @@ BENCH_END(set_phys_bc_tim)
                              , ipsy, ipey, jpsy, jpey, kpsy, kpey    &
                              , k_start , k_end                  &
                              , f_flux                           &
+!------------------------------------------------------------
+! added by Juanxiong He
+!------------------------------------------------------------     
+#ifdef CESMCOUPLED
+                            ,radiation)       
+#else
                             )
+#endif
+
+          
+#ifdef CESMCOUPLED
+     if(radiation) then 
+        DEALLOCATE(max_vert_cfl_tmp)
+        DEALLOCATE(max_horiz_cfl_tmp)
+        return
+     endif 
+#endif
+!------------------------------------------------------------
+! end Juanxiong He
+!------------------------------------------------------------ 
 
 #ifdef DM_PARALLEL
        IF ( config_flags%bl_pbl_physics == MYNNPBLSCHEME2 .OR. &
@@ -730,8 +800,17 @@ BENCH_END(set_phys_bc_tim)
                              , ph_tendf, mu_tendf               &
                              , tke_tend                         &
                              , adapt_step_flag , curr_secs      &
+!------------------------------------------------------------  
+! modified by Juanxiong He 
+!------------------------------------------------------------  
+#ifndef CESMCOUPLED
                              , psim , psih , wspd , gz1oz0      &
-                             , br , chklowq                     &
+                             , br                               &
+#endif
+!------------------------------------------------------------  
+! end Juanxiong He 
+!------------------------------------------------------------  
+                             , chklowq                          &
                              , cu_act_flag , hol , th_phy       &
                              , pi_phy , p_phy , grid%t_phy      &
                              , dz8w , p8w , t8w                 &
@@ -3656,6 +3735,24 @@ BENCH_START(micro_driver_tim)
       &        , QVOLG_CURR=scalar(ims,kms,jms,P_QVOLG), F_QVOLG=F_QVOLG    & ! for nssl_2mom
       &        , QVOLH_CURR=scalar(ims,kms,jms,P_QVOLH), F_QVOLH=F_QVOLH    & ! for nssl_2mom
       &        , qrcuten=grid%rqrcuten, qscuten=grid%rqscuten             &
+!-----------------------------------------------------------------------------
+! Alice DuVivier - April 2014; Mimi Hughes - October 2014
+! Need ice and liquid droplet sizes to couple Morrison to radiation
+! Need latitude and droplet concentration
+!-----------------------------------------------------------------------------
+      &        , EFFCS=grid%effcs, EFFIS=grid%effis                       &
+      &        , DRPCON=grid%drpcon                                       &
+!-----------------------------------------------------------------------------
+! end DuVivier/Hughes modifications
+!-----------------------------------------------------------------------------
+!-----------------------------------------------------------------------------
+! Amy Solomon- Feb 2015
+! Use rasm_physics to control RASM microphysics options
+!-----------------------------------------------------------------------------
+      &        , RASM_PHYSICS=config_flags%rasm_physics                      &
+!-----------------------------------------------------------------------------
+! end Amy Solomon
+!-----------------------------------------------------------------------------
       &        , qicuten=grid%rqicuten,mu=grid%mut                        &
       &        , HAIL=config_flags%gsfcgce_hail                           & ! for gsfcgce
       &        , ICE2=config_flags%gsfcgce_2ice                           & ! for gsfcgce
@@ -4460,6 +4557,144 @@ BENCH_END(bc_2d_tim)
                             ipsy, ipey, jpsy, jpey, kpsy, kpey   )
 
 
+
+!-----------------------------------------------------------------------
+! Amy Solomon- Feb 2015
+! RASM Statistics
+!--------------------------------------------------------------
+
+   IF ((config_flags%mean_freq > 0) .and. (config_flags%mean_interval > 0)) THEN
+
+      WRITE(message, *) "RASM Statistics: ON  ...................."
+      CALL wrf_debug(200, message)  
+
+      ! set mean interval used to average data
+      freq_out = config_flags%mean_freq
+      
+      IF ( freq_out .eq. MONTHLY) THEN  
+         stats_interval = (config_flags%run_days + 1) * 24 * 60 * 60
+         WRITE(message, *) "RASM Statistics: Set average output to MONTHLY_INTERVAL ... "
+         CALL wrf_debug(200, message) 
+      ELSE IF (freq_out .eq. DAYS ) THEN
+         stats_interval = config_flags%mean_interval  * 24 * 60 * 60
+         WRITE(message, *) "RASM Statistics: Set average output to DAYS  ... stats_interval (secs) =", stats_interval
+         CALL wrf_debug(200, message)   
+      ELSE IF (freq_out .eq. HRS ) THEN    
+         stats_interval =  config_flags%mean_interval * 60 * 60
+         WRITE(message, *) "RASM Statistics: Set average output to HRS  ... stats_interval (secs) =", stats_interval
+         CALL wrf_debug(200, message)  
+      ELSE IF (freq_out .eq. MINS ) THEN    
+         stats_interval = config_flags%mean_interval * 60
+         WRITE(message, *) "RASM Statistics: Set average output to MINS  ... stats_interval (secs) =", stats_interval
+         CALL wrf_debug(200, message)   
+      ELSE IF (freq_out .eq. SECS ) THEN 
+         stats_interval = config_flags%mean_interval
+         WRITE(message, *) "RASM Statistics: Set average output to SECS  ... stats_interval (secs) =", stats_interval
+         CALL wrf_debug(200, message)    
+      ELSE
+         WRITE (wrf_err_message , * )"RASM Statistics:: ERROR -- error -- ERROR -- error : NO valid interval provided in namelist.input, please provided"
+         CALL wrf_error_fatal ( TRIM(wrf_err_message) )  
+      END IF
+
+      CALL wrf_debug ( 200 , ' RASM Statistics: call to mean_output_calc' )
+      CALL domain_clock_get ( grid, current_time=stepTime)
+
+      CALL mean_output_calc(                                                  &
+           &            is_restart=config_flags%restart                       &
+           &           ,mean_interval=stats_interval                          &
+           &           ,PSFC=grid%psfc, PSFCMEAN=grid%psfcmean                &
+           &           ,DT=grid%dt, XTIME=grid%xtime                          &
+           &           ,IDS=ids, IDE=ide, JDS=jds, JDE=jde, KDS=kds, KDE=kde  &
+           &           ,IMS=ims, IME=ime, JMS=jms, JME=jme, KMS=kms, KME=kme  & 
+           &           ,IPS=ips, IPE=ipe, JPS=jps, JPE=jpe, KPS=kps, KPE=kpe  &         
+           &           ,I_START=grid%i_start, I_END=min(grid%i_end, ide-1)    &
+           &           ,J_START=grid%j_start, J_END=min(grid%j_end, jde-1)    &
+           &           ,NUM_TILES=grid%num_tiles, TSK=grid%tsk                &
+           &           ,TSKMEAN=grid%tskmean, T2=grid%t2                      &
+           &           ,TMP2MEAN=grid%tmp2mean, T=grid%t_2, TMEAN=grid%tmean      &
+           &           ,P=grid%p, PB=grid%pb, MOIST=grid%moist(:,:,:,P_QV)    &
+           &           ,HT=grid%ht, PMSLMEAN=grid%pmslmean, HFX=grid%hfx      &
+           &           ,HFXMEAN=grid%hfxmean, LH=grid%lh, LHMEAN=grid%lhmean  &
+           &           ,SWDNB=grid%swdnb, SWDNBMEAN=grid%swdnbmean            &
+           &           ,GLW=grid%glw , GLWMEAN=grid%glwmean, LWUPB=grid%lwupb &
+           &           ,LWUPBMEAN=grid%lwupbmean, SWUPB=grid%swupb            &
+           &           ,SWUPBMEAN=grid%swupbmean, U=grid%u_2                  &
+           &           ,UMEAN=grid%umean, V=grid%v_2, VMEAN=grid%vmean        &
+           &           ,QVMEAN=grid%qvmean, SHUMMEAN=grid%shummean            &
+#ifdef CESMCOUPLED
+           &           ,SWNDR=grid%swndr,SWNDF=grid%swndf     &
+           &           ,SWVDR=grid%swvdr,SWVDF=grid%swvdf     &
+#endif
+           &           ,SWUPT=grid%swupt,SWDNT=grid%swdnt     &
+           &           ,LWUPT=grid%lwupt,LWDNT=grid%lwdnt     &
+           &           ,SWNDRMEAN=grid%swndrmean,SWNDFMEAN=grid%swndfmean     &
+           &           ,SWVDRMEAN=grid%swvdrmean,SWVDFMEAN=grid%swvdfmean     &
+           &           ,SWUPTMEAN=grid%swuptmean,SWDNTMEAN=grid%swdntmean     &
+           &           ,LWUPTMEAN=grid%lwuptmean,LWDNTMEAN=grid%lwdntmean     &
+           &           ,CURRENTTIME=stepTime, OUTPUT_FREQ=freq_out            &
+           &           ,AVGOUTALARM=grid%alarms(AUXHIST5_ALARM)               &
+           &           ,AVGOUTDATESTR=grid%OUTDATEMEAN, NSTEPS=grid%NSTEPSMEAN &
+           &                                                          )
+   ELSE
+      WRITE(message, *) "RASM Statistics: OFF  ...................."
+      CALL wrf_debug(200, message)  
+   ENDIF
+
+   IF (config_flags%diurnal_cycle .eq. DIURNAL_ON) THEN
+      WRITE(message, *) "RASM Statistics: Compute Diurnal Cycle ON  ...................."
+      CALL wrf_debug(200, message)  
+    
+      CALL domain_clock_get ( grid, current_time=stepTime)
+
+      CALL diurnalcycle_output_calc(                                           &
+           is_restart=config_flags%restart, PSFC=grid%psfc                     &
+           ,PSFCMEAN=grid%psfcmean_dtmp,DT=grid%dt, XTIME=grid%xtime           &
+           ,IDS=ids, IDE=ide, JDS=jds, JDE=jde, KDS=kds, KDE=kde  &
+           ,IMS=ims, IME=ime, JMS=jms, JME=jme, KMS=kms, KME=kme  & 
+           ,IPS=ips, IPE=ipe, JPS=jps, JPE=jpe, KPS=kps, KPE=kpe  &         
+           ,I_START=grid%i_start, I_END=min(grid%i_end, ide-1)    &
+           ,J_START=grid%j_start, J_END=min(grid%j_end, jde-1)    &
+           ,NUM_TILES=grid%num_tiles             &
+           ,TSK=grid%tsk,TSKMEAN=grid%tskmean_dtmp, T2=grid%t2                 &
+           ,TMP2MEAN=grid%tmp2mean_dtmp, T=grid%t_2, TMEAN=grid%tmean_dtmp         &
+           ,P=grid%p, PB=grid%pb, MOIST=grid%moist(:,:,:,P_QV)                 &
+           ,HFX=grid%hfx, HFXMEAN=grid%hfxmean_dtmp, LH=grid%lh                &
+           ,LHMEAN=grid%lhmean_dtmp, SWDNB=grid%swdnb                          &
+           ,SWDNBMEAN=grid%swdnbmean_dtmp, GLW=grid%glw                        &
+           ,GLWMEAN=grid%glwmean_dtmp, LWUPB=grid%lwupb                        &
+           ,LWUPBMEAN=grid%lwupbmean_dtmp, SWUPB=grid%swupb                    &
+           ,SWUPBMEAN=grid%swupbmean_dtmp, U=grid%u_2                          &
+           ,UMEAN=grid%umean_dtmp, V=grid%v_2, VMEAN=grid%vmean_dtmp           &
+           ,QVMEAN=grid%qvmean_dtmp, SHUMMEAN=grid%shummean_dtmp               &
+#ifdef CESMCOUPLED
+           ,SWNDR=grid%swndr,SWNDF=grid%swndf, SWVDR=grid%swvdr                &
+           ,SWVDF=grid%swvdf                                                   &
+#endif
+           ,SWNDRMEAN=grid%swndrmean_dtmp                                      &
+           ,SWNDFMEAN=grid%swndfmean_dtmp, SWVDRMEAN=grid%swvdrmean_dtmp       &
+           ,SWVDFMEAN=grid%swvdfmean_dtmp, U10=grid%u10                        &
+           ,U10MEAN=grid%u10mean_dtmp, V10=grid%v10, v10MEAN=grid%v10mean_dtmp &
+           ,Q2=grid%q2, Q2MEAN=grid%q2mean_dtmp,CURRENTTIME=stepTime           &
+           ,AVGOUTALARM=grid%alarms(AUXHIST6_ALARM)                            &
+           ,DIURNOUTDATESTR=grid%OUTDATE_DIURN                                 &
+           ,AVG_NSTEPS=grid%NSTEPSMEAN_DIURN, DIURNAL_NSTEPS=grid%NSTEPS_DIURN &
+           ,PSFCDIURNAL=grid%PSFC_DIURN, TSKDIURNAL=grid%TSK_DIURN             &
+           ,T2DIURNAL=grid%T2_DIURN, TDIURNAL=grid%T_DIURN                     &
+           ,HFXDIURNAL=grid%HFX_DIURN, LHDIURNAL=grid%LH_DIURN                 &
+           ,SWDNBDIURNAL=grid%SWDNB_DIURN, GLWDIURNAL=grid%GLW_DIURN               &
+           ,LWUPBDIURNAL=grid%LWUPB_DIURN, SWUPBDIURNAL=grid%SWUPB_DIURN           &
+           ,UDIURNAL=grid%U_DIURN, VDIURNAL=grid%V_DIURN ,QVDIURNAL=grid%QV_DIURN  &
+           ,SHUMDIURNAL=grid%SHUM_DIURN, SWNDRDIURNAL=grid%SWNDR_DIURN             &
+           ,SWNDFDIURNAL=grid%SWNDF_DIURN, SWVDRDIURNAL=grid%SWVDR_DIURN           &
+           ,SWVDFDIURNAL=grid%SWVDF_DIURN, U10DIURNAL=grid%U10_DIURN               &
+           ,V10DIURNAL=grid%V10_DIURN, Q2DIURNAL=grid%Q2_DIURN )
+   ELSE
+      WRITE(message, *) "RASM Statistics: Compute Diurnal Cycle OFF  ...................."
+      CALL wrf_debug(200, message)  
+   ENDIF
+!-----------------------------------------------------------------------
+! end Amy Solomon
+!--------------------------------------------------------------
 
 #ifdef DM_PARALLEL
 !-----------------------------------------------------------------------

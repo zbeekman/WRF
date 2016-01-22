@@ -25,32 +25,22 @@ SRC_EXTENSIONS=.C .c .cpp .cxx .F90 .F .f90
 #  RULES for compilation of C and C++ code
 #
 .SUFFIXES: .c .C .cpp .cxx .F90 .F .f90
-
-#------------------------------------------------------------
-# Amy Solomon- Feb 2015
-# Remove debug and sys_define s flags for RASM
-#------------------------------------------------------------
-
 .C.o:
-	$(CXX) $(SYS_CXX_INCLUDES) $(SYS_C_INCLUDES) $(CXX_INCLUDES) $(CXXFLAGS) -c $<
+	$(CXX) $(SYS_CXX_INCLUDES) $(SYS_C_INCLUDES) $(CXX_INCLUDES) $(CXXFLAGS) $(SYS_DEFINES) $(DEBUG) -c $<
 .c.o:
-	$(CC) $(SYS_C_INCLUDES) $(C_INCLUDES) $(CFLAGS) -c $<
+	$(CC) $(SYS_C_INCLUDES) $(C_INCLUDES) $(CFLAGS) $(SYS_DEFINES) $(DEBUG) -c $<
 .cxx.o:
-	$(CXX) $(SYS_CXX_INCLUDES) $(SYS_C_INCLUDES) $(CXX_INCLUDES) $(CXXFLAGS) -c $<
+	$(CXX) $(SYS_CXX_INCLUDES) $(SYS_C_INCLUDES) $(CXX_INCLUDES) $(CXXFLAGS) $(SYS_DEFINES) $(DEBUG) -c $<
 .cpp.o:
-	$(CXX) $(SYS_CXX_INCLUDES) $(SYS_C_INCLUDES) $(CXX_INCLUDES) $(CXXFLAGS) -c $<
+	$(CXX) $(SYS_CXX_INCLUDES) $(SYS_C_INCLUDES) $(CXX_INCLUDES) $(CXXFLAGS) $(SYS_DEFINES) $(DEBUG) -c $<
 
 .F90.o:
-	$(FC) $(SYS_F_INCLUDES) $(F_INCLUDES) $(FCFLAGS) $(FORMAT) -c $<
+	$(FC) $(SYS_F_INCLUDES) $(F_INCLUDES) $(FCFLAGS) $(SYS_DEFINES) $(DEBUG) $(FORMAT) -c $<
 
 .F.o:
 	$(RM) $@
 	$(CPP) $(CPPFLAGS) $(TRADFLAG) $(SYS_F_INCLUDES) $(F_INCLUDES) $*.F > $*.f90
-	$(FC) $(SYS_F_INCLUDES) $(FCSUFFIX) $(F_INCLUDES) $(FCFLAGS) $(FORMAT) -c $*.f90
+	$(FC) $(SYS_F_INCLUDES) $(FCSUFFIX) $(F_INCLUDES) $(FCFLAGS) $(SYS_DEFINES) $(DEBUG) $(FORMAT) -c $*.f90
 
 .f90.o:
-	$(FC) $(SYS_F_INCLUDES) $(F_INCLUDES) $(FCFLAGS) $(FORMAT) -c $<
-
-#------------------------------------------------------------
-# end Amy Solomon
-#------------------------------------------------------------
+	$(FC) $(SYS_F_INCLUDES) $(F_INCLUDES) $(FCFLAGS) $(SYS_DEFINES) $(DEBUG) $(FORMAT) -c $<

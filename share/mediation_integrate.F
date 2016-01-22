@@ -93,9 +93,26 @@ SUBROUTINE med_before_solve_io ( grid , config_flags )
      IF ( .FALSE.) THEN
        rc = 1  ! dummy statement
      ELSE IF( WRFU_AlarmIsRinging( grid%alarms( ialarm ), rc=rc ) ) THEN
+!-----------------------------------------------------------------------------
+! Amy Solomon - Feb 2015
+! RASM STATISTICS: check if AVG/DIURNAL IO and alarm are on 
+!-----------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+       IF  ( (ialarm .EQ.  AUXHIST5_ALARM) .AND. (config_flags%restart) .AND. ( currTime .EQ. startTime ) ) THEN
+         !  no AVG history output on the first time of the restart
+       ELSE IF  ( (ialarm .EQ.  AUXHIST6_ALARM) .AND. (config_flags%restart) .AND. ( currTime .EQ. startTime ) ) THEN
+         !  no DIURNAL history output on the first time of the restart
+       ELSE IF ( grid%dfi_stage == DFI_FST .OR. grid%dfi_opt == DFI_NODFI ) THEN
+         CALL med_hist_out ( grid , ialarm, config_flags )
+       ENDIF
+#else
        IF ( grid%dfi_stage == DFI_FST .OR. grid%dfi_opt == DFI_NODFI ) THEN
           CALL med_hist_out ( grid , ialarm, config_flags )
        END IF
+#endif
+!-----------------------------------------------------------------------------
+! end Solomon modification
+!-----------------------------------------------------------------------------
        CALL WRFU_AlarmRingerOff( grid%alarms( ialarm ), rc=rc )
      ENDIF
    ENDDO
@@ -2056,6 +2073,16 @@ SUBROUTINE open_hist_w ( grid , config_flags, stream, alarm_id, &
    USE module_configure	, ONLY : grid_config_rec_type
 !   USE module_bc_time_utilities
    USE module_utility
+!-----------------------------------------------------------------------------
+! Amy Solomon - Feb 2015
+! RASM added modules
+!-----------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+    USE module_streams
+#endif
+!-----------------------------------------------------------------------------
+! end Solomon modification
+!-----------------------------------------------------------------------------
    IMPLICIT NONE
   ! Arguments
    TYPE(domain)                                :: grid
@@ -2090,6 +2117,30 @@ SUBROUTINE open_hist_w ( grid , config_flags, stream, alarm_id, &
    IF ( adjust ) THEN 
      CALL adjust_io_timestr( grid%io_intervals( alarm_id ), CT, ST, timestr )
    ENDIF
+   
+!-----------------------------------------------------------------------------
+! Amy Solomon - Feb 2015
+! RASM STATISTICS: use average out filename when output average data 
+!-----------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+   IF( alarm_id .EQ. AUXHIST5_ALARM .AND. config_flags%mean_freq > 0 .AND. config_flags%mean_interval > 0) THEN
+      WRITE(message, *) "RASM STATS: MEAN AUXHIST5 oid=", oid, " fname=", trim(fname), " alarmI_id=", alarm_id, " Time_outNow=", timestr
+      CALL wrf_debug(200,  message )
+      WRITE(message, *) "RASM STATS: MEAN AUXHIST5 Time_outbefore =...", trim(grid%OUTDATEMEAN)
+      CALL wrf_debug(200,  message )
+      timestr = grid%OUTDATEMEAN  
+   ELSE IF( alarm_id .EQ. AUXHIST6_ALARM .AND. config_flags%diurnal_cycle .EQ. DIURNAL_ON) THEN
+      WRITE(message, *) "RASM STATS: DIURNAL AUXHIST6 oid=", oid, " fname=", trim(fname), " alarmI_id=", alarm_id, " Time_outNow=", timestr
+      CALL wrf_debug(200,  message )
+      WRITE(message, *) "RASM STATS: DIURNAL AUXHIST6 Time_outbefore =...", trim(grid%OUTDATE_DIURN)
+      CALL wrf_debug(200,  message )
+      timestr = grid%OUTDATE_DIURN 
+   ENDIF
+#endif
+!-----------------------------------------------------------------------------
+! end Solomon modification
+!-----------------------------------------------------------------------------
+
    CALL construct_filename2a ( fname , hist_outname, &
                                grid%id , 2 , timestr )
    stream_l = stream-auxhist1_only+1
@@ -2100,6 +2151,15 @@ SUBROUTINE open_hist_w ( grid , config_flags, stream, alarm_id, &
    ELSE
      WRITE(n2,'("DATASET=AUXHIST",I1)')stream_l
    ENDIF
+!-----------------------------------------------------------------------------
+! Mark Seefeldt - 2015-01-14
+! write history files in single even when specified as double
+   len_n2 = LEN_TRIM(n2)
+   WRITE(n2(len_n2+1:len_n2+19),'(",REAL_OUTPUT_SIZE=4")')
+!-----------------------------------------------------------------------------
+! end Seefeldt modifications
+!-----------------------------------------------------------------------------
+
    IF ( oid .eq. 0 ) THEN
      WRITE ( message , '("open_hist_w : opening ",A," for writing. ")') TRIM ( fname )
      CALL wrf_debug( 1, message )

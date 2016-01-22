@@ -162,7 +162,7 @@ state    real   hgttrop        ij       dyn_em      1        -     i1  "HGTTROP"
 state    real   pmaxw          ij       dyn_em      1        -     i1  "PMAXW"      "Pressure of the max wind speed"     "Pa"
 state    real   pmaxwnn        ij       dyn_em      1        -     i1  "PMAXWNN"    "PMAXW, nearest neighbor interp"     "Pa"
 state    real   ptrop          ij       dyn_em      1        -     i1  "PTROP"      "Pressure of the tropopause"         "Pa"
-state    real   ptropnn        ij       dyn_em      1        -     i1  "PTROPNN"    "PTROP, nearest neighbor interp      "Pa"
+state    real   ptropnn        ij       dyn_em      1        -     i1  "PTROPNN"    "PTROP, nearest neighbor interp"      "Pa"
 state    real   tmaxw          ij       dyn_em      1        -     i1  "TMAXW"      "Temperature of the max wind speed"  "K"
 state    real   ttrop          ij       dyn_em      1        -     i1  "TTROP"      "Temperature of the tropopause"      "K"
 state    real   umaxw          ij       dyn_em      1        X     i1  "UMAXW"      "U-component of the max wind speed"  "m s-1"
@@ -867,14 +867,29 @@ state    real   IMPERV           ij     misc        1         -      i012rhd=(in
 state    real   CANFRA           ij     misc        1         -      i012rhd=(interp_mask_field:lu_index,iswater)u=(copy_fcnm)      "CANFRA"       "Satellite canopy fraction"         "percent"
 
 # sfclay PBL variables
+#----------------------------------------------------------------------------------------------------------------------------------------
+# revised by Juanxiong He
+#----------------------------------------------------------------------------------------------------------------------------------------
+ifdef CESMCOUPLED
+state      real   WSPD           ij     misc        1         -     r         "WSPD"                "Wind speed"                           "m s-1"
+state      real   PSIM           ij     misc        1         -     r         "PSIM"                "SIMILARITY FUNCTION FOR MOMENTUM"     ""
+state      real   PSIH           ij     misc        1         -     r        "PSIH"                "SIMILARITY FUNCTION FOR HEAT"         ""
+state      real   GZ1OZ0         ij     misc        1         -    r         "GZ1OZ0"              "LOG OF Z1 over Z0"                     ""
+state      real   BR             ij     misc        1         -     r         "BR"                  "Bulk Richardson"                       ""
+endif
+ifndef CESMCOUPLED
 i1      real   PSIM           ij     misc        1         -     -         "PSIM"                "SIMILARITY FUNCTION FOR MOMENTUM"     ""
 i1      real   PSIH           ij     misc        1         -     -         "PSIH"                "SIMILARITY FUNCTION FOR HEAT"         ""
-state   real   FM             ij     misc        1         -     -         "FM"                  "INTEGRATED FUNCTION FOR MOMENTUM"     ""
-state   real   FH             ij     misc        1         -     -         "FH"                  "INTEGRATED FUNCTION FOR HEAT"         ""
 i1      real   WSPD           ij     misc        1         -     -         "WSPD"                "Wind speed"                           "m s-1"
 i1      real   GZ1OZ0         ij     misc        1         -     -         "GZ1OZ0"              "LOG OF Z1 over Z0"                     ""
 i1      real   BR             ij     misc        1         -     -         "BR"                  "Bulk Richardson"                       ""
 state   real   ZOL            ij     misc        1         -     -         "ZOL"                 "z/L"                                   ""
+endif
+#----------------------------------------------------------------------------------------------------------------------------------------
+# revised by Juanxiong He
+#----------------------------------------------------------------------------------------------------------------------------------------
+state   real   FM             ij     misc        1         -     -         "FM"                  "INTEGRATED FUNCTION FOR MOMENTUM"     ""
+state   real   FH             ij     misc        1         -     -         "FH"                  "INTEGRATED FUNCTION FOR HEAT"         ""
 
 # ysupbl variables for grims shallow convection
 state   real   WSTAR_YSU      ij     misc        1         -     -        "WSTAR_YSU"           "mixed-layer velocity scale from ysupbl" "m/s"
@@ -1454,10 +1469,10 @@ state    real  OLR              ij      misc        1         -      rh        "
 
 # these next 2 are for the HFSoLE/PET demo; writing these to auxhist1 output over MCEL for coupling
 # with wave model, only if compiled with -DMCELIO, JM 2003/05/29
-state    real  XLAT_U           ij      dyn_em      1         X     i012rh01du=(copy_fcnm)       "XLAT_U"              "LATITUDE, SOUTH IS NEGATIVE"                                          "degree_north"
-state    real  XLONG_U          ij      dyn_em      1         X     i012rh01du=(copy_fcnm)       "XLONG_U"             "LONGITUDE, WEST IS NEGATIVE"                                          "degree_east"
-state    real  XLAT_V           ij      dyn_em      1         Y     i012rh01du=(copy_fcnm)       "XLAT_V"              "LATITUDE, SOUTH IS NEGATIVE"                                          "degree_north"
-state    real  XLONG_V          ij      dyn_em      1         Y     i012rh01du=(copy_fcnm)       "XLONG_V"             "LONGITUDE, WEST IS NEGATIVE"                                          "degree_east"
+state    real  XLAT_U           ij      dyn_em      1         X     i012rh015du=(copy_fcnm)       "XLAT_U"              "LATITUDE, SOUTH IS NEGATIVE"                                          "degree_north"
+state    real  XLONG_U          ij      dyn_em      1         X     i012rh015du=(copy_fcnm)       "XLONG_U"             "LONGITUDE, WEST IS NEGATIVE"                                          "degree_east"
+state    real  XLAT_V           ij      dyn_em      1         Y     i012rh015du=(copy_fcnm)       "XLAT_V"              "LATITUDE, SOUTH IS NEGATIVE"                                          "degree_north"
+state    real  XLONG_V          ij      dyn_em      1         Y     i012rh015du=(copy_fcnm)       "XLONG_V"             "LONGITUDE, WEST IS NEGATIVE"                                          "degree_east"
 state    real  ALBEDO           ij      misc        1         -      rh          "ALBEDO"                   "ALBEDO"
 state    real  CLAT             ij      misc        1         -     i012rhdu=(copy_fcnm)         "CLAT"                "COMPUTATIONAL GRID LATITUDE, SOUTH IS NEGATIVE"                       "degree_north"
 state    real  ALBBCK           ij      misc        1         -     i0124rh   "ALBBCK"                "BACKGROUND ALBEDO"        ""
@@ -1868,12 +1883,27 @@ rconfig   logical all_ic_times            namelist,time_control		1              
 rconfig   integer JULYR                   namelist,time_control		max_domains    0       h    "JULYR"                 ""      ""
 rconfig   integer JULDAY                  namelist,time_control		max_domains    1       h    "JULDAY"                ""      ""
 rconfig   real    GMT                     namelist,time_control		max_domains    0.      h    "GMT"           ""      ""
+#-------------------------------------------------------------------------------------------------------------------------------------
+# Filenames needed for RASM 
+# added by Amy Solomon Feb 2015
+#-------------------------------------------------------------------------------------------------------------------------------------
+ifdef CESMCOUPLED
+rconfig   character  input_inname      namelist,time_control		1  "CCSMCASE.wrf.i<domain>.<date>"          -     "name of input   infile"   ""      ""
+rconfig   character  input_outname     namelist,time_control		1  "CCSMCASE.wrf.i<domain>.<date>"          -     "name of input   outfile"  ""      ""
+rconfig   character  rst_inname        namelist,time_control            1  "CCSMCASE.wrf.r<domain>.<date>"     -     "name of restrt infile"    ""      ""
+rconfig   character  rst_outname       namelist,time_control            1  "CCSMCASE.wrf.r<domain>.<date>"     -     "name of restrt outfile"   ""      ""
+endif
+ifndef CESMCOUPLED
 rconfig   character  input_inname      namelist,time_control		1  "wrfinput_d<domain>"          -     "name of input   infile"   ""      ""
 rconfig   character  input_outname     namelist,time_control		1  "wrfinput_d<domain>"          -     "name of input   outfile"  ""      ""
-rconfig   character  bdy_inname        namelist,time_control		1  "wrfbdy_d<domain>"            -     "name of boundary infile"  ""      ""
-rconfig   character  bdy_outname       namelist,time_control		1  "wrfbdy_d<domain>"            -     "name of boundary outfile" ""      ""
 rconfig   character  rst_inname        namelist,time_control		1  "wrfrst_d<domain>_<date>"     -     "name of restrt infile"    ""      ""
 rconfig   character  rst_outname       namelist,time_control		1  "wrfrst_d<domain>_<date>"     -     "name of restrt outfile"   ""      ""
+endif
+#-------------------------------------------------------------------------------------------------------------------------------------
+# end Amy Solomon
+#-------------------------------------------------------------------------------------------------------------------------------------
+rconfig   character  bdy_inname        namelist,time_control		1  "wrfbdy_d<domain>"            -     "name of boundary infile"  ""      ""
+rconfig   character  bdy_outname       namelist,time_control		1  "wrfbdy_d<domain>"            -     "name of boundary outfile" ""      ""
 rconfig   logical write_input             namelist,time_control		1             .false. -    "write input data for 3dvar etc."              ""      ""
 rconfig   logical write_restart_at_0h     namelist,time_control		1             .false. h    "write_restart_at_0h"              ""      ""
 rconfig   logical write_hist_at_0h_rst    namelist,time_control		1             .false. h    "write_hist_at_0h_rst" "T/F write hist at 0 h of restarted forecast"

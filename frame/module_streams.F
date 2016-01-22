@@ -29,6 +29,16 @@ MODULE module_streams
   INTEGER, PARAMETER :: MAX_WRF_ALARMS    = COMPUTE_VORTEX_CENTER_ALARM  ! WARNING:  MAX_WRF_ALARMS must be
                                                                          ! large enough to include all of
                                                                          ! the alarms declared above.
+!---------------------------------------------------------------------------------------------------------------------
+! modified by juanxiong he
+!---------------------------------------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED 
+  LOGICAL :: RESTART_NOW = .false.   ! set separately RESTART_ALARM (from cesm)
+  LOGICAL :: END_NOW = .false.       ! set separately END OF RUN (from cesm)
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! modified by juanxiong he
+!---------------------------------------------------------------------------------------------------------------------
 
   CONTAINS
     SUBROUTINE init_module_streams

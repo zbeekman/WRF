@@ -15,10 +15,18 @@ PROGRAM tc_data
 #ifdef DM_PARALLEL
    USE module_dm, ONLY: wrf_dm_initialize
 #endif
+#ifdef CESMCOUPLED
+#ifdef NO_LEAP_CALENDAR
+   USE module_symbols_util, ONLY: wrfu_calkind_noleap
+#else
+   USE module_symbols_util, ONLY: wrfu_calkind_gregorian
+#endif
+#else
 #ifdef NO_LEAP_CALENDAR
    USE module_symbols_util, ONLY: wrfu_cal_noleap
 #else
    USE module_symbols_util, ONLY: wrfu_cal_gregorian
+#endif
 #endif
    USE module_utility, ONLY : WRFU_finalize
 
@@ -97,11 +105,26 @@ PROGRAM tc_data
 
    CALL       wrf_debug ( 100 , 'real_em: calling init_modules ' )
    CALL init_modules(1)   ! Phase 1 returns after MPI_INIT() (if it is called)
+!--------------------------------------------------------------------
+! Amy Solomon- Feb 2015
+! modified for RASM coupling
+!--------------------------------------------------------------------
+#ifdef CESMCOUPLED
+#ifdef NO_LEAP_CALENDAR
+   CALL WRFU_Initialize( defaultCalendar=WRFU_CALKIND_NOLEAP, rc=rc )
+#else
+   CALL WRFU_Initialize( defaultCalendar=WRFU_CALKIND_GREGORIAN, rc=rc )
+#endif
+#else
 #ifdef NO_LEAP_CALENDAR
    CALL WRFU_Initialize( defaultCalKind=WRFU_CAL_NOLEAP, rc=rc )
 #else
    CALL WRFU_Initialize( defaultCalKind=WRFU_CAL_GREGORIAN, rc=rc )
 #endif
+#endif
+!--------------------------------------------------------------------
+! end Amy Solomon
+!--------------------------------------------------------------------
    CALL init_modules(2)   ! Phase 2 resumes after MPI_INIT() (if it is called)
 
    !  The configuration switches mostly come from the NAMELIST input.

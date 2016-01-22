@@ -46,6 +46,13 @@ CONTAINS
 !-- R           gas constant for dry air (J/kg/K)
 !-- XLV         latent heat of vaporization for water (J/kg)
 !-- PSFC        surface pressure (Pa)
+!-----------------------------------------------------------------------------
+! DuVivier note: for RACM, roughness length and ustar are passed through 
+! the coupler, so we don't want to change these values in the WRF surface layer.
+! Limits to those values are still allowed for numerical reasons. The value ZL, 
+! which depends on ZNT,is not changed because it is used for flux exchange 
+! coefficients that do not impact RACM.
+!-----------------------------------------------------------------------------
 !-- ZNT         roughness length (m)
 !-- UST         u* in similarity theory (m/s)
 !-- USTM        u* in similarity theory (m/s) without vconv correction
@@ -676,6 +683,85 @@ CONTAINS
         RMOL(I) = ZOL(I)/ZA(I)  
 
   320 CONTINUE                                                                   
+!-------------------------------------------------------------------
+! Start DuVivier changes, 20 Sept. 2012 
+! We need to ensure that the fluxes passed from the coupler match
+! the stability calculated by the surface regime. This should improve
+! the boundary layer structure. As a result, we back out the momentum
+! and heat stability functions and write over the functions previously
+! calculated. 
+!-------------------------------------------------------------------
+! start coupled surface stability
+!-------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+ DO I=its,ite
+   !-----------------------------
+   ! Calculate momentum stability
+   !-----------------------------
+   ! Back this out of u* and overwrite from previous calculation
+
+   IF(UST(I).EQ.0.0)THEN
+      PSIM(I) = 0.0
+   ELSE
+      ! SPECIAL SETTINGS
+      !PSIM(I)=(GZ1OZ0(I)-(KARMAN*MAX(WSPD(I),1.0)/UST(I)))
+      PSIM(I)=(GZ1OZ0(I)-(KARMAN*WSPD(I)/UST(I)))
+   ENDIF
+
+   ! limits to how big/small psi is
+   PSIM(I)=AMAX1(PSIM(I),-10.)
+   PSIM(I)=AMIN1(PSIM(I),0.9*GZ1OZ0(I))
+
+   !-----------------------------
+   ! Calculate stability for 10 and 2m vars
+   !-----------------------------
+   PSIM10(I)= (10./ZA(I)*PSIM(I))
+   PSIM10(I)=AMAX1(PSIM10(I),-10.)
+   PSIM10(I)=AMIN1(PSIM10(I),0.9*GZ10OZ0(I))
+   PSIH10(I)=PSIM10(I)  
+                   
+   PSIM2(I)= (2./ZA(I)*PSIM(I))
+   PSIM2(I)=AMAX1(PSIM2(I),-10.)
+   PSIM2(I)=AMIN1(PSIM2(I),0.9*GZ2OZ0(I))
+   PSIH2(I)=PSIM2(I)
+
+   !-----------------------------
+   ! Calculate heat stability  
+   !-----------------------------
+   ! set heat stability equal to momentum stability
+   PSIH(I)=PSIM(I)
+   
+   ! Ideally we would back out PSIH from the sensible heat flux from coupler
+   ! However, at this time backing out PSIH results in unstable simulations
+   ! for unknown reasons. The issues may be sign differences in HFX from VIC
+   ! and WRF methods (VIC uses a temp gradient; WRF  pot. temp gradient), 
+   ! or too small a heat flux blowing up the calcs. Both would occur in near
+   ! neutral conditions (psim=psih=0). 
+   !The following lines can be tested at a later date.
+   !IF(HFX(I).EQ.0.0)THEN
+   !   PSIH(I) = 0.0
+   !ELSE
+   !   PSIH(I) = GZ1OZ0(I) - ((CPM(I)*RHOX(I)*UST(I)*KARMAN*(THGB(I)-THX(I)))/HFX(I))
+   !ENDIF
+
+   !! limits to how big/small psi is
+   !PSIH(I)=AMAX1(PSIH(I),-10.)
+   !PSIH(I)=AMIN1(PSIH(I),0.9*GZ1OZ0(I))
+ ENDDO
+!-----------------------------
+! End  Stability calculations
+!-----------------------------
+
+#else
+
+#endif
+!-------------------------------------------------------------------
+! end coupled surface layer procedure
+!-------------------------------------------------------------------
+!-------------------------------------------------------------------
+! End DuVivier modifications
+!-------------------------------------------------------------------
 !                                                                                
 !-----COMPUTE THE FRICTIONAL VELOCITY:                                           
 !     ZA(1982) EQS(2.60),(2.61).                                                 
@@ -774,7 +860,22 @@ CONTAINS
            ENDIF
         ENDIF
 ! TO PREVENT OSCILLATIONS AVERAGE WITH OLD VALUE 
+!-----------------------------------------------------------------------------
+! Matt Higgins, 18 Jul 2011
+! We do not want to calculate u*, as u* is imported from land and ocean
+! models. So, this line below _should_ be commented out. However, commenting
+! this line out will result in model instability and cause RACM to crash. This
+! is an area that needs work. As it currently stands, this u* calculation
+! uses 1/2 of the imported u* and 1/2 of a u* calculate right here.
+!-----------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else
         UST(I)=0.5*UST(I)+0.5*KARMAN*WSPD(I)/PSIX                                             
+#endif
+!-----------------------------------------------------------------------------
+! end Higgins modifications
+!-----------------------------------------------------------------------------
 ! TKE coupling: compute ust without vconv for use in tke scheme
         WSPDI(I)=SQRT(UX(I)*UX(I)+VX(I)*VX(I))
         IF ( PRESENT(USTM) ) THEN
@@ -783,9 +884,22 @@ CONTAINS
         U10(I)=UX(I)*PSIX10/PSIX                                    
         V10(I)=VX(I)*PSIX10/PSIX                                   
         TH2(I)=THGB(I)+DTG*PSIT2/PSIT                                
+!-----------------------------------------------------------------------------
+! Start DuVivier changes, 20 Sept. 2012
+! We get the 2m temperature and moisture from the coupler, so we do not want
+! to recalculate it and overwrite it here. The calculation of Q2 and T2 has
+! been commented out. 
+!-----------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else
         Q2(I)=QSFC(I)+(QX(I)-QSFC(I))*PSIQ2/PSIQ                   
 !        T2(I) = TH2(I)*(PSFC(I)/100.)**ROVCP                     
         T2(I) = TH2(I)*(PSFCPA(I)/P1000mb)**ROVCP                     
+#endif
+!-----------------------------------------------------------------------------
+! end DuVivier changes
+!-----------------------------------------------------------------------------
 !       LATER Q2 WILL BE OVERWRITTEN FOR LAND POINTS IN SURFCE     
 !       QA2(I,J) = Q2(I)                                         
 !       UA10(I,J) = U10(I)                                      
@@ -809,10 +923,20 @@ CONTAINS
       IF ( PRESENT(SCM_FORCE_FLUX) ) THEN
          IF (SCM_FORCE_FLUX.EQ.1) GOTO 350              
       ENDIF
+!-----------------------------------------------------------------------------
+! added by juanxiong he
+!-----------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else
       DO i=its,ite
         QFX(i)=0.                                                              
         HFX(i)=0.                                                              
       ENDDO
+#endif
+!-----------------------------------------------------------------------------
+! added by juanxiong he
+!-----------------------------------------------------------------------------
   350 CONTINUE
 
       IF (ISFFLX.EQ.0) GOTO 410                                                
@@ -821,6 +945,15 @@ CONTAINS
                                                                                  
       DO 360 I=its,ite
         IF((XLAND(I)-1.5).GE.0)THEN                                            
+!-----------------------------------------------------------------------------
+! Start DuVivier changes, Jan. 2013
+! Since we're now getting the roughness length passed through the coupler, 
+! changes to roughness length (ZNT) should not be performed in the surface
+! layer code.
+!-----------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else                                          
 !         ZNT(I)=CZO*UST(I)*UST(I)/G+OZO                                   
 ! Since V3.7 (ref: EC Physics document for Cy36r1)
           ZNT(I)=CZO*UST(I)*UST(I)/G+0.11*1.5E-5/UST(I)
@@ -846,6 +979,10 @@ CONTAINS
                 ZNT(I)=MAX(ZNT(I),1.27e-7)
              ENDIF
           ENDIF
+#endif
+!-----------------------------------------------------------------------------
+! ! end DuVivier changes
+!-----------------------------------------------------------------------------
           ZL = ZNT(I)
         ELSE
           ZL = 0.01
@@ -871,15 +1008,31 @@ CONTAINS
         IF (SCM_FORCE_FLUX.EQ.1) GOTO 405                                     
      ENDIF
 !                                                                               
+!-----------------------------------------------------------------------------
+! added by juanxiong he
+!-----------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else
       DO 370 I=its,ite
         QFX(I)=FLQC(I)*(QSFC(I)-QX(I))                                     
         QFX(I)=AMAX1(QFX(I),0.)                                            
         LH(I)=XLV*QFX(I)
   370 CONTINUE                                                                 
+#endif
+!-----------------------------------------------------------------------------
+! added by juanxiong he
+!-----------------------------------------------------------------------------
                                                                                 
 !-----COMPUTE SURFACE HEAT FLUX:                                                 
 !                                                                                
   390 CONTINUE                                                                 
+!-----------------------------------------------------------------------------
+! added by juanxiong he
+!-----------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else
       DO 400 I=its,ite
         IF(XLAND(I)-1.5.GT.0.)THEN                                           
           HFX(I)=FLHC(I)*(THGB(I)-THX(I))                                
@@ -894,6 +1047,10 @@ CONTAINS
           HFX(I)=AMAX1(HFX(I),-250.)                                       
         ENDIF                                                                  
   400 CONTINUE                                                                 
+#endif
+!-----------------------------------------------------------------------------
+! added by juanxiong he
+!-----------------------------------------------------------------------------
 
   405 CONTINUE                                                                 
          

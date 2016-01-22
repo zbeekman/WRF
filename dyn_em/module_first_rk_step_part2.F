@@ -18,8 +18,17 @@ CONTAINS
                              , ph_tendf, mu_tendf               &
                              , tke_tend                         &
                              , adapt_step_flag , curr_secs      &
-                             , psim , psih , wspd , gz1oz0 , br , chklowq &
-                             , cu_act_flag , hol , th_phy        &
+!------------------------------------------------------------
+! Removed by Juanxiong He for coupling
+!------------------------------------------------------------
+#ifndef CESMCOUPLED 
+                             , psim , psih , wspd , gz1oz0 , br & 
+#endif
+!------------------------------------------------------------
+! end Juanxiong He
+!------------------------------------------------------------
+                             , chklowq                          &
+                             , cu_act_flag , hol , th_phy       &
                              , pi_phy , p_phy , t_phy     &
                              , dz8w , p8w , t8w           &
                              , nba_mij, n_nba_mij         & !JDM
@@ -88,11 +97,19 @@ CONTAINS
     REAL    ,DIMENSION(ims:ime,kms:kme,jms:jme,num_scalar),INTENT(INOUT)   :: scalar_tend
     REAL    ,DIMENSION(ims:ime,kms:kme,jms:jme,num_fdda3d),INTENT(INOUT)  :: fdda3d
     REAL    ,DIMENSION(ims:ime,1:1,jms:jme,num_fdda2d),INTENT(INOUT)      :: fdda2d
+!------------------------------------------------------------
+! Removed by Juanxiong He for coupling
+!------------------------------------------------------------
+#ifndef CESMCOUPLED 
     REAL    ,DIMENSION(ims:ime,jms:jme), INTENT(INOUT)         :: psim
     REAL    ,DIMENSION(ims:ime,jms:jme), INTENT(INOUT)         :: psih
     REAL    ,DIMENSION(ims:ime,jms:jme), INTENT(INOUT)         :: wspd
     REAL    ,DIMENSION(ims:ime,jms:jme), INTENT(INOUT)         :: gz1oz0
     REAL    ,DIMENSION(ims:ime,jms:jme), INTENT(INOUT)         :: br
+#endif
+!------------------------------------------------------------
+! end Juanxiong He
+!------------------------------------------------------------
     REAL    ,DIMENSION(ims:ime,jms:jme), INTENT(INOUT)         :: chklowq
     LOGICAL ,DIMENSION(ims:ime,jms:jme), INTENT(INOUT)         :: cu_act_flag
     REAL    ,DIMENSION(ims:ime,jms:jme), INTENT(INOUT)         :: hol

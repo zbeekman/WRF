@@ -63,6 +63,15 @@ CONTAINS
               , cldfra_dp, cldfra_sh                & ! ckay for sub-grid cloud fraction
               , re_cloud, re_ice, re_snow           & ! G. Thompson
               , has_reqc, has_reqi, has_reqs        & ! G. Thompson
+!-----------------------------------------------------------------------------
+! Alice DuVivier - July 2014; Mimi Hughes - October 2013
+! Need ice and liquid droplet sizes to couple Morrison to radiation (CAM and RRTMG)
+!-----------------------------------------------------------------------------
+              ,effcs,effis                                                &
+              ,rad_micro_cpl                                              &
+!-----------------------------------------------------------------------------
+! end DuVivier/Hughes modifications
+!----------------------------------------------------------------------------- 
               , PB                                                &
               , F_ICE_PHY,F_RAIN_PHY       &
               , QV, F_QV                     &
@@ -91,6 +100,17 @@ CONTAINS
               ,LWCF                           &
               ,SWCF                           &
               ,OLR                            &
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He for RACM coupling
+!---------------------------------------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+              ,LWUPS                                                      &   
+              ,SWNDR,SWVDR,SWNDF,SWVDF                                    & ! Optional
+              ,RASDIR,RALDIR,RASDIF,RALDIF                                & ! Optional
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!---------------------------------------------------------------------------------------------------------------------
               ,aerodm, PINA, aodtot           &
               ,OZMIXM, PIN                    &
               ,M_PS_1, M_PS_2, AEROSOLC_1     &
@@ -182,6 +202,15 @@ CONTAINS
 
    USE module_ra_aerosol    , ONLY : calc_aerosol_goddard_sw, &
                                      calc_aerosol_rrtmg_sw
+!----------------------------------------------------------------------------------------
+! These lines added Andrew Roberts June 2013 to sync WRF and CPL sun position
+!----------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+   USE module_ra_rasm
+#endif
+!----------------------------------------------------------------------------------------
+! end Andrew Roberts
+!----------------------------------------------------------------------------------------
 
    !  This driver calls subroutines for the radiation parameterizations.
    !
@@ -484,7 +513,21 @@ CONTAINS
    REAL, DIMENSION( ims:ime, jms:jme ),          OPTIONAL ,       &
          INTENT(INOUT)  ::                                  SWCF, &
                                                             LWCF, &
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He for RACM coupling
+!---------------------------------------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+                                                             OLR, &
+                                     LWUPS,                       & 
+                                     SWNDR,SWVDR,SWNDF,SWVDF,     &
+                                     RASDIR,RALDIR,RASDIF,RALDIF
+#else 
                                                              OLR
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!---------------------------------------------------------------------------------------------------------------------	
+
 ! ---- fds (06/2010) ssib alb components ------------
    REAL, DIMENSION( ims:ime, jms:jme ),          OPTIONAL ,       &
          INTENT(IN   )  ::                            ALSWVISDIR, &
@@ -623,7 +666,18 @@ CONTAINS
          OPTIONAL,                                                &
          INTENT(INOUT ) ::                                        &
                                                                pb &
-                                        ,qv,qc,qr,qi,qs,qg,qndrop
+                                        ,qv,qc,qr,qi,qs,qg,qndrop &
+!-----------------------------------------------------------------------------
+! Alice DuVivier - July 2014; Mimi Hughes - October 2013
+! Need ice and liquid droplet sizes to couple Morrison to radiation (CAM and RRTMG)
+!-----------------------------------------------------------------------------
+                                        ,effcs,effis
+
+   INTEGER, INTENT(IN  ),OPTIONAL ::    rad_micro_cpl
+!-----------------------------------------------------------------------------
+! end DuVivier/Hughes modifications
+!----------------------------------------------------------------------------- 
+
 
    LOGICAL, OPTIONAL ::     f_qv,f_qc,f_qr,f_qi,f_qs,f_qg,f_qndrop
 !
@@ -657,8 +711,19 @@ CONTAINS
    REAL, DIMENSION( ims:ime, jms:jme ) ::             coszr
    REAL, DIMENSION( ims:ime, levsiz, jms:jme )  ::    ozmixt
    REAL, DIMENSION( ims:ime, alevsiz, jms:jme, 1:no_src_types )  ::    aerodt
+!-----------------------------------------------------------------------------
+! These lines added Andrew Roberts June 2013 to sync WRF and CPL sun position
+!-----------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+   REAL    ::    DECLIN,SOLCON,XXLAT,XXLONG,TLOCTM,XT24
+#else
+   REAL    ::    DECLIN,SOLCON,XXLAT,TLOCTM,XT24
+#endif
+!-----------------------------------------------------------------------------
+! end Andrew Roberts
+!-----------------------------------------------------------------------------
 
-   REAL    ::    DECLIN,SOLCON,XXLAT,TLOCTM,XT24, CEN_LAT
+   REAL    ::    CEN_LAT
    INTEGER ::    i,j,k,its,ite,jts,jte,ij
    INTEGER ::    STEPABS
    LOGICAL ::    gfdl_lw,gfdl_sw
@@ -887,12 +952,40 @@ CONTAINS
        declinx=declin
        solconx=solcon
      ENDIF
+----------------------------------------------------------------------------
+! These lines added Andrew Roberts June 2013 to sync WRF and CPL sun position
+!----------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+     IF(PRESENT(coszen).AND.PRESENT(hrang))THEN
+       DO j=jts,jte
+       DO i=its,ite
+
+        XXLAT=XLAT(I,J)*DEGRAD
+        XXLONG=XLONG(I,J)*DEGRAD
+        HRANG(I,J)=ACOS(COS(RADTIM_SHR*pi2 + XXLONG + pi2/2.0))
+
+        DECLIN_SHR=real(DECLIN,SHR_KIND_R8)
+        XXLAT_SHR=real(XXLAT,SHR_KIND_R8)
+        XXLONG_SHR=real(XXLONG,SHR_KIND_R8)
+        COSZEN(I,J)=real(shr_orb_cosz(RADTIM_SHR,XXLAT_SHR,XXLONG_SHR,DECLIN_SHR))
+
+       ENDDO
+       ENDDO
+
+     ENDIF
+
+#else
 
 ! added coszen subroutine : jararias, 2013/08/10
 !   outputs: coszen, hrang
      call calc_coszen(ims,ime,jms,jme,its,ite,jts,jte,  &
                       julian,xtime+radt*0.5,gmt, &
                       declin,degrad,xlong,xlat,coszen,hrang)
+#endif
+!----------------------------------------------------------------------------
+! end Andrew Roberts
+!----------------------------------------------------------------------------
    ENDDO
 
    !$OMP PARALLEL DO   &
@@ -921,7 +1014,18 @@ CONTAINS
      DO i=its,ite
         GSW(I,J)=0.
         GLW(I,J)=0.
+-----------------------------------------------------------------------------
+! Alice DuVivier - January 2013
+! SWDOWN is a diagnostic variable and now calculated in atm_comp_mct.F.
+!-----------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else
         SWDOWN(I,J)=0.
+#endif
+!-----------------------------------------------------------------------------
+! end Alice DuVivier
+!-----------------------------------------------------------------------------
         swddir(i,j)=0.  ! jararias, 2013/08/10
         swddni(i,j)=0.  ! jararias, 2013/08/10
         swddif(i,j)=0.  ! jararias, 2013/08/10
@@ -1327,6 +1431,19 @@ CONTAINS
                      LWDNB=LWDNB,LWDNBC=LWDNBC,                        &
                      SWCF=SWCF,LWCF=LWCF,OLR=RLWTOA,CEMISS=CEMISS,     &
                      TAUCLDC=TAUCLDC,TAUCLDI=TAUCLDI,COSZR=COSZR,      &
+!------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He for RACM coupling
+!------------------------------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+                     LWUPS1=LWUPS,                                     &  
+                     SWNDR=SWNDR,SWVDR=SWVDR,                          &
+                     SWNDF=SWNDF,SWVDF=SWVDF,                          &
+                     RASDIR=RASDIR,RALDIR=RALDIR,                      &
+                     RASDIF=RASDIF,RALDIF=RALDIF,                      & 
+#endif
+!-------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!-------------------------------------------------------------------------------------------------------------  
                      GSW=GSW,GLW=GLW,XLAT=XLAT,XLONG=XLONG,            &
                      ALBEDO=ALBEDO,t_phy=t,TSK=TSK,EMISS=EMISS         &
                     ,QV3D=qv                                           &
@@ -1343,6 +1460,15 @@ CONTAINS
                     ,SWDDIR=swddir,SWDDIF=swddif,SWDDNI=swddni         &  !amontornes-bcodina (2014-04-20)
                     ,F_QV=f_qv,F_QC=f_qc,F_QR=f_qr                     &
                     ,F_QI=f_qi,F_QS=f_qs,F_QG=f_qg                     &
+!-----------------------------------------------------------------------------
+! Alice DuVivier July 2014; Mimi Hughes - October 2013
+! Need ice and liquid droplet sizes to couple Morrison to radiation (CAM)
+!-----------------------------------------------------------------------------
+                    ,EFFCS=effcs,EFFIS=effis                           &
+                    ,rad_micro_cpl=rad_micro_cpl                       &
+!-----------------------------------------------------------------------------
+! end DuVivier/Hughes modifications
+!----------------------------------------------------------------------------- 
                     ,f_ice_phy=f_ice_phy,f_rain_phy=f_rain_phy         &
                     ,p_phy=p,p8w=p8w,z=z,pi_phy=pi,rho_phy=rho,        &
                      dz8w=dz8w,                                        &
@@ -1392,6 +1518,15 @@ CONTAINS
                   O3INPUT=O3INPUT,O33D=O3RAD,                       &
                   F_QV=F_QV,F_QC=F_QC,F_QR=F_QR,                    &
                   F_QI=F_QI,F_QS=F_QS,F_QG=F_QG,                    &
+!-----------------------------------------------------------------------------
+! Alice DuVivier - July 2014
+! Need ice and liquid droplet sizes to couple Morrison to radiation (RRTMG)
+!-----------------------------------------------------------------------------
+                  EFFCS=effcs,EFFIS=effis,                          &
+                  rad_micro_cpl=rad_micro_cpl,                      &
+!-----------------------------------------------------------------------------
+! end Alice DuVivier
+!----------------------------------------------------------------------------- 
                   RE_CLOUD=re_cloud,RE_ICE=re_ice,RE_SNOW=re_snow,  & ! G. Thompson
                   has_reqc=has_reqc,has_reqi=has_reqi,has_reqs=has_reqs, & ! G. Thompson
 #if ( WRF_CHEM == 1 )
@@ -1416,7 +1551,18 @@ CONTAINS
                   ITS=its,ITE=ite, JTS=jts,JTE=jte, KTS=kts,KTE=kte,&
                   LWUPFLX=LWUPFLX,LWUPFLXC=LWUPFLXC,                &
                   LWDNFLX=LWDNFLX,LWDNFLXC=LWDNFLXC                 &
+!--------------------------------------------------------------------------------
+! Matt Higgins - 20 Oct 2010, Alice DuVivier August 2013
+! Add longwave up from surface from land model to rrmtg lw
+!--------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+                  ,LWUPS=LWUPS                                      )
+#else
                                                                     )
+#endif
+!--------------------------------------------------------------------------------
+!end Higgins modification
+!--------------------------------------------------------------------------------
 
         CASE (RRTMG_LWSCHEME_FAST)
              CALL wrf_debug (100, 'CALL rrtmg_lw')
@@ -1721,6 +1867,19 @@ CONTAINS
                      LWDNB=LWDNB,LWDNBC=LWDNBC,                        &
                      SWCF=SWCF,LWCF=LWCF,OLR=RLWTOA,CEMISS=CEMISS,     &
                      TAUCLDC=TAUCLDC,TAUCLDI=TAUCLDI,COSZR=COSZR,      &
+!------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He for RACM coupling
+!------------------------------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+                     LWUPS1=LWUPS,                                     &  
+                     SWNDR=SWNDR,SWVDR=SWVDR,                          &
+                     SWNDF=SWNDF,SWVDF=SWVDF,                          &
+                     RASDIR=RASDIR,RALDIR=RALDIR,                      &
+                     RASDIF=RASDIF,RALDIF=RALDIF,                      & 
+#endif
+!------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!------------------------------------------------------------------------------------------------------------          
                      GSW=GSW,GLW=GLW,XLAT=XLAT,XLONG=XLONG,            &
                      ALBEDO=ALBEDO,t_phy=t,TSK=TSK,EMISS=EMISS         &
                     ,QV3D=qv                                           &
@@ -1737,6 +1896,15 @@ CONTAINS
                     ,SWDDIR=swddir,SWDDIF=swddif,SWDDNI=swddni         &  !amontornes-bcodina (2014-04-20)
                     ,F_QV=f_qv,F_QC=f_qc,F_QR=f_qr                     &
                     ,F_QI=f_qi,F_QS=f_qs,F_QG=f_qg                     &
+!-----------------------------------------------------------------------------
+! Alice DuVivier July 2014; Mimi Hughes - October 2013
+! Need ice and liquid droplet sizes to couple Morrison to radiation (CAM)
+!-----------------------------------------------------------------------------
+                    ,EFFCS=effcs,EFFIS=effis                           &
+                    ,rad_micro_cpl=rad_micro_cpl                       &
+!-----------------------------------------------------------------------------
+! end DuVivier/Hughes modifications
+!----------------------------------------------------------------------------- 
                     ,f_ice_phy=f_ice_phy,f_rain_phy=f_rain_phy         &
                     ,p_phy=p,p8w=p8w,z=z,pi_phy=pi,rho_phy=rho,        &
                      dz8w=dz8w,                                        &
@@ -1774,6 +1942,20 @@ CONTAINS
                      SWDNT=SWDNT,SWDNTC=SWDNTC,                        &
                      SWUPB=SWUPB,SWUPBC=SWUPBC,                        &
                      SWDNB=SWDNB,SWDNBC=SWDNBC,                        &
+!--------------------------------------------------------------------------------
+! Matt Higgins - 23 Sep 2010, Alice DuVivier August 2013
+! Add NIR and VIS direct and diffuse albedo to RRTMG shortwave call.
+! Add NIR and VIS direct and diffuse downward to surface to RRTMG shortwave call.
+!--------------------------------------------------------------------------------
+#ifdef CESMCOUPLED 
+                     SWNDR=SWNDR,SWVDR=SWVDR,                          &
+                     SWNDF=SWNDF,SWVDF=SWVDF,                          &
+                     RASDIR=RASDIR,RALDIR=RALDIR,                      &
+                     RASDIF=RASDIF,RALDIF=RALDIF,                      & 
+#endif
+!--------------------------------------------------------------------------------
+! end Higgins modification
+!--------------------------------------------------------------------------------
                      SWCF=SWCF,GSW=GSW,                                &
                      XTIME=XTIME,GMT=GMT,XLAT=XLAT,XLONG=XLONG,        &
                      RADT=RADT,DEGRAD=DEGRAD,DECLIN=DECLIN,            &
@@ -1802,6 +1984,15 @@ CONTAINS
                      SF_SURFACE_PHYSICS=sf_surface_physics,            &  !Zhenxin ssib sw_phy   (06/2010)
                      F_QV=f_qv,F_QC=f_qc,F_QR=f_qr,                    &
                      F_QI=f_qi,F_QS=f_qs,F_QG=f_qg,                    &
+!-----------------------------------------------------------------------------
+! Alice DuVivier - July 2014
+! Need ice and liquid droplet sizes to couple Morrison to radiation (RRTMG)
+!-----------------------------------------------------------------------------
+                     EFFCS=effcs,EFFIS=effis,                          &
+                     rad_micro_cpl=rad_micro_cpl,                      &
+!-----------------------------------------------------------------------------
+! end Alice DuVivier
+!-----------------------------------------------------------------------------
                      RE_CLOUD=re_cloud,RE_ICE=re_ice,RE_SNOW=re_snow,  & ! G. Thompson
                      has_reqc=has_reqc,has_reqi=has_reqi,has_reqs=has_reqs, & ! G. Thompson
 #if ( WRF_CHEM == 1 )
@@ -2013,11 +2204,26 @@ CONTAINS
         ENDDO
         ENDDO
 
+!-----------------------------------------------------------------------------
+! Alice DuVivier - January 2013
+! Remove this calculation because ALBEDO is no longer a variable that
+! reflects the actual albedos being used, so it will cause an incorrect
+! calculation of SWDOWN. Now both values are calculated in atm_comp_mct.F.
+! Additionally, SWDOWN and ALBEDO are only diagnostic, so they do not 
+! affect any calculations in the model.
+!-----------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else
         DO j=jts,jte
         DO i=its,ite
            SWDOWN(I,J)=GSW(I,J)/(1.-ALBEDO(I,J))
         ENDDO
         ENDDO
+#endif
+!-----------------------------------------------------------------------------
+! end Alice DuVivier
+!-----------------------------------------------------------------------------
      ENDIF
 
 ! jararias, 14/08/2013
@@ -2426,14 +2632,34 @@ CONTAINS
                        DEGRAD,DPD                                    )
 !---------------------------------------------------------------------
    USE module_wrf_error
+!----------------------------------------------------------------------------------------
+! These lines added Andrew Roberts June 2013 to sync WRF and CPL sun position
+!----------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+   USE module_ra_rasm
+   USE module_wrf_top, ONLY : config_flags
+#endif
+!----------------------------------------------------------------------------------------
+! end Andrew Roberts
+!----------------------------------------------------------------------------------------
    IMPLICIT NONE
 !---------------------------------------------------------------------
 
 ! !ARGUMENTS:
    REAL, INTENT(IN   )      ::       DEGRAD,DPD,XTIME,JULIAN
    REAL, INTENT(OUT  )      ::       DECLIN,SOLCON
+!----------------------------------------------------------------------------------------
+! These lines added Andrew Roberts June 2013 to sync WRF and CPL sun position
+!----------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+   REAL   (SHR_KIND_R8)     ::       ECCFAC_SHR
+#else
    REAL                     ::       OBECL,SINOB,SXLONG,ARG,  &
                                      DECDEG,DJUL,RJUL,ECCFAC
+#endif
+!----------------------------------------------------------------------------------------
+! end Andrew Roberts
+!----------------------------------------------------------------------------------------
 !
 ! !DESCRIPTION:
 ! Compute terms used in radiation physics 
@@ -2443,6 +2669,33 @@ CONTAINS
 
    DECLIN=0.
    SOLCON=0.
+
+!----------------------------------------------------------------------------------------
+! Amy Solomon- Feb 2015
+! Not sure when this was added but probably by Andrew Roberts for RASM coupling
+!----------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+  RADTIM_SHR=real(JULIAN+1.0_SHR_KIND_R8+config_flags%radt/2880.0_SHR_KIND_R8,SHR_KIND_R8)
+
+  write(6,*)'**************** RADIATION TIME CHECK *****************'
+  write(6,*)''
+  write(6,*)'   NEXTSW_CDAY   : ',nextsw_cday
+  write(6,*)'   RADIATION TIME: ',RADTIM_SHR
+  write(6,*)'   JULIAN DAY    : ',JULIAN
+  write(6,*)''
+  write(6,*)'*******************************************************'
+
+  RADTIM_SHR=nextsw_cday
+
+  call shr_orb_decl (RADTIM_SHR,eccen,mvelpp,lambm0, &
+                     obliqr,DECLIN_SHR,ECCFAC_SHR)
+
+  DECLIN=real(DECLIN_SHR)
+
+  SOLCON=1370.*real(ECCFAC_SHR)
+
+#else
 
 !-----OBECL : OBLIQUITY = 23.5 DEGREE.
         
@@ -2463,6 +2716,11 @@ CONTAINS
    ECCFAC=1.000110+0.034221*COS(RJUL)+0.001280*SIN(RJUL)+0.000719*  &
           COS(2*RJUL)+0.000077*SIN(2*RJUL)
    SOLCON=1370.*ECCFAC
+!----------------------------------------------------------------------
+! end CESMCOUPLED modification
+!----------------------------------------------------------------------
+
+#endif
    
    END SUBROUTINE radconst
 

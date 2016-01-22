@@ -2975,7 +2975,19 @@ contains
                         cldfmc, taucmc, planklay, planklev, plankbnd, &
                         pwvcm, fracs, taut, &
                         totuflux, totdflux, fnet, htr, &
-                        totuclfl, totdclfl, fnetc, htrc ) 
+                        totuclfl, totdclfl, fnetc, htrc  & 
+!-----------------------------------------------------------------------------------
+! Alice DuVivier - October 2013 ; Matt Higgins - 20 Oct 2010
+! Bring in lwups_sc into rtrnmc subroutine for mapping.
+!-----------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+                        ,lwups_sc                         )
+#else
+                                                          )
+#endif
+!-----------------------------------------------------------------------------------
+! end DuVivier/Higgins modification
+!----------------------------------------------------------------------------------- 
 !-----------------------------------------------------------------------------
 !
 !  Original version:   E. J. Mlawer, et al. RRTM_V3.0
@@ -3076,6 +3088,17 @@ contains
       integer(kind=im) :: igc                               ! g-point interval counter
       integer(kind=im) :: iclddn                            ! flag for cloud in down path
       integer(kind=im) :: ittot, itgas, itr                 ! lookup table indices
+
+!-----------------------------------------------------------------------------------
+! Alice DuVivier - October 2013 ; Matt Higgins, 20 Oct 2010
+! Define in lwups in a single column for the subroutine.
+!-----------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+      real, dimension ( 1 ) :: lwups_sc                                                          
+#endif
+!-----------------------------------------------------------------------------------
+! end DuVivier/Higgins modification 
+!-----------------------------------------------------------------------------------
 
 ! ------- Definitions -------
 ! input
@@ -3381,12 +3404,28 @@ contains
       enddo
 
 ! Calculate fluxes at surface
+!-----------------------------------------------------------------------------------
+! Alice DuVivier - October 2013; Matt Higgins, 21 Oct 2010
+! Do the mapping of lwups from coupler to into WRF.
+!-----------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+      totuflux(0) = lwups_sc(1)
+      totdflux(0) = totdflux(0) * fluxfac
+      fnet(0) = totuflux(0) - totdflux(0)
+      totuclfl(0) = lwups_sc(1)
+      totdclfl(0) = totdclfl(0) * fluxfac
+      fnetc(0) = totuclfl(0) - totdclfl(0)
+#else
       totuflux(0) = totuflux(0) * fluxfac
       totdflux(0) = totdflux(0) * fluxfac
       fnet(0) = totuflux(0) - totdflux(0)
       totuclfl(0) = totuclfl(0) * fluxfac
       totdclfl(0) = totdclfl(0) * fluxfac
       fnetc(0) = totuclfl(0) - totdclfl(0)
+#endif
+!-----------------------------------------------------------------------------------
+! end DuVivier modification
+!-----------------------------------------------------------------------------------
 
 ! Calculate fluxes at model levels
       do lev = 1, nlayers
@@ -10583,7 +10622,19 @@ contains
              inflglw ,iceflglw,liqflglw,cldfmcl , &
              taucmcl ,ciwpmcl ,clwpmcl , cswpmcl ,reicmcl ,relqmcl , resnmcl , &
              tauaer  , &
-             uflx    ,dflx    ,hr      ,uflxc   ,dflxc,  hrc)
+             uflx    ,dflx    ,hr      ,uflxc   ,dflxc,  hrc  &
+!-----------------------------------------------------------------------------------
+! Alice DuVivier - October 2013; Matt Higgins, 20 Oct 2010
+! Bring in lwups in a single column to map into RRTMG totuclfl variable.
+!-----------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+             ,lwups_sc                                         )
+#else
+                                                               )
+#endif
+!-----------------------------------------------------------------------------------
+! end DuVivier/Higgins modification
+!-----------------------------------------------------------------------------------
 
 ! -------- Description --------
 
@@ -10891,6 +10942,17 @@ contains
       real(kind=rb) :: fnetc(0:nlay+1)        ! clear sky net longwave flux (w/m2)
       real(kind=rb) :: htrc(0:nlay+1)         ! clear sky longwave heating rate (k/day)
 
+!-----------------------------------------------------------------------------------
+! Alice DuVivier - October 2013; Matt Higgins, 20 Oct 2010
+! Define in lwups in a single column for the subroutine.
+!-----------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+      real, dimension ( 1 ) :: lwups_sc                                                          
+#endif
+!-----------------------------------------------------------------------------------
+! end DuVivier/Higgins modification        
+!-----------------------------------------------------------------------------------
+
 !
 ! Initializations
 
@@ -11008,7 +11070,19 @@ contains
                      cldfmc, taucmc, planklay, planklev, plankbnd, &
                      pwvcm, fracs, taut, &
                      totuflux, totdflux, fnet, htr, &
-                     totuclfl, totdclfl, fnetc, htrc )
+                     totuclfl, totdclfl, fnetc, htrc  &
+!-----------------------------------------------------------------------------------
+! Alice DuVivier - October 2013; Matt Higgins - 20 Oct 2010
+! Send lwups_sc into rtrnmc subroutine for mapping.
+!-----------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+                     ,lwups_sc                          )
+#else
+                                                       )
+#endif
+!-----------------------------------------------------------------------------------
+! end DuVivier/Higgins modification
+!-----------------------------------------------------------------------------------
 
 !  Transfer up and down fluxes and heating rate to output arrays.
 !  Vertical indexing goes from bottom to top; reverse here for GCM if necessary.
@@ -11425,6 +11499,15 @@ CONTAINS
                        qi3d, qs3d, qg3d,                          &
                        o3input, o33d,                             &
                        f_qv, f_qc, f_qr, f_qi, f_qs, f_qg,        &
+!-----------------------------------------------------------------------------
+! Alice DuVivier - July 2014
+! Need ice and liquid droplet sizes to couple Morrison to radiation
+!-----------------------------------------------------------------------------
+                       effcs, effis,                              &
+                       rad_micro_cpl,                             &
+!-----------------------------------------------------------------------------
+! end Alice DuVivier
+!-----------------------------------------------------------------------------
                        re_cloud, re_ice, re_snow,                 &  ! G. Thompson
                        has_reqc, has_reqi, has_reqs,              &  ! G. Thompson
                        tauaerlw1,tauaerlw2,tauaerlw3,tauaerlw4,   & ! czhao 
@@ -11442,6 +11525,16 @@ CONTAINS
                        ims,ime, jms,jme, kms,kme,                 &
                        its,ite, jts,jte, kts,kte,                 &
                        lwupflx, lwupflxc, lwdnflx, lwdnflxc       &
+!-----------------------------------------------------------------------------------
+! Alice DuVivier - October 2013; Matt Higgins, 20 Oct 2010
+! Add longwave up from surface from land model to this module.
+!-----------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+                       ,lwups                                     &
+#endif
+!-----------------------------------------------------------------------------------
+! end DuVivier/Higgins modification
+!-----------------------------------------------------------------------------------
                                                                   )
 !------------------------------------------------------------------
 !ccc To use clWRF time varying trace gases
@@ -11517,6 +11610,19 @@ CONTAINS
 
    real pi,third,relconst,lwpmin,rhoh2o
 
+!-----------------------------------------------------------------------------
+! Alice DuVivier - July 2014
+! Need ice and liquid droplet sizes to couple Morrison to radiation
+!-----------------------------------------------------------------------------
+   REAL, DIMENSION(ims:ime,kms:kme,jms:jme), INTENT(IN)::         &
+                                                           EFFCS, & 
+                                                           EFFIS 
+
+   INTEGER, INTENT(IN ), OPTIONAL ::                 rad_micro_cpl  
+!-----------------------------------------------------------------------------
+! end Alice DuVivier
+!----------------------------------------------------------------------------- 
+
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme )                 , &
          OPTIONAL                                               , &
          INTENT(IN   ) ::                                         &
@@ -11550,7 +11656,19 @@ CONTAINS
    REAL, DIMENSION( ims:ime, jms:jme ),                           &
          OPTIONAL, INTENT(INOUT) ::                               &
                                        LWUPT,LWUPTC,LWDNT,LWDNTC, &
+!-----------------------------------------------------------------------------------
+! Alice DuVivier - October 2013; Matt Higgins - 20 Oct 2010
+! Add import of longwave up from surface from land model.
+!-----------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+                                       LWUPB,LWUPBC,LWDNB,LWDNBC, &
+                                       LWUPS
+#else
                                        LWUPB,LWUPBC,LWDNB,LWDNBC
+#endif
+!-----------------------------------------------------------------------------------
+! end DuVivier/Higgins modification
+!-----------------------------------------------------------------------------------
 
 ! Layer longwave fluxes (including extra layer above model top)
 ! Vertical ordering is from bottom to top (W m-2)
@@ -11637,7 +11755,19 @@ CONTAINS
                                                              hrc
 
     real, dimension ( 1 ) ::                                tsfc, &
+!-----------------------------------------------------------------------------------
+! Alice DuVivier - October 2013; Matt Higgins, 20 Oct 2010
+! Add in single dimesion variable to carry lwups into radiation subroutine.
+!-----------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+                                                              ps, &
+                                                        lwups_sc
+#else
                                                               ps
+#endif
+!-----------------------------------------------------------------------------------
+! end DuVivier/Higgins modification
+!-----------------------------------------------------------------------------------
     real ::                                                   ro, &
                                                               dz
     real:: snow_mass_factor
@@ -11721,6 +11851,17 @@ CONTAINS
     real, dimension(1, 1:kte-kts+1):: recloud1d, &
                                         reice1d, &
                                        resnow1d
+
+!-----------------------------------------------------------------------------
+! Alice DuVivier - June 2014
+! Need 1D ice and liquid droplet sizes to couple Morrison to radiation
+!-----------------------------------------------------------------------------
+!(microns)
+     real, dimension(1, 1:kte-kts+1)::   effcs1d, &
+                                        effis1d   
+!-----------------------------------------------------------------------------
+! end Alice DuVivier
+!----------------------------------------------------------------------------- 
 
     real :: gliqwp, gicewp, gsnowp, gravmks
 
@@ -12049,6 +12190,20 @@ CONTAINS
             ENDIF
          ENDIF
 
+!-----------------------------------------------------------------------------
+! Alice DuVivier - June 2014
+! Convert 3D liquid and ice drop sizes to 1D for use in radiation.
+! This is done for consistency with rrtmg code flow.
+!-----------------------------------------------------------------------------
+         DO K=kts,kte
+            ! Now set to the radius passed from Morrison
+            EFFCS1D(ncol,K) = EFFCS(I,K,J)
+            EFFIS1D(ncol,K) = EFFIS(I,K,J)
+         ENDDO
+!-----------------------------------------------------------------------------
+! end Alice DuVivier
+!----------------------------------------------------------------------------- 
+
 ! Layer indexing goes bottom to top here for all fields.
 ! Water vapor and ozone are converted from mmr to vmr. 
 ! Pressures are in units of mb here. 
@@ -12342,6 +12497,28 @@ CONTAINS
 ! following Kristjansson and Mitchell
             call reicalc(ncol, pcols, pver, tlay, reice)
 
+!-----------------------------------------------------------------------------
+! Alice DuVivier - July 2014
+! Overwrite reliq and reice (prescribed effective radii) with predicted radii 
+! from Morrison microphysics scheme if flag is set in namelist
+!-----------------------------------------------------------------------------
+! if coupling is turned on, overwrite code, if not, ignore
+     if ( rad_micro_cpl == 1) then
+
+      do k = kts,kte
+         reliq(ncol,k)=EFFCS1D(ncol,k)
+         reice(ncol,k)=EFFIS1D(ncol,k)
+! put limits on rel and rei to prevent overflow for optical property calcs
+! Note that the lower limit for the liquid drop size is set to 2.5um, which is the rrtmg
+! lower limit instead of the morrison lower limit (1.0um). All other sizes are consistent
+! with limit set in the Morrison scheme.
+         reliq(ncol,k)=min(reliq(ncol,k),50.) !limits consistent with morrison
+         reliq(ncol,k)=max(reliq(ncol,k),2.5)
+         reice(ncol,k)=min(reice(ncol,k),130.)
+         reice(ncol,k)=max(reice(ncol,k),13.)
+      end do
+
+     else
 
 !..If we already have effective radius of cloud and ice, then just overwrite what
 !.. was computed in the relcalc and reicalc subroutines above.
@@ -12356,6 +12533,12 @@ CONTAINS
             reice(ncol,k) = reice1d(ncol,k)
          end do
       endif
+
+     endif
+
+!-----------------------------------------------------------------------------
+! end Alice DuVivier
+!----------------------------------------------------------------------------- 
 
 ! Limit upper bound of reice for Fu ice parameterization and convert
 ! from effective radius to generalized effective size (*1.0315; Fu, 1996)
@@ -12525,6 +12708,17 @@ CONTAINS
       endif  ! aer_ra_feedback
 #endif
 
+!-----------------------------------------------------------------------------------
+! Alice DuVivier - October 2013; Matt Higgins, 20 Oct 2010
+!-----------------------------------------------------------------------------------
+! Convert input lwups into a single column for input into rrtmg_lw
+#ifdef CESMCOUPLED
+         lwups_sc(ncol) = LWUPS(i,j)
+#endif
+!-----------------------------------------------------------------------------------
+! end DuVivier/Higgins modification
+!-----------------------------------------------------------------------------------
+
 ! Call RRTMG longwave radiation model
          call rrtmg_lw &
             (ncol    ,nlay    ,icld    , &
@@ -12534,7 +12728,19 @@ CONTAINS
              inflglw ,iceflglw,liqflglw,cldfmcl , &
              taucmcl ,ciwpmcl ,clwpmcl ,cswpmcl, reicmcl ,relqmcl ,resnmcl , &
              tauaer  , &
-             uflx    ,dflx    ,hr      ,uflxc   ,dflxc,  hrc)
+             uflx    ,dflx    ,hr      ,uflxc   ,dflxc,  hrc  &
+!-----------------------------------------------------------------------------------
+! Alice DuVivier - October 2013; Matt Higgins, 20 Oct 2010
+! Push lwups_sc into rrtmg_lw
+!-----------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+             ,lwups_sc                                          )
+#else
+                                                               )
+#endif
+!-----------------------------------------------------------------------------------
+! end Higgins modification
+!-----------------------------------------------------------------------------------
 
 ! Output downard surface flux, and outgoing longwave flux and cloud forcing 
 ! at the top of atmosphere (W/m2)
@@ -12792,8 +12998,20 @@ IMPLICIT NONE
       ENDIF
 
       IF ( wrf_dm_on_monitor() ) THEN
+!-----------------------------------------------------------------------------
+! Alice DuVivier - October 2013
+! Open RRTMG longwave data but need double precision for RASM
+!-----------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+        OPEN(rrtmg_unit,FILE='RRTMG_LW_DATA_DBL',                  &
+             FORM='UNFORMATTED',STATUS='OLD',ERR=9009)
+#else
         OPEN(rrtmg_unit,FILE='RRTMG_LW_DATA',                  &
              FORM='UNFORMATTED',STATUS='OLD',ERR=9009)
+#endif
+!-----------------------------------------------------------------------------
+! end Alice DuVivier
+!-----------------------------------------------------------------------------
       ENDIF
 
       call lw_kgb01(rrtmg_unit)

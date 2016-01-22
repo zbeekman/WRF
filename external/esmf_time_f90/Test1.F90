@@ -1178,7 +1178,19 @@ PROGRAM time_manager_test
 
   PRINT *,'BEGIN TEST SUITE'
 
+!------------------------------------------------------------
+! Amy Solomon- Feb 2015
+! modify ESMF calendar subroutines for RASM
+!------------------------------------------------------------
+#ifdef CESMCOUPLED
+  CALL ESMF_Initialize( defaultCalendar=ESMF_CALKIND_GREGORIAN, rc=rc )
+#else
   CALL ESMF_Initialize( defaultCalendar=ESMF_CAL_GREGORIAN, rc=rc )
+#endif
+!------------------------------------------------------------
+! end Amy Solomon
+!------------------------------------------------------------
+
   CALL test_check_error( ESMF_SUCCESS, rc, &
                         'ESMF_Initialize() ', &
                         __FILE__ , &

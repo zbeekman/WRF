@@ -1231,6 +1231,1272 @@ CONTAINS
       END FUNCTION WGAMMA
 !+---+-----------------------------------------------------------------+ 
 
+!-------------------------------------------------------
+! Amy Solomon Feb 2015
+! RASM statistics subroutines added from here to the end
+! controlled through namelist parameters
+!-------------------------------------------------------
+  SUBROUTINE mean_output_calc(                    &
+       ids, ide, jds, jde, kds, kde               &
+       ,ims, ime, jms, jme, kms, kme              &
+       ,ips, ipe, jps, jpe, kps, kpe              & ! patch  dims
+       ,i_start, i_end                            &
+       ,j_start, j_end, num_tiles, is_restart     &
+       ,mean_interval, psfc, psfcmean, dt, xtime  &
+       ,tsk , tskmean, t2, tmp2mean, t, tmean       &
+       ,p, pb, moist, ht, pmslmean, hfx, hfxmean  & 
+       ,lh, lhmean, swdnb, swdnbmean, glw         & 
+       ,glwmean, lwupb, lwupbmean, swupb          &
+       ,swupbmean, u, umean, v, vmean, qvmean     &
+       ,shummean                                  &
+#ifdef CESMCOUPLED
+       ,swndr, swndf, swvdr, swvdf                &
+#endif
+       ,swupt                                     &
+       ,swdnt, lwupt, lwdnt                       &
+       ,swndrmean, swndfmean                      &
+       ,swvdrmean, swvdfmean                      &
+       ,swuptmean, swdntmean                      &
+       ,lwuptmean, lwdntmean, currenttime         &
+       ,output_freq, avgoutalarm, avgOutDateStr   &
+       , nsteps    &
+       )
+    !----------------------------------------------------------------------
+
+    ! USES:
+    USE module_utility
+    USE module_model_constants
+
+    IMPLICIT NONE
+    !======================================================================
+    ! Definitions
+    !-----------
+    !-- DT            time step (second)
+    !-- XTIME         forecast time
+    !-- ims           start index for i in memory
+    !-- ime           end index for i in memory
+    !-- jms           start index for j in memory
+    !-- jme           end index for j in memory    
+    !-- i_start       start indices for i in tile
+    !-- i_end         end indices for i in tile
+    !-- j_start       start indices for j in tile
+    !-- j_end         end indices for j in tile
+    !-- num_tiles     number of tiles
+    !
+    !======================================================================
+
+    INTEGER, INTENT(IN)                       :: ims, ime, jms, jme, kms, kme
+    INTEGER, INTENT(IN)                       :: ids, ide, jds, jde, kds, kde
+    INTEGER, INTENT(IN)                       :: ips, ipe, jps, jpe, kps, kpe
+    INTEGER, INTENT(IN)                       :: num_tiles
+    INTEGER, INTENT(IN)                       :: mean_interval
+    INTEGER, DIMENSION(num_tiles), INTENT(IN) :: i_start, i_end, j_start, j_end
+    TYPE(WRFU_Time), INTENT(IN)               :: currentTime
+    TYPE(WRFU_Alarm), INTENT(INOUT)           :: avgOutAlarm
+    INTEGER, INTENT(IN)                       :: output_freq            ! interval type
+    INTEGER, INTENT(INOUT)                    :: nsteps                 ! number of step accumulated
+    CHARACTER(*), INTENT(INOUT)               :: avgOutDateStr
+
+    REAL, INTENT(IN)                                  :: dt, xtime
+    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(IN)  :: psfc, tsk, t2, ht, hfx, lh, swdnb
+    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(IN)  :: glw, lwupb, swupb
+#ifdef CESMCOUPLED
+    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(IN)  :: swndr, swndf, swvdr, swvdf
+#endif
+    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(IN)  :: swupt
+    REAL, DIMENSION( ims:ime , jms:jme ), INTENT(IN)  :: swdnt, lwupt, lwdnt
+    REAL, DIMENSION( ims:ime , kms:kme, jms:jme ), INTENT(IN) :: t, p, pb, moist, u, v
+    
+    DOUBLE PRECISION, DIMENSION( ims:ime , jms:jme ), INTENT(OUT) :: psfcMean, tskMean, tmp2mean
+    DOUBLE PRECISION, DIMENSION( ims:ime , jms:jme ), INTENT(OUT) :: hfxMean, lhMean, swdnbMean 
+    DOUBLE PRECISION, DIMENSION( ims:ime , jms:jme ), INTENT(OUT) :: glwMean, lwupbMean, swupbMean
+    DOUBLE PRECISION, DIMENSION( ims:ime , jms:jme ), INTENT(OUT) :: tMean, pmslMean, uMean
+    DOUBLE PRECISION, DIMENSION( ims:ime , jms:jme ), INTENT(OUT) :: vMean, qvMean, shumMean
+    DOUBLE PRECISION, DIMENSION( ims:ime , jms:jme ), INTENT(OUT) :: swndrMean, swndfMean
+    DOUBLE PRECISION, DIMENSION( ims:ime , jms:jme ), INTENT(OUT) :: swvdrMean, swvdfMean
+    DOUBLE PRECISION, DIMENSION( ims:ime , jms:jme ), INTENT(OUT) :: swuptMean, swdntMean
+    DOUBLE PRECISION, DIMENSION( ims:ime , jms:jme ), INTENT(OUT) :: lwuptMean, lwdntMean   
+
+    ! LOCAL  VAR
+    INTEGER     :: i, j, ij
+    REAL        :: value
+    LOGICAL     :: is_restart
+    INTEGER     :: rc
+
+    LOGICAL     :: is_reset               ! reset averages
+    LOGICAL     :: compute_avg            ! compute averages
+
+    ! DEBUG LOCAL  VAR
+    CHARACTER (LEN=1024)  :: message
+ 
+    CALL getResetState(currentTime, xtime, dt, mean_interval, output_freq, is_reset)
+
+    IF (is_reset) THEN
+       DO ij = 1 , num_tiles
+          DO j = j_start(ij), j_end(ij)
+             DO i = i_start(ij), i_end(ij)
+                psfcMean(i,j)=0.0D0
+                tskMean(i,j)=0.0D0
+                tmp2mean(i,j)=0.0D0
+                tMean(i,j)=0.0D0
+                pmslMean(i,j)=0.0D0
+                hfxMean(i,j)=0.0D0
+                lhMean(i,j)=0.0D0
+                swdnbMean(i,j)=0.0D0
+                glwMean(i,j)=0.0D0
+                lwupbMean(i,j)=0.0D0
+                swupbMean(i,j)=0.0D0
+                uMean(i,j)=0.0D0
+                vMean(i,j)=0.0D0
+                uMean(i+1,j)=0.0D0
+                vMean(i,j+1)=0.0D0
+                qvMean(i,j)=0.0D0
+                shumMean(i,j)=0.0D0
+                swndrMean(i,j)=0.0D0
+                swndfMean(i,j)=0.0D0
+                swvdrMean(i,j)=0.0D0
+                swvdfMean(i,j)=0.0D0
+                swuptMean(i,j)=0.0D0
+                swdntMean(i,j)=0.0D0
+                lwuptMean(i,j)=0.0D0
+                lwdntMean(i,j)=0.0D0
+             ENDDO
+          ENDDO
+       ENDDO
+
+       ! restart step count 
+       nsteps = 0.0
+
+       WRITE(message, *) "RASM Statistics: RESET accumaltions and means ..................... nsteps=", nsteps
+       CALL wrf_debug(200, message)
+
+    ENDIF
+    
+    nsteps = nsteps+1.0
+
+    WRITE(message, *) "RASM Statistics: Start accumulate .........................................................."
+    CALL wrf_debug(200, message)
+    WRITE(message, *) "RASM Statistics: nsteps=",nsteps, "time_step=", (xtime+dt/60.)*60./dt, "xtime=", xtime
+    CALL wrf_debug(200, message)  
+
+    ! Surface Pressure
+    CALL var_accum_2d(psfc,ime-ims+1,jme-jms+1,psfcMean)
+    
+    ! Surface Skin Temperature
+    CALL var_accum_2d(tsk,ime-ims+1,jme-jms+1,tskMean)
+    
+    ! Temperature at 2M
+    CALL var_accum_2d(t2,ime-ims+1,jme-jms+1,tmp2mean)
+
+    ! SENSIBLE HEAT FLUX AT THE SURFACE
+    CALL var_accum_2d(hfx,ime-ims+1,jme-jms+1,hfxMean)
+
+    ! LATENT HEAT FLUX AT THE SURFACE
+    CALL var_accum_2d(lh,ime-ims+1,jme-jms+1,lhMean)
+
+    ! INCOMING SOLAR AT SURFACE (SHORTWAVE DOWN)
+    CALL var_accum_2d(swdnb,ime-ims+1,jme-jms+1,swdnbMean)
+
+    ! INCOMING LONGWAVE AT SURFACE (LONGWAVE DOWN)
+    CALL var_accum_2d(glw,ime-ims+1,jme-jms+1,glwMean)
+
+    ! OUTGOING LONGWAVE AT SURFACE (LONGWAVE FLUX UP)
+    CALL var_accum_2d(lwupb,ime-ims+1,jme-jms+1,lwupbMean)
+
+    ! REFLECTIVE SHORTWAVE AT SURFACE 
+    CALL var_accum_2d(swupb,ime-ims+1,jme-jms+1,swupbMean)
+
+#ifdef CESMCOUPLED
+
+    ! SWNDR - shortwave down at surface, near infrared direct component
+    CALL var_accum_2d(swndr,ime-ims+1,jme-jms+1,swndrMean)
+
+    ! SWNDF - shortwave down at surface, near infrared diffuse component
+    CALL var_accum_2d(swndf,ime-ims+1,jme-jms+1,swndfMean)
+
+    ! SWVDR - shortwave down at surface, visible direct component
+    CALL var_accum_2d(swvdr,ime-ims+1,jme-jms+1,swvdrMean)
+
+    ! SWVDF - shortwave down at surface, visible diffuse component
+    CALL var_accum_2d(swvdf,ime-ims+1,jme-jms+1,swvdfMean)
+
+#endif
+
+    ! SWUPT - UPWELLING SHORTWAVE FLUX AT TOP
+    CALL var_accum_2d(swupt,ime-ims+1,jme-jms+1,swuptMean)
+
+    ! SWDNT - DOWNWELLING SHORTWAVE FLUX AT TOP
+    CALL var_accum_2d(swdnt,ime-ims+1,jme-jms+1,swdntMean)
+
+    ! LWUPT - UPWELLING LONGWAVE FLUX AT TOP
+    CALL var_accum_2d(lwupt,ime-ims+1,jme-jms+1,lwuptMean)
+
+    ! LWDNT - DOWNWELLING LONGWAVE FLUX AT TOP
+    CALL var_accum_2d(lwdnt,ime-ims+1,jme-jms+1,lwdntMean)
+
+    ! U SURFACE WIND SPEED (X-WIND COMPONENT)
+    CALL var_accum_3d_01(ims, ime, jms, jme, kms, kme,    &
+                         ide, jde, ips, ipe, jps, jpe,    &
+                         u, uMean) 
+
+    ! V SURFACE WIND SPEED (Y-WIND COMPONENT)
+    CALL var_accum_3d_01(ims, ime, jms, jme, kms, kme,    &
+                         ide, jde, ips, ipe, jps, jpe,    &
+                         v, vMean)
+
+    ! SURFACE HUMIDITY
+    CALL var_accum_3d_01(ims, ime, jms, jme, kms, kme,    &
+                         ide, jde, ips, ipe, jps, jpe,    &
+                         moist, qvMean) 
+
+    ! SPECIFIC SURFACE HUMIDITY 
+    CALL shum_accum_01(ims, ime, jms, jme, kms, kme,    &
+                       ide, jde, ips, ipe, jps, jpe,    &
+                       moist, shumMean)
+
+    ! PMSL & Surface temperature (at lowest level)
+    CALL PMSL_T_accum_01( ims, ime, jms, jme, kms, kme,    &
+                          ide, jde, ips, ipe, jps, jpe,    &
+                          t, p, pb, moist, ht, psfc, pmslMean, tMean)
+
+    CALL getAvgState(currentTime, xtime, dt, mean_interval, output_freq, compute_avg, avgOutDateStr)
+    IF (compute_avg) THEN
+       psfcMean=psfcMean/nsteps
+       tskMean=tskMean/nsteps
+       tmp2mean=tmp2mean/nsteps
+       tMean=tMean/nsteps
+       pmslMean=pmslMean/nsteps
+       hfxMean=hfxMean/nsteps
+       lhMean=lhMean/nsteps
+       swdnbMean=swdnbMean/nsteps
+       glwMean=glwMean/nsteps
+       lwupbMean=lwupbMean/nsteps
+       swupbMean=swupbMean/nsteps
+       uMean=uMean/nsteps
+       vMean=vMean/nsteps
+       qvMean=qvMean/nsteps
+       shumMean=shumMean/nsteps
+#ifdef CESMCOUPLED 
+       swndrMean=swndrMean/nsteps
+       swndfMean=swndfMean/nsteps
+       swvdrMean=swvdrMean/nsteps
+       swvdfMean=swvdfMean/nsteps
+#endif
+       swuptMean=swuptMean/nsteps
+       swdntMean=swdntMean/nsteps
+       lwuptMean=lwuptMean/nsteps
+       lwdntMean=lwdntMean/nsteps
+      
+       if ( output_freq .EQ. MONTHLY) then
+             WRITE(message, *) "RASM Statistics: MONTHLY_INTERVAL turn ON ALARM to generate output ........................"
+             CALL wrf_debug(200, message)
+       endif
+
+       CALL WRFU_AlarmRingerOn (avgOutAlarm, rc=rc)
+      
+       WRITE(message, *) "RASM Statistics: Mean computed .........................................................."
+       CALL wrf_debug(200, message)
+
+    END IF
+
+  END SUBROUTINE mean_output_calc
+
+  ! RASM: Diurnal
+  SUBROUTINE diurnalcycle_output_calc(            &
+       ids, ide, jds, jde, kds, kde               &
+       ,ims, ime, jms, jme, kms, kme              &
+       ,ips, ipe, jps, jpe, kps, kpe              & ! patch  dims
+       ,i_start, i_end, j_start, j_end, num_tiles &
+       ,is_restart, psfc, psfcmean, dt, xtime     &
+       ,tsk , tskmean, t2, tmp2mean, t, tmean       &
+       ,p, pb, moist, hfx, hfxmean                & 
+       ,lh, lhmean, swdnb, swdnbmean, glw         & 
+       ,glwmean, lwupb, lwupbmean, swupb          &
+       ,swupbmean, u, umean, v, vmean, qvmean     &
+       ,shummean                                  &
+#ifdef CESMCOUPLED 
+       ,swndr, swndf, swvdr, swvdf                  &
+#endif
+       ,swndrmean, swndfmean, swvdrmean, swvdfmean  &
+       ,u10, u10mean, v10, v10mean                  &
+       ,q2, q2mean,currenttime, avgoutalarm         &
+       ,diurnOutDateStr, avg_nsteps                 &
+       ,diurnal_nsteps, psfcdiurnal, tskdiurnal     &
+       ,t2diurnal, tdiurnal, hfxdiurnal, lhdiurnal  &
+       ,swdnbdiurnal, glwdiurnal, lwupbdiurnal      &
+       ,swupbdiurnal, udiurnal, vdiurnal, qvdiurnal &
+       ,shumdiurnal                                 &
+       ,swndrdiurnal, swndfdiurnal                  &
+       ,swvdrdiurnal, swvdfdiurnal                  &
+       ,u10diurnal                                  &
+       ,v10diurnal, q2diurnal                       &
+       )
+    !----------------------------------------------------------------------
+
+    ! USES:
+    USE module_utility
+    USE module_model_constants
+
+    IMPLICIT NONE
+    !======================================================================
+    ! Definitions
+    !-----------
+    !-- DT            time step (second)
+    !-- XTIME         forecast time
+    !-- ims           start index for i in memory
+    !-- ime           end index for i in memory
+    !-- jms           start index for j in memory
+    !-- jme           end index for j in memory    
+    !-- i_start       start indices for i in tile
+    !-- i_end         end indices for i in tile
+    !-- j_start       start indices for j in tile
+    !-- j_end         end indices for j in tile
+    !-- num_tiles     number of tiles
+    !
+    !======================================================================
+
+    INTEGER, INTENT(IN)                       :: ims, ime, jms, jme, kms, kme
+    INTEGER, INTENT(IN)                       :: ids, ide, jds, jde, kds, kde
+    INTEGER, INTENT(IN)                       :: ips, ipe, jps, jpe, kps, kpe
+   
+    INTEGER, INTENT(IN)                       :: num_tiles
+    INTEGER, DIMENSION(num_tiles), INTENT(IN) :: i_start, i_end, j_start, j_end
+    TYPE(WRFU_Time), INTENT(IN)               :: currentTime
+    TYPE(WRFU_Alarm), INTENT(INOUT)           :: avgOutAlarm
+    INTEGER, INTENT(INOUT)                    :: avg_nsteps             ! number of avg steps accumulated
+    INTEGER, INTENT(INOUT)                    :: diurnal_nsteps         ! number of diurnal steps accumulated
+    CHARACTER(*), INTENT(INOUT)               :: diurnOutDateStr
+
+    REAL, INTENT(IN)                                  :: dt, xtime
+    REAL, DIMENSION( ims:ime ,jms:jme ), INTENT(IN)  :: psfc, tsk, t2, hfx, lh, swdnb
+    REAL, DIMENSION( ims:ime ,jms:jme ), INTENT(IN)  :: glw, lwupb, swupb
+#ifdef CESMCOUPLED
+    REAL, DIMENSION( ims:ime ,jms:jme ), INTENT(IN)  :: swndr, swndf, swvdr, swvdf
+#endif
+    REAL, DIMENSION( ims:ime ,jms:jme ), INTENT(IN)  :: u10, v10, q2
+    REAL, DIMENSION( ims:ime ,kms:kme, jms:jme ), INTENT(IN) :: t, p, pb, moist, u, v
+    
+    DOUBLE PRECISION, DIMENSION( ims:ime, jms:jme ), INTENT(OUT) :: psfcMean, tskMean, tmp2mean
+    DOUBLE PRECISION, DIMENSION( ims:ime, jms:jme ), INTENT(OUT) :: hfxMean, lhMean, swdnbMean 
+    DOUBLE PRECISION, DIMENSION( ims:ime, jms:jme ), INTENT(OUT) :: glwMean, lwupbMean, swupbMean
+    DOUBLE PRECISION, DIMENSION( ims:ime, jms:jme ), INTENT(OUT) :: tMean, uMean
+    DOUBLE PRECISION, DIMENSION( ims:ime, jms:jme ), INTENT(OUT) :: vMean, qvMean, shumMean
+    DOUBLE PRECISION, DIMENSION( ims:ime, jms:jme ), INTENT(OUT) :: swndrMean, swndfMean
+    DOUBLE PRECISION, DIMENSION( ims:ime, jms:jme ), INTENT(OUT) :: swvdrMean, swvdfMean
+    DOUBLE PRECISION, DIMENSION( ims:ime, jms:jme ), INTENT(OUT) :: u10Mean, v10Mean, q2Mean
+   
+    DOUBLE PRECISION, DIMENSION( ims:ime, 1:NUM_DIURN_CYCLES, jms:jme ), INTENT(OUT) :: psfcDiurnal, tskDiurnal
+    DOUBLE PRECISION, DIMENSION( ims:ime, 1:NUM_DIURN_CYCLES, jms:jme ), INTENT(OUT) :: t2Diurnal, tDiurnal    
+    DOUBLE PRECISION, DIMENSION( ims:ime, 1:NUM_DIURN_CYCLES, jms:jme ), INTENT(OUT) :: hfxDiurnal, lhDiurnal, swdnbDiurnal 
+    DOUBLE PRECISION, DIMENSION( ims:ime, 1:NUM_DIURN_CYCLES, jms:jme ), INTENT(OUT) :: glwDiurnal, lwupbDiurnal, swupbDiurnal 
+    DOUBLE PRECISION, DIMENSION( ims:ime, 1:NUM_DIURN_CYCLES, jms:jme ), INTENT(OUT) :: uDiurnal, vDiurnal, qvDiurnal 
+    DOUBLE PRECISION, DIMENSION( ims:ime, 1:NUM_DIURN_CYCLES, jms:jme ), INTENT(OUT) :: shumDiurnal, swndrDiurnal
+    DOUBLE PRECISION, DIMENSION( ims:ime, 1:NUM_DIURN_CYCLES, jms:jme ), INTENT(OUT) :: swndfDiurnal, swvdrDiurnal, swvdfDiurnal
+    DOUBLE PRECISION, DIMENSION( ims:ime, 1:NUM_DIURN_CYCLES, jms:jme ), INTENT(OUT) :: u10Diurnal, v10Diurnal, q2Diurnal
+
+    ! LOCAL  VAR
+    INTEGER     :: i, j, k, ij
+    REAL        :: value
+    LOGICAL     :: is_restart
+    INTEGER     :: rc
+    INTEGER     :: current_diurn_cycle
+    INTEGER     :: diurnal_output_freq    ! diurnal interval type
+    INTEGER     :: mean_output_freq       ! mean interval type
+    INTEGER     :: mean_interval          ! mean interval
+    LOGICAL     :: is_avg_reset           ! reset averages
+    LOGICAL     :: is_diurnal_reset       ! reset dirurnal cycle
+    LOGICAL     :: compute_avg            ! compute averages
+    LOGICAL     :: compute_diurnalcycle   ! compute dirurnal cycle
+ 
+    ! DEBUG LOCAL  VAR
+    CHARACTER (LEN=1024)  :: message
+    CHARACTER (LEN=1024)  :: EmptyStr
+    LOGICAL               :: diurn_test
+    INTEGER               :: diurn_interval 
+   
+    ! initialize frequencies and intervals
+    mean_interval = DIURNAL_3HR
+    mean_output_freq = HRS
+    diurn_interval = 2 * 24 * 60 * 60 ! dummy variable only used when testing
+    diurnal_output_freq = MONTHLY
+    EmptyStr =""                      ! empty string used for processing 
+
+    ! intitialize 2 day test 
+    diurn_test = .false.       
+    ! if testing generate daily instead of monthy     
+    if (diurn_test) then
+       diurnal_output_freq = DAYS
+    else
+       diurnal_output_freq = MONTHLY
+    endif
+
+    ! get the average state
+    CALL getResetState(currentTime, xtime, dt, mean_interval, mean_output_freq, is_avg_reset)
+    IF (is_avg_reset) THEN
+       DO ij = 1 , num_tiles
+          DO j = j_start(ij), j_end(ij)
+             DO i = i_start(ij), i_end(ij)
+                psfcMean(i,j)=0.0D0
+                tskMean(i,j)=0.0D0
+                tmp2mean(i,j)=0.0D0
+                tMean(i,j)=0.0D0
+                hfxMean(i,j)=0.0D0
+                lhMean(i,j)=0.0D0
+                swdnbMean(i,j)=0.0D0
+                glwMean(i,j)=0.0D0
+                lwupbMean(i,j)=0.0D0
+                swupbMean(i,j)=0.0D0
+                uMean(i,j)=0.0D0
+                vMean(i,j)=0.0D0
+                uMean(i+1,j)=0.0D0
+                vMean(i,j+1)=0.0D0
+                qvMean(i,j)=0.0D0
+                shumMean(i,j)=0.0D0
+                swndrMean(i,j)=0.0D0
+                swndfMean(i,j)=0.0D0
+                swvdrMean(i,j)=0.0D0
+                swvdfMean(i,j)=0.0D0
+                u10Mean(i,j)=0.0D0
+                v10Mean(i,j)=0.0D0
+                q2Mean(i,j)=0.0D0
+             ENDDO
+          ENDDO
+       ENDDO
+
+       ! restart step count 
+       avg_nsteps = 0.0
+
+       WRITE(message, *) "RASM Statistics: RESET accumaltions and means ..................... avg_nsteps=", avg_nsteps
+       CALL wrf_debug(200, message)
+
+    ENDIF
+
+    ! get the diurnal state
+    CALL getResetState(currentTime, xtime, dt, diurn_interval, diurnal_output_freq, is_diurnal_reset)
+    IF (is_diurnal_reset) THEN
+       DO ij = 1 , num_tiles
+          DO k = 1 , NUM_DIURN_CYCLES
+             DO j = j_start(ij), j_end(ij)
+                DO i = i_start(ij), i_end(ij)
+                   psfcDiurnal(i,k,j)=0.0D0
+                   tskDiurnal(i,k,j)=0.0D0
+                   t2Diurnal(i,k,j)=0.0D0
+                   tDiurnal(i,k,j)=0.0D0
+                   hfxDiurnal(i,k,j)=0.0D0
+                   lhDiurnal(i,k,j)=0.0D0
+                   swdnbDiurnal(i,k,j)=0.0D0
+                   glwDiurnal(i,k,j)=0.0D0
+                   lwupbDiurnal(i,k,j)=0.0D0
+                   swupbDiurnal(i,k,j)=0.0D0
+                   uDiurnal(i,k,j)=0.0D0
+                   vDiurnal(i,k,j)=0.0D0
+                   uDiurnal(i+1,k,j)=0.0D0
+                   vDiurnal(i,k,j+1)=0.0D0
+                   qvDiurnal(i,k,j)=0.0D0
+                   shumDiurnal(i,k,j)=0.0D0
+                   swndrDiurnal(i,k,j)=0.0D0
+                   swndfDiurnal(i,k,j)=0.0D0
+                   swvdrDiurnal(i,k,j)=0.0D0
+                   swvdfDiurnal(i,k,j)=0.0D0
+                   u10Diurnal(i,k,j)=0.0D0
+                   v10Diurnal(i,k,j)=0.0D0
+                   q2Diurnal(i,k,j)=0.0D0
+                ENDDO
+             ENDDO
+          ENDDO
+       ENDDO
+
+       ! restart step count 
+       diurnal_nsteps = 0.0
+
+       WRITE(message, *) "RASM Statistics: RESET Diurnal means ..................... diurnal_nsteps=", diurnal_nsteps
+       CALL wrf_debug(200, message)
+
+    ENDIF
+    
+    avg_nsteps = avg_nsteps+1.0
+
+    ! Surface Pressure
+    CALL var_accum_2d(psfc,ime-ims+1,jme-jms+1,psfcMean)
+    
+    ! Surface Skin Temperature
+    CALL var_accum_2d(tsk,ime-ims+1,jme-jms+1,tskMean)
+    
+    ! Temperature at 2M
+    CALL var_accum_2d(t2,ime-ims+1,jme-jms+1,tmp2mean)
+
+    ! SENSIBLE HEAT FLUX AT THE SURFACE
+    CALL var_accum_2d(hfx,ime-ims+1,jme-jms+1,hfxMean)
+
+    ! LATENT HEAT FLUX AT THE SURFACE
+    CALL var_accum_2d(lh,ime-ims+1,jme-jms+1,lhMean)
+
+    ! INCOMING SOLAR AT SURFACE (SHORTWAVE DOWN)
+    CALL var_accum_2d(swdnb,ime-ims+1,jme-jms+1,swdnbMean)
+
+    ! INCOMING LONGWAVE AT SURFACE (LONGWAVE DOWN)
+    CALL var_accum_2d(glw,ime-ims+1,jme-jms+1,glwMean)
+
+    ! OUTGOING LONGWAVE AT SURFACE (LONGWAVE FLUX UP)
+    CALL var_accum_2d(lwupb,ime-ims+1,jme-jms+1,lwupbMean)
+
+    ! REFLECTIVE SHORTWAVE AT SURFACE 
+    CALL var_accum_2d(swupb,ime-ims+1,jme-jms+1,swupbMean)
+
+#ifdef CESMCOUPLED
+
+    ! SWNDR - shortwave down at surface, near infrared direct component
+    CALL var_accum_2d(swndr,ime-ims+1,jme-jms+1,swndrMean)
+
+    ! SWNDF - shortwave down at surface, near infrared diffuse component
+    CALL var_accum_2d(swndf,ime-ims+1,jme-jms+1,swndfMean)
+
+    ! SWVDR - shortwave down at surface, visible direct component
+    CALL var_accum_2d(swvdr,ime-ims+1,jme-jms+1,swvdrMean)
+
+    ! SWVDF - shortwave down at surface, visible diffuse component
+    CALL var_accum_2d(swvdf,ime-ims+1,jme-jms+1,swvdfMean)
+
+#endif
+
+    ! U SURFACE WIND SPEED (X-WIND COMPONENT)
+    CALL var_accum_3d_01(ims, ime, jms, jme, kms, kme,    &
+                         ide, jde, ips, ipe, jps, jpe,    &
+                         u, uMean) 
+
+    ! V SURFACE WIND SPEED (Y-WIND COMPONENT)
+    CALL var_accum_3d_01(ims, ime, jms, jme, kms, kme,    &
+                         ide, jde, ips, ipe, jps, jpe,    & 
+                         v, vMean)
+
+    ! SURFACE HUMIDITY
+    CALL var_accum_3d_01(ims, ime, jms, jme, kms, kme,    &
+                         ide, jde, ips, ipe, jps, jpe,    &
+                         moist, qvMean) 
+
+    ! U10 WIND SPEED (X-WIND COMPONENT)
+    CALL var_accum_3d_01(ims, ime, jms, jme, kms, kme,    &
+                         ide, jde, ips, ipe, jps, jpe,    &
+                         u10, u10Mean) 
+
+    ! V10 WIND SPEED (Y-WIND COMPONENT)
+    CALL var_accum_3d_01(ims, ime, jms, jme, kms, kme,    &
+                         ide, jde, ips, ipe, jps, jpe,    &
+                         v10, v10Mean)
+
+    ! SPECIFIC HUMIDITY at 2M
+    CALL var_accum_3d_01(ims, ime, jms, jme, kms, kme,    &
+                         ide, jde, ips, ipe, jps, jpe,    &
+                         q2, q2Mean)
+
+    ! SPECIFIC SURFACE HUMIDITY 
+    CALL shum_accum_01(ims, ime, jms, jme, kms, kme,    &
+                       ide, jde, ips, ipe, jps, jpe,    &
+                       moist, shumMean)
+
+    ! Surface temperature (at lowest level)
+    CALL T_accum_01( ims, ime, jms, jme, kms, kme,    &
+                     ide, jde, ips, ipe, jps, jpe,    &
+                     t, p, pb, tMean)
+  
+    ! get average state
+    CALL getAvgState(currentTime, xtime, dt, mean_interval, mean_output_freq, compute_avg, EmptyStr)
+    IF (compute_avg) THEN
+       psfcMean=psfcMean/avg_nsteps
+       tskMean=tskMean/avg_nsteps
+       tmp2mean=tmp2mean/avg_nsteps
+       tMean=tMean/avg_nsteps
+       hfxMean=hfxMean/avg_nsteps
+       lhMean=lhMean/avg_nsteps
+       swdnbMean=swdnbMean/avg_nsteps
+       glwMean=glwMean/avg_nsteps
+       lwupbMean=lwupbMean/avg_nsteps
+       swupbMean=swupbMean/avg_nsteps
+       uMean=uMean/avg_nsteps
+       vMean=vMean/avg_nsteps
+       qvMean=qvMean/avg_nsteps
+       shumMean=shumMean/avg_nsteps
+#ifdef CESMCOUPLED
+       swndrMean=swndrMean/avg_nsteps
+       swndfMean=swndfMean/avg_nsteps
+       swvdrMean=swvdrMean/avg_nsteps
+       swvdfMean=swvdfMean/avg_nsteps
+#endif
+       u10Mean=u10Mean/avg_nsteps
+       v10Mean=v10Mean/avg_nsteps
+       q2Mean=q2Mean/avg_nsteps
+       
+       CALL get_diurn_cycle(currentTime, xtime, dt, current_diurn_cycle)
+       ! accummulate averages, increment counter by one
+       CALL var_accum_diurnal(psfcMean, ime-ims+1,  NUM_DIURN_CYCLES, jme-jms+1, current_diurn_cycle, psfcDiurnal) 
+       CALL var_accum_diurnal(tskMean, ime-ims+1,  NUM_DIURN_CYCLES, jme-jms+1, current_diurn_cycle, tskDiurnal)
+       CALL var_accum_diurnal(tmp2mean, ime-ims+1,  NUM_DIURN_CYCLES, jme-jms+1, current_diurn_cycle, t2Diurnal)
+       CALL var_accum_diurnal(tMean, ime-ims+1,  NUM_DIURN_CYCLES, jme-jms+1, current_diurn_cycle, tDiurnal)
+       CALL var_accum_diurnal(hfxMean, ime-ims+1,  NUM_DIURN_CYCLES, jme-jms+1, current_diurn_cycle, hfxDiurnal) 
+       CALL var_accum_diurnal(lhMean, ime-ims+1,  NUM_DIURN_CYCLES, jme-jms+1, current_diurn_cycle, lhDiurnal) 
+       CALL var_accum_diurnal(swdnbMean, ime-ims+1,  NUM_DIURN_CYCLES, jme-jms+1, current_diurn_cycle, swdnbDiurnal) 
+       CALL var_accum_diurnal(glwMean, ime-ims+1,  NUM_DIURN_CYCLES, jme-jms+1, current_diurn_cycle, glwDiurnal) 
+       CALL var_accum_diurnal(lwupbMean, ime-ims+1,  NUM_DIURN_CYCLES, jme-jms+1, current_diurn_cycle, lwupbDiurnal) 
+       CALL var_accum_diurnal(swupbMean, ime-ims+1,  NUM_DIURN_CYCLES, jme-jms+1, current_diurn_cycle, swupbDiurnal) 
+       CALL var_accum_diurnal(uMean, ime-ims+1,  NUM_DIURN_CYCLES, jme-jms+1, current_diurn_cycle, uDiurnal) 
+       CALL var_accum_diurnal(vMean, ime-ims+1,  NUM_DIURN_CYCLES, jme-jms+1, current_diurn_cycle, vDiurnal) 
+       CALL var_accum_diurnal(qvMean, ime-ims+1,  NUM_DIURN_CYCLES, jme-jms+1, current_diurn_cycle, qvDiurnal) 
+       CALL var_accum_diurnal(shumMean, ime-ims+1,  NUM_DIURN_CYCLES, jme-jms+1, current_diurn_cycle, shumDiurnal) 
+#ifdef CESMCOUPLED
+       CALL var_accum_diurnal(swndrMean, ime-ims+1,  NUM_DIURN_CYCLES, jme-jms+1, current_diurn_cycle, swndrDiurnal) 
+       CALL var_accum_diurnal(swndfMean, ime-ims+1,  NUM_DIURN_CYCLES, jme-jms+1, current_diurn_cycle, swndfDiurnal) 
+       CALL var_accum_diurnal(swvdrMean, ime-ims+1,  NUM_DIURN_CYCLES, jme-jms+1, current_diurn_cycle, swvdrDiurnal) 
+       CALL var_accum_diurnal(swvdfMean, ime-ims+1,  NUM_DIURN_CYCLES, jme-jms+1, current_diurn_cycle, swvdfDiurnal)
+#endif 
+       CALL var_accum_diurnal(u10Mean, ime-ims+1,  NUM_DIURN_CYCLES, jme-jms+1, current_diurn_cycle, u10Diurnal) 
+       CALL var_accum_diurnal(v10Mean, ime-ims+1,  NUM_DIURN_CYCLES, jme-jms+1, current_diurn_cycle, v10Diurnal) 
+       CALL var_accum_diurnal(q2Mean, ime-ims+1,  NUM_DIURN_CYCLES, jme-jms+1, current_diurn_cycle, q2Diurnal) 
+       
+       ! increment diurnal count once a day, assuming 3hr cycles 
+       if (current_diurn_cycle .eq. 8) then
+          diurnal_nsteps = diurnal_nsteps + 1.0
+       endif
+
+    END IF
+
+    ! get Diurnal average state
+    CALL getDiurnalState(currentTime, xtime, dt, diurn_interval, diurnal_output_freq, compute_diurnalcycle, diurnOutDateStr)
+    IF (compute_diurnalcycle) THEN
+       psfcDiurnal=psfcDiurnal/diurnal_nsteps
+       tskDiurnal=tskDiurnal/diurnal_nsteps
+       t2Diurnal=t2Diurnal/diurnal_nsteps
+       tDiurnal=tDiurnal/diurnal_nsteps
+       hfxDiurnal=hfxDiurnal/diurnal_nsteps
+       lhDiurnal=lhDiurnal/diurnal_nsteps
+       swdnbDiurnal=swdnbDiurnal/diurnal_nsteps
+       glwDiurnal=glwDiurnal/diurnal_nsteps
+       lwupbDiurnal=lwupbDiurnal/diurnal_nsteps
+       swupbDiurnal=swupbDiurnal/diurnal_nsteps
+       uDiurnal=uDiurnal/diurnal_nsteps
+       vDiurnal=vDiurnal/diurnal_nsteps
+       qvDiurnal=qvDiurnal/diurnal_nsteps
+       shumDiurnal=shumDiurnal/diurnal_nsteps
+#ifdef CESMCOUPLED 
+       swndrDiurnal=swndrDiurnal/diurnal_nsteps
+       swndfDiurnal=swndfDiurnal/diurnal_nsteps
+       swvdrDiurnal=swvdrDiurnal/diurnal_nsteps
+       swvdfDiurnal=swvdfDiurnal/diurnal_nsteps
+#endif
+       u10Diurnal=u10Diurnal/diurnal_nsteps
+       v10Diurnal=v10Diurnal/diurnal_nsteps
+       q2Diurnal=q2Diurnal/diurnal_nsteps
+
+       CALL WRFU_AlarmRingerOn (avgOutAlarm, rc=rc)
+      
+       WRITE(message, *) "RASM Statistics: Diurnal Mean Cycle computed .........................................................."
+       CALL wrf_debug(200, message)
+
+    END IF
+
+  END SUBROUTINE diurnalcycle_output_calc
+
+  SUBROUTINE var_accum_diurnal(var, dx, dz, dy, current_cycle, var_accum) 
+    ! Subroutine accumulates diurnal variable
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN)                   :: dx, dz, dy, current_cycle
+    DOUBLE PRECISION, DIMENSION(dx,dy), INTENT(IN)         :: var
+    DOUBLE PRECISION, DIMENSION(dx, dz, dy), INTENT(INOUT) :: var_accum
+ 
+    !local
+    INTEGER :: k, i, j
+ 
+    k = current_cycle ! current cycle
+    DO j=1,dy
+       DO i=1,dx
+          var_accum(i, k, j) = var_accum(i, k, j) + var(i,j)
+       ENDDO
+    ENDDO
+
+  END SUBROUTINE var_accum_diurnal
+
+  SUBROUTINE var_accum_2d(var, dx, dy, var_accum) 
+    ! Subroutine accumulates 2D variable
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN)                   :: dx, dy
+    REAL, DIMENSION(dx,dy), INTENT(IN)    :: var
+    DOUBLE PRECISION, DIMENSION(dx,dy), INTENT(INOUT) :: var_accum
+    
+    var_accum = var_accum + (var *  1.0D0 ) 
+
+  END SUBROUTINE var_accum_2d
+
+  SUBROUTINE var_accum_3d_01(ims, ime, jms, jme, kms, kme,    &
+                             ide, jde, ips, ipe, jps, jpe,    &
+                             var, var_accum) 
+    ! Subroutine accumulates 3D variable at lowest level resulting in 2D output
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN) :: ims, ime, jms, jme, kms, kme
+    INTEGER, INTENT(IN) :: ide, jde, ips, ipe, jps, jpe
+
+    REAL, DIMENSION(  ims:ime , kms:kme, jms:jme ), INTENT(IN):: var
+    DOUBLE PRECISION, DIMENSION(ims:ime , jms:jme), INTENT(INOUT) :: var_accum
+    
+    !local
+    INTEGER              :: k, i, j, j_end, i_end
+    CHARACTER (LEN=1024) :: message
+
+    j_end = jpe
+    i_end = ipe
+    if(j_end.eq.jde) j_end=j_end-1
+    if(i_end.eq.ide) i_end=i_end-1
+
+    k=1 ! lowest level 
+    DO j=jps, j_end            
+       DO i=ips, i_end
+          var_accum(i,j) = var_accum(i,j) + ( var(i,k,j) *  1.0D0 )
+       ENDDO
+    ENDDO
+ 
+  END SUBROUTINE var_accum_3d_01
+
+  SUBROUTINE shum_accum_01(ims, ime, jms, jme, kms, kme,    &
+                           ide, jde, ips, ipe, jps, jpe,    &
+                           moist, var_accum) 
+    ! Subroutine accumulates specific humidity at lowest level resulting in 2D output
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN) :: ims, ime, jms, jme, kms, kme
+    INTEGER, INTENT(IN) :: ide, jde, ips, ipe, jps, jpe
+
+    REAL, DIMENSION(  ims:ime , kms:kme, jms:jme ), INTENT(IN):: moist
+    DOUBLE PRECISION, DIMENSION(ims:ime , jms:jme), INTENT(INOUT) :: var_accum
+
+    !local
+    DOUBLE PRECISION :: tmp_shum
+    INTEGER              :: k, i, j, j_end, i_end
+    CHARACTER (LEN=1024) :: message
+
+    j_end = jpe
+    i_end = ipe
+    if(j_end.eq.jde) j_end=j_end-1
+    if(i_end.eq.ide) i_end=i_end-1
+
+    k=1 ! lowest level 
+    DO j=jps, j_end            
+       DO i=ips, i_end
+          if( moist(i,k,j) .gt. 0 ) then
+             tmp_shum = moist(i,k,j) / (1+moist(i,k,j)) 
+          else
+             tmp_shum = 0.0
+          endif
+          var_accum(i,j) = var_accum(i,j) + (tmp_shum * 1.0D0)
+       ENDDO
+    ENDDO
+ 
+  END SUBROUTINE shum_accum_01
+
+  SUBROUTINE T_accum_01( ims, ime, jms, jme, kms, kme,    &
+                         ide, jde, ips, ipe, jps, jpe,    &
+                         t, p, pb, t_accum) 
+    ! Subroutine accumulates Temperature at lowest level resulting in 2D output
+   
+    USE module_model_constants, only: t0,p0
+    USE shr_const_mod
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN) :: ims, ime, jms, jme, kms, kme
+    INTEGER, INTENT(IN) :: ide, jde, ips, ipe, jps, jpe
+
+    REAL, DIMENSION(  ims:ime , kms:kme, jms:jme ), INTENT(IN):: t, p, pb
+    DOUBLE PRECISION, DIMENSION(ims:ime , jms:jme), INTENT(INOUT) :: t_accum
+
+    ! local
+    DOUBLE PRECISION     :: t_tmp, cp, rd
+    INTEGER              :: k, i, j, j_end, i_end
+    CHARACTER (LEN=1024) :: message
+
+    rd=SHR_CONST_RDAIR
+    cp=SHR_CONST_CPDAIR
+
+    j_end = jpe
+    i_end = ipe
+    if(j_end.eq.jde) j_end=j_end-1
+    if(i_end.eq.ide) i_end=i_end-1
+
+    k=1 ! lowest level 
+    DO j=jps, j_end            
+       DO i=ips, i_end
+          ! calulate surface tempature at lowest level
+          t_tmp = (t(i,k,j) + t0) * (((p(i,k,j) + pb(i,k,j))/p0) ** (rd/cp))
+          ! accumulate surface tempature at lowest level
+          t_accum(i,j) = t_accum(i,j) + t_tmp
+       ENDDO
+    ENDDO
+
+  END SUBROUTINE T_accum_01
+
+
+  SUBROUTINE PMSL_T_accum_01( ims, ime, jms, jme, kms, kme,    &
+                              ide, jde, ips, ipe, jps, jpe,    &
+                              t, p, pb, moist, ht, psfc, pmsl_accum, t_accum)
+    ! Subroutine accumulates PMSL at lowest level resulting in 2D output
+   
+    USE module_model_constants, only: t0,p0
+    USE shr_const_mod
+
+    IMPLICIT NONE
+
+    INTEGER, INTENT(IN) :: ims, ime, jms, jme, kms, kme
+    INTEGER, INTENT(IN) :: ide, jde, ips, ipe, jps, jpe
+
+    REAL, DIMENSION(  ims:ime , kms:kme, jms:jme ), INTENT(IN):: t, p, pb, moist
+    REAL, DIMENSION(  ims:ime , jms:jme ), INTENT(IN):: ht, psfc
+    DOUBLE PRECISION, DIMENSION(ims:ime , jms:jme), INTENT(INOUT) :: pmsl_accum, t_accum
+
+    ! local
+    DOUBLE PRECISION     :: t_tmp, tmp_pmsl, z, tv, g, cp, rd, xlapse
+    DOUBLE PRECISION     :: alpha, tstar, tt0, alph, beta, psfc_tmp, p_tmp
+    INTEGER              :: k, i, j, j_end, i_end
+    CHARACTER (LEN=1024) :: message
+
+    xlapse = 6.5D-3
+    rd=SHR_CONST_RDAIR
+    g=SHR_CONST_G
+    cp=SHR_CONST_CPDAIR
+
+    j_end = jpe
+    i_end = ipe
+    if(j_end.eq.jde) j_end=j_end-1
+    if(i_end.eq.ide) i_end=i_end-1
+
+    k=1 ! lowest level 
+    do j=jps, j_end            
+       do i=ips, i_end
+
+             ! calulate surface tempature at lowest level
+             t_tmp = (t(i,k,j) + t0) * (((p(i,k,j) + pb(i,k,j))/p0) ** (rd/cp))
+                  
+             ! accumulate surface tempature at lowest level
+             t_accum(i,j) = t_accum(i,j) + t_tmp
+             ! calculate virtual temperature at lowest model level
+             tv = t_tmp * (1 + moist(i,k,j) * 0.61D0) * 1.0D0
+
+             ! Calculate geopotential at surface in m2 s-2
+             z = ht(i,j) * g ! terrain height in m
+
+             alpha = rd * xlapse/g ! 0.1903, no units
+
+             ! Get surface pressure in Pa
+             psfc_tmp = psfc(i,j) * 1.0D0
+
+             ! Calculate pressure in WRF at lowest model level in Pa
+             p_tmp = (p(i,k,j) + pb(i,k,j)) * 1.0D0
+
+             ! Use surface pressure for PMSL if we are at sea level.
+             if ( abs(z/g) < 1.0D-4 )then
+                tmp_pmsl = psfc_tmp
+                ! Othewise, calculate based on ECMWF method
+             else
+                tstar = tv * (1.0D0 + alpha * (psfc_tmp/p_tmp-1.0D0)) 
+                tt0 = tstar + xlapse*z/g
+
+                if ( tstar <= 290.5D0 .and. tt0 > 290.5D0 ) then     
+                   alph = rd/z * (290.5D0 - tstar)  
+                else if (tstar > 290.5D0  .and. tt0 > 290.5D0) then  
+                   alph = 0.0D0
+                   tstar = 0.5D0 * (290.5D0 + tstar)  
+                else  
+                   alph=alpha  
+                   if (tstar < 255.0D0) then  
+                      tstar = 0.5D0 * (255.0D0 + tstar)             
+                   endif
+                endif
+                beta = z/(rd*tstar)
+                tmp_pmsl = psfc_tmp * exp( beta*(1.0D0 - alph * beta/2.0D0 + ((alph*beta)**2)/3.0D0))
+             end if
+
+             ! accumulate pmsl at lowest level
+             pmsl_accum(i,j) = pmsl_accum(i,j) +  tmp_pmsl
+         
+          ENDDO
+       ENDDO
+
+  END SUBROUTINE PMSL_T_accum_01
+
+
+  SUBROUTINE getResetState(currentTime, xtime, dt, mean_interval, output_freq, is_reset)
+    ! Subroutine DESCRIPTION:
+    ! Determine if data stats are to be reset at the current time step
+    ! True implies that stats are reinitialized
+
+    ! USES:
+    USE module_utility
+    USE module_model_constants
+    !USE ESMF_Mod
+
+    IMPLICIT NONE
+
+    TYPE(WRFU_Time), INTENT(IN)   :: currentTime
+    INTEGER, INTENT(IN)           :: mean_interval
+    REAL, INTENT(IN)              :: dt, xtime 
+    INTEGER, INTENT(IN)           :: output_freq
+    LOGICAL, INTENT(INOUT)        :: is_reset
+   
+    ! LOCAL VARIABLES:
+    TYPE(WRFU_TimeInterval) :: off
+    TYPE(WRFU_Time)         :: prevTime
+ 
+    integer :: yr         !nstep year
+    integer :: mon        !nstep months (1 -> 12)   
+    integer :: prevMon    !nstep-1 months (1 -> 12)
+    integer :: day        !nstep days (1 -> 31)
+    integer :: dtime
+
+    CHARACTER (LEN=10) ::str_yr
+    CHARACTER (LEN=10) ::str_mon
+    CHARACTER (LEN=10) ::str_day
+    CHARACTER (LEN=80) ::filedate
+
+    CHARACTER (LEN=1024) :: message
+
+    dtime = INT (dt)
+
+    ! Determine if time to reset data stats
+    is_reset = .false.
+
+    if (output_freq .eq. MONTHLY) then
+       ! get date for current time_step
+       call WRFU_TimeGet( currentTime, mm=mon)   
+
+       ! get date for previous time_step
+       call WRFU_TimeIntervalSet( off, s=dtime)
+       prevTime = currentTime - off
+       call WRFU_TimeGet( prevTime, mm=prevMon)
+
+       if ( (mon-prevMon) /= 0) then
+          is_reset = .true.
+
+          WRITE(message, *) "RASM Statistics: MONTHLY_INTERVAL RESET condition met (return TRUE) "
+          CALL wrf_debug(200, message) 
+       endif
+    else
+       if ( MOD(NINT(xtime*60./dt),NINT(mean_interval/dt)) == 0 ) then
+          is_reset = .true.
+   
+          WRITE(message, *) "RASM Statistics: STATIC_INTERVAL RESET condition met (return TRUE) "
+          CALL wrf_debug(200, message) 
+       endif
+    endif
+
+  END SUBROUTINE getResetState
+
+  SUBROUTINE getAvgState(currentTime, xtime, dt, mean_interval, output_freq, compute_avg, OutDateStr)
+    ! Subroutine DESCRIPTION:
+    ! Determine if data averages are to be calculated at the current time step
+    ! True implies calculate avergaes
+
+   ! USES:
+    USE module_utility
+    USE module_model_constants
+    !USE ESMF_Mod
+
+    IMPLICIT NONE
+
+    TYPE(WRFU_Time), INTENT(IN)   :: currentTime
+    INTEGER, INTENT(IN)           :: mean_interval
+    REAL, INTENT(IN)              :: dt, xtime 
+    INTEGER, INTENT(IN)           :: output_freq
+    LOGICAL, INTENT(INOUT)        :: compute_avg
+    CHARACTER(*), INTENT(INOUT)   :: OutDateStr
+
+    ! LOCAL VARIABLES:
+    TYPE(WRFU_TimeInterval) :: off
+    TYPE(WRFU_Time)         :: nextTime
+    TYPE(WRFU_Time)         :: prevTime
+ 
+    integer :: yr         !nstep year
+    integer :: mon        !nstep months (1 -> 12)
+    integer :: nextMon    !nstep+1 months (1 -> 12)
+    integer :: prevMon    !nstep-1 months (1 -> 12)
+    integer :: day        !nstep days (1 -> 31)
+    integer :: hr         !nstep hrs
+    integer :: min        !nstep mins 
+    integer :: sec        !nstep secs
+    integer :: totalsec   !nstep total secs
+    integer :: dtime
+
+    CHARACTER (LEN=10) ::str_yr
+    CHARACTER (LEN=10) ::str_mon
+    CHARACTER (LEN=10) ::str_day
+    CHARACTER (LEN=10) ::str_sec
+    CHARACTER (LEN=80) ::filedate
+
+    CHARACTER (LEN=1024) :: message
+
+    dtime = INT (dt)
+
+    ! Determine if time to average data 
+    compute_avg = .false.
+    if ( output_freq .EQ. MONTHLY) then
+
+       ! get date for current time_step 
+       call WRFU_TimeGet( currentTime, mm=mon)   
+
+       ! get date for next time_step
+       call WRFU_TimeIntervalSet( off, s=dtime)
+       nextTime = currentTime + off
+       call WRFU_TimeGet( nextTime, mm=nextMon)
+
+       if ( (nextMon-mon) /= 0)  then
+          compute_avg = .true.
+
+          WRITE(message, *) "RASM Statistics: MONTHLY_INTERVAL AVG condition met (return TRUE) "
+          CALL wrf_debug(200, message) 
+       endif
+
+    else
+       if ((MOD(NINT((xtime+dt/60.)*60./dt),NINT(mean_interval/dt)) == 0)) then
+          compute_avg = .true.
+   
+          WRITE(message, *) "RASM Statistics: STATIC_INTERVAL AVG condition met (return TRUE) "
+          CALL wrf_debug(200, message) 
+       endif
+    endif
+
+    ! generate date used for hourly, min and sec averages
+    if (compute_avg) then
+       IF ( (output_freq .ne. MONTHLY)  .and. (output_freq .ne. DAYS)) THEN
+  
+          ! get date for next time_step
+          call WRFU_TimeIntervalSet( off, s=dtime)
+          nextTime = currentTime + off
+          call WRFU_TimeGet( nextTime, yy=yr, mm=mon, dd=day, h=hr, m=min, s=sec)   
+
+          WRITE(str_yr, '(I4.4)'), yr
+          WRITE(str_mon, '(I2.2)'), mon
+          WRITE(str_day, '(I2.2)'), day
+          totalsec = (hr * 60 * 60) + (min * 60) + sec 
+          WRITE(str_sec, '(I5.5)'), totalsec
+          filedate = trim(str_yr)//"-"//trim(str_mon)//"-"//trim(str_day)//"-"//trim(str_sec) 
+          OutDateStr = filedate
+
+          WRITE(message, *) "RASM Statistics:  STATIC_INTERVAL AVG condition met ......... avgOutDateStr:", trim(OutDateStr)
+          CALL wrf_debug(200, message)
+
+       ELSE IF ( output_freq .eq. MONTHLY ) THEN
+          ! get avg date 
+          call WRFU_TimeIntervalSet( off, s=dtime)
+          nextTime = currentTime + off
+          call WRFU_TimeGet( nextTime, yy=yr, mm=mon)  
+          IF (mon .eq. 1) THEN
+             mon = 12
+             yr = yr - 1
+          ELSE
+             mon = mon - 1
+          ENDIF
+          WRITE(str_yr, '(I4.4)'), yr
+          WRITE(str_mon, '(I2.2)'), mon
+          filedate = trim(str_yr)//"-"//trim(str_mon)
+          OutDateStr = filedate
+   
+          WRITE(message, *) "RASM Statistics:  AVG condition met ......... avgOutDateStr:", trim(OutDateStr)
+          CALL wrf_debug(200, message) 
+          
+       ELSE IF (output_freq .eq. DAYS ) THEN
+          ! get avg date 
+          call WRFU_TimeIntervalSet( off, s=mean_interval-dtime)
+          prevTime = currentTime - off
+          call WRFU_TimeGet( prevTime, yy=yr, mm=mon, dd=day)   
+          WRITE(str_yr, '(I4.4)'), yr
+          WRITE(str_mon, '(I2.2)'), mon
+          WRITE(str_day, '(I2.2)'), day
+          filedate = trim(str_yr)//"-"//trim(str_mon)//"-"//trim(str_day)
+          OutDateStr = filedate
+          
+          WRITE(message, *) "RASM Statistics:  AVG condition met ......... avgOutDateStr:", trim(OutDateStr)
+          CALL wrf_debug(200, message) 
+       ENDIF
+    endif
+
+  END SUBROUTINE getAvgState
+
+  SUBROUTINE getDiurnalState(currentTime, xtime, dt, diurn_interval, output_freq, compute_diurn, OutDateStr)
+    ! Subroutine DESCRIPTION:
+    ! Determine if data diurnal averages are to be calculated at the current time step
+    ! True implies that diurnal averages are to be calculated 
+
+   ! USES:
+    USE module_utility
+    USE module_model_constants
+    !USE ESMF_Mod
+
+    IMPLICIT NONE
+
+    TYPE(WRFU_Time), INTENT(IN)   :: currentTime
+    REAL, INTENT(IN)              :: dt, xtime 
+    INTEGER, INTENT(IN)           :: output_freq
+    integer, INTENT(IN)           :: diurn_interval
+    LOGICAL, INTENT(INOUT)        :: compute_diurn
+    CHARACTER(*), INTENT(INOUT)   :: OutDateStr
+
+    ! LOCAL VARIABLES:
+    TYPE(WRFU_TimeInterval) :: off
+    TYPE(WRFU_Time)         :: nextTime
+    TYPE(WRFU_Time)         :: prevTime
+ 
+    integer :: yr         !nstep year
+    integer :: mon        !nstep months (1 -> 12)
+    integer :: nextMon    !nstep+1 months (1 -> 12)
+    integer :: dtime
+    
+
+    CHARACTER (LEN=10) ::str_yr
+    CHARACTER (LEN=10) ::str_mon
+    CHARACTER (LEN=80) ::filedate
+
+    CHARACTER (LEN=1024) :: message
+   
+    integer :: mean_interval
+    CHARACTER (LEN=10) ::str_day
+    integer :: day        !nstep days (1 -> 31)
+
+    dtime = INT (dt)
+
+    ! Determine if time to average data 
+    compute_diurn = .false.
+   
+    if ( output_freq .EQ. MONTHLY) then
+       ! get date for current time_step 
+       call WRFU_TimeGet( currentTime, mm=mon)   
+
+       ! get date for next time_step
+       call WRFU_TimeIntervalSet( off, s=dtime)
+       nextTime = currentTime + off
+       call WRFU_TimeGet( nextTime, mm=nextMon)
+       
+       if ( (nextMon-mon) /= 0)  then
+          compute_diurn = .true.
+
+          WRITE(message, *) "RASM Statistics: Diurnal AVG condition met (return TRUE) "
+          CALL wrf_debug(200, message) 
+       endif
+    else
+       if ((MOD(NINT((xtime+dt/60.)*60./dt),NINT(diurn_interval/dt)) == 0)) then
+          compute_diurn = .true.
+   
+          WRITE(message, *) "RASM Statistics: Diurnal AVG condition met  DAILY TEST (return TRUE) "
+          CALL wrf_debug(200, message) 
+       endif
+    endif
+
+    ! generate date used for hourly, min and sec averages
+    if (compute_diurn) then
+
+       if ( output_freq .EQ. MONTHLY) then
+          ! get date 
+          call WRFU_TimeIntervalSet( off, s=dtime)
+          nextTime = currentTime + off
+          call WRFU_TimeGet( nextTime, yy=yr, mm=mon)  
+          IF (mon .eq. 1) THEN
+             mon = 12
+             yr = yr - 1
+          ELSE
+             mon = mon - 1
+          ENDIF
+          WRITE(str_yr, '(I4.4)'), yr
+          WRITE(str_mon, '(I2.2)'), mon
+          filedate = trim(str_yr)//"-"//trim(str_mon)
+          OutDateStr = filedate
+   
+          WRITE(message, *) "RASM Statistics:  Diurnal ACG condition met ......... avgOutDateStr:", trim(OutDateStr)
+          CALL wrf_debug(200, message) 
+       else
+          ! get avg date 
+          call WRFU_TimeIntervalSet( off, s=diurn_interval-dtime)
+          prevTime = currentTime - off
+          call WRFU_TimeGet( prevTime, yy=yr, mm=mon, dd=day)   
+          WRITE(str_yr, '(I4.4)'), yr
+          WRITE(str_mon, '(I2.2)'), mon
+          WRITE(str_day, '(I2.2)'), day
+          filedate = trim(str_yr)//"-"//trim(str_mon)//"-"//trim(str_day)
+          OutDateStr = filedate
+          
+          WRITE(message, *) "RASM Statistics:  Diurnal AVG condition met DAILY TEST......... avgOutDateStr:", trim(OutDateStr)
+          CALL wrf_debug(200, message) 
+       endif
+    endif
+
+  END SUBROUTINE getDiurnalState
+
+  SUBROUTINE  get_diurn_cycle(currentTime, xtime, dt, diurn_cycle)
+    ! Subroutine DESCRIPTION:
+    ! Get the current diurnal cycle
+
+    ! USES:
+    USE module_utility
+    USE module_model_constants
+    !USE ESMF_Mod
+
+    IMPLICIT NONE
+
+    TYPE(WRFU_Time), INTENT(IN)   :: currentTime
+    REAL, INTENT(IN)              :: dt, xtime 
+    INTEGER, INTENT(INOUT)        :: diurn_cycle
+
+    ! LOCAL VARIABLES:
+    TYPE(WRFU_TimeInterval) :: off
+    TYPE(WRFU_Time)         :: nextTime
+    TYPE(WRFU_Time)         :: prevTime
+ 
+    integer :: yr         !nstep year
+    integer :: mon        !nstep months (1 -> 12)
+    integer :: day        !nstep days (1 -> 31)
+    integer :: hr         !nstep hrs
+    integer :: dtime
+
+
+    CHARACTER (LEN=1024) :: message
+
+    dtime = INT (dt)
+    diurn_cycle = -1
+
+    ! get date for next time_step
+    call WRFU_TimeIntervalSet( off, s=dtime)
+    nextTime = currentTime + off
+    call WRFU_TimeGet( nextTime, yy=yr, mm=mon, dd=day, h=hr)   
+  
+    ! This is a 3hr cycle, therfore it the diurn_cycle 
+    ! hr should be either (0,3,6,9,12,15,18 or 21)
+    if (hr .eq. 3) then
+       diurn_cycle = 1
+    else if (hr .eq. 6) then
+       diurn_cycle = 2
+    else if (hr .eq. 9) then
+       diurn_cycle = 3
+    else if (hr .eq. 12) then
+       diurn_cycle = 4
+    else if (hr .eq. 15) then
+       diurn_cycle = 5
+    else if (hr .eq. 18) then
+       diurn_cycle = 6
+    else if (hr .eq. 21) then
+       diurn_cycle = 7
+    else if (hr .eq. 0) then
+       diurn_cycle = 8
+    else
+       WRITE (message, * )"RASM Statistics:: DIURNAL ERROR -- error -- ERROR -- error : Did not find valid diurnal cycle"
+       CALL wrf_debug(0, message) 
+       WRITE (message, * )"RASM Statistics:: DIURNAL ERROR -- Valid diurnal cycles (0,3,6,9,12,15,18 or 21) ... reported ",  diurn_cycle
+       CALL wrf_error_fatal ( TRIM(message) )  
+    endif
+
+  END SUBROUTINE  get_diurn_cycle
+!-------------------------------------------------------
+! end Amy Solomon 
+!-------------------------------------------------------
 
 END MODULE module_diag_misc
 #endif

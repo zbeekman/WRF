@@ -141,11 +141,26 @@ CONTAINS
    CALL init_modules(1)
    IF ( .NOT. PRESENT( no_init1 ) ) THEN
      ! Initialize utilities (time manager, etc.)
+!--------------------------------------------------------------------
+! Amy Solomon- Feb 2015
+! modified for RASM coupling
+!--------------------------------------------------------------------
+#ifdef CESMCOUPLED
+#ifdef NO_LEAP_CALENDAR
+     CALL WRFU_Initialize( defaultCalendar=WRFU_CALKIND_NOLEAP )
+#else
+     CALL WRFU_Initialize( defaultCalendar=WRFU_CALKIND_GREGORIAN )
+#endif
+#else
 #ifdef NO_LEAP_CALENDAR
      CALL WRFU_Initialize( defaultCalKind=WRFU_CAL_NOLEAP )
 #else
      CALL WRFU_Initialize( defaultCalKind=WRFU_CAL_GREGORIAN )
 #endif
+#endif
+!--------------------------------------------------------------------
+! end Amy Solomon
+!--------------------------------------------------------------------
    ENDIF
    ! Phase 2 resumes after MPI_INIT() (if it is called)
    CALL init_modules(2)
@@ -313,6 +328,17 @@ CONTAINS
 ! broadcast of the configuration information.
 ! 
 !</DESCRIPTION>
+!--------------------------------------------------------------
+! Amy Solomon- Feb 2015
+! added for RASM coupling
+!--------------------------------------------------------------
+#ifdef CESMCOUPLED
+   CALL wrf_get_dm_communicator ( loccomm )
+#endif
+!--------------------------------------------------------------
+! Amy Solomon- Feb 2015
+! added for RASM coupling
+!--------------------------------------------------------------
    CALL       wrf_message ( program_name )
    CALL       wrf_debug ( 100 , 'wrf: calling alloc_and_configure_domain ' )
    CALL alloc_and_configure_domain ( domain_id  = 1 ,                  &

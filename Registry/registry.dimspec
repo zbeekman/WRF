@@ -4,6 +4,15 @@
 dimspec    i       1     standard_domain                   x          west_east
 dimspec    4       2     namelist=maxpatch                 z          subgrid
 
+#-----------------------------------------------------------------------------
+# Amy Solomon - Feb 2015
+# RASM: Diurnal
+#-----------------------------------------------------------------------------
+dimspec    dc      2     constant=8                        z    diurnal_cycles
+#-----------------------------------------------------------------------------
+# end Amy Solomon
+#-----------------------------------------------------------------------------                                                 
+
 # Specific dimensional order for EM and NMM
 
 ifdef EM_CORE=1

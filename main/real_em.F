@@ -16,10 +16,18 @@ PROGRAM real_data
         initial_config, get_config_as_buffer, set_config_as_buffer
    USE module_timing
    USE module_state_description, ONLY : realonly, THOMPSONAERO
+#ifdef CESMCOUPLED
+#ifdef NO_LEAP_CALENDAR
+   USE module_symbols_util, ONLY: wrfu_calkind_noleap
+#else
+   USE module_symbols_util, ONLY: wrfu_calkind_gregorian
+#endif
+#else
 #ifdef NO_LEAP_CALENDAR
    USE module_symbols_util, ONLY: wrfu_cal_noleap
 #else
    USE module_symbols_util, ONLY: wrfu_cal_gregorian
+#endif
 #endif
    USE module_check_a_mundo
 #if ( WRF_CHEM == 1 )
@@ -108,11 +116,26 @@ real::t1,t2
 
    CALL       wrf_debug ( 100 , 'real_em: calling init_modules ' )
    CALL init_modules(1)   ! Phase 1 returns after MPI_INIT() (if it is called)
+!--------------------------------------------------------------------
+! Amy Solomon- Feb 2015
+! modified for RASM coupling
+!--------------------------------------------------------------------
+#ifdef CESMCOUPLED
+#ifdef NO_LEAP_CALENDAR
+   CALL WRFU_Initialize( defaultCalendar=WRFU_CALKIND_NOLEAP, rc=rc )
+#else
+   CALL WRFU_Initialize( defaultCalendar=WRFU_CALKIND_GREGORIAN, rc=rc )
+#endif
+#else
 #ifdef NO_LEAP_CALENDAR
    CALL WRFU_Initialize( defaultCalKind=WRFU_CAL_NOLEAP, rc=rc )
 #else
    CALL WRFU_Initialize( defaultCalKind=WRFU_CAL_GREGORIAN, rc=rc )
 #endif
+#endif
+!--------------------------------------------------------------------
+! end Amy Solomon
+!--------------------------------------------------------------------
    CALL init_modules(2)   ! Phase 2 resumes after MPI_INIT() (if it is called)
 
    !  The configuration switches mostly come from the NAMELIST input.

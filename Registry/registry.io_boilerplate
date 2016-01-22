@@ -34,7 +34,19 @@ rconfig   integer     io_form_restart     namelist,time_control		1              
 rconfig   integer     io_form_boundary    namelist,time_control		1              2       h        "io_form_boundary"               ""      ""
 rconfig   integer debug_level             namelist,time_control		1             0       -      "debug_level"           ""      ""
 rconfig   logical self_test_domain        namelist,time_control		1              .false. -      "self_test_domain"           ""      ""
+#-------------------------------------------------------------------------------------------------------------------------------------
+# Filenames needed for RASM 
+# added by Amy Solomon Feb 2015
+#-------------------------------------------------------------------------------------------------------------------------------------
+ifdef CESMCOUPLED
+rconfig   character  history_outname   namelist,time_control		1  "CCSMCASE.wrf.h<domain>.<date>"     -     "name of history outfile"  ""      ""
+endif
+ifndef CESMCOUPLED
 rconfig   character  history_outname   namelist,time_control		1  "wrfout_d<domain>_<date>"     -     "name of history outfile"  ""      ""
+endif
+#-------------------------------------------------------------------------------------------------------------------------------------
+# end Amy Solomon
+#-------------------------------------------------------------------------------------------------------------------------------------
 rconfig   character  history_inname    namelist,time_control		1  "wrfhist_d<domain>_<date>"    -     "name of history infile"  ""      ""
 rconfig   logical    use_netcdf_classic   namelist,time_control         1              .false. -     "use_netcdf_classic"           ""      ""
 

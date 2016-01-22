@@ -418,11 +418,11 @@ else
   if ( ! $?WRF_SRC_ROOT_DIR ) setenv WRF_SRC_ROOT_DIR `pwd`
 
 # new dec 2009.  check to see if make supports parallel -j option
-  make -j 2 >& /dev/null
+  make -j 4 >& /dev/null
   if ( $status == 0 ) then              # Parallel make ok
     if ( ! $?J ) then                   # J not defined
-      echo setting parallel make -j 2   # Set default to 2
-      setenv J "-j 2"
+      echo setting parallel make -j 4   # Set default to 2
+      setenv J "-j 4"
     else
 #     J is defined, check that it is a correctly formed variable
       set first2chars = `echo $J | cut -c 1-2`         # Are 1st two chars are -j?
@@ -436,16 +436,16 @@ else
          else
             echo "badly formed -j option for parallel make: $J"
             echo "or you set the number of processors above 20 "
-            echo setting parallel make -j 2            # Set default to 2
-            setenv J "-j 2"
+            echo setting parallel make -j 4            # Set default to 2
+            setenv J "-j 4"
          endif
       else
          if ( "$J" == "" ) then     # J blank is OK
             echo setting serial make $J
          else
             echo "parallel option for make is -j, you entered: $first2chars"
-            echo setting parallel make -j 2               # Set default to 2
-            setenv J "-j 2"
+            echo setting parallel make -j 4               # Set default to 2
+            setenv J "-j 4"
          endif
       endif
     endif

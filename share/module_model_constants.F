@@ -113,7 +113,20 @@
        REAL , PARAMETER ::  gma=-r_d*(1.-rcp)*0.5
        REAL , PARAMETER ::  p400=40000.0
        REAL , PARAMETER ::  phitp=15000.0
-       REAL , PARAMETER ::  pi2=2.*3.1415926, pi1=3.1415926
+!-----------------------------------------------------------------------------
+! Amy Solomon - Feb 2015
+! This change by Andrew Roberts
+!-----------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+       REAL , PARAMETER ::  pi1=   3.14159265358979323846
+       REAL , PARAMETER ::  pi2=2.*3.14159265358979323846
+#else
+       REAL , PARAMETER ::  pi1=   3.1415926
+       REAL , PARAMETER ::  pi2=2.*3.1415926
+#endif
+!-----------------------------------------------------------------------------
+! end Amy Solomon
+!-----------------------------------------------------------------------------
        REAL , PARAMETER ::  plbtm=105000.0
        REAL , PARAMETER ::  plomd=64200.0
        REAL , PARAMETER ::  pmdhi=35000.0
@@ -146,6 +159,7 @@
    !REAL    , PARAMETER :: P2SI         = 1.0
 
    !  Orbital constants:
+   ! Note - these parameters are not used when coupled to CESM - Andrew Roberts
 
    INTEGER , PARAMETER :: PLANET_YEAR = 365
    REAL , PARAMETER :: OBLIQUITY = 23.5
@@ -156,6 +170,25 @@
    !  Fraction into the year (from perhelion) of the
    !  occurrence of the Northern Spring Equinox
    REAL , PARAMETER :: EQUINOX_FRACTION= 0.0
+
+!-----------------------------------------------------------------------------
+! Amy Solomon - Feb 2015
+! RASM STATS CONSTANTS
+!-----------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+   INTEGER , PARAMETER :: DIURNAL_ON       = 1 
+   INTEGER , PARAMETER :: NUM_DIURN_CYCLES = 8
+   INTEGER , PARAMETER :: DIURNAL_3HR      = 10800   ! three hour period in seconds
+   INTEGER , PARAMETER :: NONE = 0
+   INTEGER , PARAMETER :: SECS = 1
+   INTEGER , PARAMETER :: MINS = 2
+   INTEGER , PARAMETER :: HRS  = 3
+   INTEGER , PARAMETER :: DAYS = 4
+   INTEGER , PARAMETER :: MONTHLY = 5
+#endif
+!-----------------------------------------------------------------------------
+! end Solomon modification
+!-----------------------------------------------------------------------------
 
 ! 2012103
 #if (EM_CORE == 1)

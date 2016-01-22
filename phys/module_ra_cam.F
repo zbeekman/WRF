@@ -202,6 +202,15 @@ subroutine camrad(RTHRATENLW,RTHRATENSW,                           &
                      SWUPB,SWUPBC,SWDNB,SWDNBC,                    &
                      LWUPB,LWUPBC,LWDNB,LWDNBC,                    &
                      swcf,lwcf,olr,cemiss,taucldc,taucldi,coszr,   &
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!---------------------------------------------------------------------------------------------------------------------
+                     lwups1,                                       &             
+                     swndr,swvdr,swndf,swvdf,                      &
+                     rasdir,raldir,rasdif,raldif,                  &
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!---------------------------------------------------------------------------------------------------------------------   
                      GSW,GLW,XLAT,XLONG,                           &
                      ALBEDO,t_phy,TSK,EMISS,                       &
                      QV3D,QC3D,QR3D,QI3D,QS3D,QG3D,                &
@@ -212,6 +221,15 @@ subroutine camrad(RTHRATENLW,RTHRATENSW,                           &
                      sf_surface_physics,                           & !ssib 
                      SWDDIR,SWDDIF,SWDDNI,                         & ! amontornes-bcodina (2014-04-20)
                      F_QV,F_QC,F_QR,F_QI,F_QS,F_QG,                &
+!-----------------------------------------------------------------------------
+! Alice DuVivier - July 2014; Mimi Hughes - October 2013
+! Need ice and liquid droplet sizes to couple Morrison to radiation
+!-----------------------------------------------------------------------------
+                     EFFCS,EFFIS,                                  &
+                     rad_micro_cpl,                                &
+!-----------------------------------------------------------------------------
+! end DuVivier/Hughes modifications
+!----------------------------------------------------------------------------- 
                      f_ice_phy,f_rain_phy,                         &
                      p_phy,p8w,z,pi_phy,rho_phy,dz8w,               &
                      CLDFRA,XLAND,XICE,SNOW,                        &
@@ -232,6 +250,16 @@ subroutine camrad(RTHRATENLW,RTHRATENSW,                           &
    USE MODULE_RA_CLWRF_SUPPORT, ONLY : read_CAMgases
    USE module_wrf_error
    USE module_state_description, ONLY : SSIBSCHEME, CLMSCHEME          !ssib & clm
+
+!-------------------------------------------------------------------------------
+! Lines added Andrew Roberts June 2013 to sync WRF and CPL sun position
+!-------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+   USE module_ra_rasm
+#endif
+!-------------------------------------------------------------------------------
+! end Andrew Roberts modification
+!-------------------------------------------------------------------------------
 
 !------------------------------------------------------------------
    IMPLICIT NONE
@@ -272,7 +300,19 @@ subroutine camrad(RTHRATENLW,RTHRATENSW,                           &
                                                             QI3D, &
                                                             QS3D, &
                                                             QG3D, &
-                                                        CLDFRA
+                                                        CLDFRA,   &
+!-----------------------------------------------------------------------------
+! Alice DuVivier - July 2014; Mimi Hughes - October 2013
+! Need ice and liquid droplet sizes to couple Morrison to radiation
+!-----------------------------------------------------------------------------
+                                                        EFFCS,    & 
+                                                        EFFIS   
+
+   INTEGER, INTENT(IN ), OPTIONAL ::               rad_micro_cpl
+
+!-----------------------------------------------------------------------------
+! end DuVivier/Hughes modifications
+!----------------------------------------------------------------------------- 
 
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                  &
          INTENT(INOUT)  ::                              RTHRATENLW, &
@@ -348,7 +388,22 @@ subroutine camrad(RTHRATENLW,RTHRATENSW,                           &
                     SWUPT,SWUPTC,SWDNT,SWDNTC,                    &
                     LWUPT,LWUPTC,LWDNT,LWDNTC,                    &
                     SWUPB,SWUPBC,SWDNB,SWDNBC,                    &
+                    LWUPB,LWUPBC,LWDNB,LWDNBC,                    &
+
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!---------------------------------------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+                    LWUPB,LWUPBC,LWDNB,LWDNBC,                    &
+	            lwups1,&                                       
+	            swndr,swvdr,swndf,swvdf, &
+		    rasdir,raldir,rasdif,raldif
+#else
                     LWUPB,LWUPBC,LWDNB,LWDNBC
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!---------------------------------------------------------------------------------------------------------------------	
 
    REAL, DIMENSION( ims:ime, jms:jme ),                           &
          INTENT(INOUT)  ::                                  swcf, &
@@ -376,7 +431,17 @@ subroutine camrad(RTHRATENLW,RTHRATENSW,                           &
    integer :: nyrm, nyrp
    real(r8) doymodel, doydatam, doydatap, deltat, fact1, fact2
 
+!-------------------------------------------------------------------------------
+! Lines added Andrew Roberts June 2013 to sync WRF and CPL sun position
+!-------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+   REAL :: XT24, TLOCTM, HRANG, XXLAT, XXLONG, oldXT24 
+#else
    REAL :: XT24, TLOCTM, HRANG, XXLAT, oldXT24
+#endif
+!-------------------------------------------------------------------------------
+! end Andrew Roberts modification
+!-------------------------------------------------------------------------------
  
    real(r8), DIMENSION( 1:ite-its+1 ) :: coszrs, landfrac, landm, snowh, icefrac, lwups
    real(r8), DIMENSION( 1:ite-its+1 ) :: asdir, asdif, aldir, aldif, ps
@@ -553,6 +618,21 @@ subroutine camrad(RTHRATENLW,RTHRATENSW,                           &
       else
          do i = its,ite
             ii = i - its + 1
+!-------------------------------------------------------------------------------
+! Lines added Andrew Roberts June 2013 to sync WRF and CPL sun position
+!-------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+       XXLAT=XLAT(i,j)*DEGRAD
+       XXLONG=XLONG(i,j)*DEGRAD
+       clat(ii)=XXLAT
+
+       DECLIN_SHR=real(DECLIN,SHR_KIND_R8)
+       XXLAT_SHR=real(XXLAT,SHR_KIND_R8)
+       XXLONG_SHR=real(XXLONG,SHR_KIND_R8)
+       coszrs(II)=real(shr_orb_cosz(RADTIM_SHR,XXLAT_SHR,XXLONG_SHR,DECLIN_SHR))
+
+#else
             ! XT24 is the fractional part of simulation days plus half of RADT expressed in 
             ! units of minutes
             ! JULIAN is in days
@@ -563,6 +643,10 @@ subroutine camrad(RTHRATENLW,RTHRATENSW,                           &
             XXLAT=XLAT(I,J)*DEGRAD
             clat(ii)=xxlat
             coszrs(II)=SIN(XXLAT)*SIN(DECLIN)+COS(XXLAT)*COS(DECLIN)*COS(HRANG)
+#endif
+!-------------------------------------------------------------------------------
+! end Andrew Roberts modification
+!-------------------------------------------------------------------------------
          enddo
       end if
 
@@ -599,6 +683,14 @@ subroutine camrad(RTHRATENLW,RTHRATENSW,                           &
       ii = i - its + 1
       landfrac(ii) = 2.-XLAND(I,J)
       landm(ii) = landfrac(ii)
+!
+! Matt Higgins - 17 Aug 2010
+! Previously, if running in coupled mode, Juanxiong skipped multiplying incoming snow water equiv (snow)
+! 0.0001.  This was because input snow water equiv from coupler is in units of m, and this radiation scheme
+! also needs snow water equiv in units of m.  However, to be more consistent with the rest of the WRF code,
+! snow water equiv is converted from m to kg/m2 in atm_comp_mct.F.  Therefore, the conversion back to m now 
+! needs to happen, regardless of if running in coupled or uncoupled mode.
+!
       snowh(ii) = 0.001*SNOW(I,J)
       icefrac(ii) = XICE(I,J)
       enddo
@@ -633,7 +725,19 @@ subroutine camrad(RTHRATENLW,RTHRATENSW,                           &
 !
       do i = its,ite
       ii = i - its + 1
+!-----------------------------------------------------------------------------------
+! Matt Higgins - 22 Jul 2010
+! Previously this change was made by Juanxiong He in RACM12, but did not get ported to RACM13
+! and up.
+!-----------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+      lwups(ii)=lwups1(i,j)*1000.0
+#else
       lwups(ii) = stebol*EMISS(I,J)*TSK(I,J)**4
+#endif
+!-----------------------------------------------------------------------------------
+! end Higgins modification
+!-----------------------------------------------------------------------------------
       enddo
 
       do k = kts,kte+1
@@ -688,6 +792,32 @@ subroutine camrad(RTHRATENLW,RTHRATENSW,                           &
 
       call param_cldoptics_calc(ncol, pcols, pver, pverp, pverr, pverrp, ppcnst, q, cld, landfrac, landm,icefrac, &
                                 pdel, t, ps, pmid, pint, cicewp, cliqwp, emis, rel, rei, pmxrgn, nmxrgn, snowh)
+
+!-----------------------------------------------------------------------------
+! Alice DuVivier - July 2014; Mimi Hughes - October 2013
+! Overwrite rel and rei (prescribed effective radii) with predicted radii 
+! from Morrison microphysics scheme if flag is set in namelist
+!-----------------------------------------------------------------------------
+! if coupling is turned on, overwrite code, if not, ignore
+   if ( rad_micro_cpl == 1) then
+      do k = kts,kte
+         kk = kte - k + kts
+         do i = its,ite
+            ii = i - its + 1
+            rel(ii,kk)=EFFCS(i,k,j)
+            rei(ii,kk)=EFFIS(i,k,j)
+! put limits on rel and rei to prevent overflow for optical property calcs
+! (these are also set in Morrison scheme)
+            rel(ii,kk)=min(rel(ii,kk),50.) !limits consistent with morrison
+            rel(ii,kk)=max(rel(ii,kk),1.)
+            rei(ii,kk)=min(rei(ii,kk),130.)
+            rei(ii,kk)=max(rei(ii,kk),13.)
+         end do
+      end do
+   endif
+!-----------------------------------------------------------------------------
+! end DuVivier/Hughes modifications
+!----------------------------------------------------------------------------- 
 
 !-----fds (06/2010)----------------------------
    SELECT CASE(sf_surface_physics)
@@ -748,10 +878,24 @@ subroutine camrad(RTHRATENLW,RTHRATENSW,                           &
       ii = i - its + 1
 ! use same albedo for direct and diffuse
 ! change this when separate values are provided
+!-----------------------------------------------------------------------------------
+! Amy Solomon- Feb 2015
+! modification needed for RASM coupling
+!-----------------------------------------------------------------------------------
+#ifdef CESMCOUPLED	
+      asdir(ii) = rasdir(i,j)*1.0_r8
+      asdif(ii) = rasdif(i,j)*1.0_r8
+      aldir(ii) = raldir(i,j)*1.0_r8
+      aldif(ii) = raldif(i,j)*1.0_r8
+#else
       asdir(ii) = albedo(i,j)
       asdif(ii) = albedo(i,j)
       aldir(ii) = albedo(i,j)
       aldif(ii) = albedo(i,j)
+#endif
+!-----------------------------------------------------------------------------------
+! end Solomon modification
+!-----------------------------------------------------------------------------------
       enddo
    END SELECT
 !-----------------------------------------------
@@ -787,6 +931,15 @@ subroutine camrad(RTHRATENLW,RTHRATENSW,                           &
       if(dolw)RTHRATENLW(I,K,J) = 1.e4*qrl(ii,kk)/(cpair*pi_phy(i,k,j))
       if(dosw)RTHRATENSW(I,K,J) = 1.e4*qrs(ii,kk)/(cpair*pi_phy(i,k,j))
       cemiss(i,k,j)     = emis(ii,kk)
+!-----------------------------------------------------------------------
+! added by Juanxiong He
+!!Amy Solomon, not sure why these lines were changed for RASM so not used   
+!-----------------------------------------------------------------------
+!!      if(dosw) taucldc(i,k,j)    = tauxcl(ii,kk)
+!!      if(dosw) taucldi(i,k,j)    = tauxci(ii,kk)
+!-----------------------------------------------------------------------
+! added by Juanxiong He
+!-----------------------------------------------------------------------
       taucldc(i,k,j)    = tauxcl(ii,kk)
       taucldi(i,k,j)    = tauxci(ii,kk)
       enddo
@@ -889,6 +1042,19 @@ subroutine camrad(RTHRATENLW,RTHRATENSW,                           &
         GSW(I,J) = fsns(ii)
         swcf(i,j) = swcftoa(ii)
         coszr(i,j) = coszrs(ii)
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!---------------------------------------------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+ 	      swndr(i,j)=soll(ii)    
+        swndf(i,j)=solld(ii)
+ 	      swvdr(i,j)=sols(ii)    
+        swvdf(i,j)=solsd(ii)      	
+#endif
+!---------------------------------------------------------------------------------------------------------------------
+! added by Juanxiong He
+!--------------------------------------------------------------------------------------------------------------------- 
+! not sure about these next three lines as they were added since v3.6.1       
         SWDDIR(i,j)= fsdsdir(ii)               ! amontornes-bcodina (2014-04-20)
         SWDDNI(i,j)= fsdsdir(ii)/coszrs(ii)    ! amontornes-bcodina (2014-04-20)
         SWDDIF(i,j)= fsdsdif(ii)               ! amontornes-bcodina (2014-04-20)
@@ -6551,6 +6717,15 @@ subroutine radcswmx(jj, lchnk   ,ncol    ,pcols, pver, pverp,         &
                tmp2i = 1._r8 - cbarii - dbarii*rei(i,k)
                tmp3i = fbarii*rei(i,k)
 
+!-----------------------------------------------------------------------------------
+! Alice DuVivier - July 2013
+! For coupled runs we always want to calculate optical depth. Do not have the 
+! calculation based on cloud fraction.
+!-----------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+                  tauxcl(i,k) = cliqwp(i,k)*tmp1l
+                  tauxci(i,k) = cicewp(i,k)*tmp1i
+#else
                if (cld(i,k) >= cldmin .and. cld(i,k) >= cldeps) then
                   tauxcl(i,k) = cliqwp(i,k)*tmp1l
                   tauxci(i,k) = cicewp(i,k)*tmp1i
@@ -6558,6 +6733,11 @@ subroutine radcswmx(jj, lchnk   ,ncol    ,pcols, pver, pverp,         &
                   tauxcl(i,k) = 0.0
                   tauxci(i,k) = 0.0
                endif
+#endif
+!-----------------------------------------------------------------------------------
+! end DuVivier modification
+!-----------------------------------------------------------------------------------
+
 ! 
 ! Do not let single scatter albedo be 1.  Delta-eddington solution
 ! for non-conservative case has different analytic form from solution

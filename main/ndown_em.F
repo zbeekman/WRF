@@ -178,11 +178,26 @@ real :: cf1_c,cf2_c,cf3_c,cfn_c,cfn1_c
    !  chemistry indices, etc.
 
    CALL init_modules(1)   ! Phase 1 returns after MPI_INIT() (if it is called)
+!--------------------------------------------------------------------
+! Amy Solomon- Feb 2015
+! modified for RASM coupling
+!--------------------------------------------------------------------
+#ifdef CESMCOUPLED
+#ifdef NO_LEAP_CALENDAR
+   CALL WRFU_Initialize( defaultCalendar=WRFU_CALKIND_NOLEAP, rc=rc )
+#else
+   CALL WRFU_Initialize( defaultCalendar=WRFU_CALKIND_GREGORIAN, rc=rc )
+#endif
+#else
 #ifdef NO_LEAP_CALENDAR
    CALL WRFU_Initialize( defaultCalKind=WRFU_CAL_NOLEAP, rc=rc )
 #else
    CALL WRFU_Initialize( defaultCalKind=WRFU_CAL_GREGORIAN, rc=rc )
 #endif
+#endif
+!--------------------------------------------------------------------
+! end Amy Solomon
+!--------------------------------------------------------------------
    CALL init_modules(2)   ! Phase 2 resumes after MPI_INIT() (if it is called)
 
    !  Get the NAMELIST data.  This is handled in the initial_config routine.  All of the

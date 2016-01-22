@@ -60,12 +60,43 @@ CONTAINS
    SUBROUTINE MPASPECT( P, MINM, MINN, PROCMIN_M, PROCMIN_N )
       IMPLICIT NONE
       INTEGER P, M, N, MINI, MINM, MINN, PROCMIN_M, PROCMIN_N
+-----------------------------------------------------
+! modified Amy Solomon - Feb 2015
+!-----------------------------------------------------
+#ifdef CESMCOUPLED
+      REAL MINR,VALR,ARW,PEW
+      MINR = 1.0e12
+#endif
+!-----------------------------------------------------
+! end Amy Solomon
+!-----------------------------------------------------
       MINI = 2*P
       MINM = 1
       MINN = P
       DO M = 1, P
         IF ( MOD( P, M ) .EQ. 0 ) THEN
           N = P / M
+!-----------------------------------------------------
+! modified Amy Solomon - Feb 2015
+!-----------------------------------------------------
+#ifdef CESMCOUPLED
+          IF (M .GT. 0 .and. N .GT. 0) then
+! tcraig old function
+!             VALR = real(ABS(M-N))
+! tcraig new function, not tested yet
+            ARW =  1.0
+            PEW = 20.0
+            VALR = ARW*(real(M)/real(N) + real(N)/real(M)-2.0) + PEW*(real(M*N)/real(P)-1.0)
+             IF ( VALR .LT. MINR                &
+                  .AND. M .GE. PROCMIN_M        &
+                  .AND. N .GE. PROCMIN_N        &
+                ) THEN
+               MINR = VALR
+               MINM = M
+               MINN = N
+             ENDIF
+          ENDIF
+#else
           IF ( ABS(M-N) .LT. MINI                &
                .AND. M .GE. PROCMIN_M            &
                .AND. N .GE. PROCMIN_N            &
@@ -74,6 +105,10 @@ CONTAINS
             MINM = M
             MINN = N
           ENDIF
+#endif
+!-----------------------------------------------------
+! end Amy Solomon - Feb 2015
+!-----------------------------------------------------
         ENDIF
       ENDDO
       IF ( MINM .LT. PROCMIN_M .OR. MINN .LT. PROCMIN_N ) THEN

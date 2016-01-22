@@ -168,6 +168,18 @@
       CALL nl_set_damp_opt( grid%id, 0 )
       CALL nl_set_sst_update( grid%id, 0 )
       CALL nl_set_fractional_seaice( grid%id, 0 )
+!-----------------------------------------------------------------------------
+! Alice DuVivier - July 2014 / Amy Solomon - Feb 2015
+! -See if radiation-microphysics coupling is turned on
+! -Switch for RASM physics changes
+!-----------------------------------------------------------------------------
+ #ifdef CESMCOUPLED
+      CALL nl_set_rad_micro_cpl( grid%id, 0 )
+      CALL nl_set_rasm_physics( grid%id, 0 )
+#endif
+!-----------------------------------------------------------------------------
+! end DuVivier / Solomon modification
+!-----------------------------------------------------------------------------
       CALL nl_set_gwd_opt( grid%id, 0 )
       CALL nl_set_feedback( grid%id, 0 )
       ! set bc
@@ -338,6 +350,18 @@
       CALL nl_set_damp_opt( grid%id, grid%damp_opt)
       CALL nl_set_sst_update( grid%id, 0)
       CALL nl_set_fractional_seaice( grid%id, grid%fractional_seaice)
+!-----------------------------------------------------------------------------
+! Alice DuVivier - July 2014 / Amy Solomon - Feb 2015
+! -See if radiation-microphysics coupling is turned on
+! -Switch for RASM physics changes
+!-----------------------------------------------------------------------------
+ #ifdef CESMCOUPLED
+      CALL nl_set_rad_micro_cpl(  grid%id, head_grid%rad_micro_cpl)
+      CALL nl_set_rasm_physics( grid%id, head_grid%rasm_physics)
+#endif
+!-----------------------------------------------------------------------------
+! end DuVivier / Solomon modification
+!-----------------------------------------------------------------------------
       CALL nl_set_gwd_opt( grid%id, grid%gwd_opt)
       CALL nl_set_feedback( grid%id, 0 )
 #if (EM_CORE == 1) 

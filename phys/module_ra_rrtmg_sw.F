@@ -8622,6 +8622,53 @@
                pbbfddir(ikl) = pbbfddir(ikl) + zincflx(iw)*ztdbt_nodel(jk)
                pbbcddir(ikl) = pbbcddir(ikl) + zincflx(iw)*ztdbtc_nodel(jk)
 
+--------------------------------------------------------------------------------
+! Alice DuVivier - September 2013
+! How to divide up the band from 625-778nm and split at 700nm, which is needed
+! for CICE. This follows the implementation in CESM and divides the band in half
+! though we recognize this isn't physically realistic.
+! Note: I've commented out idelm flag calculations since that is inactive as
+! far as I can tell.
+!--------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+! Accumulate direct fluxes for UV/visible bands
+               if (ibm >= 10 .and. ibm <= 13) then
+                  puvcd(ikl) = puvcd(ikl) + zincflx(iw)*zcd(jk,iw)
+                  puvfd(ikl) = puvfd(ikl) + zincflx(iw)*zfd(jk,iw)
+                  puvfddir(ikl) = puvfddir(ikl) + zincflx(iw)*ztdbt_nodel(jk)
+                  puvcddir(ikl) = puvcddir(ikl) + zincflx(iw)*ztdbtc_nodel(jk)
+! split band 9 into NearIR and Visible
+               else if (ibm == 9) then  
+
+!!!!! RASM Method to split up fluxes in 9th band weighted toward visible (70VIS/30NIR) !!!!!
+                  puvcd(ikl) = puvcd(ikl) + 0.7*zincflx(iw)*zcd(jk,iw)
+                  puvfd(ikl) = puvfd(ikl) + 0.7*zincflx(iw)*zfd(jk,iw)
+                  pnicd(ikl) = pnicd(ikl) + 0.3*zincflx(iw)*zcd(jk,iw)
+                  pnifd(ikl) = pnifd(ikl) + 0.3*zincflx(iw)*zfd(jk,iw)
+                  puvfddir(ikl) = puvfddir(ikl) + 0.7*zincflx(iw)*ztdbt_nodel(jk)
+                  puvcddir(ikl) = puvcddir(ikl) + 0.7*zincflx(iw)*ztdbtc_nodel(jk)
+                  pnifddir(ikl) = pnifddir(ikl) + 0.3*zincflx(iw)*ztdbt_nodel(jk)
+                  pnicddir(ikl) = pnicddir(ikl) + 0.3*zincflx(iw)*ztdbtc_nodel(jk)
+
+!!!!! CESM Method to split up fluxes in 9th band evenly (50VIS/50NIR) !!!!!
+!                  puvcd(ikl) = puvcd(ikl) + 0.5*zincflx(iw)*zcd(jk,iw)
+!                  puvfd(ikl) = puvfd(ikl) + 0.5*zincflx(iw)*zfd(jk,iw)
+!                  pnicd(ikl) = pnicd(ikl) + 0.5*zincflx(iw)*zcd(jk,iw)
+!                  pnifd(ikl) = pnifd(ikl) + 0.5*zincflx(iw)*zfd(jk,iw)
+!                  puvfddir(ikl) = puvfddir(ikl) + 0.5*zincflx(iw)*ztdbt_nodel(jk)
+!                  puvcddir(ikl) = puvcddir(ikl) + 0.5*zincflx(iw)*ztdbtc_nodel(jk)
+!                  pnifddir(ikl) = pnifddir(ikl) + 0.5*zincflx(iw)*ztdbt_nodel(jk)
+!                  pnicddir(ikl) = pnicddir(ikl) + 0.5*zincflx(iw)*ztdbtc_nodel(jk)
+
+! Accumulate direct fluxes for near-IR bands
+               else if (ibm == 14 .or. ibm <= 8) then  
+                  pnicd(ikl) = pnicd(ikl) + zincflx(iw)*zcd(jk,iw)
+                  pnifd(ikl) = pnifd(ikl) + zincflx(iw)*zfd(jk,iw)
+                  pnifddir(ikl) = pnifddir(ikl) + zincflx(iw)*ztdbt_nodel(jk)
+                  pnicddir(ikl) = pnicddir(ikl) + zincflx(iw)*ztdbtc_nodel(jk)
+               endif
+#else
 ! Accumulate direct fluxes for UV/visible bands
                if (ibm >= 10 .and. ibm <= 13) then
                   puvcd(ikl) = puvcd(ikl) + zincflx(iw)*zcd(jk,iw)
@@ -8635,6 +8682,10 @@
                   pnicddir(ikl) = pnicddir(ikl) + zincflx(iw)*ztdbtc_nodel(jk)
                   pnifddir(ikl) = pnifddir(ikl) + zincflx(iw)*ztdbt_nodel(jk)
                endif
+#endif
+!--------------------------------------------------------------------------------
+! end DuVivier modification
+!--------------------------------------------------------------------------------
 
             enddo
 
@@ -8742,7 +8793,17 @@
              sibvisdir, sibvisdif, sibnirdir, sibnirdif,         &
 ! ----------------------  End,  Zhenxin 2011-06-20    --------------------------------!
              swdkdir,swdkdif                                & ! jararias, 2013/08/10
+!--------------------------------------------------------------------------------
+! Alice DuVivier - October 2013; Matt Higgins - 27 Sep 2010
+! Output additional fields needed for swndr, swvdr, swndf, and swvdf later in rrtmg_sw
+#ifdef CESMCOUPLED
+             ,dirdnuv,difdnuv,dirdnir,difdnir      )
+#else
                                                                 )
+#endif
+!--------------------------------------------------------------------------------
+! end DuVivier/Higgins modification
+!--------------------------------------------------------------------------------
 
 
 ! ------- Description -------
@@ -9804,6 +9865,19 @@ use module_model_constants, only : cp
 USE module_wrf_error
 !USE module_dm
 
+!-----------------------------------------------------------------------------
+! Alice DuVivier - October 2013
+! Code for synching WRF and CPL sun position
+! follows Andrew Roberts' mods in module_ra_cam.F
+! Amy Solomon- Feb 2015 add parkind routines
+!-----------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+      USE module_ra_rasm
+      use parkind ,only : im => kind_im, rb => kind_rb
+#endif
+!-----------------------------------------------------------------------------
+! end Alice DuVivier
+!-----------------------------------------------------------------------------
 use parrrsw, only : nbndsw, ngptsw, naerec
 use rrtmg_sw_init, only: rrtmg_sw_ini
 use rrtmg_sw_rad, only: rrtmg_sw
@@ -9821,6 +9895,18 @@ CONTAINS
                        swupt, swuptc, swdnt, swdntc,              &
                        swupb, swupbc, swdnb, swdnbc,              &
 !                      swupflx, swupflxc, swdnflx, swdnflxc,      &
+!--------------------------------------------------------------------------------
+! Alice DuVivier - October 2013; Matt Higgins - 27 Sep 2010
+! NIR and VIS direct and diffuse solar radiation down
+! to surface and NIR and VIS direct and diffuse albedo.
+!--------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+                       swndr,swvdr,swndf,swvdf,                   &
+                       rasdir,raldir,rasdif,raldif,               &
+#endif
+!--------------------------------------------------------------------------------
+! end DuVivier/Higgins modification
+!--------------------------------------------------------------------------------
                        swcf, gsw,                                 &
                        xtime, gmt, xlat, xlong,                   &
                        radt, degrad, declin,                      &
@@ -9844,6 +9930,15 @@ CONTAINS
                        swnirdir, swnirdif,                        &  !Zhenxin ssib swi comp (06/20/2011)
                        sf_surface_physics,                        &  !Zhenxin
                        f_qv, f_qc, f_qr, f_qi, f_qs, f_qg,        &
+!-----------------------------------------------------------------------------
+! Alice DuVivier - July 2014
+! Need ice and liquid droplet sizes to couple Morrison to radiation
+!-----------------------------------------------------------------------------
+                       effcs, effis,                              &
+                       rad_micro_cpl,                             &
+!-----------------------------------------------------------------------------
+! end Alice DuVivier
+!-----------------------------------------------------------------------------
                        tauaer300,tauaer400,tauaer600,tauaer999,   & ! czhao 
                        gaer300,gaer400,gaer600,gaer999,           & ! czhao 
                        waer300,waer400,waer600,waer999,           & ! czhao 
@@ -9962,6 +10057,19 @@ CONTAINS
 
    real pi,third,relconst,lwpmin,rhoh2o
 
+!-----------------------------------------------------------------------------
+! Alice DuVivier - July 2014
+! Need ice and liquid droplet sizes to couple Morrison to radiation
+!-----------------------------------------------------------------------------
+   REAL, DIMENSION(ims:ime,kms:kme,jms:jme), INTENT(IN)::         &
+                                                           EFFCS, & 
+                                                           EFFIS 
+
+   INTEGER, INTENT(IN ), OPTIONAL ::                 rad_micro_cpl  
+!-----------------------------------------------------------------------------
+! end Alice DuVivier
+!----------------------------------------------------------------------------- 
+
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme )                 , &
          OPTIONAL                                               , &
          INTENT(IN   ) ::                                         &
@@ -10008,7 +10116,19 @@ CONTAINS
    REAL, DIMENSION( ims:ime, jms:jme ),                           &
          OPTIONAL, INTENT(INOUT) ::                               &
                                        SWUPT,SWUPTC,SWDNT,SWDNTC, &
+!--------------------------------------------------------------------------------
+! Alice DuVivier - October 2013
+! NIR and VIS direct and diffuse solar radiation at surface
+!--------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+                                       SWUPB,SWUPBC,SWDNB,SWDNBC, &
+                                       SWNDR,SWVDR,SWNDF,SWVDF
+#else
                                        SWUPB,SWUPBC,SWDNB,SWDNBC
+#endif
+!--------------------------------------------------------------------------------
+! end DuVivier modification
+!--------------------------------------------------------------------------------
 
 ! Layer shortwave fluxes (including extra layer above model top)
 ! Vertical ordering is from bottom to top (W m-2)
@@ -10060,6 +10180,20 @@ CONTAINS
                                                            asdif, &
                                                            aldir, &
                                                            aldif
+
+!--------------------------------------------------------------------------------
+! Alice DuVivier - October 2013
+! NIR and VIS direct and diffuse solar albedo at surface
+!--------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+   REAL, DIMENSION( ims:ime, jms:jme ),                           &
+         OPTIONAL, INTENT(INOUT) ::                               &
+                                       RASDIR,RALDIR,RASDIF,RALDIF
+#endif
+!--------------------------------------------------------------------------------
+! end DuVivier modification
+!--------------------------------------------------------------------------------
+
 ! Dimension with extra layer from model top to TOA, 
 ! though no clouds are allowed in extra layer
     real, dimension( 1, kts:kte+1 )  ::                   clwpth, &
@@ -10098,6 +10232,19 @@ CONTAINS
                                                        sibvisdif, &
                                                        sibnirdir, &
                                                        sibnirdif     ! Zhenxin 2011-06-20
+
+!-----------------------------------------------------------------------------
+! Alice DuVivier - October 2013
+! NIR and VIS direct and diffuse solar albedo at surface
+!-----------------------------------------------------------------------------
+! Output arrays with spectral shortwave radiation components
+#ifdef CESMCOUPLED
+    real, dimension( kts:kte+2 )  ::                              &
+                             dirdnuv, difdnuv, dirdnir, difdnir
+#endif
+!-----------------------------------------------------------------------------
+! End DuVivier modification
+!-----------------------------------------------------------------------------
 
     real, dimension( 1, kts:kte+2 ) ::                   swdkdir, &  ! jararias, 2013/08/10
                                                          swdkdif     ! jararias, 2013/08/10
@@ -10172,6 +10319,18 @@ CONTAINS
     real, dimension(1, 1:kte-kts+1):: recloud1d, &
                                         reice1d, &
                                        resnow1d
+
+!-----------------------------------------------------------------------------
+! Alice DuVivier - June 2014
+! Need 1D ice and liquid droplet sizes to couple Morrison to radiation
+!-----------------------------------------------------------------------------
+!(microns)
+    real, dimension(1, 1:kte-kts+1)::   effcs1d, &
+                                        effis1d   
+!-----------------------------------------------------------------------------
+! end Alice DuVivier
+!-----------------------------------------------------------------------------
+
     real :: gliqwp, gicewp, gsnowp, gravmks
 
 !
@@ -10185,6 +10344,21 @@ CONTAINS
     real, dimension (1) :: landfrac, landm, snowh, icefrac
 
     integer :: pcols, pver
+
+!-----------------------------------------------------------------------------
+! Alice DuVivier - October 2013
+! NIR and VIS direct and diffuse solar albedo at surface
+!-----------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+    REAL :: XXLAT, XXLONG
+#else
+! NOTE: Seefeldt: While the following line is in Amy's 3.6.1, this line is not
+!                 in the release code for v3.7.1
+!    REAL :: XT24, TLOCTM, HRANG, XXLAT
+#endif
+!-----------------------------------------------------------------------------
+! End DuVivier modification
+!-----------------------------------------------------------------------------
 
     INTEGER :: i,j,K, na
     LOGICAL :: predicate
@@ -10229,9 +10403,26 @@ CONTAINS
 
 ! Cosine solar zenith angle for current time step
 !
+!-----------------------------------------------------------------------------
+! Alice DuVivier - October 2013
+! NIR and VIS direct and diffuse solar albedo at surface
+!-----------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+         XXLAT=XLAT(i,j)*DEGRAD
+         XXLONG=XLONG(i,j)*DEGRAD
+         DECLIN_SHR=real(DECLIN,SHR_KIND_R8)
+         XXLAT_SHR=real(XXLAT,SHR_KIND_R8)
+         XXLONG_SHR=real(XXLONG,SHR_KIND_R8)
+         coszrs=real(shr_orb_cosz(RADTIM_SHR,XXLAT_SHR,XXLONG_SHR,DECLIN_SHR))
+         coszr(i,j) = coszrs
+#else
           ! jararias, 14/08/2013
           coszr(i,j)=xcoszen(i,j)
           coszrs=xcoszen(i,j)
+#endif
+!-----------------------------------------------------------------------------
+! End DuVivier modification
+!-----------------------------------------------------------------------------
 
 ! Set flag to prevent shortwave calculation when sun below horizon
          if (coszrs.le.0.0) dorrsw = .false.
@@ -10452,6 +10643,20 @@ CONTAINS
             ENDIF
          ENDIF
 
+!-----------------------------------------------------------------------------
+! Alice DuVivier - June 2014
+! Convert 3D liquid and ice drop sizes to 1D for use in radiation.
+! This is done for consistency with rrtmg code flow.
+!-----------------------------------------------------------------------------
+         DO K=kts,kte
+            ! Now set to the radius passed from Morrison
+            EFFCS1D(ncol,K) = EFFCS(I,K,J)
+            EFFIS1D(ncol,K) = EFFIS(I,K,J)
+         ENDDO
+!-----------------------------------------------------------------------------
+! end Alice DuVivier
+!----------------------------------------------------------------------------- 
+
 ! Set cosine of solar zenith angle
          coszen(ncol) = coszrs
 ! Set solar constant
@@ -10526,6 +10731,20 @@ CONTAINS
 
 ! Set surface albedo for direct and diffuse radiation in UV/visible and
 ! near-IR spectral regions
+
+!--------------------------------------------------------------------------------
+! Alice DuVivier - October 2013; Matt Higgins - 21 Sep 2010
+! For coupled RACM we want spectral albedos to be set equal to the values
+! passed from the coupler: rasdir, rasdif, raldir, raldif.
+! In standalone WRF do not change the spectral albedo calculation
+!--------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+         asdir(ncol) = rasdir(i,j)*1.0_rb
+         asdif(ncol) = rasdif(i,j)*1.0_rb
+         aldir(ncol) = raldir(i,j)*1.0_rb
+         aldif(ncol) = raldif(i,j)*1.0_rb
+#else
+
 ! -------------- Zhenxin 2011-06-20 ----------- !
 
 ! ------- 1.  Commented by Zhenxin 2011-06-20 for SSiB coupling modified ---- !
@@ -10550,6 +10769,11 @@ CONTAINS
 
 ! ---------- End of Addiation ------!
 ! ----------  End of fds_Zhenxin 2011-06-20   --------------!
+
+#endif
+!--------------------------------------------------------------------------------
+! end DuVivier/Higgins modification
+!--------------------------------------------------------------------------------
 
 ! Define cloud optical properties for radiation (inflgsw = 0)
 ! This option is not currently active
@@ -10682,11 +10906,28 @@ CONTAINS
 ! following Kristjansson and Mitchell
       call reicalc(ncol, pcols, pver, tlay, reice)
 
-
-
+!-----------------------------------------------------------------------------
+! Alice DuVivier - July 2014
+! Overwrite reliq and reice (prescribed effective radii) with predicted radii 
+! from Morrison microphysics scheme if flag is set in namelist
+!-----------------------------------------------------------------------------
+! if coupling is turned on, overwrite code, if not, ignore
+     if ( rad_micro_cpl == 1) then
+      do k = kts,kte
+         reliq(ncol,k)=EFFCS1D(ncol,k)
+         reice(ncol,k)=EFFIS1D(ncol,k)
+! put limits on rel and rei to prevent overflow for optical property calcs
+! Note that the lower limit for the liquid drop size is set to 2.5um, which is the rrtmg
+! lower limit instead of the morrison lower limit (1.0um). All other sizes are consistent
+! with limit set in the Morrison scheme.
+         reliq(ncol,k)=min(reliq(ncol,k),50.) !limits consistent with morrison
+         reliq(ncol,k)=max(reliq(ncol,k),2.5)
+         reice(ncol,k)=min(reice(ncol,k),130.)
+         reice(ncol,k)=max(reice(ncol,k),13.)
+      end do
+     else
 !..If we already have effective radius of cloud and ice, then just overwrite what
 !.. was computed in the relcalc and reicalc subroutines above.
-
       if (inflgsw .ge. 3) then
          do k = kts, kte
             reliq(ncol,k) = recloud1d(ncol,k)
@@ -10697,7 +10938,10 @@ CONTAINS
             reice(ncol,k) = reice1d(ncol,k)
          end do
       endif
-
+     endif
+!-----------------------------------------------------------------------------
+! end Alice DuVivier
+!----------------------------------------------------------------------------- 
 
 #if 0
       if (i==80.and.j==30) then
@@ -10959,7 +11203,19 @@ CONTAINS
              sibvisdir, sibvisdif, sibnirdir, sibnirdif,         &
 ! --------------------   End of addiation by Zhenxin 2011-06-20 ------!
              swdkdir, swdkdif                      &  ! jararias, 2012/08/10
+!--------------------------------------------------------------------------------
+! Alice DuVivier - October 2013; Matt Higgins - 24 Sep 2010
+! Export optional variables dirnir,dirdnuv,difdnir,difdnuv
+! So they may be mapped to swndr,swvdr,swndf,and swvdf.
+!--------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+             ,dirdnuv,difdnuv,dirdnir,difdnir      )
+#else
                                                    )
+#endif
+!--------------------------------------------------------------------------------
+! end DuVivier/Higgins modification
+!--------------------------------------------------------------------------------
 
 
 ! Output net absorbed shortwave surface flux and shortwave cloud forcing
@@ -10984,6 +11240,20 @@ CONTAINS
             swnirdif(i,j)  = sibnirdif(1,1)
 !  Ended, Zhenxin (2011/06/20)
             swdnbc(i,j)    = swdflxc(1,1)
+!--------------------------------------------------------------------------------
+! Alice DuVivier - October 2013; Matt Higgins - 27 Sep 2010
+! NIR and VIS direct and diffuse solar radiation downward to surface.
+! Position (1) of dirdnuv, difdnuv, dirdnir, and difdnir vars is the surface.
+!--------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+            swndr(i,j)     = dirdnir(1)
+            swvdr(i,j)     = dirdnuv(1)
+            swndf(i,j)     = difdnir(1)
+            swvdf(i,j)     = difdnuv(1)
+#endif
+!--------------------------------------------------------------------------------
+! end DuVivier modification
+!--------------------------------------------------------------------------------
          endif
             swddir(i,j)    = swdkdir(1,1)          ! jararias 2013/08/10
             swddni(i,j)    = swddir(i,j) / coszrs  ! jararias 2013/08/10
@@ -11022,6 +11292,19 @@ CONTAINS
             swvisdif(i,j)  = 0.
             swnirdir(i,j)  = 0.
             swnirdif(i,j)  = 0.  ! Add by Zhenxin (2011/06/20)
+!--------------------------------------------------------------------------------
+! Mimi Hughes - October 2014
+! Zero out the sw component variables
+!--------------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+            swndr(i,j)     = 0.
+            swvdr(i,j)     = 0.
+            swndf(i,j)     = 0.
+            swvdf(i,j)     = 0.
+#endif
+!--------------------------------------------------------------------------------
+! end Hughes modification
+!--------------------------------------------------------------------------------
          endif
             swddir(i,j)    = 0.  ! jararias 2013/08/10
             swddni(i,j)    = 0.  ! jararias 2013/08/10
@@ -11097,8 +11380,20 @@ IMPLICIT NONE
       ENDIF
 
       IF ( wrf_dm_on_monitor() ) THEN
+!-----------------------------------------------------------------------------
+! Alice DuVivier - October 2013
+! Open RRTMG longwave data but need double precision for RASM
+!-----------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+        OPEN(rrtmg_unit,FILE='RRTMG_SW_DATA_DBL',                  &
+             FORM='UNFORMATTED',STATUS='OLD',ERR=9009)
+#else
         OPEN(rrtmg_unit,FILE='RRTMG_SW_DATA',                  &
              FORM='UNFORMATTED',STATUS='OLD',ERR=9009)
+#endif
+!-----------------------------------------------------------------------------
+! end Alice DuVivier
+!-----------------------------------------------------------------------------
       ENDIF
 
       call sw_kgb16(rrtmg_unit)

@@ -88,6 +88,16 @@ MODULE MODULE_MP_MORR_TWO_MOMENT
   use module_model_constants, ONLY: CP, G, R => r_d, RV => r_v, EP_2
 
 !  USE module_state_description
+!---------------------------------------------------------------------------
+! Alice DuVivier - March 2014
+! Get shared day of year information for RASM
+!---------------------------------------------------------------------------
+#ifdef CESMCOUPLED
+     USE module_ra_rasm
+#endif
+!---------------------------------------------------------------------------
+! end DuVivier modification
+!---------------------------------------------------------------------------
 
    IMPLICIT NONE
 
@@ -266,8 +276,15 @@ SUBROUTINE MORR_TWO_MOMENT_INIT(hail_opt) ! RAS
 
 ! SET CONSTANT DROPLET CONCENTRATION (UNITS OF CM-3)
 ! IF NO COUPLING WITH WRF-CHEM
-
-      NDCNST = 250.
+!--------------------------------------------------------------------------------
+! Alice DuVivier - April 2014
+! Initialize droplet concentration for RASM different than regular WRF 
+!--------------------------------------------------------------------------------
+       ! WRF default value (250.) not suitable for Arctic. Use "RASM" value.
+       NDCNST = 200.
+!--------------------------------------------------------------------------------
+! end DuVivier modification
+!--------------------------------------------------------------------------------
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! NOTE, THE FOLLOWING OPTIONS RELATED TO DROPLET ACTIVATION 
@@ -317,8 +334,14 @@ SUBROUTINE MORR_TWO_MOMENT_INIT(hail_opt) ! RAS
 ! SWITCH FOR ICE NUCLEATION
 ! INUC = 0, USE FORMULA FROM RASMUSSEN ET AL. 2002 (MID-LATITUDE)
 !      = 1, USE MPACE OBSERVATIONS (ARCTIC ONLY)
-
-      INUC = 0
+!-----------------------------------------------------------------------------
+! Alice DuVivier, Mimi Hughes - April 2014
+! Must set ice nucleation flag to Arctic option. Default is mid-latitude
+!-----------------------------------------------------------------------------
+      INUC = 1
+!-----------------------------------------------------------------------------
+! end Alice DuVivier, Mimi Hughes
+!----------------------------------------------------------------------------- 
 
 ! SWITCH FOR GRAUPEL/HAIL NO GRAUPEL/HAIL
 ! IGRAUP = 0, INCLUDE GRAUPEL/HAIL
@@ -561,6 +584,23 @@ SUBROUTINE MP_MORR_TWO_MOMENT(ITIMESTEP,                       &
 !jdf		   ,C2PREC3D,CSED3D,ISED3D,SSED3D,GSED3D,RSED3D & ! HM ADD, WRF-CHEM
                ,rainprod, evapprod                      &
 		   ,QLSINK,PRECR,PRECI,PRECS,PRECG &        ! HM ADD, WRF-CHEM
+!-----------------------------------------------------------------------------
+! Alice DuVivier, Mimi Hughes - April 2014
+! Need ice and liquid droplet sizes to couple Morrison to radiation
+! Need latitude for droplet concentration calculations
+!-----------------------------------------------------------------------------
+               ,EFFCS,EFFIS,XLAT,XLAND,DRPCON           &
+!-----------------------------------------------------------------------------
+! end Alice DuVivier, Mimi Hughes
+!----------------------------------------------------------------------------- 
+!-----------------------------------------------------------------------------
+! Amy Solomon- Feb 2015
+! Use rasm_physics to control RASM microphyics options
+!-----------------------------------------------------------------------------
+               ,RASM_PHYSICS                            &
+!-----------------------------------------------------------------------------
+! end Amy Solomon
+!----------------------------------------------------------------------------- 
                                             )
  
 ! QV - water vapor mixing ratio (kg/kg)
@@ -632,18 +672,47 @@ SUBROUTINE MP_MORR_TWO_MOMENT(ITIMESTEP,                       &
 
    INTEGER,      INTENT(IN   )    ::   ids, ide, jds, jde, kds, kde , &
                                        ims, ime, jms, jme, kms, kme , &
-                                       its, ite, jts, jte, kts, kte
+                                       its, ite, jts, jte, kts, kte , &
+!-----------------------------------------------------------------------------
+! Amy Solomon- Feb 2015
+! Use rasm_physics to control RASM microphyics options
+!-----------------------------------------------------------------------------
+                                       RASM_PHYSICS                            
+!-----------------------------------------------------------------------------
+! end Amy Solomon
+!-----------------------------------------------------------------------------
+ 
 ! Temporary changed from INOUT to IN
 
    REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(INOUT):: &
-                          qv, qc, qr, qi, qs, qg, ni, ns, nr, TH, NG   
+                          qv, qc, qr, qi, qs, qg, ni, ns, nr, TH, NG, &   
+!-----------------------------------------------------------------------------
+! Mimi Hughes - October 2013
+! Need ice and liquid droplet sizes to copule Morrison to radiation
+! Note: added , & to previous line as well
+!-----------------------------------------------------------------------------
+                          EFFCS,EFFIS                           
+!-----------------------------------------------------------------------------
+! end Mimi Hughes
+!-----------------------------------------------------------------------------
 !jdf                      qndrop ! hm added, wrf-chem
    REAL, DIMENSION(ims:ime, kms:kme, jms:jme), optional,INTENT(INOUT):: qndrop
 !jdf  REAL, DIMENSION(ims:ime, kms:kme, jms:jme),INTENT(INOUT):: CSED3D, &
    REAL, DIMENSION(ims:ime, kms:kme, jms:jme), optional,INTENT(INOUT):: QLSINK, &
                           rainprod, evapprod, &
                           PRECI,PRECS,PRECG,PRECR ! HM, WRF-CHEM
-!, effcs, effis
+
+!--------------------------------------------------------------------------------
+! Alice DuVivier - April 2014
+! Read in latitude for droplet concentration calculation. Create variables for 
+! average, amplitude, and phase used in droplet concentration function
+!--------------------------------------------------------------------------------
+   REAL, DIMENSION(ims:ime, jms:jme), INTENT(INOUT) :: DRPCON
+   REAL, DIMENSION(ims:ime, jms:jme) :: XLAT, XLAND, AMP, AVG
+   REAL ::     DYOFF, NCCALC 
+!--------------------------------------------------------------------------------
+! end DuVivier modification
+!-------------------------------------------------------------------------------- 
 
    REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(IN):: &
                           pii, p, dz, rho, w !, tke, nctend, nitend,kzh
@@ -779,6 +848,54 @@ SUBROUTINE MP_MORR_TWO_MOMENT(ITIMESTEP,                       &
           qrcu1d(k)     = qrcuten(i,k,j)/mu(i,j)
           qscu1d(k)     = qscuten(i,k,j)/mu(i,j)
           qicu1d(k)     = qicuten(i,k,j)/mu(i,j)
+!--------------------------------------------------------------------------------
+! Alice DuVivier - March 2014
+! Add a sinusoidal seasonal cycle to the droplet concentration based on 
+! recommendations from Matt Shupe, Amy Solomon, and Hugh Morrison. Max 
+! concentration in Arctic spring and min in Arctic fall. Not well constrained by
+! observations (amplitude or phase). We add a latitude signal to the cycle so
+! that the cycle increases in amplitude at high latitudes but the mean is lower.
+! Calculate DC before passing to morr_two_moment_micro where it is used.  
+!--------------------------------------------------------------------------------
+! Amy Solomon- Feb 2015 Use rasm_physics to control RASM microphysics options
+!--------------------------------------------------------------------------------
+!      Implement a land/ocean contrast to the constant drop concentration
+!      xland = 1 (land) and xland = 2 (ocean/ice)
+       IF (RASM_PHYSICS.EQ.1) THEN
+          IF (XLAND(I,J) .gt. 1.5) THEN
+             DRPCON(I,J) = NDCNST * 0.25
+          ELSE
+             DRPCON(I,J) = NDCNST
+          END IF
+       ELSE
+          DRPCON(I,J) = NDCNST
+       END IF
+
+!      Implement a more complex change in drop concentration that changes
+!      sinusoidally based on day of year and linearly based on latitude.
+!      ! Set the number of days offset to shift seasonal NDCNST cycle. 
+!      DYOFF = 0.  ! # of days to shift the seasonal cycle
+
+!      ! Calculate mean droplet concentration for the latitude (in degrees)
+!      ! Maxima and Minima determined so that LAT<40N, the average is the same
+!      AVG(I,J)     = ((-450.0/PI)*(XLAT(I,J)*(PI/180.))) + 350.0
+!      AVG(I,J)     = MIN(AVG(I,J),250.)  
+!      AVG(I,J)     = MAX(AVG(I,J),125.)
+
+!      ! Calculate seasonal cycle amplitude for the latitude (in degrees)
+!      ! Maxima and Minima determined so that LAT<40N, the cycle goes away
+!      AMP(I,J)     = ((270.0/PI)*(XLAT(I,J)*(PI/180.))) - 60.0
+!      AMP(I,J)     = MIN(AMP(I,J),75.)
+!      AMP(I,J)     = MAX(AMP(I,J),0.)   
+
+!      ! Implement a seasonal cycle with latitude dependence   
+!      DRPCON(I,J) = AVG(I,J) + AMP(I,J)*SIN((((2.*PI)/365.)*RADTIM_SHR) + (DYOFF*(2.*PI)/365.))
+
+      ! set value for code to the droplet concentration calculated
+      NCCALC = DRPCON(I,J)
+!--------------------------------------------------------------------------------
+! end DuVivier modification
+!--------------------------------------------------------------------------------
       end do  !jdf added this
 ! below for wrf-chem
    IF (flag_qndrop .AND. PRESENT( qndrop )) THEN
@@ -813,6 +930,13 @@ SUBROUTINE MP_MORR_TWO_MOMENT(ITIMESTEP,                       &
 #if (WRF_CHEM == 1)
                                   ,rainprod1d, evapprod1d & !wrf-chem
 #endif
+!-----------------------------------------------------------------------------
+! Amy Solomon and Alice DuVivier add NCCALC
+!-----------------------------------------------------------------------------
+                                  ,NCCALC &                            
+!-----------------------------------------------------------------------------
+! end Solomon and DuVivier
+!----------------------------------------------------------------------------- 
                        )
 
    !
@@ -862,10 +986,18 @@ SUBROUTINE MP_MORR_TWO_MOMENT(ITIMESTEP,                       &
           IF ( PRESENT( PRECG ) ) PRECG(I,K,J) = GSED(K)
 ! EFFECTIVE RADIUS FOR RADIATION CODE (currently not coupled)
 ! HM, ADD LIMIT TO PREVENT BLOWING UP OPTICAL PROPERTIES, 8/18/07
-!          EFFCS(I,K,J)     = MIN(EFFC(I,K,J),50.)
-!          EFFCS(I,K,J)     = MAX(EFFCS(I,K,J),1.)
-!          EFFIS(I,K,J)     = MIN(EFFI(I,K,J),130.)
-!          EFFIS(I,K,J)     = MAX(EFFIS(I,K,J),13.)
+!-----------------------------------------------------------------------------
+! Mimi Hughes - October 2013
+! Need to uncomment the code that will calculate effective radii
+!-----------------------------------------------------------------------------
+          EFFCS(I,K,J)     = MIN(EFFC(I,K,J),50.)
+          EFFCS(I,K,J)     = MAX(EFFCS(I,K,J),1.)
+!!amy solomon use snow not ice for rei in radiation code  EFFIS(I,K,J)     = MIN(EFFI(I,K,J),130.)
+          EFFIS(I,K,J)     = MIN(EFFS(I,K,J),130.)
+          EFFIS(I,K,J)     = MAX(EFFIS(I,K,J),13.)
+!-----------------------------------------------------------------------------
+! end Mimi Hughes
+!----------------------------------------------------------------------------- 
 
 #if ( WRF_CHEM == 1)
            IF ( PRESENT( rainprod ) ) rainprod(i,k,j) = rainprod1d(k)
@@ -911,7 +1043,7 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
                                             IMS,IME, JMS,JME, KMS,KME,           &
                                             ITS,ITE, JTS,JTE, KTS,KTE,           & ! ADD GRAUPEL
                         QG3DTEN,NG3DTEN,QG3D,NG3D,EFFG,qrcu1d,qscu1d, qicu1d,    &
-                        QGSTEN,QRSTEN,QISTEN,QNISTEN,QCSTEN, &
+                        QGSTEN,QRSTEN,QISTEN,QNISTEN,QCSTEN,NCCALC, &  ! NCCALC added by DuVivier,Seefeldt
                         nc3d,nc3dten,iinum, & ! wrf-chem
 				c2prec,CSED,ISED,SSED,GSED,RSED  &  ! hm added, wrf-chem
 #if (WRF_CHEM == 1)
@@ -990,6 +1122,15 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
       REAL, DIMENSION(KTS:KTE) ::  QISTEN            ! CLOUD ICE SED TEND (KG/KG/S)
       REAL, DIMENSION(KTS:KTE) ::  QNISTEN           ! SNOW SED TEND (KG/KG/S)
       REAL, DIMENSION(KTS:KTE) ::  QCSTEN            ! CLOUD WAT SED TEND (KG/KG/S)      
+
+!--------------------------------------------------------------------------------
+! Alice DuVivier - April 2014
+! Add number density value
+!--------------------------------------------------------------------------------
+      REAL :: NCCALC    ! Number density for i/j point    
+!--------------------------------------------------------------------------------
+! end DuVivier modification
+!--------------------------------------------------------------------------------  
 
 ! hm add cumulus tendencies for precip
         REAL, DIMENSION(KTS:KTE) ::   qrcu1d
@@ -1462,10 +1603,21 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
 ! INUM = 0, PREDICT DROPLET NUMBER
 ! INUM = 1, SET CONSTANT DROPLET NUMBER
 
-         IF (iinum.EQ.1) THEN
 ! CONVERT NDCNST FROM CM-3 TO KG-1
-            NC3D(K)=NDCNST*1.E6/RHO(K)
-         END IF
+!--------------------------------------------------------------------------------
+! Alice DuVivier - April 2014
+! Use number density passed
+!--------------------------------------------------------------------------------
+! CONVERT NC1D FROM CM-3 TO KG-1
+            NC3D(K)=NCCALC*1.E6/RHO(K)
+!--------------------------------------------------------------------------------
+! end DuVivier modification
+! Note: this implementation is slightly different than v3.2 due to changes - Seefeldt
+!--------------------------------------------------------------------------------
+!         IF (iinum.EQ.1) THEN
+! CONVERT NDCNST FROM CM-3 TO KG-1
+!            NC3D(K)=NDCNST*1.E6/RHO(K)
+!         END IF
 
 ! GET SIZE DISTRIBUTION PARAMETERS
 
@@ -2075,10 +2227,20 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
 ! INUM = 0, PREDICT DROPLET NUMBER
 ! INUM = 1, SET CONSTANT DROPLET NUMBER
 
-         IF (iinum.EQ.1) THEN
+!--------------------------------------------------------------------------------
+! Alice DuVivier - April 2014
+! Use number density passed
+!--------------------------------------------------------------------------------
+! CONVERT NC1D FROM CM-3 TO KG-1
+            NC3D(K)=NCCALC*1.E6/RHO(K)
+!--------------------------------------------------------------------------------
+! end DuVivier modification
+! Note: this implementation is slightly different than v3.2 due to changes - Seefeldt
+!--------------------------------------------------------------------------------
+!         IF (iinum.EQ.1) THEN
 ! CONVERT NDCNST FROM CM-3 TO KG-1
-            NC3D(K)=NDCNST*1.E6/RHO(K)
-         END IF
+!            NC3D(K)=NDCNST*1.E6/RHO(K)
+!         END IF
 
 ! CALCULATE SIZE DISTRIBUTION PARAMETERS
 ! MAKE SURE NUMBER CONCENTRATIONS AREN'T NEGATIVE
@@ -4016,10 +4178,20 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
           NC3D(K) = MIN(NC3D(K),(NANEW1+NANEW2)/RHO(K))
           END IF
 ! SWITCH FOR CONSTANT DROPLET NUMBER
-          IF (iinum.EQ.1) THEN 
+!--------------------------------------------------------------------------------
+! Alice DuVivier - April 2014
+! Use number density passed
+!--------------------------------------------------------------------------------
+! CONVERT NC1D FROM CM-3 TO KG-1
+            NC3D(K)=NCCALC*1.E6/RHO(K)
+!--------------------------------------------------------------------------------
+! end DuVivier modification
+! Note: this implementation is slightly different than v3.2 due to changes - Seefeldt
+!--------------------------------------------------------------------------------
+!          IF (iinum.EQ.1) THEN 
 ! CHANGE NDCNST FROM CM-3 TO KG-1
-             NC3D(K) = NDCNST*1.E6/RHO(K)
-          END IF
+!             NC3D(K) = NDCNST*1.E6/RHO(K)
+!          END IF
 
       END DO !!! K LOOP
 

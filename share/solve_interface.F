@@ -1,7 +1,14 @@
 !WRF:MEDIATION_LAYER:ADT_BARRIER
 !
 
-SUBROUTINE solve_interface ( grid ) 
+!----------------------
+! modified by juanxiong he
+#ifdef CESMCOUPLED
+   SUBROUTINE solve_interface ( grid, radiation )
+#else
+   SUBROUTINE solve_interface ( grid )
+#endif
+!----------------------
 
    USE module_domain
    USE module_timing
@@ -29,14 +36,38 @@ SUBROUTINE solve_interface ( grid )
    TYPE(domain) , INTENT(INOUT)  :: grid
    TYPE (grid_config_rec_type)   :: config_flags
 
+!----------------------
+! added by Juanxiong He
+#ifdef CESMCOUPLED
+   logical, optional::radiation   
+   logical     :: lradiation
+#endif
+!----------------------
+
    INTEGER     :: idum1, idum2
 
    CALL model_to_grid_config_rec ( grid%id , model_config_rec , config_flags )
    CALL set_scalar_indices_from_config ( grid%id , idum1 , idum2 )
 
+!----------------------
+! added by Juanxiong He
+#ifdef CESMCOUPLED
+   lradiation = .false.
+   if (present(radiation)) then
+      lradiation = radiation
+   endif
+#endif
+!----------------------
+
 #if (EM_CORE == 1 && DA_CORE != 1)
+!----------------------
+! modified by Juanxiong He
+#ifdef CESMCOUPLED
+   CALL solve_em  ( grid , config_flags, lradiation  &
+#else
    CALL solve_em  ( grid , config_flags  &
-!
+#endif
+!----------------------
 # include <actual_new_args.inc>
 !
                )
