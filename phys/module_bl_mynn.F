@@ -5170,7 +5170,7 @@ SUBROUTINE SCALE_AWARE(dx,PBL1,Psig_bl,Psig_shcu)
    real, parameter :: Cc = 3.0       ! Prefactor for convective length scale
    real, parameter :: lasymp = 200.0 ! Asymptotic length scale WA 11/20/09
    real, parameter :: hmax = 4000.0  ! Max hd,hct WA 11/20/09
-   real, parameter :: Nupd = 8       ! Number of updrafts
+   integer, parameter :: Nupd = 8    ! Number of updrafts
 !
    integer :: i, k, kt, nu   ! Loop variable
    integer::  h0idx

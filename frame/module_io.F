@@ -236,9 +236,9 @@ SUBROUTINE wrf_open_for_write_begin( FileName , grid, SysDepInfo, &
   INTEGER, EXTERNAL           :: use_package
   LOGICAL, EXTERNAL           :: wrf_dm_on_monitor, multi_files
   LOGICAL, EXTERNAL :: use_output_servers_for
-  CHARACTER*128     :: LocFilename   ! for appending the process ID if necessary
+  CHARACTER*512     :: LocFilename   ! for appending the process ID if necessary
   INTEGER           :: myproc
-  CHARACTER*128     :: mess
+  CHARACTER*512     :: mess
   CHARACTER*1028    :: tstr, t1
   INTEGER           :: i,j
   INTEGER           :: Comm_compute , Comm_io
@@ -2626,7 +2626,7 @@ SUBROUTINE get_value_from_pairs ( varname , str , retval )
   CHARACTER*(*) ::    str
   CHARACTER*(*) ::    retval
 
-  CHARACTER (128) varstr, tstr
+  CHARACTER (256) varstr, tstr
   INTEGER i,j,n,varstrn
   LOGICAL nobreak, nobreakouter
 

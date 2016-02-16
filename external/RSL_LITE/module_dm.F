@@ -254,7 +254,7 @@ CONTAINS
                                       sp3y , ep3y , sm3y , em3y , &
                                 bdx , bdy )
 
-#if ( defined(SGIALTIX) && (! defined(MOVE_NESTS) ) ) || ( defined(FUJITSU_FX10) && (! defined(MOVE_NESTS) ) )
+#if ( ( defined(SGIALTIX) || defined(FUJITSU_FX10) || defined(KEEP_INT_AROUND) ) && (! defined(MOVE_NESTS) ) )
       USE module_domain, ONLY : domain, head_grid, find_grid_by_id, alloc_space_field
 #else
       USE module_domain, ONLY : domain, head_grid, find_grid_by_id
@@ -885,10 +885,10 @@ CONTAINS
          intermediate_grid%ep33y                           = c_ep3y
 #endif
 
-#if ( defined(SGIALTIX) && (! defined(MOVE_NESTS) ) ) || ( defined(FUJITSU_FX10) && (! defined(MOVE_NESTS) ) )
+#if ( ( defined(SGIALTIX) || defined(FUJITSU_FX10) || defined(KEEP_INT_AROUND) ) && (! defined(MOVE_NESTS) ) )
          ! allocate space for the intermediate domain
 !         CALL alloc_space_field ( intermediate_grid, intermediate_grid%id , 1, 2 , .TRUE., intercomm_active( intermediate_grid%id ), &   ! use same id as nest
-         CALL alloc_space_field ( intermediate_grid, intermediate_grid%id , 1, 2 , .TRUE., nest%active_this_task, &   ! use same id as nest
+         CALL alloc_space_field ( intermediate_grid, intermediate_grid%id , 1, 2 , .TRUE., nest_grid%active_this_task, &   ! use same id as nest
                                c_sd1, c_ed1, c_sd2, c_ed2, c_sd3, c_ed3,       &
                                c_sm1,  c_em1,  c_sm2,  c_em2,  c_sm3,  c_em3,  &
                                c_sp1,  c_ep1,  c_sp2,  c_ep2,  c_sp3,  c_ep3,  &
@@ -1726,10 +1726,10 @@ CONTAINS
 
 !!!!! needed to sneak-peek the registry to get parent_id 
 ! define as temporaries
-#include <namelist_defines.inc>
+#include "namelist_defines.inc"
 
 ! Statements that specify the namelists
-#include <namelist_statements.inc>
+#include "namelist_statements.inc"
 
       CALL MPI_INITIALIZED( mpi_inited, ierr )
       IF ( .NOT. mpi_inited ) THEN
@@ -1869,7 +1869,7 @@ CONTAINS
         ELSE
           IF ( comm_start(nest_id) .LT. comm_start(parent_id(nest_id)) ) THEN
             WRITE(wrf_err_message,&
-        "('nest domain ',i3,'comm_start (',i3,') lt parent ',i3,' comm_start (',i3,')')"),&
+        "('nest domain ',i3,'comm_start (',i3,') lt parent ',i3,' comm_start (',i3,')')") &
                    nest_id,comm_start,parent_id(nest_id),comm_start(parent_id(nest_id))
             CALL wrf_error_fatal(TRIM(wrf_err_message))
           ELSE IF ( comm_start(nest_id) .LT. &
@@ -2039,6 +2039,43 @@ CONTAINS
       CALL instate_communicators_for_domain(1)
 
 #else
+! for serial (non-MPI) builds
+      IMPLICIT NONE
+#  if defined(_OPENMP) && defined(MPI2_THREAD_SUPPORT)
+      INTEGER thread_support_provided, thread_support_requested
+#  endif
+      INTEGER i, j, k, x, y, n_x, n_y
+      INTEGER iii
+      INTEGER dims(3)
+! for parallel nesting, 201408, jm
+      INTEGER :: id
+      INTEGER :: io_status
+      INTEGER :: domain_id,par_id,nest_id,kid_id
+
+!!!!! needed to sneak-peek the registry to get parent_id 
+! define as temporaries
+#include "namelist_defines.inc"
+
+! Statements that specify the namelists
+#include "namelist_statements.inc"
+
+      max_dom = 1
+      OPEN ( unit=27, file="namelist.input", form="formatted", status="old" )
+      READ ( UNIT = 27 , NML = domains , IOSTAT=io_status )
+      CLOSE(27)
+
+      nkids = 1
+      which_kid = 0
+      DO i = 2, max_dom
+        IF ( 1 .le. parent_id(i) .AND. parent_id(i) .LE. max_domains ) THEN
+          which_kid(i) = nkids(parent_id(i))
+          nkids(parent_id(i)) = nkids(parent_id(i)) + 1
+        ELSE
+          WRITE(wrf_err_message,*)'invalid parent id for domain ',i
+          CALL wrf_error_fatal(TRIM(wrf_err_message))
+        ENDIF
+      ENDDO
+
       intercomm_active = .TRUE.
       domain_active_this_task = .TRUE.
       ntasks_stack = 1
@@ -3335,19 +3372,19 @@ END
        Patch(3,1) = ps3 ; Patch(3,2) = pe3
 
        IF      ( typesize .EQ. RWORDSIZE ) THEN
-         CALL just_patch_r ( buf , locbuf , size(locbuf), &
+         CALL just_patch_r ( buf , locbuf , size(locbuf)*RWORDSIZE/typesize, &
                                    PS1, PE1, PS2, PE2, PS3, PE3 , &
                                    MS1, ME1, MS2, ME2, MS3, ME3   )
        ELSE IF ( typesize .EQ. IWORDSIZE ) THEN
-         CALL just_patch_i ( buf , locbuf , size(locbuf), &
+         CALL just_patch_i ( buf , locbuf , size(locbuf)*RWORDSIZE/typesize, &
                                    PS1, PE1, PS2, PE2, PS3, PE3 , &
                                    MS1, ME1, MS2, ME2, MS3, ME3   )
        ELSE IF ( typesize .EQ. DWORDSIZE ) THEN
-         CALL just_patch_d ( buf , locbuf , size(locbuf), &
+         CALL just_patch_d ( buf , locbuf , size(locbuf)*RWORDSIZE/typesize, &
                                    PS1, PE1, PS2, PE2, PS3, PE3 , &
                                    MS1, ME1, MS2, ME2, MS3, ME3   )
        ELSE IF ( typesize .EQ. LWORDSIZE ) THEN
-         CALL just_patch_l ( buf , locbuf , size(locbuf), &
+         CALL just_patch_l ( buf , locbuf , size(locbuf)*RWORDSIZE/typesize, &
                                    PS1, PE1, PS2, PE2, PS3, PE3 , &
                                    MS1, ME1, MS2, ME2, MS3, ME3   )
        ENDIF
@@ -5206,7 +5243,7 @@ ENDIF
       TYPE(domain), POINTER :: grid          ! name of the grid being dereferenced (must be "grid")
       TYPE(domain), POINTER :: intermediate_grid
       TYPE(domain), POINTER :: ngrid
-#include <dummy_new_decl.inc>
+#include "dummy_new_decl.inc"
       INTEGER nlev, msize
       INTEGER i,j,pig,pjg,cm,cn,nig,njg,retval,k
       INTEGER iparstrt,jparstrt,sw
@@ -5308,7 +5345,7 @@ ENDIF
 !
       TYPE(domain), POINTER :: grid          ! name of the grid being dereferenced (must be "grid")
       TYPE(domain), POINTER :: ngrid
-#include <dummy_new_decl.inc>
+#include "dummy_new_decl.inc"
       INTEGER nlev, msize
       INTEGER i,j,pig,pjg,cm,cn,nig,njg,retval,k
       TYPE (grid_config_rec_type)            :: config_flags
@@ -5662,7 +5699,7 @@ ENDIF
       TYPE (grid_config_rec_type) :: config_flags ! configureation flags, has vertical dim of
                                                   ! soil temp, moisture, etc., has vertical dim
                                                   ! of soil categories
-#include <dummy_new_decl.inc>
+#include "dummy_new_decl.inc"
 
       INTEGER       ::          ids, ide, jds, jde, kds, kde,    &
                                 ims, ime, jms, jme, kms, kme,    &

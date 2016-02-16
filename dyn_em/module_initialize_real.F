@@ -2104,6 +2104,16 @@ integer::oops1,oops2
                grid%landusef(i,grid%islake,j) = 0.
             END DO
          END DO
+         IF ( config_flags%surface_input_source .EQ. 3 ) THEN
+            DO j=jts,MIN(jde-1,jte)
+               DO i=its,MIN(ide-1,ite)
+                  IF ( skip_middle_points_t ( ids , ide , jds , jde , i , j , em_width , hold_ups ) ) CYCLE 
+                  IF ( grid%lu_index(i,j) .EQ. grid%islake ) THEN
+                     grid%lu_index(i,j) = grid%iswater
+                  END IF
+               END DO
+            END DO
+         END IF
 
       END IF
 
@@ -4379,10 +4389,10 @@ end function skip_middle_points_t
             END IF
          END DO
       ELSE IF ( ( var_type .EQ. 'W' ) .OR.  ( var_type .EQ. 'Z' ) ) THEN
-         istart = MAX(ids  ,its-1)
-         iend   = MIN(ide-1,ite+1)
-         jstart = MAX(jds  ,jts-1)
-         jend   = MIN(jde-1,jte+1)
+         istart = its
+         iend   = MIN(ide-1,ite)
+         jstart = jts
+         jend   = MIN(jde-1,jte)
          kstart = kts
          kend   = kte
          DO j = jstart,jend
@@ -4406,10 +4416,10 @@ end function skip_middle_points_t
             END DO
          END DO
       ELSE IF ( ( var_type .EQ. 'T' ) .OR. ( var_type .EQ. 'Q' ) ) THEN
-         istart = MAX(ids  ,its-1)
-         iend   = MIN(ide-1,ite+1)
-         jstart = MAX(jds  ,jts-1)
-         jend   = MIN(jde-1,jte+1)
+         istart = its
+         iend   = MIN(ide-1,ite)
+         jstart = jts
+         jend   = MIN(jde-1,jte)
          kstart = kts
          kend   = kte-1
          DO j = jstart,jend
@@ -4433,10 +4443,10 @@ end function skip_middle_points_t
             END DO
          END DO
       ELSE
-         istart = MAX(ids  ,its-1)
-         iend   = MIN(ide-1,ite+1)
-         jstart = MAX(jds  ,jts-1)
-         jend   = MIN(jde-1,jte+1)
+         istart = its
+         iend   = MIN(ide-1,ite)
+         jstart = jts
+         jend   = MIN(jde-1,jte)
          kstart = kts
          kend   = kte-1
          DO j = jstart,jend

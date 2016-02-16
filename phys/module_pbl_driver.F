@@ -118,7 +118,15 @@ CONTAINS
 #if (WRF_CHEM == 1)
                ,chem,vd,nchem,kdvel,ndvel,num_vert_mix             &
 #endif
-                                                                     )       
+!
+! FASDAS
+!
+              ,QNORM, fasdas           &
+!
+! END FASDAS
+!
+                                                                     )
+       
 !------------------------------------------------------------------
 #if (EM_CORE==1)
    USE module_state_description, ONLY :                            &
@@ -408,6 +416,8 @@ CONTAINS
    REAL, DIMENSION( ims:ime, jms:jme ), &
          INTENT(IN), OPTIONAL    :: xlat_u,xlong_u,xlat_v,xlong_v
 
+   REAL,       DIMENSION( ims:ime, kms:kme ,jms:jme ),            &
+               INTENT(IN), OPTIONAL    :: w
 !
    REAL,       DIMENSION( ims:ime, kms:kme, jms:jme ),            &
                INTENT(IN   )    ::                         p_phy, &
@@ -421,6 +431,7 @@ CONTAINS
                                                                z, &
                                                           th_phy, &
                                                                w
+
 !1D variables required for CAMUWPBL scheme
    REAL , DIMENSION( kms:kme ) ,                                      &
         INTENT(IN   ) , OPTIONAL ::                                        fnm,  & !Factors for interpolation at "w" grid (interfaces)
@@ -742,7 +753,15 @@ CONTAINS
    integer iu_bep,iurb,idiff
    real seamask,thsk,zzz,unew,vnew,tnew,qnew,umom,vmom
    REAL :: z0,z1,z2,w1,w2
-
+!
+! FASDAS
+!
+   REAL, DIMENSION( ims:ime, jms:jme ) , INTENT(  OUT) , OPTIONAL ::   QNORM
+   INTEGER, INTENT(IN   )                                         ::   fasdas
+   REAL                                                           ::   scrp1
+!
+! END FASDAS
+!
 !------------------------------------------------------------------
 !
 !!!!!!!if using BEP set flag_bep to true
@@ -1145,6 +1164,25 @@ CONTAINS
               ,IMS=ims,IME=ime,JMS=jms,JME=jme,KMS=kms,KME=kme      &
               ,ITS=its,ITE=ite,JTS=jts,JTE=jte,KTS=kts,KTE=kte      &
                                                                     )
+!
+! FASDAS
+!
+              IF( fasdas == 1 ) THEN
+                  DO j=j_start(ij),j_end(ij)
+                  DO i=i_start(ij),i_end(ij)
+                     scrp1 = rqvblten(i,1,j)
+                     scrp1 = scrp1*(2.0*DT)/qv_curr(i,1,j)
+                     scrp1 = scrp1*100.0
+                     scrp1 = amax1(0.0,scrp1)
+                     scrp1 = amin1(5.0,scrp1)
+                     QNORM(I,J)= scrp1/100.0
+                  ENDDO
+                  ENDDO
+              ENDIF
+!
+! END FASDAS
+!
+
            ELSE
                WRITE ( message , FMT = '(A,7(L1,1X))' )             &
                  'present: '//                                      &
