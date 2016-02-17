@@ -106,7 +106,7 @@ CONTAINS
               ,ICLOUD_CU                      &
               ,AER_RA_FEEDBACK                &
               ,QC_CU , QI_CU                  &
-              ,bl_sgcloud,qc_bl,cldfra_bl     & !JOE-subgrid bl clouds
+              ,icloud_bl,qc_bl,cldfra_bl     & !JOE-subgrid bl clouds
               ,PM2_5_DRY, PM2_5_WATER         &
               ,PM2_5_DRY_EC                   &
               ,TAUAER300, TAUAER400 & ! jcb
@@ -461,9 +461,9 @@ CONTAINS
                          tauaerlw9,tauaerlw10,tauaerlw11,tauaerlw12, & ! czhao 
                          tauaerlw13,tauaerlw14,tauaerlw15,tauaerlw16
 
-   INTEGER, INTENT(IN) :: icloud_cu,bl_sgcloud
+   INTEGER, INTENT(IN) :: icloud_cu
 
-   INTEGER, INTENT(IN   ), OPTIONAL  ::   bl_sgcloud
+   INTEGER, INTENT(IN   ), OPTIONAL  ::   icloud_bl
    INTEGER, INTENT(IN   ), OPTIONAL  ::   aer_ra_feedback
 
 !jdfcz   INTEGER, OPTIONAL, INTENT(IN   )    :: progn,prescribe
@@ -1173,7 +1173,7 @@ CONTAINS
         ENDIF
 
         IF ( PRESENT ( CLDFRA_BL ) .AND.  PRESENT ( QC_BL ) ) THEN
-           IF ( bl_sgcloud > 0 ) THEN
+           IF ( icloud_bl > 0 ) THEN
            CALL wrf_debug (1, 'in rad driver; use BL clouds')
            DO j = jts,jte
            DO i = its,ite
