@@ -21,15 +21,16 @@ CONTAINS
                              , adapt_step_flag , curr_secs      &
 !------------------------------------------------------------
 ! added by Juanxiong He
-! added by juanxiong he for upgrade psim to system variable
+!  -remove variables that have been changed to system variables
 !------------------------------------------------------------
-#ifndef CESMCOUPLED
-                             , psim , psih , wspd , gz1oz0 , br & 
+#ifdef CESMCOUPLED
+                             , chklowq                          &
+#else
+                             , psim , psih , wspd , gz1oz0 , br , chklowq &
 #endif
 !------------------------------------------------------------
 ! end Juanxiong He
 !------------------------------------------------------------
-                             , chklowq &
                              , cu_act_flag , hol , th_phy       &
                              , pi_phy , p_phy , t_phy           &
                              , dz8w , p8w , t8w                 &
@@ -46,14 +47,12 @@ CONTAINS
 ! added by Juanxiong He
 !------------------------------------------------------------     
 #ifdef CESMCOUPLED
-                            ,radiation)       
-#else
-                            )
+                             , radiation                        &
 #endif
 !------------------------------------------------------------
 ! end Juanxiong He
 !------------------------------------------------------------
-
+                            )
     USE module_state_description
     USE module_model_constants
     USE module_domain, ONLY : domain, domain_clock_get, get_ijk_from_subgrid
@@ -106,7 +105,7 @@ CONTAINS
     REAL    ,DIMENSION(ims:ime,1:1,jms:jme,num_fdda2d),INTENT(INOUT)      :: fdda2d
     REAL    ,DIMENSION(ims:ime,kms:kme,jms:jme,num_aerod),INTENT(INOUT)   :: aerod
 !------------------------------------------------------------
-! added by juanxiong he for upgrade psim to system variable
+! added by Juanxiong He - no longer needed as vars are system variables
 !------------------------------------------------------------     
 #ifndef CESMCOUPLED
     REAL    ,DIMENSION(ims:ime,jms:jme), INTENT(INOUT)         :: psim
@@ -411,14 +410,14 @@ BENCH_START(rad_driver_tim)
      &        ,SWCF=grid%swcf                                                  &
      &        ,OLR=grid%olr                                                    &
 !------------------------------------------------------------
-! added by Juanxiong He
+! added by Juanxiong He - additional vars for partitioning radiation
 !------------------------------------------------------------
 #ifdef CESMCOUPLED
-              ,LWUPS=grid%LWUPS&
-              ,SWNDR=grid%swndr,SWVDR=grid%swvdr  &
-	            ,SWNDF=grid%swndf,SWVDF=grid%swvdf   &
-              ,RASDIR=grid%rasdir,RALDIR=grid%raldir &
-	            ,RASDIF=grid%rasdif,RALDIF=grid%raldif & 
+              ,LWUPS=grid%LWUPS                                           &
+              ,SWNDR=grid%swndr    ,SWVDR=grid%swvdr                      &
+              ,SWNDF=grid%swndf    ,SWVDF=grid%swvdf                      &
+              ,RASDIR=grid%rasdir  ,RALDIR=grid%raldir                    &
+              ,RASDIF=grid%rasdif  ,RALDIF=grid%raldif                    & 
 #endif
 !------------------------------------------------------------
 ! added by Juanxiong He
@@ -499,35 +498,33 @@ BENCH_START(surf_driver_tim)
      &        ,ACSNOM=grid%acsnom      ,ACSNOW=grid%acsnow      ,AKHS=grid%akhs          &
      &        ,AKMS=grid%akms          ,ALBBCK=grid%albbck      ,ALBEDO=grid%albedo      &
      &        ,EMBCK=grid%embck                                                          &
-!-----------------------------------------------------------------
-! added by juanxiong he for upgrade psim to system variable
-!-----------------------------------------------------------------
+!------------------------------------------------------------
+! added by Juanxiong He for upgrade BR to system variable
+!------------------------------------------------------------
 #ifdef CESMCOUPLED
-     &        ,BR=grid%br              ,CANWAT=grid%canwat      ,CHKLOWQ=chklowq    &
+     &        ,BR=grid%br         ,CANWAT=grid%canwat      ,CHKLOWQ=chklowq    &
 #else
      &        ,BR=br              ,CANWAT=grid%canwat      ,CHKLOWQ=chklowq    &
 #endif
-!-----------------------------------------------------------------
-! end juanxiong he
-!-----------------------------------------------------------------
+!------------------------------------------------------------
+! end Juanxiong He
+!------------------------------------------------------------
      &        ,CT=grid%ct              ,DT=grid%dt         ,DX=grid%dx         &
      &        ,DZ8W=dz8w          ,DZS=grid%dzs            ,FLHC=grid%flhc          &
      &        ,FM=grid%fm         ,FHH=grid%fh                                      &
-     &        ,FLQC=grid%flqc          ,GLW=grid%glw            ,GRDFLX=grid%grdflx &
-     &        ,GSW=grid%gsw    ,SWDOWN=grid%swdown                                  &
-!-----------------------------------------------------------------
-! added by juanxiong he for upgrade psim to system variable
-!-----------------------------------------------------------------
+     &        ,FLQC=grid%flqc          ,GLW=grid%glw            ,GRDFLX=grid%grdflx      &
+!------------------------------------------------------------
+! added by juanxiong he for upgrade gz1oz0 to system variable
+!------------------------------------------------------------
 #ifdef CESMCOUPLED
-     &        ,GZ1OZ0=grid%gz1oz0                                                   &    
+     &        ,GSW=grid%gsw    ,SWDOWN=grid%swdown        ,GZ1OZ0=grid%gz1oz0 ,HFX=grid%hfx              &
 #else
-     &        ,GZ1OZ0=gz1oz0                                                        &
+     &        ,GSW=grid%gsw    ,SWDOWN=grid%swdown        ,GZ1OZ0=gz1oz0      ,HFX=grid%hfx              &
 #endif
-!-----------------------------------------------------------------
-! end juanxiong he
-!-----------------------------------------------------------------
-     &        ,HFX=grid%hfx                                                         &
-     &        ,HT=grid%ht,IFSNOW=config_flags%ifsnow,ISFFLX=config_flags%isfflx     &
+!------------------------------------------------------------
+! end Juanxiong He
+!------------------------------------------------------------
+     &        ,HT=grid%ht              ,IFSNOW=config_flags%ifsnow      ,ISFFLX=config_flags%isfflx      &
      &        ,FRACTIONAL_SEAICE=config_flags%fractional_seaice           &
      &        ,SEAICE_ALBEDO_OPT=config_flags%seaice_albedo_opt           &
      &        ,SEAICE_ALBEDO_DEFAULT=config_flags%seaice_albedo_default   &
@@ -543,30 +540,30 @@ BENCH_START(surf_driver_tim)
      &        ,IVGTYP=grid%ivgtyp      ,LH=grid%lh              ,LOWLYR=grid%lowlyr      &
      &        ,MAVAIL=grid%mavail      ,NUM_SOIL_LAYERS=config_flags%num_soil_layers        &
      &        ,P8W=grid%p_hyd_w            ,PBLH=grid%pblh          ,PI_PHY=pi_phy      &
-!-----------------------------------------------------------------
-! added by juanxiong he for upgrade psim to system variable
-!-----------------------------------------------------------------
+!------------------------------------------------------------
+! added by Juanxiong He for upgrade PSIH to system variable
+!------------------------------------------------------------
 #ifdef CESMCOUPLED
-     &        ,PSFC=grid%psfc          ,PSHLTR=grid%pshltr      ,PSIH=grid%psih          &
+     &        ,PSFC=grid%psfc          ,PSHLTR=grid%pshltr      ,PSIH=grid%psih     &
 #else
      &        ,PSFC=grid%psfc          ,PSHLTR=grid%pshltr      ,PSIH=psih          &
 #endif
-!-----------------------------------------------------------------
-! end juanxiong he
-!-----------------------------------------------------------------
+!------------------------------------------------------------
+! end Juanxiong He
+!------------------------------------------------------------
      &        ,BLDT=grid%bldt     ,CURR_SECS=curr_secs, ADAPT_STEP_FLAG=adapt_step_flag  &
      &        ,BLDTACTTIME=grid%bldtacttime                                              & 
-!-----------------------------------------------------------------
-! added by juanxiong he for upgrade psim to system variable
-!-----------------------------------------------------------------
+!------------------------------------------------------------
+! added by Juanxiong He for upgrade PSIM to system variable
+!------------------------------------------------------------
 #ifdef CESMCOUPLED
-     &        ,PSIM=grid%psim          ,P_PHY=grid%p_hyd        ,Q10=grid%q10            &
+     &        ,PSIM=grid%psim     ,P_PHY=grid%p_hyd        ,Q10=grid%q10            &
 #else
      &        ,PSIM=psim          ,P_PHY=grid%p_hyd        ,Q10=grid%q10            &
 #endif
-!-----------------------------------------------------------------
-! end juanxiong he
-!-----------------------------------------------------------------
+!------------------------------------------------------------
+! end Juanxiong He
+!------------------------------------------------------------
      &        ,Q2=grid%q2              ,QFX=grid%qfx            ,QSFC=grid%qsfc          &
      &        ,QSHLTR=grid%qshltr      ,QZ0=grid%qz0            ,RAINCV=grid%raincv      &
      &        ,RA_LW_PHYSICS=config_flags%ra_lw_physics         ,RHO=grid%rho            &
@@ -595,17 +592,17 @@ BENCH_START(surf_driver_tim)
      &        ,UOCE=grid%uoce          ,VOCE=grid%voce                              &
      &        ,VEGFRA=grid%vegfra      ,VZ0=grid%vz0       ,V_FRAME=grid%v_frame    &
      &        ,V_PHY=grid%v_phy        ,WARM_RAIN=grid%warm_rain                    &
-!-----------------------------------------------------------------
-! added by juanxiong he for upgrade psim to system variable
-!-----------------------------------------------------------------
+!------------------------------------------------------------
+! added by Juanxiong He for upgrade PSIM to system variable
+!------------------------------------------------------------
 #ifdef CESMCOUPLED
      &        ,WSPD=grid%wspd          ,XICE=grid%xice     ,XLAND=grid%xland        &
 #else
      &        ,WSPD=wspd               ,XICE=grid%xice     ,XLAND=grid%xland        &
 #endif
-!-----------------------------------------------------------------
-! end juanxiong he
-!-----------------------------------------------------------------
+!------------------------------------------------------------
+! end Juanxiong He
+!------------------------------------------------------------
      &        ,MAX_EDOM=grid%num_ext_model_couple_dom      ,CPLMASK=grid%cplmask    &
      &        ,Z0=grid%z0              ,Z=grid%z        ,ZNT=grid%znt               &
      &        ,ZS=grid%zs              ,ALBSI=grid%albsi , ICEDEPTH=grid%icedepth   &
@@ -946,47 +943,47 @@ BENCH_START(pbl_driver_tim)
      &        ,BLDT=grid%bldt, CURR_SECS=curr_secs, ADAPT_STEP_FLAG=adapt_step_flag &
      &        ,BLDTACTTIME=grid%bldtacttime                               &  
 !------------------------------------------------------------
-! added by juanxiong he for upgrade psim to system variable
-!------------------------------------------------------------     
+! added by Juanxiong He for upgrade BR to system variable
+!------------------------------------------------------------
 #ifdef CESMCOUPLED
      &        ,BR=grid%br         ,CHKLOWQ=chklowq    ,CT=grid%ct                   &
 #else
      &        ,BR=br              ,CHKLOWQ=chklowq    ,CT=grid%ct                   &
 #endif
 !------------------------------------------------------------
-! end juanxiong he
-!------------------------------------------------------------     
+! end Juanxiong He
+!------------------------------------------------------------
      &        ,DT=grid%dt         ,DX=grid%dx         ,DY=grid%dy                   &
      &        ,DZ8W=dz8w          &
      &        ,EXCH_H=grid%exch_h     ,EXCH_M=grid%exch_m                           &
      &        ,FM=grid%fm         ,FHH=grid%fh                                      &
-     &        ,F=grid%f  ,GRDFLX=grid%grdflx                                        &
+     &        ,F=grid%f  ,GRDFLX=grid%grdflx      &
 !------------------------------------------------------------
-! added by juanxiong he for upgrade psim to system variable
-!------------------------------------------------------------     
+! added by Juanxiong He for upgrade GZ1OZ0 to system variable
+!------------------------------------------------------------
 #ifdef CESMCOUPLED
      &        ,GZ1OZ0=grid%gz1oz0 ,HFX=grid%hfx            ,HT=grid%ht              &
 #else
      &        ,GZ1OZ0=gz1oz0      ,HFX=grid%hfx            ,HT=grid%ht              &
 #endif
 !------------------------------------------------------------
-! end juanxiong he
-!------------------------------------------------------------     
-     &        ,ID=grid%id         ,ITIMESTEP=grid%itimestep     ,KPBL=grid%kpbl     &
-     &        ,LH=grid%lh              ,LOWLYR=grid%lowlyr      ,P8W=grid%p_hyd_w   &
-     &        ,PBLH=grid%pblh          ,PI_PHY=pi_phy                               &
+! end Juanxiong He
 !------------------------------------------------------------
-! added by juanxiong he for upgrade psim to system variable
-!------------------------------------------------------------     
+     &        ,ID=grid%id         ,ITIMESTEP=grid%itimestep     ,KPBL=grid%kpbl          &
+     &        ,LH=grid%lh              ,LOWLYR=grid%lowlyr      ,P8W=grid%p_hyd_w   &
+!------------------------------------------------------------
+! added by Juanxiong He for upgrade PSIH and PSIM to system variable
+!------------------------------------------------------------
 #ifdef CESMCOUPLED
-     &        ,PSIH=grid%psih     ,PSIM=grid%psim                                   &          
+     &        ,PBLH=grid%pblh          ,PI_PHY=pi_phy      ,PSIH=grid%psih     &
+     &        ,PSIM=grid%psim     ,P_PHY=grid%p_hyd        ,QFX=grid%qfx            &
 #else
-     &        ,PSIH=psih          ,PSIM=psim                                        &          
+     &        ,PBLH=grid%pblh          ,PI_PHY=pi_phy      ,PSIH=psih          &
+     &        ,PSIM=psim          ,P_PHY=grid%p_hyd        ,QFX=grid%qfx            &
 #endif
 !------------------------------------------------------------
-! end juanxiong he
-!------------------------------------------------------------     
-     &        ,P_PHY=grid%p_hyd        ,QFX=grid%qfx                                &
+! end Juanxiong He
+!------------------------------------------------------------
      &        ,QSFC=grid%qsfc          ,QZ0=grid%qz0  ,MIXHT=mixht                  &
      &        ,RA_LW_PHYSICS=config_flags%ra_lw_physics                   &
      &        ,RHO=grid%rho            ,RQCBLTEN=grid%rqcblten  ,RQIBLTEN=grid%rqiblten  &
@@ -997,18 +994,18 @@ BENCH_START(pbl_driver_tim)
      &        ,U10=grid%u10 ,UZ0=grid%uz0      ,U_FRAME=grid%u_frame    ,U_PHY=grid%u_phy   &
      &        ,V10=grid%v10 ,VZ0=grid%vz0      ,V_FRAME=grid%v_frame    ,V_PHY=grid%v_phy   &
      &        ,UOCE=grid%uoce          ,VOCE=grid%voce                              &
-     &        ,T2=grid%t2                                                           &
+              ,T2=grid%t2 &
 !------------------------------------------------------------
-! added by juanxiong he for upgrade psim to system variable
-!------------------------------------------------------------     
+! added by Juanxiong He for upgrade WSPD to system variable
+!------------------------------------------------------------
 #ifdef CESMCOUPLED
-     &        ,WARM_RAIN=grid%warm_rain                    ,WSPD=grid%wspd          &
+     &        ,WARM_RAIN=grid%warm_rain                    ,WSPD=grid%wspd     &
 #else
-     &        ,WARM_RAIN=grid%warm_rain                    ,WSPD=wspd               &
+     &        ,WARM_RAIN=grid%warm_rain                    ,WSPD=wspd          &
 #endif
 !------------------------------------------------------------
-! end juanxiong he
-!------------------------------------------------------------     
+! end Juanxiong He
+!------------------------------------------------------------
      &        ,XICE=grid%xice          ,XLAND=grid%xland        ,Z=grid%z                &
      &        ,ZNT=grid%znt                                                    &
      &        ,ysu_topdown_pblmix=config_flags%ysu_topdown_pblmix              &
@@ -1195,7 +1192,17 @@ BENCH_START(cu_driver_tim)
      &             ,TPERT2D=grid%tpert2d                                 &
      &             ,GSW=grid%gsw,cugd_avedx=config_flags%cugd_avedx       &
      !BSINGH - For WRFCuP scheme
+!------------------------------------------------------------
+! added by Juanxiong He for upgrade BR to system variable
+!------------------------------------------------------------
+#ifdef CESMCOUPLED
+     &             ,AKPBL=grid%akpbl,BR=grid%br, REGIME=grid%regime, T2=grid%t2, Q2=grid%q2   & !CuP, wig 3-Aug-2006
+#else
      &             ,AKPBL=grid%akpbl,BR=br, REGIME=grid%regime, T2=grid%t2, Q2=grid%q2   & !CuP, wig 3-Aug-2006
+#endif
+!------------------------------------------------------------
+! end Juanxiong He
+!------------------------------------------------------------
      &             ,SLOPESFC=grid%slopeSfc, SLOPEEZ=grid%slopeEZ                    & !CuP, wig 7-Aug-2006
      &             ,SIGMASFC=grid%sigmaSfc, SIGMAEZ=grid%sigmaEZ                    & !CuP, wig 7-Aug-2006
      &             ,CUPFLAG=grid%cupflag                                       & !CuP, wig 9-Oct-2006

@@ -60,7 +60,7 @@ CONTAINS
    SUBROUTINE MPASPECT( P, MINM, MINN, PROCMIN_M, PROCMIN_N )
       IMPLICIT NONE
       INTEGER P, M, N, MINI, MINM, MINN, PROCMIN_M, PROCMIN_N
------------------------------------------------------
+!-----------------------------------------------------
 ! modified Amy Solomon - Feb 2015
 !-----------------------------------------------------
 #ifdef CESMCOUPLED

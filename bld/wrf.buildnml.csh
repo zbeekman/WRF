@@ -394,7 +394,7 @@ cat >! namelist.input <<EOF
  history_interval                    = 0
  frames_per_outfile                  = 1
  restart                             = ${rest_flag}
- restart_interval                    = 999999
+ restart_interval                    = 0
  io_form_history                     = 2
  io_form_restart                     = 2
  io_form_input                       = 2
@@ -411,6 +411,11 @@ cat >! namelist.input <<EOF
  ${diurnal_namelist_line2} 
  ${diurnal_namelist_line3} 
  ${diurnal_namelist_line4} 
+ output_diagnostics                  = 0
+ auxhist3_outname                    = "wrf_clim_d<domain>_<date>.nc",
+ auxhist3_interval                   = 0,
+ frames_per_auxhist3                 = 1,
+ io_form_auxhist3                    = 2,
  iofields_filename                   = "wrf_hist_var_d01.txt",
  ignore_iofields_warning             = .true.,
  auxhist11_outname                   = "${CASE}.wrf.hem.<date>.nc",
@@ -429,19 +434,32 @@ cat >! namelist.input <<EOF
  auxhist14_interval                  = 0,
  io_form_auxhist14                   = 2,
  frames_per_auxhist14                = 1,
+ auxhist23_outname                   = "${CASE}.wrf.hpm.<date>.nc",
+ auxhist23_interval                  = 0,
+ frames_per_auxhist23                = 1,
+ io_form_auxhist23                   = 2,
 
  /
 
+ &diags
+ p_lev_diags                         = 0
+ num_press_levels                    = 8
+ press_levels                        = 92500, 85000, 77500, 70000,
+                                       60000, 50000, 30000, 20000
+ use_tot_or_hyd_p                    = 1
+ p_lev_missing                       = -999.
+ /
+ 
  &domains
- time_step                           = 150
- time_step_fract_num                 = 0
- time_step_fract_den                 = 1
- max_dom                             = 1
- s_we                                = 1
- e_we                                = 276
- s_sn                                = 1
- e_sn                                = 206
- e_vert                              = 40
+ time_step                           = 150,
+ time_step_fract_num                 = 0,
+ time_step_fract_den                 = 1,
+ max_dom                             = 1,
+ s_we                                = 1,
+ e_we                                = 276,
+ s_sn                                = 1,
+ e_sn                                = 206,
+ e_vert                              = 40,
  eta_levels                          =  1.00000, 0.99667, 0.99268, 0.98738, 0.98077,
                                         0.97223, 0.96179, 0.94884, 0.93346, 0.91447,
                                         0.89203, 0.86633, 0.83640, 0.80141, 0.76188,
@@ -450,46 +468,47 @@ cat >! namelist.input <<EOF
                                         0.23431, 0.20056, 0.17106, 0.14553, 0.12291,
                                         0.10287, 0.08512, 0.06940, 0.05547, 0.04313,
                                         0.03220, 0.02251, 0.01394, 0.00634, 0.00000,
- p_top_requested                     = 5000
- num_metgrid_levels                  = 30
- num_metgrid_soil_levels             = 4
- dx                                  = 50000
- dy                                  = 50000
- grid_id                             = 1
- parent_id                           = 0
- i_parent_start                      = 1
- j_parent_start                      = 1
- parent_grid_ratio                   = 1
- parent_time_step_ratio              = 1
- feedback                            = 1
+ p_top_requested                     = 5000,
+ num_metgrid_levels                  = 30,
+ num_metgrid_soil_levels             = 4,
+ dx                                  = 50000,
+ dy                                  = 50000,
+ grid_id                             = 1,
+ parent_id                           = 0,
+ i_parent_start                      = 1,
+ j_parent_start                      = 1,
+ parent_grid_ratio                   = 1,
+ parent_time_step_ratio              = 1,
+ feedback                            = 1,
  nproc_x                             = -1,
  nproc_y                             = -1,
+ max_ts_locs                         = 18,
+ max_ts_level                        = 39,
  smooth_option                       = 0
  /
 
  &physics
  mp_physics                          = 10,
- gsfcgce_hail                        = 0,
- gsfcgce_2ice                        = 0,
  co2tf                               = 1,
  ra_lw_physics                       = 4,
  ra_sw_physics                       = 4,
  radt                                = 20,
  sf_sfclay_physics                   = 1,
  bl_pbl_physics                      = 5,
+ ysu_topdown_pblmix                  = 0,
  sf_surface_physics                  = 2,
  bldt                                = 0,
  cu_physics                          = 1,
  cudt                                = 5,
+ cu_rad_feedback                     = .true.,
+ icloud                              = 1,
  isfflx                              = 1,
  ifsnow                              = 0,
- icloud                              = 1,
  surface_input_source                = 1,
  num_soil_layers                     = 4,
- pxlsm_smois_init                    = 1,
  usemonalb                           = .false.
- fractional_seaice                   = 1
- rad_micro_cpl                       = 1
+ fractional_seaice                   = 1,
+ rad_micro_cpl                       = 1,
  sf_urban_physics                    = 0,
  mp_zero_out                         = 0,
  maxiens                             = 1,
@@ -555,6 +574,7 @@ cat >! namelist.input <<EOF
  time_step_sound                     = 4,
  moist_adv_opt                       = 1,
  scalar_adv_opt                      = 1,
+ iso_temp                            = 0,
  /
 
  &bdy_control
@@ -575,422 +595,3 @@ cat >! namelist.input <<EOF
 
 EOF
 endif
-
-#--------------------------------------------------------------------------
-# ATM_GRID is wus12
-#--------------------------------------------------------------------------
-
-if ($ATM_GRID =~ wus12) then
-if ($link_data) then
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/ETAMPNEW_DATA .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/ETAMPNEW_DATA_DBL .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/RRTM_DATA .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/RRTM_DATA_DBL .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/CAM_ABS_DATA .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/CAM_AEROPT_DATA .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/ozone.formatted .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/ozone_lat.formatted .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf//run/ozone_plev.formatted .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/GENPARM.TBL .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/LANDUSE.TBL .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/SOILPARM.TBL .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/urban_param.tbl .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/VEGPARM.TBL .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/tr49t67 .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/tr49t85 .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/tr67t85 .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/gribmap.txt .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/grib2map.tbl .
-
-  rm wrfbdy_d01   >&! /dev/null  
-  rm wrfinput_d01 >&! /dev/null  
-  rm wrffdda_d01  >&! /dev/null  
-
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/wus12/wrfbdy_d01_${st_year}${st_mon} wrfbdy_d01
-  if (${CONTINUE_RUN} == 'FALSE') then
-    ln -sf   $DIN_LOC_ROOT/atm/wrf/wus12/wrfinput_d01_${st_year}${st_mon}0100  wrfinput_d01
-  endif
-  if ($spectral_nudging) then
-    ln -sf   $DIN_LOC_ROOT/atm/wrf/wus12/wrffdda_d01_${st_year}${st_mon}01  wrffdda_d01
-  endif
-else
-  cp   $DIN_LOC_ROOT/atm/wrf/run/ETAMPNEW_DATA .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/ETAMPNEW_DATA_DBL .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/RRTM_DATA .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/RRTM_DATA_DBL .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/CAM_ABS_DATA .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/CAM_AEROPT_DATA .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/ozone.formatted .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/ozone_lat.formatted .
-  cp   $DIN_LOC_ROOT/atm/wrf//run/ozone_plev.formatted .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/GENPARM.TBL .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/LANDUSE.TBL .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/SOILPARM.TBL .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/urban_param.tbl .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/VEGPARM.TBL .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/tr49t67 .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/tr49t85 .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/tr67t85 .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/gribmap.txt .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/grib2map.tbl .
-
-  rm wrfbdy_d01   >&! /dev/null  
-  rm wrfinput_d01 >&! /dev/null  
-  rm wrffdda_d01  >&! /dev/null  
-
-  cp   $DIN_LOC_ROOT/atm/wrf/wus12/wrfbdy_d01_${st_year}${st_mon} wrfbdy_d01
-  if (${CONTINUE_RUN} == 'FALSE') then
-    cp   $DIN_LOC_ROOT/atm/wrf/wus12/wrfinput_d01_${st_year}${st_mon}0100  wrfinput_d01
-  endif
-  if ($spectral_nudging) then
-    cp   $DIN_LOC_ROOT/atm/wrf/wus12/wrffdda_d01_${st_year}${st_mon}01  wrffdda_d01
-  endif
-  chmod u+w *
-endif
-
-# rst_inname                      = “${CASE}.wrf.r<domain>.<date>” 
-# rst_outname                     = “${CASE}.wrf.r<domain>.<date>” 
-
-cat >! namelist.input <<EOF
- &time_control
- run_days                            = ${run_days},
- run_hours                           = 0,
- run_minutes                         = 0,
- run_seconds                         = 0,
- start_year                          = ${st_year}, 2001, 2001
- start_month                         = ${st_mon}, 06, 06
- start_day                           = ${st_day}, 11, 11
- start_hour                          = 00,   12,   12,
- start_minute                        = 00,   00,   00,
- start_second                        = 00,   00,   00,
- end_year                            = 2003, 2001, 2001,
- end_month                           = 11,   06,   06,
- end_day                             = 01,   12,   12,
- end_hour                            = 00,   12,   12,
- end_minute                          = 00,   00,   00,
- end_second                          = 00,   00,   00,
- interval_seconds                    = 10800
- input_from_file                     = .true.,.true.,.true.,
- history_interval                    = 360,   60,   60,
- frames_per_outfile                  = 1,    1,    1,
- restart                             = ${rest_flag}
- restart_interval                    = 999999999
- io_form_history                     = 2
- io_form_restart                     = 2
- io_form_input                       = 2
- io_form_boundary                    = 2
- debug_level                         = 0
- /
-
- &domains
- time_step                           = 60,
- time_step_fract_num                 = 0,
- time_step_fract_den                 = 1,
- max_dom                             = 1,
- s_we                                = 1,     1,     1,
- e_we                                = 341,   112,   94,
- s_sn                                = 1,     1,     1,
- e_sn                                = 337,   97,    91,
- s_vert                              = 1,     1,     1,
- e_vert                              = 45,    35,    35,
- num_metgrid_levels                  = 30
- dx                                  = 12000,  1333.33, 444.44,
- dy                                  = 12000,  1333.33, 444.44,
- grid_id                             = 1,     2,     3,
- parent_id                           = 0,     1,     2,
- i_parent_start                      = 1,     31,    30,
- j_parent_start                      = 1,     17,    30,
- parent_grid_ratio                   = 1,     3,     3,
- parent_time_step_ratio              = 1,     3,     3,
- feedback                            = 1,
- smooth_option                       = 0
- /
-
- &physics
- mp_physics                          = 6,    6,     6,
- ra_lw_physics                       = 3,     1,     1,
- ra_sw_physics                       = 3,     1,     1,
- radt                                = 15,    10,    10,
- sf_sfclay_physics                   = 1,     1,     1,
- sf_surface_physics                  = 2,     2,     2,
- bl_pbl_physics                      = 1,     1,     1,
- bldt                                = 0,     0,     0,
- cu_physics                          = 1,     0,     0,
- cudt                                = 15,     5,     5,
- isfflx                              = 1,
- ifsnow                              = 0,
- icloud                              = 1,
- surface_input_source                = 1,
- num_soil_layers                     = 4,
- sf_urban_physics                    = 0,
- mp_zero_out                         = 2,
- maxiens                             = 1,
- maxens                              = 3,
- maxens2                             = 3,
- maxens3                             = 16,
- ensdim                              = 144,
- cam_abs_freq_s                      = 21600,
- cam_abs_dim2                        = 45,
- cam_abs_dim1                        = 4,
- paerlev                              = 29,
- levsiz                               = 59
- /
-
- &fdda
- /
-
- &dynamics
- w_damping                           = 0,
- diff_opt                            = 1,
- km_opt                              = 4,
- diff_6th_opt                        = 0,
- diff_6th_factor                     = 0.12,
- base_temp                           = 290.
- damp_opt                            = 0,
- zdamp                               = 5000.,  5000.,  5000.,
- dampcoef                            = 0.2,    0.2,    0.2
- khdif                               = 0,      0,      0,
- kvdif                               = 0,      0,      0,
- non_hydrostatic                     = .true., .true., .true.,
- moist_adv_opt                       = 1, 1, 1,
- scalar_adv_opt                      = 1, 1, 1,
- use_baseparam_fr_nml                = .true.
- /
-
- &bdy_control
- spec_bdy_width                      = 10,
- spec_zone                           = 1,
- relax_zone                          = 9,
- specified                           = .true., .false.,.false.,
- nested                              = .false., .true., .true.,
- /
-
- &grib2
- /
-
- &namelist_quilt
- nio_tasks_per_group = 0,
- nio_groups = 1,
- /
-
-EOF
-endif
-
-#--------------------------------------------------------------------------
-# ATM_GRID is us20
-#--------------------------------------------------------------------------
-
-if ($ATM_GRID =~ us20) then
-if ($link_data) then
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/ETAMPNEW_DATA .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/ETAMPNEW_DATA_DBL .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/RRTM_DATA .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/RRTM_DATA_DBL .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/CAM_ABS_DATA .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/CAM_AEROPT_DATA .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/ozone.formatted .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/ozone_lat.formatted .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf//run/ozone_plev.formatted .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/GENPARM.TBL .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/LANDUSE.TBL .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/SOILPARM.TBL .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/urban_param.tbl .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/VEGPARM.TBL .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/tr49t67 .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/tr49t85 .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/tr67t85 .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/gribmap.txt .
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/run/grib2map.tbl .
-
-  rm wrfbdy_d01   >&! /dev/null  
-  rm wrfinput_d01 >&! /dev/null  
-  rm wrffdda_d01  >&! /dev/null  
-
-  ln -sf   $DIN_LOC_ROOT/atm/wrf/CCSMtoWRF.us20km.wrfinput.2005-2100/wrfbdy_d01_${st_year}${st_mon} wrfbdy_d01
-  if (${CONTINUE_RUN} == 'FALSE') then
-    ln -sf   $DIN_LOC_ROOT/atm/wrf/CCSMtoWRF.us20km.wrfinput.2005-2100/wrfinput_d01_${st_year}${st_mon}  wrfinput_d01
-  endif
-  if ($spectral_nudging) then
-    ln -sf   $DIN_LOC_ROOT/atm/wrf/CCSMtoWRF.us20km.wrfinput.2005-2100/wrffdda_d01_${st_year}${st_mon}  wrffdda_d01
-  endif
-else
-  cp   $DIN_LOC_ROOT/atm/wrf/run/ETAMPNEW_DATA .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/ETAMPNEW_DATA_DBL .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/RRTM_DATA .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/RRTM_DATA_DBL .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/CAM_ABS_DATA .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/CAM_AEROPT_DATA .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/ozone.formatted .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/ozone_lat.formatted .
-  cp   $DIN_LOC_ROOT/atm/wrf//run/ozone_plev.formatted .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/GENPARM.TBL .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/LANDUSE.TBL .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/SOILPARM.TBL .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/urban_param.tbl .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/VEGPARM.TBL .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/tr49t67 .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/tr49t85 .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/tr67t85 .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/gribmap.txt .
-  cp   $DIN_LOC_ROOT/atm/wrf/run/grib2map.tbl .
-
-  rm wrfbdy_d01   >&! /dev/null  
-  rm wrfinput_d01 >&! /dev/null  
-  rm wrffdda_d01  >&! /dev/null  
-
-  cp   $DIN_LOC_ROOT/atm/wrf/CCSMtoWRF.us20km.wrfinput.2005-2100/wrfbdy_d01_${st_year}${st_mon} wrfbdy_d01
-  if (${CONTINUE_RUN} == 'FALSE') then
-    cp   $DIN_LOC_ROOT/atm/wrf/CCSMtoWRF.us20km.wrfinput.2005-2100/wrfinput_d01_${st_year}${st_mon}  wrfinput_d01
-  endif
-  if ($spectral_nudging) then
-    cp   $DIN_LOC_ROOT/atm/wrf/CCSMtoWRF.us20km.wrfinput.2005-2100/wrffdda_d01_${st_year}${st_mon}  wrffdda_d01
-  endif
-  chmod u+w *
-endif
-
-# rst_inname                      = “${CASE}.wrf.r<domain>.<date>” 
-# rst_outname                     = “${CASE}.wrf.r<domain>.<date>” 
-
-cat >! namelist.input <<EOF
- &time_control
- run_days                            = ${run_days},
- run_hours                           = 0,
- run_minutes                         = 0,
- run_seconds                         = 0,
- start_year                          = ${st_year}, 2001, 2001
- start_month                         = ${st_mon}, 06, 06
- start_day                           = ${st_day}, 11, 11
- start_hour                          = 00,   12,   12,
- start_minute                        = 00,   00,   00,
- start_second                        = 00,   00,   00,
- end_year                            = 2100, 2001, 2001,
- end_month                           = 11,   06,   06,
- end_day                             = 01,   12,   12,
- end_hour                            = 00,   12,   12,
- end_minute                          = 00,   00,   00,
- end_second                          = 00,   00,   00,
- interval_seconds                    = 21600
- input_from_file                     = .true.,.true.,.true.,
- history_interval                    = 360,   60,   60,
- frames_per_outfile                  = 1,    1,    1,
- auxhist2_interval                   = 60,   60,  60,
- frames_per_auxhist2                 = 24,   24,  24,
- io_form_auxhist2                    = 2
- restart                             = ${rest_flag}
- restart_interval                    = 86400
- io_form_history                     = 2
- io_form_restart                     = 2
- io_form_input                       = 2
- io_form_boundary                    = 2
- debug_level                         = 0
- /
-
- &domains
- time_step                           = 30,
- time_step_fract_num                 = 0,
- time_step_fract_den                 = 1,
- max_dom                             = 1,
- s_we                                = 1,     1,     1,
- e_we                                = 351,   112,   94,
- s_sn                                = 1,     1,     1,
- e_sn                                = 231,   97,    91,
- s_vert                              = 1,     1,     1,
- e_vert                              = 35,    35,    35,
- num_metgrid_levels                  = 18
- dx                                  = 20000,  1333.33, 444.44,
- dy                                  = 20000,  1333.33, 444.44,
- grid_id                             = 1,     2,     3,
- parent_id                           = 0,     1,     2,
- i_parent_start                      = 1,     31,    30,
- j_parent_start                      = 1,     17,    30,
- parent_grid_ratio                   = 1,     3,     3,
- parent_time_step_ratio              = 1,     3,     3,
- feedback                            = 1,
- smooth_option                       = 0
- /
-
- &physics
- mp_physics                          = 4,    6,     6,
- ra_lw_physics                       = 3,     1,     1,
- ra_sw_physics                       = 3,     1,     1,
- radt                                = 15,    10,    10,
- sf_sfclay_physics                   = 1,     1,     1,
- sf_surface_physics                  = 2,     2,     2,
- bl_pbl_physics                      = 1,     1,     1,
- bldt                                = 0,     0,     0,
- cu_physics                          = 3,     0,     0,
- cudt                                = 5,     5,     5,
- isfflx                              = 1,
- ifsnow                              = 0,
- icloud                              = 1,
- surface_input_source                = 1,
- num_soil_layers                     = 4,
- sf_urban_physics                    = 0,
- mp_zero_out                         = 2,
- maxiens                             = 1,
- maxens                              = 3,
- maxens2                             = 3,
- maxens3                             = 16,
- ensdim                              = 144,
- cam_abs_freq_s                      = 21600,
- cam_abs_dim2                        = 35,
- cam_abs_dim1                        = 4,
- paerlev                             = 29,
- levsiz                              = 59
- /
-
- &fdda
- grid_fdda                           = 2
- xwavenum                            = 3
- ywavenum                            = 3
- gfdda_inname                        = "wrffdda_d<domain>",
- gfdda_interval_m                    = 360,   360,   360,
- gfdda_end_h                         = 7200000,    24,    24,
- if_no_pbl_nudging_uv                = 1,     0,     1,
- if_no_pbl_nudging_t                 = 1,     0,     1,
- if_no_pbl_nudging_q                 = 1
- guv                                 = 0.0003,     0.0003,     0.0003,
- gt                                  = 0.000000,     0.0003,     0.0003,
- gq                                  = 0.000000,     0.0003,     0.0003,
- if_ramping                          = 1,
- dtramp_min                          = 60.0,
- io_form_gfdda                       = 2,
- /
-
- &dynamics
- w_damping                           = 0,
- diff_opt                            = 1,
- km_opt                              = 4,
- diff_6th_opt                        = 0,
- diff_6th_factor                     = 0.12,
- base_temp                           = 290.
- damp_opt                            = 0,
- zdamp                               = 5000.,  5000.,  5000.,
- dampcoef                            = 0.2,    0.2,    0.2
- khdif                               = 0,      0,      0,
- kvdif                               = 0,      0,      0,
- non_hydrostatic                     = .true., .true., .true.,
- moist_adv_opt                       = 1,      1,      1,
- scalar_adv_opt                      = 1,      1,      1,
- use_baseparam_fr_nml                = .true.
- /
-
- &bdy_control
- spec_bdy_width                      = 15,
- spec_zone                           = 1,
- relax_zone                          = 14,
- specified                           = .true., .false.,.false.,
- nested                              = .false., .true., .true.,
- /
-
- &grib2
- /
-
- &namelist_quilt
- nio_tasks_per_group = 0,
- nio_groups = 1,
- /
-
-EOF
-endif
-

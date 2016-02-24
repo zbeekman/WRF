@@ -2526,14 +2526,6 @@ integer myproc
 
 !-- initialize surface layer scheme
 
-!-----------------------------------------------------------------
-! Juanxiong He
-! Don't initialize surface layer schemes when coupled in RASM 
-!-----------------------------------------------------------------
-#ifdef CESMCOUPLED
-
-#else
-
    sfclay_select: SELECT CASE(config_flags%sf_sfclay_physics)
 
       CASE (SFCLAYSCHEME)
@@ -2626,6 +2618,14 @@ integer myproc
 
 
 !-- initialize surface scheme
+
+!-----------------------------------------------------------------
+! Juanxiong He
+! Don't initialize surface layer schemes when coupled in RASM 
+!-----------------------------------------------------------------
+#ifdef CESMCOUPLED
+
+#else
 
    sfc_select: SELECT CASE(config_flags%sf_surface_physics)
 

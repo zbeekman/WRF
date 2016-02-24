@@ -8622,7 +8622,7 @@
                pbbfddir(ikl) = pbbfddir(ikl) + zincflx(iw)*ztdbt_nodel(jk)
                pbbcddir(ikl) = pbbcddir(ikl) + zincflx(iw)*ztdbtc_nodel(jk)
 
---------------------------------------------------------------------------------
+!--------------------------------------------------------------------------------
 ! Alice DuVivier - September 2013
 ! How to divide up the band from 625-778nm and split at 700nm, which is needed
 ! for CICE. This follows the implementation in CESM and divides the band in half

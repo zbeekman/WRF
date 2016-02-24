@@ -339,7 +339,7 @@ module_ra_cam_support.o: module_cam_support.o \
 
 module_ra_cam.o: module_ra_cam_support.o \
 		 module_cam_support.o \
-     module_ra_rasm.o  \
+    	         module_ra_rasm.o  \
 		 module_ra_clWRF_support.o \
                 ../frame/module_wrf_error.o
 
@@ -433,14 +433,6 @@ module_sf_noahdrv.o: module_sf_noahlsm.o \
 
 module_sf_noahlsm.o: ../share/module_model_constants.o
 
-module_sf_clm.o: module_cam_shr_kind_mod.o \
-		 module_cam_shr_const_mod.o \
-		 module_cam_support.o \
-		 module_sf_urban.o \
-		 ../share/module_date_time.o \
-		 ../frame/module_wrf_error.o  \
-		../frame/module_configure.o
-
 module_sf_ssib.o: ../share/module_model_constants.o  
 
 module_sf_noah_seaice_drv.o:	module_sf_noah_seaice.o
@@ -510,7 +502,6 @@ module_physics_init.o : \
 		module_sf_pxsfclay.o		\
 		module_sf_noahlsm.o		\
 		module_sf_noahdrv.o		\
-		module_sf_clm.o			\
                 module_sf_ssib.o                \
 		module_sf_noahmplsm.o		\
 		module_sf_noahmpdrv.o		\
@@ -663,7 +654,7 @@ module_radiation_driver.o: \
                 module_ra_flg.o \
                 module_ra_aerosol.o \
                 module_mp_thompson.o \
-      	        module_ra_rasm.o  \
+    	        module_ra_rasm.o  \
 		../frame/module_driver_constants.o \
 		../frame/module_state_description.o \
 		../frame/module_dm.o \
@@ -686,7 +677,6 @@ module_surface_driver.o: \
 		module_sf_noah_seaice_drv.o	\
                 module_sf_noahmp_groundwater.o  \
 		module_sf_noahdrv.o		\
-		module_sf_clm.o			\
                 module_sf_ssib.o                \
 		module_sf_noahmpdrv.o		\
 		module_sf_ruclsm.o		\
@@ -835,7 +825,7 @@ module_mp_wdm6.o :\
 		module_mp_radar.o
 
 module_mp_morr_two_moment.o :\
-    module_ra_rasm.o  \
+    	        module_ra_rasm.o  \
 		module_mp_radar.o
 
 module_mp_wsm3.o :\
@@ -1208,8 +1198,6 @@ tc_em.o: \
 	../share/module_optional_input.o \
 	../share/module_bc_time_utilities.o \
 	$(ESMF_MOD_DEPENDENCE)
-
-
 
 #--------------------------------------------------------------------
 # Amy Solomon- Feb 2015

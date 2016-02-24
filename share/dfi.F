@@ -173,7 +173,7 @@
 ! -See if radiation-microphysics coupling is turned on
 ! -Switch for RASM physics changes
 !-----------------------------------------------------------------------------
- #ifdef CESMCOUPLED
+#ifdef CESMCOUPLED
       CALL nl_set_rad_micro_cpl( grid%id, 0 )
       CALL nl_set_rasm_physics( grid%id, 0 )
 #endif
@@ -355,7 +355,7 @@
 ! -See if radiation-microphysics coupling is turned on
 ! -Switch for RASM physics changes
 !-----------------------------------------------------------------------------
- #ifdef CESMCOUPLED
+#ifdef CESMCOUPLED
       CALL nl_set_rad_micro_cpl(  grid%id, head_grid%rad_micro_cpl)
       CALL nl_set_rasm_physics( grid%id, head_grid%rasm_physics)
 #endif

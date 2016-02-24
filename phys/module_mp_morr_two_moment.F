@@ -1043,12 +1043,19 @@ END SUBROUTINE MP_MORR_TWO_MOMENT
                                             IMS,IME, JMS,JME, KMS,KME,           &
                                             ITS,ITE, JTS,JTE, KTS,KTE,           & ! ADD GRAUPEL
                         QG3DTEN,NG3DTEN,QG3D,NG3D,EFFG,qrcu1d,qscu1d, qicu1d,    &
-                        QGSTEN,QRSTEN,QISTEN,QNISTEN,QCSTEN,NCCALC, &  ! NCCALC added by DuVivier,Seefeldt
+                        QGSTEN,QRSTEN,QISTEN,QNISTEN,QCSTEN, &
                         nc3d,nc3dten,iinum, & ! wrf-chem
 				c2prec,CSED,ISED,SSED,GSED,RSED  &  ! hm added, wrf-chem
 #if (WRF_CHEM == 1)
         ,rainprod, evapprod &
 #endif
+!-----------------------------------------------------------------------------
+! Amy Solomon and Alice DuVivier add NCCALC
+!-----------------------------------------------------------------------------
+                                  ,NCCALC &                            
+!-----------------------------------------------------------------------------
+! end Solomon and DuVivier
+!----------------------------------------------------------------------------- 
                         )
 
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC

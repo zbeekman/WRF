@@ -147,15 +147,15 @@ CONTAINS
 !--------------------------------------------------------------------
 #ifdef CESMCOUPLED
 #ifdef NO_LEAP_CALENDAR
-     CALL WRFU_Initialize( defaultCalendar=WRFU_CALKIND_NOLEAP )
+   CALL WRFU_Initialize( defaultCalendar=WRFU_CALKIND_NOLEAP )
 #else
-     CALL WRFU_Initialize( defaultCalendar=WRFU_CALKIND_GREGORIAN )
+   CALL WRFU_Initialize( defaultCalendar=WRFU_CALKIND_GREGORIAN )
 #endif
 #else
 #ifdef NO_LEAP_CALENDAR
-     CALL WRFU_Initialize( defaultCalKind=WRFU_CAL_NOLEAP )
+   CALL WRFU_Initialize( defaultCalKind=WRFU_CAL_NOLEAP )
 #else
-     CALL WRFU_Initialize( defaultCalKind=WRFU_CAL_GREGORIAN )
+   CALL WRFU_Initialize( defaultCalKind=WRFU_CAL_GREGORIAN )
 #endif
 #endif
 !--------------------------------------------------------------------
