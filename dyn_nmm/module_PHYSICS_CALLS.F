@@ -2249,6 +2249,8 @@
      &                 ,SM,HBM2,PBLH,LPBL,CNVBOT,CNVTOP                 &
      &                 ,HTOP,HBOT,HTOPD,HBOTD,HTOPS,HBOTS               &
      &                 ,RTHBLTEN,RQVBLTEN,RTHRATEN                      &
+     &                 ,rqvcuten,rqccuten,rqicuten                      & ! for GF CU scheme
+     &                 ,tcuten                                          &
 #if (NMM_CORE==1)    
      &                 ,TWBS,QWBS                                       &
      &                 ,DUCUDT, DVCUDT, MOMMIX, store_rand               &                  
@@ -2398,6 +2400,10 @@
 !
       TYPE(GRID_CONFIG_REC_TYPE),INTENT(IN) :: CONFIG_FLAGS
 !
+      REAL,DIMENSION(IMS:IME,KMS:KME,JMS:JME),OPTIONAL,               &
+           INTENT(INOUT) ::                                           &
+            rqvcuten,rqccuten,rqicuten,tcuten
+
 !-----------------------------------------------------------------------
 !***  LOCAL VARIABLES
 !-----------------------------------------------------------------------
@@ -2419,10 +2425,18 @@
 !
       REAL,DIMENSION(ITS:ITE,JTS:JTE) :: WMID_L
 !
+! GF mods - rqvcuten,rqccuten,rqicuten are now non-local and optional
+!      REAL,DIMENSION(IMS:IME,KMS:KME,JMS:JME) :: DZ,P8W,P_PHY,PI_PHY    &
+!     &                                          ,RQCCUTEN,RQRCUTEN      &
+!     &                                          ,RQICUTEN,RQSCUTEN      &
+!     &                                          ,RQVCUTEN,RR,RTHCUTEN   &
+!     &                                          ,T_PHY,TH_PHY           &
+!     &                                          ,U_PHY,V_PHY,WINT
       REAL,DIMENSION(IMS:IME,KMS:KME,JMS:JME) :: DZ,P8W,P_PHY,PI_PHY    &
-     &                                          ,RQCCUTEN,RQRCUTEN      &
-     &                                          ,RQICUTEN,RQSCUTEN      &
-     &                                          ,RQVCUTEN,RR,RTHCUTEN   &
+     &                                          ,RQRCUTEN      &
+     &                                          ,RQSCUTEN      &
+     &                                          ,RTHCUTEN      &
+     &                                          ,RR            &
      &                                          ,T_PHY,TH_PHY           &
      &                                          ,U_PHY,V_PHY,WINT
 !
@@ -2498,6 +2512,8 @@
      &   CONFIG_FLAGS%CU_PHYSICS==MESO_SAS)RETURN             !Kwon
       IF(MOD(NTSD,NCNVC)/=0.AND.                                      &
      &   CONFIG_FLAGS%CU_PHYSICS==SCALESASSCHEME)RETURN        ! Wang
+      IF(MOD(NTSD,NCNVC)/=0.AND.                                      &
+     &   CONFIG_FLAGS%CU_PHYSICS==GFSCHEME)RETURN             !egrell
       
 !-----------------------------------------------------------------------
       NSTEP_CNV=NCNVC
@@ -2590,6 +2606,10 @@
           RQRCUTEN(I,K,J)=0.
           RQICUTEN(I,K,J)=0.
           RQSCUTEN(I,K,J)=0.
+
+           RUCUTEN(i,k,j)=0.
+           RVCUTEN(i,k,j)=0.
+
         ENDDO
 !
       ENDDO
@@ -2779,6 +2799,8 @@
      &                 ,APR_CAPME=APR_CAPME,APR_CAPMI=APR_CAPMI         &
      &                 ,MASS_FLUX=MASS_FLUX,XF_ENS=XF_ENS               &
      &                 ,PR_ENS=PR_ENS                                   &
+     &                 ,clos_choice=config_flags%clos_choice            & !gf
+     &                 ,ishallow=config_flags%ishallow                  & !gf
      &                 ,GD_CLOUD=GD_CLOUD,GD_CLOUD2=GD_CLOUD2           &
      &                 ,KTOP_DEEP=KTOP_DEEP                             &
      &                 ,ENSDIM=ENSDIM,MAXIENS=1,MAXENS=3                &
@@ -2789,8 +2811,9 @@
      &                 ,RTHBLTEN=RTHBLTEN,RQVBLTEN=RQVBLTEN             &
      &                 ,RTHRATEN=RTHRATEN                               &
 #if (NMM_CORE==1)
-     &                 ,RUCUTEN=DUCUDT, RVCUTEN=DVCUDT, MOMMIX=MOMMIX   &
-                       ,store_rand=store_rand                           &
+!     &                 ,RUCUTEN=DUCUDT, RVCUTEN=DVCUDT, MOMMIX=MOMMIX   & !gf
+     &                 ,RUCUTEN=RUCUTEN, RVCUTEN=RVCUTEN, MOMMIX=MOMMIX & !gf
+     &                 ,store_rand=store_rand                           &
 #if (HWRF==1)
      &                 ,pert_sas=config_flags%pert_sas                  &
      &                 ,ens_random_seed=config_flags%ens_random_seed    &
@@ -2822,6 +2845,9 @@
         DO K=KMS,KME
         DO J=JMS,JME
         DO I=IMS,IME
+           DUCUDT(i,j,k)=RUCUTEN(i,k,j)
+           DVCUDT(i,j,k)=RVCUTEN(i,k,j)
+
            DTHCUDT(i,j,k)=RTHCUTEN(i,k,j)
            DQVCUDT(i,j,k)=RQVCUTEN(i,k,j)
            DQRCUDT(i,j,k)=RQRCUTEN(i,k,j)
@@ -2969,7 +2995,7 @@
 !
           cps_select: SELECT CASE(config_flags%cu_physics)
 !
-          CASE (KFSCHEME,KFETASCHEME,GDSCHEME,SASSCHEME,SCALESASSCHEME,MESO_SAS,OSASSCHEME,NSASSCHEME,TIEDTKESCHEME)
+          CASE (KFSCHEME,KFETASCHEME,GDSCHEME,GFSCHEME,SASSCHEME,SCALESASSCHEME,MESO_SAS,OSASSCHEME,NSASSCHEME,TIEDTKESCHEME)
            IF(config_flags%mp_physics==fer_mp_hires_advect) THEN
              ! Update QI and QRIMEF:
              call QITEND_FER_HIRES_ADVECT( &
@@ -2993,6 +3019,9 @@
             CALL wrf_message(trim(message))
 	  ENDIF
 !
+! Also save instantaneous T tendencies from CU for diagnostics     ! egrell
+          TCUTEN(I,K,J)=DTDT
+
         ENDDO
       ENDDO
       ENDDO

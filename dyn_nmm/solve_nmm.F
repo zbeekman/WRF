@@ -388,6 +388,7 @@
       ALLOCATE(RTHRATEN(IMS:IME,KMS:KME,JMS:JME),STAT=ISTAT)
 !
         IF(CONFIG_FLAGS%CU_PHYSICS==GDSCHEME.OR.                        &
+     &  CONFIG_FLAGS%CU_PHYSICS==GFSCHEME.OR.                           &
      &  CONFIG_FLAGS%CU_PHYSICS==TIEDTKESCHEME.OR.                      &
      &  CONFIG_FLAGS%CU_PHYSICS==KFETASCHEME)THEN
 
@@ -396,6 +397,9 @@
         DO I=IMS,IME
           TTEN(I,K,J)=grid%t(I,J,K)
           QTEN(I,K,J)=grid%q(I,J,K)
+          RTHBLTEN(i,k,j) = 0.
+          RQVBLTEN(i,k,j) = 0.
+          RTHRATEN(i,k,j) = 0.
         ENDDO
         ENDDO
         ENDDO
@@ -1796,6 +1800,7 @@
 !***  GET TENDENCIES FOR GD SCHEME.
 !    
         IF(CONFIG_FLAGS%CU_PHYSICS==GDSCHEME.OR.                        &
+     &  CONFIG_FLAGS%CU_PHYSICS==GFSCHEME.OR.                           &
      &  CONFIG_FLAGS%CU_PHYSICS==TIEDTKESCHEME.OR.                      &
      &  CONFIG_FLAGS%CU_PHYSICS==KFETASCHEME)THEN
           DT_INV=1./GRID%DT
@@ -1846,6 +1851,8 @@
      &             ,grid%sm,grid%hbm2,grid%pblh,grid%lpbl,grid%cnvbot,grid%cnvtop                         &
      &             ,grid%htop,grid%hbot,grid%htopd,grid%hbotd,grid%htops,grid%hbots                  &
      &             ,RTHBLTEN,RQVBLTEN,RTHRATEN                         & 
+     &             ,grid%rqvcuten,grid%rqccuten,grid%rqicuten          &
+     &             ,grid%tcuten                                        &
 #if (NMM_CORE==1)                  
      &             ,grid%twbs,grid%qwbs                                &
      &                 ,grid%DUCUDT, grid%DVCUDT, GRID%MOMMIX, grid%random             & 
@@ -1885,6 +1892,7 @@
      &    (CONFIG_FLAGS%CU_PHYSICS.eq.OSASSCHEME.or.            &
      &     CONFIG_FLAGS%CU_PHYSICS.eq.NSASSCHEME.or.            &
      &     CONFIG_FLAGS%CU_PHYSICS.eq.MESO_SAS.or.              & !Kwon
+     &     CONFIG_FLAGS%CU_PHYSICS.eq.GFSCHEME.or.              & !egrell
      &     CONFIG_FLAGS%CU_PHYSICS.eq.SASSCHEME))THEN 
 !emc_2010_bugfix_h50
 !

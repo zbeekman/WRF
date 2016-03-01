@@ -4,10 +4,10 @@
 MODULE module_cu_gf
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-!     This convective parameterization is build to attempt     !
+!     This convective parameterization is built to attempt     !
 !     a smooth transition to cloud resolving scales as proposed!
 !     by Arakawa et al (2011, ACP). It currently does not use  !
-!     subsidencespreading as in G3. Difference and details     !
+!     subsidence spreading as in G3. Difference and details     !
 !     will be described in a forthcoming paper by              !
 !     Grell and Freitas (2013). The parameterization also      !
 !     offers options to couple with aerosols. Both, the smooth !
@@ -30,21 +30,19 @@ CONTAINS
               ,dz8w,p8w,XLV,CP,G,r_v                            &
               ,htop,hbot,ktop_deep                              &
               ,CU_ACT_FLAG,warm_rain                            &
-              ,APR_GR,APR_W,APR_MC,APR_ST,APR_AS                &
-              ,APR_CAPMA,APR_CAPME,APR_CAPMI                    &
-              ,MASS_FLUX,HT,hfx,qfx,XLAND,gsw,edt_out     &
+              ,MASS_FLUX,HT,hfx,qfx,XLAND,gsw,edt_out           &
               ,GDC,GDC2 ,kpbl,k22_shallow,kbcon_shallow         &
               ,ktop_shallow,xmb_shallow                         &
-              ,cugd_tten,cugd_qvten ,cugd_qcten                 &
-              ,cugd_ttens,cugd_qvtens,cugd_avedx,imomentum      &
-              ,ichoice    &
-              ,ishallow_g3,ids,ide, jds,jde, kds,kde            &
+              ,ichoice                                          &
+              ,ishallow_g3                                      &
+              ,ids,ide, jds,jde, kds,kde                        &
               ,ims,ime, jms,jme, kms,kme                        &
               ,its,ite, jts,jte, kts,kte                        &
               ,periodic_x,periodic_y                            &
               ,RQVCUTEN,RQCCUTEN,RQICUTEN                       &
               ,RQVFTEN,RTHFTEN,RTHCUTEN,RTHRATEN                &
               ,rqvblten,rthblten                                &
+              ,rucuten,rvcuten                                  &
               ,F_QV    ,F_QC    ,F_QR    ,F_QI    ,F_QS         &
 #if ( WRF_DFI_RADAR == 1 )
                  ! Optional CAP suppress option
@@ -74,13 +72,12 @@ CONTAINS
                                   ims,ime, jms,jme, kms,kme,    & 
                                   its,ite, jts,jte, kts,kte
    LOGICAL periodic_x,periodic_y
-               integer, parameter  :: ens4_spread = 3 ! max(3,cugd_avedx)
+               integer, parameter  :: ens4_spread = 3 
                integer, parameter  :: ens4=ens4_spread*ens4_spread
 
    integer, intent (in   )              :: ichoice
   
-   INTEGER,      INTENT(IN   ) :: ITIMESTEP,cugd_avedx, &
-                                  ishallow_g3,imomentum
+   INTEGER,      INTENT(IN   ) :: ITIMESTEP, ishallow_g3
    LOGICAL,      INTENT(IN   ) :: warm_rain
 
    REAL,         INTENT(IN   ) :: XLV, R_v
@@ -105,17 +102,20 @@ CONTAINS
 
    REAL, DIMENSION( ims:ime , jms:jme ),INTENT(IN) :: hfx,qfx,GSW,HT,XLAND
    INTEGER, DIMENSION( ims:ime , jms:jme ),INTENT(IN) :: KPBL
-   INTEGER, DIMENSION( ims:ime , jms:jme ),INTENT(INOUT) :: k22_shallow, &
-                 kbcon_shallow,ktop_shallow
+   INTEGER, DIMENSION( ims:ime , jms:jme ),                     &
+            OPTIONAL                      ,                     &
+            INTENT(INOUT) :: k22_shallow,kbcon_shallow,ktop_shallow
+   REAL, DIMENSION( ims:ime, jms:jme ),INTENT(INOUT  ),         &
+            OPTIONAL  :: xmb_shallow
 !
    REAL, INTENT(IN   ) :: DT, DX
 !
 
-   REAL, DIMENSION( ims:ime , jms:jme ),                        &
-         INTENT(INOUT) ::           pratec,RAINCV, MASS_FLUX,   &
-                          APR_GR,APR_W,APR_MC,APR_ST,APR_AS,    &
-                         edt_out,APR_CAPMA,APR_CAPME,APR_CAPMI, &
-                         htop,hbot,xmb_shallow
+   REAL, DIMENSION( ims:ime , jms:jme ),  OPTIONAL,             &
+         INTENT(INOUT) ::           MASS_FLUX,   &
+                         edt_out
+   REAL, DIMENSION( ims:ime , jms:jme ),INTENT(INOUT) ::        &
+                         pratec,RAINCV,htop,hbot
 !+lxz
 !  REAL, DIMENSION( ims:ime , jms:jme ) :: & !, INTENT(INOUT) ::       &
 !        HTOP,     &! highest model layer penetrated by cumulus since last reset in radiation_driver
@@ -135,8 +135,6 @@ CONTAINS
    REAL, DIMENSION( ims:ime , kms:kme , jms:jme ),              &
          OPTIONAL,                                              &
          INTENT(INOUT) ::                           RTHFTEN,    &
-                            cugd_tten,cugd_qvten,cugd_qcten,    &
-                            cugd_ttens,cugd_qvtens,             &
                                                     RQVFTEN
 
    REAL, DIMENSION( ims:ime , kms:kme , jms:jme ),              &
@@ -144,6 +142,8 @@ CONTAINS
          INTENT(INOUT) ::                                       &
                                                    RTHCUTEN,    &
                                                    RQVCUTEN,    &
+                                                   RUCUTEN,     &
+                                                   RVCUTEN,     &
                                                    RQVBLTEN,    &
                                                    RTHBLTEN,    &
                                                    RTHRATEN,    &
@@ -183,11 +183,10 @@ CONTAINS
      real,    dimension ( its:ite , jts:jte , 1:ensdim) ::      &
         massflni,xfi_ens,pri_ens
    REAL, DIMENSION( its:ite , jts:jte ) ::            MASSI_FLX,    &
-                          APRi_GR,APRi_W,APRi_MC,APRi_ST,APRi_AS,    &
-                         edti_out,APRi_CAPMA,APRi_CAPME,APRi_CAPMI,gswi
+                         edti_out,gswi
      real,    dimension (its:ite,kts:kte) ::                    &
         SUBT,SUBQ,OUTT,OUTQ,OUTQC,phh,subm,cupclw,cupclws,dhdt,         &
-        outts,outqs,outqcs
+        outts,outqs,outqcs,outu,outv
      real,    dimension (its:ite)         ::                    &
         ztexec,zqexec,pret, ter11, aa0, fp,xlandi
 !+lxz
@@ -232,11 +231,13 @@ CONTAINS
    ccn(its:ite)=1500.
   !
 !   write(0,*)'ishallow = ',ishallow_g3
+
    high_resolution=0
    subcenter=0.
    iens=1
    ipr=0 !639
    jpr=0 !141
+
    IF ( periodic_x ) THEN
       ibeg=max(its,ids)
       iend=min(ite,ide-1)
@@ -259,14 +260,16 @@ CONTAINS
       jbegc=max(jts,jds+4)
       jendc=min(jte,jde-5)
    END IF
-   do j=jts,jte
-   do i=its,ite
-     k22_shallow(i,j)=0
-     kbcon_shallow(i,j)=0
-     ktop_shallow(i,j)=0
-     xmb_shallow(i,j)=0
-   enddo
-   enddo
+   IF(PRESENT(k22_shallow)) THEN
+      do j=jts,jte
+      do i=its,ite
+        k22_shallow(i,j)=0
+        kbcon_shallow(i,j)=0
+        ktop_shallow(i,j)=0
+        xmb_shallow(i,j)=0.
+      enddo
+      enddo
+   endif
    tcrit=258.
 
    itf=MIN(ite,ide-1)
@@ -295,33 +298,20 @@ CONTAINS
         HBOT(I,J)  =REAL(KTE)
         HTOP(I,J)  =REAL(KTS)
         iact_old_gr(i,j)=0
-        mass_flux(i,j)=0.
         massi_flx(i,j)=0.
         raincv(i,j)=0.
         pratec (i,j)=0.
-        edt_out(i,j)=0.
         edti_out(i,j)=0.
         gswi(i,j)=gsw(i,j)
         xlandi(i)=xland(i,j)
-        APRi_GR(i,j)=apr_gr(i,j)
-        APRi_w(i,j)=apr_w(i,j)
-        APRi_mc(i,j)=apr_mc(i,j)
-        APRi_st(i,j)=apr_st(i,j)
-        APRi_as(i,j)=apr_as(i,j)
-        APRi_capma(i,j)=apr_capma(i,j)
-        APRi_capme(i,j)=apr_capme(i,j)
-        APRi_capmi(i,j)=apr_capmi(i,j)
         CU_ACT_FLAG(i,j) = .true.
      ENDDO
-     do k=kts,kte
-     DO I= its,itf
-       cugd_tten(i,k,j)=0.
-       cugd_ttens(i,k,j)=0.
-       cugd_qvten(i,k,j)=0.
-       cugd_qvtens(i,k,j)=0.
-       cugd_qcten(i,k,j)=0.
-     ENDDO
-     ENDDO
+     IF(PRESENT(edt_out)) THEN
+       DO I= its,itf
+          mass_flux(i,j)=0.
+          edt_out(i,j)=0.
+       ENDDO
+     ENDIF
      DO n=1,ens4
      DO I= its,itf
         mconv(i,n)=0.
@@ -341,6 +331,8 @@ CONTAINS
      DO K=kts,ktf
      DO I=ITS,ITF
          phh(i,k) = p(i,k,j)
+         RUCUTEN(I,K,J)=0.
+         RVCUTEN(I,K,J)=0.
      ENDDO
      ENDDO
 
@@ -378,6 +370,8 @@ CONTAINS
          SUBT(I,K)=0.
          SUBQ(I,K)=0.
          OUTT(I,K)=0.
+         OUTu(I,K)=0.
+         OUTv(I,K)=0.
          OUTQ(I,K)=0.
          OUTQC(I,K)=0.
          OUTQCs(I,K)=0.
@@ -457,11 +451,10 @@ CONTAINS
       endif
 #endif
       CALL CUP_gf(zo,outqc,j,AAEQ,T2d,Q2d,TER11,subm,TN,QO,PO,PRET,&
-           P2d,OUTT,OUTQ,DT,itimestep,PSUR,US,VS,tcrit,iens, &
+           P2d,OUTT,OUTQ,outu,outv,DT,itimestep,PSUR,US,VS,tcrit,iens, &
            ztexec,zqexec,ccn,ccnclean,rhoi,dx,mconv,omeg,  &
            maxiens,maxens,maxens2,maxens3,ensdim,                 &
-           APRi_GR,APRi_W,APRi_MC,APRi_ST,APRi_AS,                &
-           APRi_CAPMA,APRi_CAPME,APRi_CAPMI,kbcon,ktop,cupclw,    &
+           kbcon,ktop,cupclw,    &
            xfi_ens,pri_ens,XLANDi,gswi,subt,subq,        &
            xlv,r_v,cp,g,ichoice,ipr,jpr,ierrc,ens4,    &
            beta,autoconv,aeroevap,itf,jtf,ktf,training, &
@@ -471,7 +464,7 @@ CONTAINS
            use_excess,its,ite, jts,jte, kts,kte                               &
                                                              )
 
-      CALL neg_check(j,subt,subq,dt,q2d,outq,outt,outqc,pret,its,ite,kts,kte,itf,ktf)
+      CALL neg_check(j,subt,subq,dt,q2d,outq,outt,outu,outv,outqc,pret,its,ite,kts,kte,itf,ktf)
        if(ishallow_g3 == 1 )then
 
 
@@ -498,17 +491,19 @@ CONTAINS
 
 
             if(j.lt.jbegc.or.j.gt.jendc)go to 100
+            IF(PRESENT(k22_shallow)) THEN
              if(ishallow_g3.eq.1)then
                DO I=ibegc,iendc
                  xmb_shallow(i,j)=xmbs(i)
                  k22_shallow(i,j)=k22s(i)
                  kbcon_shallow(i,j)=kbcons(i)
                  ktop_shallow(i,j)=ktops(i)
-                 ktop_deep(i,j) = ktop(i)
                ENDDO
+             endif
             endif
             DO I=ibegc,iendc
               cuten(i)=0.
+              ktop_deep(i,j) = ktop(i)
               if(pret(i).gt.0.)then
                  cuten(i)=1.
 !                raincv(i,j)=pret(i)*dt
@@ -518,6 +513,8 @@ CONTAINS
             DO K=kts,ktf
                RTHCUTEN(I,K,J)=(outts(i,k)+(subt(i,k)+outt(i,k))*cuten(i))/pi(i,k,j)
                RQVCUTEN(I,K,J)=outqs(i,k)+(subq(i,k)+outq(i,k))*cuten(i)
+               RUCUTEN(I,K,J)=outu(i,k)*cuten(i)
+               RVCUTEN(I,K,J)=outv(i,k)*cuten(i)
             ENDDO
             ENDDO
             DO I=ibegc,iendc
@@ -536,18 +533,12 @@ CONTAINS
               pr_ens(i,j,n)=pri_ens(i,j,n)
             ENDDO
             ENDDO
-            DO I= ibegc,iendc
-               APR_GR(i,j)=apri_gr(i,j)
-               APR_w(i,j)=apri_w(i,j)
-               APR_mc(i,j)=apri_mc(i,j)
-               APR_st(i,j)=apri_st(i,j)
-               APR_as(i,j)=apri_as(i,j)
-               APR_capma(i,j)=apri_capma(i,j)
-               APR_capme(i,j)=apri_capme(i,j)
-               APR_capmi(i,j)=apri_capmi(i,j)
-               mass_flux(i,j)=massi_flx(i,j)
-               edt_out(i,j)=edti_out(i,j)
-            ENDDO
+            IF(PRESENT(edt_out)) THEN
+              DO I= ibegc,iendc
+                 mass_flux(i,j)=massi_flx(i,j)
+                 edt_out(i,j)=edti_out(i,j)
+              ENDDO
+            ENDIF
             IF(PRESENT(RQCCUTEN)) THEN
               IF ( F_QC ) THEN
                 DO K=kts,ktf
@@ -586,13 +577,12 @@ CONTAINS
 
 
    SUBROUTINE CUP_gf(zo,OUTQC,J,AAEQ,T,Q,Z1,sub_mas,                    &
-              TN,QO,PO,PRE,P,OUTT,OUTQ,DTIME,ktau,PSUR,US,VS,    &
+              TN,QO,PO,PRE,P,OUTT,OUTQ,outu,outv,DTIME,ktau,PSUR,US,VS,    &
               TCRIT,iens,                                        &
               ztexec,zqexec,ccn,ccnclean,rho,dx,mconv,                               &
               omeg,maxiens,                          &
               maxens,maxens2,maxens3,ensdim,                           &
-              APR_GR,APR_W,APR_MC,APR_ST,APR_AS,                       &
-              APR_CAPMA,APR_CAPME,APR_CAPMI,kbcon,ktop,cupclw,         &   !-lxz
+              kbcon,ktop,cupclw,         &   !-lxz
               xf_ens,pr_ens,xland,gsw,subt,subq,               &
               xl,rv,cp,g,ichoice,ipr,jpr,ierrc,ens4,         &
               beta,autoconv,aeroevap,itf,jtf,ktf,training,               &
@@ -616,10 +606,6 @@ CONTAINS
      real,    dimension (its:ite,jts:jte,1:ensdim)                     &
         ,intent (inout)                   ::                           &
         xf_ens,pr_ens
-     real,    dimension (its:ite,jts:jte)                              &
-        ,intent (inout )                  ::                           &
-               APR_GR,APR_W,APR_MC,APR_ST,APR_AS,APR_CAPMA,     &
-               APR_CAPME,APR_CAPMI
     real, dimension( its:ite , jts:jte )                               &
           :: weight_GR,weight_W,weight_MC,weight_ST,weight_AS
      real,    dimension (its:ite,jts:jte)                              &
@@ -637,7 +623,7 @@ CONTAINS
   ! pre    = output precip
      real,    dimension (its:ite,kts:kte)                              &
         ,intent (inout  )                   ::                           &
-        OUTT,OUTQ,OUTQC,subt,subq,sub_mas,cupclw
+        outu,outv,OUTT,OUTQ,OUTQC,subt,subq,sub_mas,cupclw
      real,    dimension (its:ite)                                      &
         ,intent (out  )                   ::                           &
         pre
@@ -762,9 +748,9 @@ CONTAINS
 
         qes_cup,q_cup,he_cup,hes_cup,z_cup,p_cup,gamma_cup,t_cup,      &
         qeso_cup,qo_cup,heo_cup,heso_cup,zo_cup,po_cup,gammao_cup,     &
-        tn_cup,                                                        &
+        tn_cup,u_cup,v_cup,uc,vc,                                      &
         xqes_cup,xq_cup,xhe_cup,xhes_cup,xz_cup,xp_cup,xgamma_cup,     &
-        xt_cup,                                                        &
+        xt_cup,ucd,vcd,                                                &
 
         xlamue,dby,qc,qrcd,pwd,pw,hcd,qcd,dbyd,hc,qrc,zu,zd,clw_all,   &
         dbyo,qco,qrcdo,pwdo,pwo,hcdo,qcdo,dbydo,hco,qrco,zuo,zdo,      &
@@ -776,7 +762,7 @@ CONTAINS
   ! dellaq = change of q per unit mass flux of cloud ensemble
   ! dellaqc = change of qc per unit mass flux of cloud ensemble
 
-        cd,cdd,DELLAH,DELLAQ,DELLAT,DELLAQC,dsubt,dsubh,dsubq
+        cd,cdd,DELLAH,DELLAQ,DELLAT,DELLAQC,dsubt,dsubh,dsubq,dellu,dellv
 
   ! aa0 cloud work function for downdraft
   ! edt = epsilon
@@ -815,7 +801,18 @@ CONTAINS
      real,    dimension (its:ite,kts:kte) ::                           &
        up_massentr,up_massdetr,dd_massentr,dd_massdetr                 &
       ,up_massentro,up_massdetro,dd_massentro,dd_massdetro
+     real dts,fp,fpi,lambau,pgcon,up_massent,up_massdet
      real,    dimension (kts:kte) :: smth
+
+!proportionality constant to estimate pressure gradient of updraft (Zhang and
+!Wu, 2003, JAS
+!
+! ECMWF
+     pgcon=0.
+     lambau=2.
+! SAS
+!      lambau=0.
+!      pgcon=-.55
 
       levadj=5
       power_entr=2. ! 1.2
@@ -835,7 +832,8 @@ CONTAINS
 !--- highly tuneable !
 !
       entr_rate=7.e-5
-      radius=.1/entr_rate
+!      radius=.1/entr_rate
+      radius=.2/entr_rate
       frh=3.14*(radius*radius)/dx/dx
       if(frh .gt. 0.7)then
          frh=.7
@@ -952,6 +950,16 @@ CONTAINS
            ierr,z1,xl,rv,cp,          &
            itf,jtf,ktf, &
            its,ite, jts,jte, kts,kte)
+      do i=its,itf
+        if(ierr(i).eq.0)then
+          u_cup(i,kts)=us(i,kts)
+          v_cup(i,kts)=vs(i,kts)
+          do k=kts+1,ktf
+           u_cup(i,k)=.5*(us(i,k-1)+us(i,k))
+           v_cup(i,k)=.5*(vs(i,k-1)+vs(i,k))
+          enddo
+        endif
+      enddo
       do i=its,itf
         if(ierr(i).eq.0)then
         if(aaeq(i).lt.-0.1)then
@@ -1127,11 +1135,17 @@ CONTAINS
          hc(i,k)=0.
          DBY(I,K)=0.
          hco(i,k)=0.
+         uc(i,k)=0.
+         vc(i,k)=0.
          DBYo(I,K)=0.
       enddo
       enddo
       do i=its,itf
        IF(ierr(I).eq.0)THEN
+         do k=1,kbcon(i)
+            uc(i,k)=u_cup(i,k22(i))
+            vc(i,k)=v_cup(i,k22(i))
+         enddo
          do k=1,kbcon(i)-1
             hc(i,k)=hkb(i)
             hco(i,k)=hkbo(i)
@@ -1173,6 +1187,17 @@ CONTAINS
                          up_massentro(i,k-1)*heo(i,k-1))   /            &
                          (zuo(i,k-1)-.5*up_massdetro(i,k-1)+up_massentro(i,k-1))
           dbyo(i,k)=hco(i,k)-heso_cup(i,k)
+          uc(i,k)=(uc(i,k-1)*zu(i,k-1)-.5*up_massdetr(i,k-1)*uc(i,k-1)              &
+                         -lambau*up_massdetr(i,k-1)*uc(i,k-1) +                     &
+                         (up_massentr(i,k-1)+lambau*up_massdetr(i,k-1))*us(i,k-1)   &
+                         -pgcon*.5*(zu(i,k)+zu(i,k-1))*(u_cup(i,k)-u_cup(i,k-1))) / &
+                         (zu(i,k-1)-.5*up_massdetr(i,k-1)+up_massentr(i,k-1))
+          vc(i,k)=(vc(i,k-1)*zu(i,k-1)-.5*up_massdetr(i,k-1)*vc(i,k-1)              &
+                         -lambau*up_massdetr(i,k-1)*vc(i,k-1) +                     &
+                         (up_massentr(i,k-1)+lambau*up_massdetr(i,k-1))*vs(i,k-1)   &
+                         -pgcon*.5*(zu(i,k)+zu(i,k-1))*(u_cup(i,k)-u_cup(i,k-1))) / &
+                         (zu(i,k-1)-.5*up_massdetr(i,k-1)+up_massentr(i,k-1))
+
          enddo
          do k=kbcon(i)+1,ktf
           if(dbyo(i,k).lt.0)then
@@ -1187,6 +1212,8 @@ CONTAINS
            HCo(i,K)=heso_cup(i,k)
            DBY(I,K)=0.
            DBYo(I,K)=0.
+           UC(i,K)=u_cup(i,k)
+           VC(i,K)=v_cup(i,k)
            zu(i,k)=0.
            zuo(i,k)=0.
            cd(i,k)=0.
@@ -1284,6 +1311,8 @@ CONTAINS
        dd_massentro(i,k)=0.
        dd_massdetro(i,k)=0.
        hcdo(i,k)=heso_cup(i,k)
+       ucd(i,k)=u_cup(i,k)
+       vcd(i,k)=v_cup(i,k)
        dbydo(i,k)=0.
       enddo
       enddo
@@ -1347,6 +1376,16 @@ CONTAINS
              hcdo(i,ki)=(hcdo(i,ki+1)*zdo(i,ki+1)                       &
                          -.5*dd_massdetro(i,ki)*hcdo(i,ki+1)+ &
                         dd_massentro(i,ki)*heo(i,ki))   /            &
+                        (zdo(i,ki+1)-.5*dd_massdetro(i,ki)+dd_massentro(i,ki))
+             ucd(i,ki)=(ucd(i,ki+1)*zdo(i,ki+1)                       &
+                         -.5*dd_massdetro(i,ki)*ucd(i,ki+1)+ &
+                        dd_massentro(i,ki)*us(i,ki)          &
+                        -pgcon*zdo(i,ki+1)*(us(i,ki+1)-us(i,ki)))   /     &
+                        (zdo(i,ki+1)-.5*dd_massdetro(i,ki)+dd_massentro(i,ki))
+             vcd(i,ki)=(vcd(i,ki+1)*zdo(i,ki+1)                       &
+                         -.5*dd_massdetro(i,ki)*vcd(i,ki+1)+ &
+                        dd_massentro(i,ki)*vs(i,ki)            &
+                        -pgcon*zdo(i,ki+1)*(vs(i,ki+1)-vs(i,ki)))   /  &
                         (zdo(i,ki+1)-.5*dd_massdetro(i,ki)+dd_massentro(i,ki))
              dbydo(i,ki)=hcdo(i,ki)-heso_cup(i,ki)
 !            if(i.eq.ipr.and.j.eq.jpr)write(0,*)'ki,bud = ',ki,bud(i),hcdo(i,ki)
@@ -1451,6 +1490,8 @@ CONTAINS
         dsubh(i,k)=0.
         dellaq(i,k)=0.
         dsubq(i,k)=0.
+        dellu(i,k)=0.
+        dellv(i,k)=0.
       enddo
       enddo
 !
@@ -1500,6 +1541,10 @@ CONTAINS
                      -edto(i)*zdo(i,2)*heo_cup(i,2))*g/dp
          dellaq(i,1)=(edto(i)*zdo(i,2)*qrcdo(i,2)   &
                      -edto(i)*zdo(i,2)*qo_cup(i,2))*g/dp
+         dellu(i,1)=(edto(i)*zdo(i,2)*ucd(i,2)   &
+                     -edto(i)*zdo(i,2)*u_cup(i,2))*g/dp
+         dellv(i,1)=(edto(i)*zdo(i,2)*vcd(i,2)   &
+                     -edto(i)*zdo(i,2)*v_cup(i,2))*g/dp
          dsubt(i,1)=0.
          dsubq(i,1)=0.
 
@@ -1546,6 +1591,26 @@ CONTAINS
 !        call wrf_error_fatal ( 'totmas .gt.1.e-6' )
             endif
             dp=100.*(po_cup(i,k)-po_cup(i,k+1))
+            dellu(i,k)=((detup+lambau*detup)*.5*(uC(i,K+1)+uC(i,K)) &
+                    +detdo*.5*(UCD(i,K+1)+UCD(i,K)) &
+                    -(entup+lambau*detup)*us(i,k) &
+                    -entdo*us(i,k) &
+                    +subin*u_cup(i,k+1) &
+                    -subdown*u_cup(i,k) &
+                    +detupk*(uc(i,ktop(i))-u_cup(i,ktop(i)))    &
+                    -entupk*u_cup(i,k22(i)) &
+                    -entdoj*u_cup(i,jmin(i)) &
+                     )*g/dp
+            dellv(i,k)=((detup+lambau*detup)*.5*(vC(i,K+1)+vC(i,K)) &
+                    +detdo*.5*(vCD(i,K+1)+vCD(i,K)) &
+                    -(entup+lambau*detup)*vs(i,k) &
+                    -entdo*vs(i,k) &
+                    +subin*v_cup(i,k+1) &
+                    -subdown*v_cup(i,k) &
+                    +detupk*(vc(i,ktop(i))-v_cup(i,ktop(i)))    &
+                    -entupk*v_cup(i,k22(i)) &
+                    -entdoj*v_cup(i,jmin(i)) &
+                     )*g/dp
             dellah(i,k)=(detup*.5*(HCo(i,K+1)+HCo(i,K)) &
                     +detdo*.5*(HCDo(i,K+1)+HCDo(i,K)) &
                     -entup*heo(i,k) &
@@ -1574,6 +1639,12 @@ CONTAINS
                     -zuo(i,k)*heo_cup(i,k))*g/dp
              dsubq(i,k)=(zuo(i,k+1)*qo_cup(i,k+1) &
                     -zuo(i,k)*qo_cup(i,k))*g/dp
+             dellu(i,k)=dellu(i,k)+(zuo(i,k+1)*u_cup(i,k+1) &
+                    -zuo(i,k)*u_cup(i,k) &
+                    +pgcon*.5*(zuo(i,k)+zuo(i,k+1))*(u_cup(i,k+1)-u_cup(i,k)))*g/dp
+             dellv(i,k)=dellv(i,k)+(zuo(i,k+1)*v_cup(i,k+1) &
+                    -zuo(i,k)*v_cup(i,k) &
+                    +pgcon*.5*(zuo(i,k)+zuo(i,k+1))*(v_cup(i,k+1)-v_cup(i,k)))*g/dp
            endif
 !
        enddo   ! k
@@ -1825,14 +1896,20 @@ CONTAINS
             outq,outqc,zuo,sub_mas,pre,pwo_ens,xmb,ktop,      &
             j,'deep',maxens2,maxens,iens,ierr2,ierr3,         &
             pr_ens,maxens3,ensdim,                    &
-            sig,APR_GR,APR_W,APR_MC,APR_ST,APR_AS,                &
-            APR_CAPMA,APR_CAPME,APR_CAPMI,closure_n,xland1,   &
+            sig, closure_n,xland1,                    &
             weight_GR,weight_W,weight_MC,weight_ST,weight_AS,training, &
             ipr,jpr,itf,jtf,ktf,                        &
             its,ite, jts,jte, kts,kte  )
       k=1
       do i=its,itf
-          if(ierr(i).eq.0) PRE(I)=MAX(PRE(I),0.)
+          if(ierr(i).eq.0) then
+            PRE(I)=MAX(PRE(I),0.)
+             do k=kts,ktop(i)
+               outu(i,k)=dellu(i,k)*xmb(i)
+               outv(i,k)=dellv(i,k)*xmb(i)
+               sub_mas(i,k)=zuo(i,k)*xmb(i)
+             enddo
+          endif
       enddo
 !
 !---------------------------done------------------------------
@@ -3205,14 +3282,11 @@ CONTAINS
    END SUBROUTINE cup_up_aa0
 
 !====================================================================
-   SUBROUTINE g3init(RTHCUTEN,RQVCUTEN,RQCCUTEN,RQICUTEN,           &
+   SUBROUTINE gfinit(RTHCUTEN,RQVCUTEN,RQCCUTEN,RQICUTEN,           &
+                        RUCUTEN,RVCUTEN,                            &
                         MASS_FLUX,cp,restart,                       &
                         P_QC,P_QI,P_FIRST_SCALAR,                   &
                         RTHFTEN, RQVFTEN,                           &
-                        APR_GR,APR_W,APR_MC,APR_ST,APR_AS,          &
-                        APR_CAPMA,APR_CAPME,APR_CAPMI,              &
-                        cugd_tten,cugd_ttens,cugd_qvten,            &
-                        cugd_qvtens,cugd_qcten,                     &
                         allowed_to_read,                            &
                         ids, ide, jds, jde, kds, kde,               &
                         ims, ime, jms, jme, kms, kme,               &
@@ -3228,24 +3302,20 @@ CONTAINS
    REAL,     INTENT(IN)           ::  cp
 
    REAL,     DIMENSION( ims:ime , kms:kme , jms:jme ) , INTENT(OUT) ::       &
-                                                          CUGD_TTEN,         &
-                                                          CUGD_TTENS,        &
-                                                          CUGD_QVTEN,        &
-                                                          CUGD_QVTENS,       &
-                                                          CUGD_QCTEN
-   REAL,     DIMENSION( ims:ime , kms:kme , jms:jme ) , INTENT(OUT) ::       &
                                                           RTHCUTEN, &
                                                           RQVCUTEN, &
                                                           RQCCUTEN, &
                                                           RQICUTEN   
 
    REAL,     DIMENSION( ims:ime , kms:kme , jms:jme ) , INTENT(OUT) ::       &
+                                                          RUCUTEN,  &
+                                                          RVCUTEN
+
+   REAL,     DIMENSION( ims:ime , kms:kme , jms:jme ) , INTENT(OUT) ::       &
                                                           RTHFTEN,  &
                                                           RQVFTEN
 
    REAL,     DIMENSION( ims:ime , jms:jme ) , INTENT(OUT) ::        &
-                                APR_GR,APR_W,APR_MC,APR_ST,APR_AS,  &
-                                APR_CAPMA,APR_CAPME,APR_CAPMI,      &
                                 MASS_FLUX
 
    INTEGER :: i, j, k, itf, jtf, ktf
@@ -3260,16 +3330,8 @@ CONTAINS
      DO i=its,ite
         RTHCUTEN(i,k,j)=0.
         RQVCUTEN(i,k,j)=0.
-     ENDDO
-     ENDDO
-     ENDDO
-     DO j=jts,jte
-     DO k=kts,kte
-     DO i=its,ite
-       cugd_tten(i,k,j)=0.
-       cugd_ttens(i,k,j)=0.
-       cugd_qvten(i,k,j)=0.
-       cugd_qvtens(i,k,j)=0.
+        RUCUTEN(i,k,j)=0.
+        RVCUTEN(i,k,j)=0.
      ENDDO
      ENDDO
      ENDDO
@@ -3288,7 +3350,6 @@ CONTAINS
         DO k=kts,ktf
         DO i=its,itf
            RQCCUTEN(i,k,j)=0.
-           cugd_qcten(i,k,j)=0.
         ENDDO
         ENDDO
         ENDDO
@@ -3310,30 +3371,17 @@ CONTAINS
      ENDDO
      ENDDO
 
-     DO j=jts,jtf
-     DO i=its,itf
-        APR_GR(i,j)=0.
-        APR_ST(i,j)=0.
-        APR_W(i,j)=0.
-        APR_MC(i,j)=0.
-        APR_AS(i,j)=0.
-        APR_CAPMA(i,j)=0.
-        APR_CAPME(i,j)=0.
-        APR_CAPMI(i,j)=0.
-     ENDDO
-     ENDDO
-
    ENDIF
 
-   END SUBROUTINE g3init
+   END SUBROUTINE gfinit
 
-   SUBROUTINE neg_check(j,subt,subq,dt,q,outq,outt,outqc,pret,its,ite,kts,kte,itf,ktf)
+   SUBROUTINE neg_check(j,subt,subq,dt,q,outq,outt,outu,outv,outqc,pret,its,ite,kts,kte,itf,ktf)
 
    INTEGER,      INTENT(IN   ) ::            j,its,ite,kts,kte,itf,ktf
 
      real, dimension (its:ite,kts:kte  )                    ,                 &
       intent(inout   ) ::                                                     &
-       outq,outt,outqc,subt,subq
+       outq,outt,outqc,subt,subq,outu,outv
      real, dimension (its:ite,kts:kte  )                    ,                 &
       intent(inout   ) ::                                                     &
        q
@@ -3376,6 +3424,8 @@ CONTAINS
          subt(i,k)=subt(i,k)*qmemf
          outq(i,k)=outq(i,k)*qmemf
          outt(i,k)=outt(i,k)*qmemf
+         outu(i,k)=outu(i,k)*qmemf
+         outv(i,k)=outv(i,k)*qmemf
          outqc(i,k)=outqc(i,k)*qmemf
       enddo
       pret(i)=pret(i)*qmemf 
@@ -3412,6 +3462,8 @@ CONTAINS
          subt(i,k)=subt(i,k)*qmemf
          outq(i,k)=outq(i,k)*qmemf
          outt(i,k)=outt(i,k)*qmemf
+         outu(i,k)=outu(i,k)*qmemf
+         outv(i,k)=outv(i,k)*qmemf
          outqc(i,k)=outqc(i,k)*qmemf
       enddo
       pret(i)=pret(i)*qmemf 
@@ -3425,8 +3477,7 @@ CONTAINS
               zu,sub_mas,pre,pw,xmb,ktop,                 &
               j,name,nx,nx2,iens,ierr2,ierr3,pr_ens,             &
               maxens3,ensdim,                            &
-              sig,APR_GR,APR_W,APR_MC,APR_ST,APR_AS,                 &
-              APR_CAPMA,APR_CAPME,APR_CAPMI,closure_n,xland1,    &
+              sig, closure_n,xland1,                     &
               weight_GR,weight_W,weight_MC,weight_ST,weight_AS,training,  &
 	      ipr,jpr,itf,jtf,ktf, &
               its,ite, jts,jte, kts,kte)
@@ -3462,11 +3513,6 @@ CONTAINS
         ,intent (inout)                   ::                           &
        xf_ens,pr_ens
 !srf ------
-!    real,    dimension (its:ite,jts:jte)                              &
-     real,    dimension (its:ite,jts:jte)                              &
-         ,intent (inout)                   ::                          &
-               APR_GR,APR_W,APR_MC,APR_ST,APR_AS,APR_CAPMA,            &
-               APR_CAPME,APR_CAPMI 
      real, dimension( its:ite , jts:jte )                      &
          ,intent(in) :: weight_gr,weight_w,weight_mc,weight_st,weight_as
 !-srf---
@@ -3572,7 +3618,10 @@ CONTAINS
               ierr(i)=13
               xmb_ave(i)=0.
          endif
+
+         xmb_ave(i)=min(xmb_ave(i),100.)
          xmb(i)=sig(i)*xmb_ave(i)
+
 ! --- Now use proper count of how many closures were actually
 !       used in cup_forcing_ens (including screening of some
 !       closures over water) to properly normalize xmb
@@ -3581,9 +3630,9 @@ CONTAINS
            if(xmb(i).eq.0.)then
               ierr(i)=19
            endif
-           if(xmb(i).gt.100.)then
-              ierr(i)=19
-           endif
+!           if(xmb(i).gt.100.)then
+!              ierr(i)=19
+!           endif
            xfac1(i)=xmb(i)
            xfac2(i)=xmb(i)
 
@@ -3626,17 +3675,6 @@ CONTAINS
         endif
       ENDDO
 
-!srf-fix for preci
-      do i=its,itf
-        if(ierr(i).ne. 0)then
-            apr_w (i,j)=0.0
-	    apr_st(i,j)=0.0
-	    apr_gr(i,j)=0.0
-	    apr_mc(i,j)=0.0
-	    apr_as(i,j)=0.0
-        endif
-      ENDDO
-!srf
    END SUBROUTINE cup_output_ens_3d
 !-------------------------------------------------------
    SUBROUTINE cup_up_moisture(name,ierr,z_cup,qc,qrc,pw,pwav,     &
@@ -3911,71 +3949,6 @@ CONTAINS
 
    END SUBROUTINE cup_up_moisture
 !====================================================================
-   SUBROUTINE gdinit(RTHCUTEN,RQVCUTEN,RQCCUTEN,RQICUTEN,           &
-                        MASS_FLUX,cp,restart,                       &
-                        P_QC,P_QI,P_FIRST_SCALAR,                   &
-                        RTHFTEN, RQVFTEN,                           &
-                        APR_GR,APR_W,APR_MC,APR_ST,APR_AS,          &
-                        APR_CAPMA,APR_CAPME,APR_CAPMI,              &
-                        allowed_to_read,                            &
-                        ids, ide, jds, jde, kds, kde,               &
-                        ims, ime, jms, jme, kms, kme,               &
-                        its, ite, jts, jte, kts, kte               )
-!--------------------------------------------------------------------   
-   IMPLICIT NONE
-!--------------------------------------------------------------------
-   LOGICAL , INTENT(IN)           ::  restart,allowed_to_read
-   INTEGER , INTENT(IN)           ::  ids, ide, jds, jde, kds, kde, &
-                                      ims, ime, jms, jme, kms, kme, &
-                                      its, ite, jts, jte, kts, kte
-   INTEGER , INTENT(IN)           ::  P_FIRST_SCALAR, P_QI, P_QC
-   REAL,     INTENT(IN)           ::  cp
-
-   REAL,     DIMENSION( ims:ime , kms:kme , jms:jme ) , INTENT(OUT) ::       &
-                                                          RTHCUTEN, &
-                                                          RQVCUTEN, &
-                                                          RQCCUTEN, &
-                                                          RQICUTEN   
-
-   REAL,     DIMENSION( ims:ime , kms:kme , jms:jme ) , INTENT(OUT) ::       &
-                                                          RTHFTEN,  &
-                                                          RQVFTEN
-
-   REAL,     DIMENSION( ims:ime , jms:jme ) , INTENT(OUT) ::        &
-                                APR_GR,APR_W,APR_MC,APR_ST,APR_AS,  &
-                                APR_CAPMA,APR_CAPME,APR_CAPMI,      &
-                                MASS_FLUX
-
-   IF(.not.restart)THEN
-        RTHCUTEN=0.
-        RQVCUTEN=0.
-        RTHFTEN=0.
-        RQVFTEN=0.
-
-     IF (P_QC .ge. P_FIRST_SCALAR) THEN
-           RQCCUTEN=0.
-     ENDIF
-
-     IF (P_QI .ge. P_FIRST_SCALAR) THEN
-           RQICUTEN=0.
-     ENDIF
-
-        mass_flux=0.
-
-   ENDIF
-        APR_GR=0.
-        APR_ST=0.
-        APR_W=0.
-        APR_MC=0.
-        APR_AS=0.
-        APR_CAPMA=0.
-        APR_CAPME=0.
-        APR_CAPMI=0.
-
-   END SUBROUTINE gdinit
-
-
-!--------------------------------------------------------------------
 
       real function satvap(temp2)
       implicit none
@@ -4001,6 +3974,7 @@ CONTAINS
       end if
       return
       end function
+!====================================================================
    SUBROUTINE CUP_gf_sh(xmb_out,zo,OUTQC,J,AAEQ,T,Q,Z1,                    &
               TN,QO,PO,PRE,P,OUTT,OUTQ,DTIME,ktau,PSUR,US,VS,    &
               TCRIT,                                        &
