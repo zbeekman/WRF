@@ -1202,13 +1202,11 @@ CONTAINS
                ,CU_ACT_FLAG=CU_ACT_FLAG,warm_rain=warm_rain     &
                ,MASS_FLUX=mass_flux                             &
                ,HT=ht,hfx=hfx,qfx=qfx                           &
-
                ,xland=xland,gsw=gsw,edt_out=edt_out             &
                ,GDC=gd_cloud,GDC2=gd_cloud2,kpbl=kpbl           &
                ,k22_shallow=k22_shallow                         &
                ,kbcon_shallow=kbcon_shallow                     &
                ,ktop_shallow=ktop_shallow                       &
-               ,ktop_deep=ktop_deep                             &
                ,xmb_shallow=xmb_shallow                         &
                ,ichoice=clos_choice                             &
                ,ishallow_g3=ishallow                            &

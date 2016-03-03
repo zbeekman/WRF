@@ -1065,7 +1065,7 @@ state    real  RQVFTEN          ikj     misc        1         -      r        "R
 state    real  RQVCUTEN         ikj     misc        1         -      h023       "RQVCUTEN"             "TOTAL CONVECTIVE QV TENDENCY"  "kg kg-1 s-1"
 state    real  RQCCUTEN         ikj     misc        1         -      h023       "RQCCUTEN"             "TOTAL CONVECTIVE QC TENDENCY"  "kg kg-1 s-1"
 state    real  RQICUTEN         ikj     misc        1         -      h023       "RQICUTEN"             "TOTAL CONVECTIVE QI TENDENCY"  "kg kg-1 s-1"
-state    real  TCUTEN           ikj     misc        1         -      h023       "TCUTEN"             "INSTANTANEOUS TEMPERATURE TENDENCY FROM CU"  "
+state    real  TCUTEN           ikj     misc        1         -      h023       "TCUTEN"             "INSTANTANEOUS TEMPERATURE TENDENCY FROM CU"  ""
 
 state    real   SNOWH            ij     misc        1         -     i01rhd=(DownCopy)      "SNOWH"                 "PHYSICAL SNOW DEPTH"  "m"
 state    real   RHOSN            ij     misc        1         -     i01rd=(DownCopy)    "RHOSN"            " SNOW DENSITY"      "kg m-3"
