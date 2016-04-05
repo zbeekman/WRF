@@ -7,7 +7,7 @@
 ! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/branch_tags/cesm1_0_rel_tags/cesm1_0_3_n01_share3_110527/shr/shr_const_mod.F90 $
 !===============================================================================
 
-MODULE shr_const_mod
+MODULE shr_const_mod_wrf
 
    use shr_kind_mod
 
@@ -62,4 +62,4 @@ MODULE shr_const_mod
 
    real(R8),parameter :: SHR_CONST_SPVAL   = 1.0e30_R8       ! special missing value
 
-END MODULE shr_const_mod
+END MODULE shr_const_mod_wrf

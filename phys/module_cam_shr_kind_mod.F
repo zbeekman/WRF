@@ -11,7 +11,7 @@
 ! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/branch_tags/cesm1_0_rel_tags/cesm1_0_3_n01_share3_110527/shr/shr_kind_mod.F90 $
 !===============================================================================
 
-MODULE shr_kind_mod
+MODULE shr_kind_mod_wrf
 
    !----------------------------------------------------------------------------
    ! precision/kind constants add data public
@@ -27,4 +27,4 @@ MODULE shr_kind_mod
    integer,parameter :: SHR_KIND_CL = 256                    ! long char
    integer,parameter :: SHR_KIND_CX = 512                    ! extra-long char
 
-END MODULE shr_kind_mod
+END MODULE shr_kind_mod_wrf

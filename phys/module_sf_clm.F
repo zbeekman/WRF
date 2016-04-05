@@ -23065,7 +23065,7 @@ end module pft2colMod
 ! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/csm_share/trunk_tags/share3_090706b/shr/shr_orb_mod.F90 $
 !===============================================================================
 
-MODULE shr_orb_mod
+MODULE shr_orb_wrf_mod
 
    use shr_kind_mod
    use shr_const_mod
@@ -23662,7 +23662,7 @@ END SUBROUTINE shr_orb_decl
 !===============================================================================
 
 
-END MODULE shr_orb_mod
+END MODULE shr_orb_wrf_mod
 module surfFileMod
 
 !----------------------------------------------------------------------- 
@@ -29133,7 +29133,7 @@ contains
 ! !USES:
     use clmtype
     use clm_varpar      , only : numrad
-    use shr_orb_mod
+    use shr_orb_wrf_mod
 !
 ! !ARGUMENTS:
     implicit none
@@ -58068,7 +58068,7 @@ end module initializeMod
   use globals
   use decompMod   , only : get_proc_bounds
   use clmtypeInitMod
-  use shr_orb_mod
+  use shr_orb_wrf_mod
   use shr_const_mod, only : SHR_CONST_PI
   use filterMod, only : filters_dealloc
   use clm_varsur      , only :varsur_dealloc
