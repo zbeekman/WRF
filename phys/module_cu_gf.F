@@ -137,13 +137,32 @@ CONTAINS
          INTENT(INOUT) ::                           RTHFTEN,    &
                                                     RQVFTEN
 
+! egrell - accomodation for NMM,HWRF
+! The following "#if (*_CORE..." code is because the NMM/HWRF code 
+! has rucuten, rvcuten as i,j,k arrays, while ARW has them as 
+! i,k,j arrays.  
+#if (NMM_CORE == 1)
+   REAL, DIMENSION( ims:ime , jms:jme , kms:kme ),              &
+         OPTIONAL,                                              &
+         INTENT(INOUT) ::                           RUCUTEN,    &
+                                                    RVCUTEN
+#else
+#if (EM_CORE == 1)
+   REAL, DIMENSION( ims:ime , kms:kme , jms:jme ),              &
+         OPTIONAL,                                              &
+         INTENT(INOUT) ::                           RUCUTEN,    &
+                                                    RVCUTEN
+#endif
+#endif
+
+
    REAL, DIMENSION( ims:ime , kms:kme , jms:jme ),              &
          OPTIONAL,                                              &
          INTENT(INOUT) ::                                       &
                                                    RTHCUTEN,    &
                                                    RQVCUTEN,    &
-                                                   RUCUTEN,     &
-                                                   RVCUTEN,     &
+!                                                   RUCUTEN,     & !egrell
+!                                                   RVCUTEN,     & !egrell
                                                    RQVBLTEN,    &
                                                    RTHBLTEN,    &
                                                    RTHRATEN,    &
@@ -331,10 +350,30 @@ CONTAINS
      DO K=kts,ktf
      DO I=ITS,ITF
          phh(i,k) = p(i,k,j)
+!         RUCUTEN(I,K,J)=0.        !egrell
+!         RVCUTEN(I,K,J)=0.        !egrell
+     ENDDO
+     ENDDO
+
+! egrell -- accomodation for NMM
+#if (NMM_CORE==1)
+     DO K=kts,ktf
+     DO I=ITS,ITF
+         RUCUTEN(I,J,K)=0.
+         RVCUTEN(I,J,K)=0.
+     ENDDO
+     ENDDO
+#else
+#if (EM_CORE==1)
+     DO K=kts,ktf
+     DO I=ITS,ITF
          RUCUTEN(I,K,J)=0.
          RVCUTEN(I,K,J)=0.
      ENDDO
      ENDDO
+#endif
+#endif
+! egrell NMM end
 
 !ipr= 33 !78
 !jpr= 17 !110
@@ -513,10 +552,29 @@ CONTAINS
             DO K=kts,ktf
                RTHCUTEN(I,K,J)=(outts(i,k)+(subt(i,k)+outt(i,k))*cuten(i))/pi(i,k,j)
                RQVCUTEN(I,K,J)=outqs(i,k)+(subq(i,k)+outq(i,k))*cuten(i)
+!               RUCUTEN(I,K,J)=outu(i,k)*cuten(i)     !egrell
+!               RVCUTEN(I,K,J)=outv(i,k)*cuten(i)     !egrell
+            ENDDO
+            ENDDO
+
+#if (NMM_CORE==1)
+            DO I=ibegc,iendc
+            DO K=kts,ktf
+               RUCUTEN(I,J,K)=outu(i,k)*cuten(i)
+               RVCUTEN(I,J,K)=outv(i,k)*cuten(i)
+            ENDDO
+            ENDDO
+#else
+#if (EM_CORE==1)
+            DO I=ibegc,iendc
+            DO K=kts,ktf
                RUCUTEN(I,K,J)=outu(i,k)*cuten(i)
                RVCUTEN(I,K,J)=outv(i,k)*cuten(i)
             ENDDO
             ENDDO
+#endif
+#endif
+
             DO I=ibegc,iendc
               if(pret(i).gt.0.)then
                  raincv(i,j)=pret(i)*dt
@@ -1195,7 +1253,7 @@ CONTAINS
           vc(i,k)=(vc(i,k-1)*zu(i,k-1)-.5*up_massdetr(i,k-1)*vc(i,k-1)              &
                          -lambau*up_massdetr(i,k-1)*vc(i,k-1) +                     &
                          (up_massentr(i,k-1)+lambau*up_massdetr(i,k-1))*vs(i,k-1)   &
-                         -pgcon*.5*(zu(i,k)+zu(i,k-1))*(u_cup(i,k)-u_cup(i,k-1))) / &
+                         -pgcon*.5*(zu(i,k)+zu(i,k-1))*(v_cup(i,k)-v_cup(i,k-1))) / &
                          (zu(i,k-1)-.5*up_massdetr(i,k-1)+up_massentr(i,k-1))
 
          enddo
@@ -3307,10 +3365,22 @@ CONTAINS
                                                           RQCCUTEN, &
                                                           RQICUTEN   
 
+! egrell - accomodation for NMM
+!   REAL,     DIMENSION( ims:ime , kms:kme , jms:jme ) , INTENT(OUT) ::       &
+!                                                          RUCUTEN,  &
+!                                                          RVCUTEN
+#if (NMM_CORE==1)
+   REAL,     DIMENSION( ims:ime , jms:jme , kms:kme ) , INTENT(OUT) ::       &
+                                                          RUCUTEN,  &
+                                                          RVCUTEN
+#else
+#if (EM_CORE==1)
    REAL,     DIMENSION( ims:ime , kms:kme , jms:jme ) , INTENT(OUT) ::       &
                                                           RUCUTEN,  &
                                                           RVCUTEN
-
+#endif
+#endif
+! end egrell
    REAL,     DIMENSION( ims:ime , kms:kme , jms:jme ) , INTENT(OUT) ::       &
                                                           RTHFTEN,  &
                                                           RQVFTEN
@@ -3330,8 +3400,15 @@ CONTAINS
      DO i=its,ite
         RTHCUTEN(i,k,j)=0.
         RQVCUTEN(i,k,j)=0.
+#if (EM_CORE==1)
         RUCUTEN(i,k,j)=0.
         RVCUTEN(i,k,j)=0.
+#else
+#if (NMM_CORE==1)
+        RUCUTEN(i,j,k)=0.
+        RVCUTEN(i,j,k)=0.
+#endif
+#endif
      ENDDO
      ENDDO
      ENDDO

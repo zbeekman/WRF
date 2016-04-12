@@ -2249,8 +2249,6 @@
      &                 ,SM,HBM2,PBLH,LPBL,CNVBOT,CNVTOP                 &
      &                 ,HTOP,HBOT,HTOPD,HBOTD,HTOPS,HBOTS               &
      &                 ,RTHBLTEN,RQVBLTEN,RTHRATEN                      &
-     &                 ,rqvcuten,rqccuten,rqicuten                      & ! for GF CU scheme
-     &                 ,tcuten                                          &
 #if (NMM_CORE==1)    
      &                 ,TWBS,QWBS                                       &
      &                 ,DUCUDT, DVCUDT, MOMMIX, store_rand               &                  
@@ -2400,10 +2398,6 @@
 !
       TYPE(GRID_CONFIG_REC_TYPE),INTENT(IN) :: CONFIG_FLAGS
 !
-      REAL,DIMENSION(IMS:IME,KMS:KME,JMS:JME),OPTIONAL,               &
-           INTENT(INOUT) ::                                           &
-            rqvcuten,rqccuten,rqicuten,tcuten
-
 !-----------------------------------------------------------------------
 !***  LOCAL VARIABLES
 !-----------------------------------------------------------------------
@@ -2425,18 +2419,10 @@
 !
       REAL,DIMENSION(ITS:ITE,JTS:JTE) :: WMID_L
 !
-! GF mods - rqvcuten,rqccuten,rqicuten are now non-local and optional
-!      REAL,DIMENSION(IMS:IME,KMS:KME,JMS:JME) :: DZ,P8W,P_PHY,PI_PHY    &
-!     &                                          ,RQCCUTEN,RQRCUTEN      &
-!     &                                          ,RQICUTEN,RQSCUTEN      &
-!     &                                          ,RQVCUTEN,RR,RTHCUTEN   &
-!     &                                          ,T_PHY,TH_PHY           &
-!     &                                          ,U_PHY,V_PHY,WINT
       REAL,DIMENSION(IMS:IME,KMS:KME,JMS:JME) :: DZ,P8W,P_PHY,PI_PHY    &
-     &                                          ,RQRCUTEN      &
-     &                                          ,RQSCUTEN      &
-     &                                          ,RTHCUTEN      &
-     &                                          ,RR            &
+     &                                          ,RQCCUTEN,RQRCUTEN      &
+     &                                          ,RQICUTEN,RQSCUTEN      &
+     &                                          ,RQVCUTEN,RR,RTHCUTEN   &
      &                                          ,T_PHY,TH_PHY           &
      &                                          ,U_PHY,V_PHY,WINT
 !
@@ -2607,8 +2593,8 @@
           RQICUTEN(I,K,J)=0.
           RQSCUTEN(I,K,J)=0.
 
-           RUCUTEN(i,k,j)=0.
-           RVCUTEN(i,k,j)=0.
+!           RUCUTEN(i,k,j)=0.          !gf
+!           RVCUTEN(i,k,j)=0.          !gf
 
         ENDDO
 !
@@ -2811,8 +2797,8 @@
      &                 ,RTHBLTEN=RTHBLTEN,RQVBLTEN=RQVBLTEN             &
      &                 ,RTHRATEN=RTHRATEN                               &
 #if (NMM_CORE==1)
-!     &                 ,RUCUTEN=DUCUDT, RVCUTEN=DVCUDT, MOMMIX=MOMMIX   & !gf
-     &                 ,RUCUTEN=RUCUTEN, RVCUTEN=RVCUTEN, MOMMIX=MOMMIX & !gf
+     &                 ,RUCUTEN=DUCUDT, RVCUTEN=DVCUDT, MOMMIX=MOMMIX   & 
+!     &                 ,RUCUTEN=RUCUTEN, RVCUTEN=RVCUTEN, MOMMIX=MOMMIX & !gf
      &                 ,store_rand=store_rand                           &
 #if (HWRF==1)
      &                 ,pert_sas=config_flags%pert_sas                  &
@@ -2845,8 +2831,8 @@
         DO K=KMS,KME
         DO J=JMS,JME
         DO I=IMS,IME
-           DUCUDT(i,j,k)=RUCUTEN(i,k,j)
-           DVCUDT(i,j,k)=RVCUTEN(i,k,j)
+!           DUCUDT(i,j,k)=RUCUTEN(i,k,j)         ! gf
+!           DVCUDT(i,j,k)=RVCUTEN(i,k,j)         ! gf
 
            DTHCUDT(i,j,k)=RTHCUTEN(i,k,j)
            DQVCUDT(i,j,k)=RQVCUTEN(i,k,j)
@@ -3019,9 +3005,6 @@
             CALL wrf_message(trim(message))
 	  ENDIF
 !
-! Also save instantaneous T tendencies from CU for diagnostics     ! egrell
-          TCUTEN(I,K,J)=DTDT
-
         ENDDO
       ENDDO
       ENDDO

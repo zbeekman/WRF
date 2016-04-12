@@ -1214,6 +1214,7 @@ CONTAINS
                ,IMS=ims,IME=ime,JMS=jms,JME=jme,KMS=kms,KME=kme &
                ,ITS=its,ITE=ite,JTS=jts,JTE=jte,KTS=kts,KTE=kte &
                ,PERIODIC_X=periodic_x,PERIODIC_Y=periodic_y     &
+               ,RQVCUTEN=RQVCUTEN,RQCCUTEN=RQCCUTEN             &
               ! optionals
 #if (NMM_CORE == 1 )
                ,RQICUTEN=RQICUTEN ,RQVFTEN=forceq               &

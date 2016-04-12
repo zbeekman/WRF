@@ -1770,6 +1770,7 @@
 !
       IF(MOD(grid%ntsd,GRID%NCNVC)==0.AND.                              &
      &   (CONFIG_FLAGS%CU_PHYSICS.eq.KFETASCHEME .or.                     &
+     &   CONFIG_FLAGS%CU_PHYSICS.eq.GFSCHEME .OR.                      &  !egrell
      &   CONFIG_FLAGS%CU_PHYSICS.eq.OSASSCHEME .or.                       &
      &   CONFIG_FLAGS%CU_PHYSICS.eq.NSASSCHEME .or.                       &
      &   CONFIG_FLAGS%CU_PHYSICS.eq.MESO_SAS .or.                         &   !Kwon
@@ -1800,7 +1801,7 @@
 !***  GET TENDENCIES FOR GD SCHEME.
 !    
         IF(CONFIG_FLAGS%CU_PHYSICS==GDSCHEME.OR.                        &
-     &  CONFIG_FLAGS%CU_PHYSICS==GFSCHEME.OR.                           &
+     &  CONFIG_FLAGS%CU_PHYSICS==GFSCHEME.OR.                          &
      &  CONFIG_FLAGS%CU_PHYSICS==TIEDTKESCHEME.OR.                      &
      &  CONFIG_FLAGS%CU_PHYSICS==KFETASCHEME)THEN
           DT_INV=1./GRID%DT
@@ -1851,8 +1852,6 @@
      &             ,grid%sm,grid%hbm2,grid%pblh,grid%lpbl,grid%cnvbot,grid%cnvtop                         &
      &             ,grid%htop,grid%hbot,grid%htopd,grid%hbotd,grid%htops,grid%hbots                  &
      &             ,RTHBLTEN,RQVBLTEN,RTHRATEN                         & 
-     &             ,grid%rqvcuten,grid%rqccuten,grid%rqicuten          &
-     &             ,grid%tcuten                                        &
 #if (NMM_CORE==1)                  
      &             ,grid%twbs,grid%qwbs                                &
      &                 ,grid%DUCUDT, grid%DVCUDT, GRID%MOMMIX, grid%random             & 
@@ -1887,6 +1886,8 @@
 !        IF(MOD(grid%ntsd,GRID%NCNVC).eq.0.and.(CONFIG_FLAGS%CU_PHYSICS.eq.OSASSCHEME))THEN
 ! update to match HWRFV2 behaviour - review later (1/15/10)
 !
+! GFSCHEME included below as this code block is for schemes with momentum
+! tendencies from the convection scheme.  -egrell
 !emc_2010_bugfix_h50
         IF(MOD(grid%ntsd, GRID%NCNVC).eq.0.and.                 &
      &    (CONFIG_FLAGS%CU_PHYSICS.eq.OSASSCHEME.or.            &
