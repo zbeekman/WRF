@@ -2425,6 +2425,8 @@
      &                                          ,RQVCUTEN,RR,RTHCUTEN   &
      &                                          ,T_PHY,TH_PHY           &
      &                                          ,U_PHY,V_PHY,WINT
+
+      REAL,DIMENSION(IMS:IME,KMS:KME,JMS:JME) :: DUDT_PHY,DVDT_PHY
 !
       REAL,DIMENSION(IMS:IME,JMS:JME,ENSDIM) :: ZERO_GD
 !
@@ -2593,13 +2595,30 @@
           RQICUTEN(I,K,J)=0.
           RQSCUTEN(I,K,J)=0.
 
-!           RUCUTEN(i,k,j)=0.          !gf
-!           RVCUTEN(i,k,j)=0.          !gf
-
         ENDDO
 !
       ENDDO
       ENDDO
+
+#if (NMM_CORE==1)
+!$omp parallel do                                                       &
+!$omp& private(i,j,k)
+        DO K=KTS,KTE
+        DO J=MYJS2,MYJE2
+        DO I=MYIS1,MYIE1
+           DUCUDT(i,j,k)=0.0
+           DVCUDT(i,j,k)=0.0
+           DTHCUDT(i,j,k)=0.0
+           DQVCUDT(i,j,k)=0.0
+           DQRCUDT(i,j,k)=0.0
+           DQCCUDT(i,j,k)=0.0
+           DQICUDT(i,j,k)=0.0
+           DQSCUDT(i,j,k)=0.0
+        ENDDO
+        ENDDO
+        ENDDO
+#endif
+
 !
 !-----------------------------------------------------------------------
 !
@@ -2704,6 +2723,8 @@
             V_PHY(I,K,J)=(V(I+IHE(J),J,K)+V(I+IHW(J),J,K)               &
      &                   +V(I,J+1,K)+V(I,J-1,K))                        &
      &                   *0.25
+            DUDT_PHY(i,k,j)=0.0
+            DVDT_PHY(i,k,j)=0.0
           ENDDO
           ENDDO
 !
@@ -2733,24 +2754,19 @@
 
 
       CALL SET_TILES(GRID,IDS+1,IDE-1,JDS+2,JDE-2,ITS,ITE,JTS,JTE)
-#if (NMM_CORE==1)
-!$omp parallel do                                                       &
-!$omp& private(i,j,k)
-        DO K=KMS,KME
-        DO J=JMS,JME
-        DO I=IMS,IME
-           DUCUDT(i,j,k)=0.0
-           DVCUDT(i,j,k)=0.0
-           DTHCUDT(i,j,k)=0.0
-           DQVCUDT(i,j,k)=0.0
-           DQRCUDT(i,j,k)=0.0
-           DQCCUDT(i,j,k)=0.0
-           DQICUDT(i,j,k)=0.0
-           DQSCUDT(i,j,k)=0.0
-        ENDDO
-        ENDDO
-        ENDDO
-#endif
+
+!! for GF momentum transport (avoiding ijk=ikj issue)
+!!$omp parallel do                                                       &
+!!$omp& private(i,j,k)
+!        DO J=JMS,JME
+!        DO K=KMS,KME
+!        DO I=IMS,IME
+!           DUDT_PHY(i,k,j)=0.0
+!           DVDT_PHY(i,k,j)=0.0
+!        ENDDO
+!        ENDDO
+!        ENDDO
+
       CALL CUMULUS_DRIVER(GRID                                          &
      &                 ,IDS=IDS,IDE=IDE,JDS=JDS,JDE=JDE,KDS=KDS,KDE=KDE &
      &                 ,IMS=IMS,IME=IME,JMS=JMS,JME=JME,KMS=KMS,KME=KME &
@@ -2796,9 +2812,9 @@
      &                 ,RQICUTEN=RQICUTEN,RQSCUTEN=RQSCUTEN             &
      &                 ,RTHBLTEN=RTHBLTEN,RQVBLTEN=RQVBLTEN             &
      &                 ,RTHRATEN=RTHRATEN                               &
+     &                 ,DUDT_PHY=DUDT_PHY,DVDT_PHY=DVDT_PHY             &
 #if (NMM_CORE==1)
      &                 ,RUCUTEN=DUCUDT, RVCUTEN=DVCUDT, MOMMIX=MOMMIX   & 
-!     &                 ,RUCUTEN=RUCUTEN, RVCUTEN=RVCUTEN, MOMMIX=MOMMIX & !gf
      &                 ,store_rand=store_rand                           &
 #if (HWRF==1)
      &                 ,pert_sas=config_flags%pert_sas                  &
@@ -2827,13 +2843,15 @@
 !
 #if (NMM_CORE==1)
 !$omp parallel do                                                       &
-!$omp& private(i,j,k)
-        DO K=KMS,KME
-        DO J=JMS,JME
-        DO I=IMS,IME
-!           DUCUDT(i,j,k)=RUCUTEN(i,k,j)         ! gf
-!           DVCUDT(i,j,k)=RVCUTEN(i,k,j)         ! gf
-
+!$omp& private(i,iendx,j,k)
+      DO K=KTS,KTE
+      DO J=MYJS2,MYJE2
+        IENDX=MYIE1
+        IF(MOD(J,2)==0.AND.ITE==IDE-1)IENDX=IENDX-1
+        DO I=MYIS1,IENDX
+!        DO K=KMS,KME
+!        DO J=JMS,JME
+!        DO I=IMS,IME
            DTHCUDT(i,j,k)=RTHCUTEN(i,k,j)
            DQVCUDT(i,j,k)=RQVCUTEN(i,k,j)
            DQRCUDT(i,j,k)=RQRCUTEN(i,k,j)
@@ -2843,6 +2861,28 @@
         ENDDO
         ENDDO
         ENDDO
+
+! gf - Transfer u,v tendencies from GF convection to ducudt,dvcudt
+! to use existing code to go from mass pts to u,v pts.
+
+      if (CONFIG_FLAGS%CU_PHYSICS==GFSCHEME) then
+!$omp parallel do                                                       &
+!$omp& private(i,iendx,j,k)
+      DO K=KTS,KTE
+      DO J=MYJS2,MYJE2
+        IENDX=MYIE1
+        IF(MOD(J,2)==0.AND.ITE==IDE-1)IENDX=IENDX-1
+        DO I=MYIS1,IENDX
+!        DO K=KMS,KME
+!        DO J=JMS,JME
+!        DO I=IMS,IME
+          DUCUDT(i,j,k)=DUDT_PHY(i,k,j)
+          DVCUDT(i,j,k)=DVDT_PHY(i,k,j)
+        ENDDO
+        ENDDO
+        ENDDO
+
+      endif
 #endif
 
 !-----------------------------------------------------------------------

@@ -128,6 +128,8 @@
       LOGICAL :: HF
       REAL,ALLOCATABLE,SAVE,DIMENSION(:,:,:) :: PPTDAT
 !
+! gf - for debugging
+      REAL :: testu, testv
 !-----------------------------------------------------------------------
 !***  For physics compatibility with other packages
 !-----------------------------------------------------------------------
@@ -1915,6 +1917,19 @@
 #ifdef NMM_FIND_LOAD_IMBALANCE
       call blockf(loadimbal_tim,'after halo SAS A & B')
 #endif
+! bug search
+        DO K=KMS,KME
+        DO J=JMS,JME
+        DO I=IMS,IME
+          testu = grid%DUCUDT(i,j,k)
+          testv = grid%DVCUDT(i,j,k)
+          if (testu.gt.1. .or. testv.gt.1.) then
+            write(0,*) "after halos, i,j,k,DUCUDT,DVCUDT = ",i,j,k,testu,testv
+          endif
+        ENDDO
+        ENDDO
+        ENDDO
+
 !
 !***  INTERPOLATE WINDS FROM H POINTS BACK TO V POINTS AFTER SAS 
 !
