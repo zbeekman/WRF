@@ -109,6 +109,7 @@ CONTAINS
                      ,rucuten,rvcuten                                 &
                      ,rthcuten,rthraten,rthblten,rthften              &
                      ,mommix,store_rand                               &
+                     ,dudt_phy,dvdt_phy                               &   !gf
 ! Optional variables for tiedtke scheme - add by ZCX&YQW 
                      ,znu                                             &
                  ! Optional moisture tracer flags 
@@ -517,7 +518,10 @@ CONTAINS
                    INTENT(INOUT) :: rucuten,rvcuten
 !
 ! optional arguments
-!
+
+   REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                 &
+                   INTENT(INOUT) :: dudt_phy,dvdt_phy
+
    INTEGER, DIMENSION( ims:ime, jms:jme ),                       &
          OPTIONAL, INTENT(INOUT) ::                              &
      k22_shallow,kbcon_shallow,ktop_shallow,ideep2d,jt2d,maxg2d, &
@@ -1196,7 +1200,8 @@ CONTAINS
                ,RHO=rho,RAINCV=raincv,PRATEC=tmppratec          &
                ,U=u,V=v,T=t,W=w                                 &
                ,Q=qv_curr,P=p,PI=pi                             &
-               ,DZ8W=dz8w ,P8W=p8w,XLV=xlv,CP=cp,G=g,R_V=r_v    &
+!               ,DZ8W=dz8w ,P8W=p8w,XLV=xlv,CP=cp,G=g,R_V=r_v    &
+               ,DZ8W=dz8w ,P8W=p8w                              &
                ,htop=htop,hbot=hbot                             &
                ,ktop_deep=ktop_deep                             &
                ,CU_ACT_FLAG=CU_ACT_FLAG,warm_rain=warm_rain     &
@@ -1223,9 +1228,9 @@ CONTAINS
                ,RTHCUTEN=RTHCUTEN ,RTHFTEN=RTHFTEN              &
                ,RQICUTEN=RQICUTEN ,RQVFTEN=RQVFTEN              &
 #endif
+               ,DUDT_PHY=DUDT_PHY, DVDT_PHY=DVDT_PHY            &
                ,RTHRATEN=RTHRATEN                               &
                ,RQVBLTEN=RQVBLTEN,RTHBLTEN=RTHBLTEN             &
-               ,RUCUTEN=rucuten, RVCUTEN=rvcuten                &
                ,F_QV=f_qv,F_QC=f_qc,F_QR=f_qr                   &
                ,F_QI=f_qi,F_QS=f_qs                             &
 #if ( WRF_DFI_RADAR == 1 )
@@ -1472,6 +1477,18 @@ CONTAINS
 
    END SELECT cps_select
 
+! gf debugging
+!        DO J = jts,jte
+!         DO K = kts,kte
+!          DO I=its,ite
+!            if (DUDT_PHY(I,K,J).gt.1. .or. DVDT_PHY(I,K,J).gt.1.) then  
+!              write(0,*) "In cum driver, i,j,k,DUDT_PHY,DVDT_PHY = ",  &
+!     &              i,j,k,DUDT_PHY(i,k,j),DVDT_PHY(i,k,j)
+!            endif
+!          end do
+!         end do
+!        end do
+
       ENDDO
       !$OMP END PARALLEL DO
 #if  ( EM_CORE == 1 )
@@ -1516,6 +1533,7 @@ CONTAINS
    if ( PRESENT(CUDTACTTIME) ) then
       cudtacttime = cudtacttime_pass
    end if
+
 
    CALL wrf_debug(200,'returning from cumulus_driver')
 

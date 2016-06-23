@@ -401,10 +401,10 @@ state  real   SCALEFUN  ij    dyn_nmm   1    -     rh023       "SCALEFUN"  "CNV 
 state  real   SCALEFUN1 ij    dyn_nmm   1    -     rh023       "SCALEFUN1"  "CNV Mass Scale function 1(0-1)"        " "
 state  real   DTHCUDT  ijk    dyn_nmm   1    -      rh023      "DTHCUDT"     "TH tendency due to CU" "K/s"
 state  real   DQVCUDT  ijk    dyn_nmm   1    -      rh023      "DQVCUDT"     "QV tendency due to CU" "kg/kg/s"
-state  real   DQRCUDT  ijk    dyn_nmm   1    -      rh023      "DQRCUDT"     "QR tendency due to CU" "kg/kg/s"
+state  real   DQRCUDT  ijk    dyn_nmm   1    -      r          "DQRCUDT"     "QR tendency due to CU" "kg/kg/s"
 state  real   DQCCUDT  ijk    dyn_nmm   1    -      rh023      "DQCCUDT"     "QC tendency due to CU" "Kg/kg/s"
 state  real   DQICUDT  ijk    dyn_nmm   1    -      rh023      "DQICUDT"     "QI tendency due to CU" "Kg/kg/s"
-state  real   DQSCUDT  ijk    dyn_nmm   1    -      rh023      "DQSCUDT"     "QS tendency due to CU" "Kg/kg/s"
+state  real   DQSCUDT  ijk    dyn_nmm   1    -      r          "DQSCUDT"     "QS tendency due to CU" "Kg/kg/s"
 state  real   DTHBLDT  ijk    dyn_nmm   1    -      rh023      "DTHBLDT"     "TH tendency due to PBL" "K/s"
 state  real   DQVBLDT  ijk    dyn_nmm   1    -      rh023      "DQVBLDT"     "QV tendency due to PBL" "Kg/kg/s"
 state  real   DUBLDT   ijk    dyn_nmm   1    -      rh023      "DUBLDT"     "U tendency due to PBL" "m/s/s"
@@ -1912,6 +1912,8 @@ halo HALO_NMM_INIT_36	dyn_nmm 120:ALWTOA,SMC,CMC
 halo HALO_NMM_INIT_37	dyn_nmm 120:STC,SH2O,ALBEDO
 halo HALO_NMM_INIT_38   dyn_nmm 120:PINT,Z,DWDT
 halo HALO_NMM_INIT_39	dyn_nmm 120:TOLD,UOLD,VOLD
+halo HALO_NMM_INIT_40	dyn_nmm 120:DTHCUDT,DQVCUDT,DQCCUDT
+halo HALO_NMM_INIT_41	dyn_nmm 120:DQRCUDT,DQICUDT,DQSCUDT
 
 #for HWRF: zhang increase halo width to fix feedback bug for HALO_NMM_A (24 => 48)
 #for HWRF: zhang HALO_NMM_C (24 => 48), HALO_NMM_G (24 => 48), HALO_NMM_K (8 => 24)
