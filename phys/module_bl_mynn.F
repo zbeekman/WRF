@@ -3585,7 +3585,7 @@ ENDIF
           s_awv1(kte+1)=0.
           s_awqke1(kte+1)=0.
 #if (WRF_CHEM == 1)
-          DO ic = 1,ndvel
+          DO ic = 1,nchem
             s_awchem1(kte+1,ic)=0.
           ENDDO
 #endif
@@ -3901,9 +3901,11 @@ ENDIF
                !Reapply checks on cldfra_bl and qc_bl to avoid FPEs in radiation driver
                ! when these two quantities are multiplied by eachother (they may have changed 
                ! in the MF scheme:
+            IF (icloud_bl > 0) THEN
                IF (QC_BL(i,k,j) < 1E-6 .AND. ABS(CLDFRA_BL(i,k,j)) > 0.1)QC_BL(i,k,j)= 1E-6
                IF (CLDFRA_BL(i,k,j) < 1E-2)CLDFRA_BL(i,k,j)= 0.
-             ENDIF
+            ENDIF
+            ENDIF
 
              !***  Begin debug prints
              IF ( wrf_at_debug_level(3000) ) THEN
@@ -4487,11 +4489,12 @@ ENDIF
     ENDDO 
 
     IF (edmf_a(k)>0.) THEN
-       edmf_w(k)=edmf_w(k)/edmf_a(k)*Psig_w
-       edmf_qt(k)=edmf_qt(k)/edmf_a(k)*Psig_w
-       edmf_thl(k)=edmf_thl(k)/edmf_a(k)*Psig_w
-       edmf_ent(k)=edmf_ent(k)/edmf_a(k)*Psig_w
-       edmf_qc(k)=edmf_qc(k)/edmf_a(k)*Psig_w
+       edmf_w(k)=edmf_w(k)/edmf_a(k)
+       edmf_qt(k)=edmf_qt(k)/edmf_a(k)
+       edmf_thl(k)=edmf_thl(k)/edmf_a(k)
+       edmf_ent(k)=edmf_ent(k)/edmf_a(k)
+       edmf_qc(k)=edmf_qc(k)/edmf_a(k)
+       edmf_a(K)=edmf_a(K)*Psig_w
     ENDIF
   ENDDO
 
@@ -5070,7 +5073,7 @@ real :: diff,exn,t,qs,qcold
   QC=0.
 
   do i=1,NITER
-     T=EXN*(THL+xlv/cp*QC)
+     T=EXN*THL+ xlv/cp*QC
      QS=qsat_blend(T,P)
      QCOLD=QC
      QC=max(0.5*QC + 0.5*(QT-QS),0.)
@@ -5960,15 +5963,8 @@ SUBROUTINE SCALE_AWARE(dx,PBL1,Psig_bl,Psig_shcu)
                s_awchem(k,ic) = edmf_w(k)*edmf_chem(k,ic)*psig_w
             enddo
 #endif
-            !now reduce diagnostic output arrays by psig
-             edmf_w(k)=edmf_w(k)*psig_w
-             edmf_qt(k)=edmf_qt(k)*psig_w
-             edmf_thl(k)=edmf_thl(k)*psig_w
-             edmf_ent(k)=edmf_ent(k)*psig_w
-             edmf_qc(k)=edmf_qc(k)*psig_w
-             edmf_u(k)=edmf_u(k)*psig_w
-             edmf_v(k)=edmf_v(k)*psig_w
-             edmf_qke(k)=edmf_qke(k)*psig_w
+            !now reduce diagnostic output array by psig
+             edmf_a(k)=edmf_a(k)*psig_w
          enddo
 
       ! end if   ! is_convective

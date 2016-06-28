@@ -588,10 +588,12 @@ CONTAINS
       IF ( model_config_rec % dfi_opt .EQ. DFI_NODFI ) THEN
         DO i = 1, model_config_rec % max_dom
            model_config_rec % mp_physics_dfi(i) = -1
+           model_config_rec % bl_pbl_physics_dfi(i) = -1
         ENDDO
       ELSE
         DO i = 1, model_config_rec % max_dom
            model_config_rec % mp_physics_dfi(i) = model_config_rec % mp_physics(i)
+           model_config_rec % bl_pbl_physics_dfi(i) = model_config_rec % bl_pbl_physics(i)
         ENDDO
       END IF
 ! #endif
