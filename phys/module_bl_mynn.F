@@ -832,7 +832,7 @@ CONTAINS
            els  = vk*zwk/(1.0+cns*MIN( zwk*rmo, zmax ))
            els1 = vk*z_m/(1.0+cns*MIN( zwk*rmo, zmax ))
          ELSE
-           els  = vk*zwk/(1.0+cns*MIN( zwk1*rmo, zmax ))
+           els  = vk*zwk/(1.0+cns*MIN( zwk*rmo, zmax ))
            els1 = vk*z_m/(1.0+cns*MIN( zwk1*rmo, zmax ))
          ENDIF
        ELSE
