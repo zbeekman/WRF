@@ -636,31 +636,31 @@ SUBROUTINE calc_coef_w( a,alpha,gamma,              &
      outer_j_loop:  DO j = j_start, j_end
 
         DO i = i_start, i_end
-          cof(i)  = (.5*dts*g*(1.+epssm)/mut(i,j))**2
+          cof(i)  = (.5*dts*g*(1.+epssm))**2
           a(i, 2 ,j) = 0.
-          a(i,kde,j) =-2.*cof(i)*rdnw(kde-1)**2*c2a(i,kde-1,j)*lid_flag
+          a(i,kde,j) =-2.*cof(i)*rdnw(kde-1)**2*c2a(i,kde-1,j)*lid_flag/(mut(i,j)*mut(i,j))
           gamma(i,1 ,j) = 0.
         ENDDO
 
         DO k=3,kde-1
         DO i=i_start, i_end
-          a(i,k,j) =   -cqw(i,k,j)*cof(i)*rdn(k)* rdnw(k-1)*c2a(i,k-1,j)    
+          a(i,k,j) =   -cqw(i,k,j)*cof(i)*rdn(k)* rdnw(k-1)*c2a(i,k-1,j)/(mut(i,j)*mut(i,j))
         ENDDO
         ENDDO
 
 
         DO k=2,kde-1
         DO i=i_start, i_end
-          b = 1.+cqw(i,k,j)*cof(i)*rdn(k)*(rdnw(k  )*c2a(i,k,j  )  &
-                                       +rdnw(k-1)*c2a(i,k-1,j))
-          c =   -cqw(i,k,j)*cof(i)*rdn(k)*rdnw(k  )*c2a(i,k,j  )
+          b = 1.+cqw(i,k,j)*cof(i)*rdn(k)*(rdnw(k  )*c2a(i,k,j  )/(mut(i,j)*mut(i,j))  &
+                                       +rdnw(k-1)*c2a(i,k-1,j)/(mut(i,j)*mut(i,j)))
+          c =   -cqw(i,k,j)*cof(i)*rdn(k)*rdnw(k  )*c2a(i,k,j  )/(mut(i,j)*mut(i,j))
           alpha(i,k,j) = 1./(b-a(i,k,j)*gamma(i,k-1,j))
           gamma(i,k,j) = c*alpha(i,k,j)
         ENDDO
         ENDDO
 
         DO i=i_start, i_end
-          b = 1.+2.*cof(i)*rdnw(kde-1)**2*c2a(i,kde-1,j)
+          b = 1.+2.*cof(i)*rdnw(kde-1)**2*c2a(i,kde-1,j)/(mut(i,j)*mut(i,j))
           c = 0.
           alpha(i,kde,j) = 1./(b-a(i,kde,j)*gamma(i,kde-1,j))
           gamma(i,kde,j) = c*alpha(i,kde,j)
@@ -1492,7 +1492,7 @@ SUBROUTINE advance_w( w, rw_tend, ww, w_save, u, v,  &
 !                                                         partial d phi/dz]
     DO k=2,k_end+1
     DO i=i_start, i_end
-      rhs(i,k) = ph(i,k,j) + msfty(i,j)*rhs(i,k)*mut_inv(i)
+      rhs(i,k) = ph(i,k,j) + msfty(i,j)*rhs(i,k)/mut(i,j)
       if(top_lid .and. k.eq.k_end+1)rhs(i,k)=0.
     ENDDO
     ENDDO
@@ -1536,11 +1536,11 @@ SUBROUTINE advance_w( w, rw_tend, ww, w_save, u, v,  &
       DO i=i_start, i_end
         w(i,k,j)=w(i,k,j)+dts*rw_tend(i,k,j)                       &
                  + msft_inv(i)*cqw(i,k,j)*(                        &
-            +.5*dts*g*mut_inv(i)*rdn(k)*                           &
-             (c2a(i,k  ,j)*rdnw(k  )                               &
+            +.5*dts*g*rdn(k)*                           &
+             (c2a(i,k  ,j)*rdnw(k  )/mut(i,j)                      &
         *((1.+epssm)*(rhs(i,k+1  )-rhs(i,k    ))                   &
          +(1.-epssm)*(ph(i,k+1,j)-ph(i,k  ,j)))                    &
-             -c2a(i,k-1,j)*rdnw(k-1)                               &
+             -c2a(i,k-1,j)*rdnw(k-1)/mut(i,j)                      &
         *((1.+epssm)*(rhs(i,k    )-rhs(i,k-1  ))                   &
          +(1.-epssm)*(ph(i,k  ,j)-ph(i,k-1,j)))))                  &
 
@@ -1556,7 +1556,7 @@ SUBROUTINE advance_w( w, rw_tend, ww, w_save, u, v,  &
     DO i=i_start, i_end
        w(i,k,j)=w(i,k,j)+dts*rw_tend(i,k,j)                         &
            +msft_inv(i)*(                                        &
-         -.5*dts*g*mut_inv(i)*rdnw(k-1)**2*2.*c2a(i,k-1,j)            &
+         -.5*dts*g/mut(i,j)*rdnw(k-1)**2*2.*c2a(i,k-1,j)            &
              *((1.+epssm)*(rhs(i,k  )-rhs(i,k-1  ))                 &
               +(1.-epssm)*(ph(i,k,j)-ph(i,k-1,j)))                  &
          -dts*g*(2.*rdnw(k-1)*                                      &

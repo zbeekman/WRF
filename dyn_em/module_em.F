@@ -1323,7 +1323,7 @@ SUBROUTINE rk_update_scalar( scs, sce,                      &
 
    INTEGER :: i,j,k,im
    REAL    :: sc_middle, msfsq
-   REAL, DIMENSION(its:ite) :: muold, r_munew
+   REAL, DIMENSION(its:ite) :: muold, munew
 
    REAL, DIMENSION(its:ite, kts:kte, jts:jte  ) :: tendency
 
@@ -1400,7 +1400,7 @@ SUBROUTINE rk_update_scalar( scs, sce,                      &
 
       DO  i = its, min(ite,ide-1)
         muold(i) = mu_old(i,j) + mu_base(i,j)
-        r_munew(i) = 1./(mu_new(i,j) + mu_base(i,j))
+        munew(i) = (mu_new(i,j) + mu_base(i,j))
       ENDDO
 
       DO  k = kts, min(kte,kde-1)
@@ -1408,7 +1408,7 @@ SUBROUTINE rk_update_scalar( scs, sce,                      &
 
         scalar_1(i,k,j,im) = scalar_2(i,k,j,im)
         scalar_2(i,k,j,im) = (muold(i)*scalar_1(i,k,j,im)   &
-                             + dt*tendency(i,k,j))*r_munew(i)
+                             + dt*tendency(i,k,j))/munew(i)
 
       ENDDO
       ENDDO
@@ -1451,14 +1451,14 @@ SUBROUTINE rk_update_scalar( scs, sce,                      &
 
       DO  i = its, min(ite,ide-1)
         muold(i) = mu_old(i,j) + mu_base(i,j)
-        r_munew(i) = 1./(mu_new(i,j) + mu_base(i,j))
+        munew(i) = (mu_new(i,j) + mu_base(i,j))
       ENDDO
 
       DO  k = kts, min(kte,kde-1)
       DO  i = its, min(ite,ide-1)
 
         scalar_2(i,k,j,im) = (muold(i)*scalar_1(i,k,j,im)   &
-                             + dt*tendency(i,k,j))*r_munew(i)
+                             + dt*tendency(i,k,j))/munew(i)
 
       ENDDO
       ENDDO
@@ -1469,8 +1469,8 @@ SUBROUTINE rk_update_scalar( scs, sce,                      &
           DO  k = kts, min(kte,kde-1)
           DO  i = its, min(ite,ide-1)
 
-            advh_t(i,k,j) = advh_t(i,k,j) + (dt*h_tendency(i,k,j)* msfty(i,j))*r_munew(i)
-            advz_t(i,k,j) = advz_t(i,k,j) + (dt*z_tendency(i,k,j)* msfty(i,j))*r_munew(i)
+            advh_t(i,k,j) = advh_t(i,k,j) + (dt*h_tendency(i,k,j)* msfty(i,j))/munew(i)
+            advz_t(i,k,j) = advz_t(i,k,j) + (dt*z_tendency(i,k,j)* msfty(i,j))/munew(i)
 
           ENDDO
           ENDDO
@@ -1519,7 +1519,7 @@ SUBROUTINE rk_update_scalar_pd( scs, sce,                      &
 
    INTEGER :: i,j,k,im
    REAL    :: sc_middle, msfsq
-   REAL, DIMENSION(its:ite) :: muold, r_munew
+   REAL, DIMENSION(its:ite) :: muold, munew
 
    REAL, DIMENSION(its:ite, kts:kte, jts:jte  ) :: tendency
 
@@ -1583,14 +1583,14 @@ SUBROUTINE rk_update_scalar_pd( scs, sce,                      &
 
       DO  i = its, min(ite,ide-1)
         muold(i) = mu_old(i,j) + mu_base(i,j)
-        r_munew(i) = 1./(mu_new(i,j) + mu_base(i,j))
+        munew(i) = (mu_new(i,j) + mu_base(i,j))
       ENDDO
 
       DO  k = kts, min(kte,kde-1)
       DO  i = its, min(ite,ide-1)
 
         scalar(i,k,j,im) = (muold(i)*scalar(i,k,j,im)   &
-                             + dt*tendency(i,k,j))*r_munew(i)
+                             + dt*tendency(i,k,j))/munew(i)
       ENDDO
       ENDDO
       ENDDO
