@@ -413,6 +413,34 @@ CONTAINS
           END DO
         END DO
       END DO
+    CASE (GOCART_BCCO) 
+      DO j=jts,jte
+        DO i=its,ite
+          DO k=kts,kte
+            g_conv_rho = (-(dtstep*r_q*4.828e-4*g_rho_phy(i, k, j)*dz8w(&
+&              i, k, j)*60./rho_phy(i, k, j)**2)-r_q*4.828e-4*dtstep*60.*&
+&              g_dz8w(i, k, j)/rho_phy(i, k, j))/(dz8w(i, k, j)*60.)**2
+            conv_rho = r_q*4.828e-4/rho_phy(i, k, j)*dtstep/(dz8w(i, k, &
+&              j)*60.)
+            g_chem(i, k, j, p_co) = g_chem(i, k, j, p_co) + ebu(i, k, j&
+&              , p_ebu_co)*(g_scalebb(i, j, p_scbb_co)*conv_rho+scalebb(i&
+&              , j, p_scbb_co)*g_conv_rho)
+            chem(i, k, j, p_co) = chem(i, k, j, p_co) + ebu(i, k, j, &
+&              p_ebu_co)*scalebb(i, j, p_scbb_co)*conv_rho
+
+            g_chem(i, k, j, p_bc1) = g_chem(i, k, j, p_bc1) + (dtstep*(&
+&              r_q*ebu(i, k, j, p_ebu_bc)*g_scalebb(i, j, p_scbb_bc)*&
+&              rho_phy(i, k, j)-r_q*ebu(i, k, j, p_ebu_bc)*scalebb(i, j, &
+&              p_scbb_bc)*g_rho_phy(i, k, j))*dz8w(i, k, j)/rho_phy(i, k&
+&              , j)**2-r_q*ebu(i, k, j, p_ebu_bc)*scalebb(i, j, p_scbb_bc&
+&              )*dtstep*g_dz8w(i, k, j)/rho_phy(i, k, j))/dz8w(i, k, j)**&
+&              2
+            chem(i, k, j, p_bc1) = chem(i, k, j, p_bc1) + r_q*ebu(i, k, &
+&              j, p_ebu_bc)*scalebb(i, j, p_scbb_bc)/rho_phy(i, k, j)*&
+&              dtstep/dz8w(i, k, j)
+          END DO
+        END DO
+      END DO
     CASE (GOCARTRACM_KPP, GOCARTRADM2_KPP, GOCARTRADM2) 
       DO j=jts,jte
         DO i=its,ite

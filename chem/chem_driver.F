@@ -435,8 +435,13 @@
        CALL wrf_debug(15,'calling racm_soa_vbs_kpp aerosols driver from chem_driver')
        haveaer = .false.
      CASE (GOCART_SIMPLE)
-       CALL wrf_debug(15,'calling only gocart aerosols driver from chem_driver')
+       CALL wrf_debug(15,'calling only gocart aerosols from chem_driver')
        haveaer = .false.
+#if ( WRFPLUS == 1 )
+     CASE (GOCART_BCCO)
+       CALL wrf_debug(15,'calling only black carbon aerosols from chem_driver')
+       haveaer = .false.
+#endif
      CASE (GOCARTRACM_KPP)
        CALL wrf_debug(15,'calling gocart and racm driver from chem_driver')
        haveaer = .false.
@@ -713,8 +718,8 @@
               grid%e_bio,p_phy,chem,rho,dz8w,grid%ne_area,emis_ant,emis_vol,grid%tsk,      &
               grid%erod,g,emis_seas,emis_dust,tracer, &
 #if ( WRFPLUS == 1 )
-              scaleant,grid%scaleant_frq,grid%stepscaleant,grid%num_ant_steps,        &
-              scalebb,grid%scalebb_frq,grid%stepscalebb,grid%num_bb_steps,            &
+              scaleant,grid%scaleant_frq,grid%stepscaleant,grid%num_ant_steps,grid%scaleant_rpt_int, &
+              scalebb,grid%scalebb_frq,grid%stepscalebb,grid%num_bb_steps,grid%scalebb_rpt_int,      &
               grid%check_count, grid%checkpoint_interval,                                  &
 #endif
               ebu , ebu_in,grid%mean_fct_agtf,grid%mean_fct_agef,grid%mean_fct_agsv,       &

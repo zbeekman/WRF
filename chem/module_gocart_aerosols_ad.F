@@ -50,9 +50,9 @@ CONTAINS
         DO i=its,ite
           airmas(1, 1, 1) = -((p8w(i, k+1, j)-p8w(i, k, j))*dx*dx/g)
           CALL PUSHREAL8(pc2(1, 1, 1, 1))
-          pc2(1, 1, 1, 1) = 0.
+          pc2(1, 1, 1, 1) = 0.d0
           CALL PUSHREAL8(pc2(1, 1, 1, 2))
-          pc2(1, 1, 1, 2) = 0.
+          pc2(1, 1, 1, 2) = 0.d0
           tc(1) = chem(i, k, j, p_bc1)/mw_c*mwdry*1.d-9
           tc(2) = chem(i, k, j, p_oc1)/mw_c*mwdry*1.d-9
           tc(3) = chem(i, k, j, p_bc2)/mw_c*mwdry*1.d-9
@@ -71,15 +71,15 @@ CONTAINS
     DO j=jte,jts,-1
       DO k=kte-1,kts,-1
         DO i=ite,its,-1
-          tempb = mw_c*1.e9*a_chem(i, k, j, p_oc2)/mwdry
+          tempb = mw_c*1.d9*a_chem(i, k, j, p_oc2)/mwdry
           a_tc(4) = a_tc(4) + tempb
-          a_tt2 = 8.*tempb
+          a_tt2 = 8.d0*tempb
           a_chem(i, k, j, p_oc2) = 0.0_8
-          a_tc(3) = a_tc(3) + mw_c*1.e9*a_chem(i, k, j, p_bc2)/mwdry
+          a_tc(3) = a_tc(3) + mw_c*1.d9*a_chem(i, k, j, p_bc2)/mwdry
           a_chem(i, k, j, p_bc2) = 0.0_8
-          a_tc(2) = a_tc(2) + mw_c*1.e9*a_chem(i, k, j, p_oc1)/mwdry
+          a_tc(2) = a_tc(2) + mw_c*1.d9*a_chem(i, k, j, p_oc1)/mwdry
           a_chem(i, k, j, p_oc1) = 0.0_8
-          a_tc(1) = a_tc(1) + mw_c*1.e9*a_chem(i, k, j, p_bc1)/mwdry
+          a_tc(1) = a_tc(1) + mw_c*1.d9*a_chem(i, k, j, p_bc1)/mwdry
           a_chem(i, k, j, p_bc1) = 0.0_8
           a_tc(3) = a_tc(3) + a_tt2
           a_tt1 = -a_tt2
@@ -171,7 +171,7 @@ CONTAINS
             ii = ide - 1
             CALL PUSHCONTROL1B(1)
           END IF
-          sulfate = chem(ii, k, jj, p_sulf)*mwso4/mwdry*1.e3
+          sulfate = chem(ii, k, jj, p_sulf)*mwso4/mwdry*1.d3
           DO n=p_p25,p_dust_1
             pm2_5_dry(i, k, j) = pm2_5_dry(i, k, j) + chem(ii, k, jj, n)
           END DO
@@ -203,7 +203,7 @@ CONTAINS
             ii = ide - 1
             CALL PUSHCONTROL1B(1)
           END IF
-          sulfate = chem(ii, k, jj, p_sulf)*mwso4/mwdry*1.e3
+          sulfate = chem(ii, k, jj, p_sulf)*mwso4/mwdry*1.d3
           DO n=p_p25,p_dust_3
             pm10(i, k, j) = pm10(i, k, j) + chem(ii, k, jj, n)
           END DO
@@ -241,7 +241,7 @@ CONTAINS
 &              )
           END DO
           a_chem(ii, k, jj, p_sulf) = a_chem(ii, k, jj, p_sulf) + mwso4*&
-&            1.e3*a_sulfate/mwdry
+&            1.d3*a_sulfate/mwdry
           CALL POPCONTROL1B(branch)
           IF (branch .EQ. 0) THEN
             CALL POPINTEGER4(ii)
@@ -280,7 +280,7 @@ CONTAINS
 &              , k, j)
           END DO
           a_chem(ii, k, jj, p_sulf) = a_chem(ii, k, jj, p_sulf) + mwso4*&
-&            1.e3*a_sulfate/mwdry
+&            1.d3*a_sulfate/mwdry
           CALL POPCONTROL1B(branch)
           IF (branch .EQ. 0) THEN
             CALL POPINTEGER4(ii)
@@ -345,7 +345,7 @@ CONTAINS
           DO j=1,jmx
             DO i=1,imx
               c0 = tc(i, j, l, n)
-              r2 = 0.0
+              r2 = 0.0d0
               CALL PUSHREAL8(rkt)
               rkt = (r1+r2)*REAL(ndt1)
               c1 = c0*EXP(-rkt)
@@ -368,7 +368,7 @@ CONTAINS
         DO l=lmx,1,-1
           DO j=jmx,1,-1
             DO i=imx,1,-1
-              r2 = 0.0
+              r2 = 0.0d0
               tempb = r1*a_pc2(i, j, l, np)/(r1+r2)
               a_c0 = tempb
               a_c1 = a_tc(i, j, l, n) - tempb

@@ -17,8 +17,8 @@ CONTAINS
 &    , v_phy, vvel, e_bio, p_phy, chem, g_chem, rho_phy, g_rho_phy, dz8w&
 &    , g_dz8w, ne_area, emis_ant, emis_vol, tsk, erod, g, emis_seas, &
 &    emis_dust, tracer, g_tracer, scaleant, g_scaleant, scaleant_frq, &
-&    stepscaleant, num_ant_steps, scalebb, g_scalebb, scalebb_frq, &
-&    stepscalebb, num_bb_steps, check_count, checkpoint_interval,  &
+&    stepscaleant, num_ant_steps, scaleant_rpt_int, scalebb, g_scalebb, scalebb_frq, &
+&    stepscalebb, num_bb_steps, scalebb_rpt_int, check_count, checkpoint_interval,  &
 &    ebu, ebu_in, mean_fct_agtf, mean_fct_agef,                    &
 &    mean_fct_agsv, mean_fct_aggr, firesize_agtf, firesize_agef, &
 &    firesize_agsv, firesize_aggr, u10, v10, ivgtyp, isltyp, gsw, vegfra&
@@ -77,7 +77,8 @@ CONTAINS
     REAL, DIMENSION(ims:ime, config_flags%kemit, jms:jme, num_emis_ant),&
 &    INTENT(IN) :: emis_ant
     INTEGER, INTENT(IN) :: scaleant_frq, scalebb_frq, stepscaleant, &
-&    stepscalebb, num_ant_steps, num_bb_steps, check_count, checkpoint_interval
+&    stepscalebb, num_ant_steps, num_bb_steps, &
+&    scaleant_rpt_int, scalebb_rpt_int, check_count, checkpoint_interval
     REAL, DIMENSION(ims:ime, num_ant_steps, jms:jme, num_scaleant), &
 &    INTENT(IN) :: scaleant
     REAL, DIMENSION(ims:ime, num_ant_steps, jms:jme, num_scaleant), &
@@ -196,7 +197,8 @@ CONTAINS
 &        config_flags%biomass_burn_opt .EQ. BIOMASSB_MOZ .OR. &
 &        config_flags%biomass_burn_opt .EQ. BIOMASSB_GHG .OR. &
 &        config_flags%biomass_burn_opt .EQ. BIOMASSB .OR. &
-&        config_flags%biomass_burn_opt .EQ. WRFPLUS_BB ) THEN
+&        config_flags%biomass_burn_opt .EQ. ADTLBB .OR. &
+&        config_flags%biomass_burn_opt .EQ. ADTLBB_BCCO ) THEN
       IF (ktau .EQ. 1) THEN
         do_plumerisefire = .true.
       ELSE IF (adapt_step_flag) THEN
@@ -239,6 +241,7 @@ CONTAINS
       IF ( check_count .gt. 1 ) then
          iant=iant+(check_count-1)*checkpoint_interval/scaleant_frq
       ENDIF
+      IF ( scaleant_rpt_int .gt. 0 ) iant = mod(iant-1 , scaleant_rpt_int) + 1
     END IF
     IF (iant .GT. num_ant_steps .OR. iant .LE. 0) THEN
       WRITE(message, *) &
@@ -261,6 +264,7 @@ CONTAINS
       IF ( check_count .gt. 1 ) then
          ibb=ibb+(check_count-1)*checkpoint_interval/scalebb_frq
       ENDIF
+      IF ( scalebb_rpt_int .gt. 0 ) ibb = mod(ibb-1 , scalebb_rpt_int) + 1
     END IF
     IF (ibb .GT. num_bb_steps .OR. ibb .LE. 0) THEN
       WRITE(message, *) &
@@ -299,7 +303,7 @@ CONTAINS
     ksub = 0
     SELECT CASE  (config_flags%biomass_burn_opt) 
     CASE (BIOMASSB, BIOMASSB_MOZC, BIOMASSB_MOZ, BIOMASSB_GHG, &
-&    WRFPLUS_BB) 
+&    ADTLBB, ADTLBB_BCCO)
       CALL WRF_DEBUG(15, 'fire emissions: adding biomassb emissions')
       CALL G_ADD_EMIS_BURN(id, dtstep, ktau, dz8w, g_dz8w, rho_phy, &
 &                     g_rho_phy, chem, g_chem, julday, gmt, xlat, xlong, &
@@ -575,7 +579,7 @@ CONTAINS
           END DO
         END DO
       END IF
-      IF (config_flags%emiss_opt .EQ. WRFPLUS_ANT) THEN
+      IF (config_flags%emiss_opt .EQ. ADTLANT) THEN
         DO j=jts,jte
           DO i=its,ite
             IF (config_flags%kemit .GT. kte - ksub) THEN
@@ -663,6 +667,94 @@ CONTAINS
 &                emis_ant(i, k, j, p_e_so4j)*scaleant(i, iant, j, &
 &                p_scant_sulf))*alt(i, k, j)*dtstep/dz8w(i, k, j)*mwdry/&
 &                mw_so4_aer*1.e-3
+            END DO
+          END DO
+        END DO
+      END IF
+    CASE (GOCART_BCCO) 
+      IF (config_flags%emiss_opt .LE. 5) THEN
+        DO j=jts,jte
+          DO i=its,ite
+            IF (config_flags%kemit .GT. kte - ksub) THEN
+              min2 = kte - ksub
+            ELSE
+              min2 = config_flags%kemit
+            END IF
+            DO k=kts,min2
+              g_chem(i, k, j, p_bc1) = g_chem(i, k, j, p_bc1) + (dtstep*&
+&                ((emis_ant(i, k, j, p_e_eci)*g_scaleant(i, iant, j, &
+&                p_scant_eci)+emis_ant(i, k, j, p_e_ecj)*g_scaleant(i,&
+&                 iant, j, p_scant_ecj))*alt(i, k, j)+(emis_ant(i, k, j, &
+&                p_e_eci)*scaleant(i, iant, j, p_scant_eci)+emis_ant(i, k&
+&                , j, p_e_ecj)*scaleant(i, iant, j, p_scant_ecj))*g_alt(i&
+&                , k, j))*dz8w(i, k, j)-(emis_ant(i, k, j, p_e_eci)*&
+&                scaleant(i, iant, j, p_scant_eci)+emis_ant(i, k, j, &
+&                p_e_ecj)*scaleant(i, iant, j, p_scant_ecj))*alt(i, k, j)&
+&                *dtstep*g_dz8w(i, k, j))/dz8w(i, k, j)**2
+              chem(i, k, j, p_bc1) = chem(i, k, j, p_bc1) + (emis_ant(i&
+&                , k, j, p_e_eci)*scaleant(i, iant, j, p_scant_eci)+&
+&                emis_ant(i, k, j, p_e_ecj)*scaleant(i, iant, j, &
+&                p_scant_ecj))*alt(i, k, j)*dtstep/dz8w(i, k, j)
+            END DO
+          END DO
+        END DO
+      END IF
+      IF (config_flags%emiss_opt .EQ. 6) THEN
+        DO j=jts,jte
+          DO i=its,ite
+            IF (config_flags%kemit .GT. kte - ksub) THEN
+              min3 = kte - ksub
+            ELSE
+              min3 = config_flags%kemit
+            END IF
+            DO k=kts,min3
+              g_chem(i, k, j, p_bc1) = g_chem(i, k, j, p_bc1) + (&
+&                emis_ant(i, k, j, p_e_bc)*dtstep*(g_scaleant(i, iant, j&
+&                , p_scant_bc)*alt(i, k, j)+scaleant(i, iant, j, &
+&                p_scant_bc)*g_alt(i, k, j))*dz8w(i, k, j)-emis_ant(i, k&
+&                , j, p_e_bc)*scaleant(i, iant, j, p_scant_bc)*alt(i, k, &
+&                j)*dtstep*g_dz8w(i, k, j))/dz8w(i, k, j)**2
+              chem(i, k, j, p_bc1) = chem(i, k, j, p_bc1) + emis_ant(i, &
+&                k, j, p_e_bc)*scaleant(i, iant, j, p_scant_bc)*alt(i, k&
+&                , j)*dtstep/dz8w(i, k, j)
+            END DO
+          END DO
+        END DO
+      END IF
+      IF (config_flags%emiss_opt .EQ. ADTLANT_BCCO) THEN
+        DO j=jts,jte
+          DO i=its,ite
+            IF (config_flags%kemit .GT. kte - ksub) THEN
+              min4 = kte - ksub
+            ELSE
+              min4 = config_flags%kemit
+            END IF
+            DO k=kts,min4
+              g_conv = (-(dtstep*4.828e-4*g_rho_phy(i, k, j)*dz8w(i, k, &
+&                j)*60./rho_phy(i, k, j)**2)-4.828e-4*dtstep*60.*g_dz8w(i&
+&                , k, j)/rho_phy(i, k, j))/(dz8w(i, k, j)*60.)**2
+              conv = 4.828e-4/rho_phy(i, k, j)*dtstep/(dz8w(i, k, j)*60.&
+&                )
+              g_chem(i, k, j, p_bc1) = g_chem(i, k, j, p_bc1) + (dtstep*&
+&                ((emis_ant(i, k, j, p_e_eci)*g_scaleant(i, iant, j, &
+&                p_scant_bc)+emis_ant(i, k, j, p_e_ecj)*g_scaleant(i,  &
+&                iant, j, p_scant_bc))*alt(i, k, j)+(emis_ant(i, k, j, &
+&                p_e_eci)*scaleant(i, iant, j, p_scant_bc)+emis_ant(i, k&
+&                , j, p_e_ecj)*scaleant(i, iant, j, p_scant_bc))*g_alt(i&
+&                , k, j))*dz8w(i, k, j)-(emis_ant(i, k, j, p_e_eci)*&
+&                scaleant(i, iant, j, p_scant_bc)+emis_ant(i, k, j, &
+&                p_e_ecj)*scaleant(i, iant, j, p_scant_bc))*alt(i, k, j)*&
+&                dtstep*g_dz8w(i, k, j))/dz8w(i, k, j)**2
+              chem(i, k, j, p_bc1) = chem(i, k, j, p_bc1) + (emis_ant(i&
+&                , k, j, p_e_eci)*scaleant(i, iant, j, p_scant_bc)+&
+&                emis_ant(i, k, j, p_e_ecj)*scaleant(i, iant, j, &
+&                p_scant_bc))*alt(i, k, j)*dtstep/dz8w(i, k, j)
+
+              g_chem(i, k, j, p_co) = g_chem(i, k, j, p_co) + emis_ant(i, k&
+    &            , j, p_e_co)*(g_scaleant(i, iant, j, p_scant_co)*conv+scaleant&
+    &            (i, iant, j, p_scant_co)*g_conv)
+              chem(i, k, j, p_co) = chem(i, k, j, p_co) + emis_ant(i, k, j, &
+    &            p_e_co)*scaleant(i, iant, j, p_scant_co)*conv
             END DO
           END DO
         END DO

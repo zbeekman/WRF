@@ -486,6 +486,32 @@ CONTAINS
           END DO
         END DO
       END DO
+    CASE (GOCART_BCCO) 
+      DO j=jte,jts,-1
+        DO i=ite,its,-1
+          DO k=kte,kts,-1
+            temp5b4 = ebu(i, k, j, p_ebu_co)*a_chem(i, k, j, p_co)
+            a_conv_rho =  scalebb(i, j, p_scbb_co)*temp5b4 
+            temp4 = 60.*rho_phy(i, k, j)
+            temp3 = temp4*dz8w(i, k, j)
+            temp3b1 = -(r_q*4.828e-4*dtstep*a_conv_rho/temp3**2)
+            temp12 = rho_phy(i, k, j)*dz8w(i, k, j)
+            temp12b0 = ebu(i, k, j, p_ebu_bc)*r_q*dtstep*a_chem(i, k, &
+&              j, p_bc1)/temp12
+            temp12b = -(scalebb(i, j, p_scbb_bc)*temp12b0/temp12)
+            a_dz8w(i, k, j) = a_dz8w(i, k, j) + temp4*temp3b1 + &
+&              rho_phy(i, k, j)*temp12b
+            a_rho_phy(i, k, j) = a_rho_phy(i, k, j) + dz8w(i, k, j)*60.*&
+&              temp3b1 + dz8w(i, k, j)*temp12b
+            a_scalebb(i, j, p_scbb_bc) = a_scalebb(i, j, p_scbb_bc) + &
+&              temp12b0
+            conv_rho = r_q*4.828e-4/rho_phy(i, k, j)*dtstep/(dz8w(i, k, &
+&              j)*60.)
+            a_scalebb(i, j, p_scbb_co) = a_scalebb(i, j, p_scbb_co) + &
+&              conv_rho*temp5b4
+          END DO
+        END DO
+      END DO
     CASE (GOCARTRACM_KPP, GOCARTRADM2_KPP, GOCARTRADM2) 
       DO j=jte,jts,-1
         DO i=ite,its,-1

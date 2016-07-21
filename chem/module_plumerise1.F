@@ -191,16 +191,19 @@ subroutine plumerise_driver (id,ktau,dtstep,                           &
             enddo
           enddo
 #if ( WRFPLUS == 1 )
-       elseif ( config_flags%biomass_burn_opt == WRFPLUS_BB ) then
+       elseif ( config_flags%biomass_burn_opt == ADTLBB ) then
          do j=jts,jte
             do i=its,ite
-               ebu(i,kts,j,p_ebu_pm25)=ebu_in(i,1,j,p_ebu_in_pm25)
-               ebu(i,kts,j,p_ebu_pm10)=ebu_in(i,1,j,p_ebu_in_pm10)
-!              ebu(i,kts,j,p_ebu_sulf)=ebu_in(i,1,j,p_ebu_in_sulf)
                ebu(i,kts,j,p_ebu_bc)=ebu_in(i,1,j,p_ebu_in_bc)
                ebu(i,kts,j,p_ebu_oc)=ebu_in(i,1,j,p_ebu_in_oc)
                ebu(i,kts,j,p_ebu_so2)=ebu_in(i,1,j,p_ebu_in_so2)
-               ebu(i,kts,j,p_ebu_dms)=ebu_in(i,1,j,p_ebu_in_dms)
+            enddo
+          enddo
+       elseif ( config_flags%biomass_burn_opt == ADTLBB_BCCO ) then
+         do j=jts,jte
+            do i=its,ite
+               ebu(i,kts,j,p_ebu_co)  = ebu_in(i,1,j,p_ebu_in_co)
+               ebu(i,kts,j,p_ebu_bc)=ebu_in(i,1,j,p_ebu_in_bc)
             enddo
           enddo
 #endif
@@ -404,7 +407,7 @@ is_mozcart : &
 
 !jjg add for wrfplus treatments
 #if ( WRFPLUS == 1 )
-              elseif (config_flags%biomass_burn_opt == WRFPLUS_BB) then 
+              elseif (config_flags%biomass_burn_opt == ADTLBB) then 
                
 !-------------------------------------------------------------------
 ! we input total emissions instead of smoldering emissions:
@@ -429,6 +432,27 @@ is_mozcart : &
 !                  ebu(i,k,j,p_ebu_sulf)  = ebu(i,k,j,p_ebu_sulf)*ratio
                   ebu(i,k,j,p_ebu_dms)  = ebu(i,k,j,p_ebu_dms)*ratio
                 end do
+              elseif (config_flags%biomass_burn_opt == ADTLBB_BCCO) then 
+               
+!-------------------------------------------------------------------
+! we input total emissions instead of smoldering emissions:
+! ratio of smolderling to total
+!-------------------------------------------------------------------
+                sum = 0.
+                do k = kts,kte
+                  sum = sum + ebu(i,k,j,p_ebu_co)
+                end do
+                if( sum > 0. ) then
+                  ratio = ebu(i,kts,j,p_ebu_co)/sum
+                else
+                  ratio = 0.
+                endif
+
+                do k = kts,kte
+                  ebu(i,k,j,p_ebu_co)  = ebu(i,k,j,p_ebu_co)*ratio
+                  ebu(i,k,j,p_ebu_bc)  = ebu(i,k,j,p_ebu_bc)*ratio
+                end do
+
 #endif
 
               end if is_mozcart

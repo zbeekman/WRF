@@ -17,8 +17,8 @@ CONTAINS
 &    , v_phy, vvel, e_bio, p_phy, chem, a_chem, rho_phy, a_rho_phy, dz8w&
 &    , a_dz8w, ne_area, emis_ant, emis_vol, tsk, erod, g, emis_seas, &
 &    emis_dust, tracer, a_tracer, scaleant, a_scaleant, scaleant_frq, &
-&    stepscaleant, num_ant_steps, scalebb, a_scalebb, scalebb_frq, &
-&    stepscalebb, num_bb_steps, check_count, checkpoint_interval,  &
+&    stepscaleant, num_ant_steps, scaleant_rpt_int, scalebb, a_scalebb, scalebb_frq, &
+&    stepscalebb, num_bb_steps, scalebb_rpt_int, check_count, checkpoint_interval,  &
 &    ebu, ebu_in, mean_fct_agtf, mean_fct_agef,                    &
 &    mean_fct_agsv, mean_fct_aggr, firesize_agtf, firesize_agef, &
 &    firesize_agsv, firesize_aggr, u10, v10, ivgtyp, isltyp, gsw, vegfra&
@@ -78,7 +78,8 @@ CONTAINS
     REAL, DIMENSION(ims:ime, config_flags%kemit, jms:jme, num_emis_ant),&
 &    INTENT(IN) :: emis_ant
     INTEGER, INTENT(IN) :: scaleant_frq, scalebb_frq, stepscaleant, &
-&    stepscalebb, num_ant_steps, num_bb_steps, check_count, checkpoint_interval
+&    stepscalebb, num_ant_steps, num_bb_steps, &
+&    scaleant_rpt_int, scalebb_rpt_int, check_count, checkpoint_interval
     REAL, DIMENSION(ims:ime, num_ant_steps, jms:jme, num_scaleant), &
 &    INTENT(IN) :: scaleant
     REAL, DIMENSION(ims:ime, num_ant_steps, jms:jme, num_scaleant) :: &
@@ -299,7 +300,8 @@ CONTAINS
 !&        config_flags%biomass_burn_opt .EQ. BIOMASSB_MOZ .OR. &
 !&        config_flags%biomass_burn_opt .EQ. BIOMASSB_GHG .OR. &
 !&        config_flags%biomass_burn_opt .EQ. BIOMASSB .OR. &
-!&        config_flags%biomass_burn_opt .EQ. WRFPLUS_BB) THEN
+!&        config_flags%biomass_burn_opt .EQ. ADTLBB .OR. &
+!&        config_flags%biomass_burn_opt .EQ. ADTLBB_BCCO ) THEN
 !      IF (ktau .EQ. 1) THEN
 !        do_plumerisefire = .true.
 !      ELSE IF (adapt_step_flag) THEN
@@ -328,6 +330,7 @@ CONTAINS
       IF ( check_count .gt. 1 ) then
          iant=iant+(check_count-1)*checkpoint_interval/scaleant_frq
       ENDIF
+      IF ( scaleant_rpt_int .gt. 0 ) iant = mod(iant-1 , scaleant_rpt_int) + 1
     END IF
     IF (iant .GT. num_ant_steps .OR. iant .LE. 0) THEN
        WRITE(message, *) 'emissions_driver: need to increase num_ant_steps, ktau,iant = '&
@@ -351,6 +354,7 @@ CONTAINS
       IF ( check_count .gt. 1 ) then
          ibb=ibb+(check_count-1)*checkpoint_interval/scalebb_frq
       ENDIF
+      IF ( scalebb_rpt_int .gt. 0 ) ibb = mod(ibb-1 , scalebb_rpt_int) + 1
     END IF
     IF (ibb .GT. num_bb_steps .OR. ibb .LE. 0) THEN
        WRITE(message, *) 'emissions_driver: need to increase num_bb_steps, ktau,ibb = '&
@@ -380,7 +384,7 @@ CONTAINS
     ksub = 0
     SELECT CASE  (config_flags%biomass_burn_opt) 
     CASE (BIOMASSB, BIOMASSB_MOZC, BIOMASSB_MOZ, BIOMASSB_GHG, &
-&    WRFPLUS_BB) 
+&    ADTLBB, ADTLBB_BCCO) 
       CALL PUSHCONTROL1B(0)
     CASE DEFAULT
       CALL PUSHCONTROL1B(1)
@@ -521,7 +525,7 @@ CONTAINS
       ELSE
         CALL PUSHCONTROL1B(1)
       END IF
-      IF (config_flags%emiss_opt .EQ. WRFPLUS_ANT) THEN
+      IF (config_flags%emiss_opt .EQ. ADTLANT) THEN
         DO j=jts,jte
           DO i=its,ite
             IF (config_flags%kemit .GT. kte - ksub) THEN
@@ -752,6 +756,136 @@ CONTAINS
 &                iant, j, p_scant_so2) + conv*temp19b1
               a_rho_phy(i, k, j) = a_rho_phy(i, k, j) + dz8w(i, k, j)*&
 &                60.*temp17b
+            END DO
+          END DO
+        END DO
+      END IF
+    CASE (GOCART_BCCO) 
+      IF (config_flags%emiss_opt .LE. 5) THEN
+        DO j=jts,jte
+          DO i=its,ite
+            IF (config_flags%kemit .GT. kte - ksub) THEN
+              min2 = kte - ksub
+            ELSE
+              min2 = config_flags%kemit
+            END IF
+            k = min2 + 1
+            CALL PUSHINTEGER4(k - 1)
+          END DO
+        END DO
+        CALL PUSHCONTROL1B(0)
+      ELSE
+        CALL PUSHCONTROL1B(1)
+      END IF
+      IF (config_flags%emiss_opt .EQ. 6) THEN
+        DO j=jts,jte
+          DO i=its,ite
+            IF (config_flags%kemit .GT. kte - ksub) THEN
+              min3 = kte - ksub
+            ELSE
+              min3 = config_flags%kemit
+            END IF
+            k = min3 + 1
+            CALL PUSHINTEGER4(k - 1)
+          END DO
+        END DO
+        CALL PUSHCONTROL1B(0)
+      ELSE
+        CALL PUSHCONTROL1B(1)
+      END IF
+      IF (config_flags%emiss_opt .EQ. ADTLANT_BCCO) THEN
+        DO j=jts,jte
+          DO i=its,ite
+            IF (config_flags%kemit .GT. kte - ksub) THEN
+              min4 = kte - ksub
+            ELSE
+              min4 = config_flags%kemit
+            END IF
+            k = min4 + 1
+            CALL PUSHINTEGER4(k - 1)
+          END DO
+        END DO
+        DO j=jte,jts,-1
+          DO i=ite,its,-1
+            CALL POPINTEGER4(ad_to2)
+            DO k=ad_to2,kts,-1
+              temp49b1 = emis_ant(i, k, j, p_e_co)*a_chem(i, k, j, p_co)
+              a_conv = scaleant(i, iant, j, p_scant_co)*temp49b1
+
+              temp48 = 60.*rho_phy(i, k, j)
+              temp47 = temp48*dz8w(i, k, j)
+              temp47b0 = -(dtstep*4.828e-4*a_conv/temp47**2)
+              temp52 = dz8w(i, k, j)
+              temp49 = alt(i, k, j)/temp52
+              temp51 = emis_ant(i, k, j, p_e_ecj)
+              temp50 = emis_ant(i, k, j, p_e_eci)
+              temp49b0 = dtstep*a_chem(i, k, j, p_bc1)
+              temp49b = (temp50*scaleant(i, iant, j, p_scant_bc)+&
+&                temp51*scaleant(i, iant, j, p_scant_bc))*temp49b0/&
+&                temp52
+              a_alt(i, k, j) = a_alt(i, k, j) + temp49b
+              a_dz8w(i, k, j) = a_dz8w(i, k, j) + temp48*temp47b0&
+&                 -  temp49*temp49b 
+              a_scaleant(i, iant, j, p_scant_bc) = a_scaleant(i, iant, j&
+&                , p_scant_bc) + (temp49*temp51+temp49*temp50)*temp49b0
+              conv = 4.828e-4/rho_phy(i, k, j)*dtstep/(dz8w(i, k, j)*60.&
+&                )
+              a_scaleant(i, iant, j, p_scant_co) = a_scaleant(i, iant, j, p_scant_co) + &
+&                conv*temp49b1
+
+              a_rho_phy(i, k, j) = a_rho_phy(i, k, j) + dz8w(i, k, j)*&
+&                60.*temp47b0
+            END DO
+          END DO
+        END DO
+!      ELSE
+!        a_scaleant = 0.0_8
+!        a_alt = 0.0_8
+!        a_rho_phy = 0.0_8
+!        a_dz8w = 0.0_8
+      END IF
+      CALL POPCONTROL1B(branch)
+      IF (branch .EQ. 0) THEN
+        DO j=jte,jts,-1
+          DO i=ite,its,-1
+            CALL POPINTEGER4(ad_to1)
+            DO k=ad_to1,kts,-1
+              temp40 = dz8w(i, k, j)
+              temp39b1 = emis_ant(i, k, j, p_e_bc)*dtstep*a_chem(i, k&
+&                , j, p_bc1)
+              temp39b0 = scaleant(i, iant, j, p_scant_bc)*temp39b1/&
+&                temp40
+!              a_alt(i, k, j) = a_alt(i, k, j) + temp43b + temp39b0 +&
+!&                temp41b + temp45b0
+              a_alt(i, k, j) = a_alt(i, k, j) + temp39b0
+              temp39 = alt(i, k, j)/temp40
+              a_scaleant(i, iant, j, p_scant_bc) = a_scaleant(i, iant, j&
+&                , p_scant_bc) + temp39*temp39b1
+              a_dz8w(i, k, j) = a_dz8w(i, k, j) - temp39*temp39b0
+            END DO
+          END DO
+        END DO
+      END IF
+      CALL POPCONTROL1B(branch)
+      IF (branch .EQ. 0) THEN
+        DO j=jte,jts,-1
+          DO i=ite,its,-1
+            CALL POPINTEGER4(ad_to0)
+            DO k=ad_to0,kts,-1
+              temp22 = dz8w(i, k, j)
+              temp19 = alt(i, k, j)/temp22
+              temp21 = emis_ant(i, k, j, p_e_ecj)
+              temp20 = emis_ant(i, k, j, p_e_eci)
+              temp19b0 = dtstep*a_chem(i, k, j, p_bc1)
+              temp19b = (temp20*scaleant(i, iant, j, p_scant_eci)+&
+&                temp21*scaleant(i, iant, j, p_scant_ecj))*temp19b0/&
+&                temp22
+              a_alt(i, k, j) = a_alt(i, k, j) + temp19b 
+              a_dz8w(i, k, j) = a_dz8w(i, k, j) - temp19*temp19b
+              a_scaleant(i, iant, j, p_scant_eci) = a_scaleant(i,  &
+&                iant, j, p_scant_eci) + temp19*temp20*temp19b0
+              a_scaleant(i, iant, j, p_scant_ecj) = a_scaleant(i,  &
+&                iant, j, p_scant_ecj) + temp19*temp21*temp19b0
             END DO
           END DO
         END DO

@@ -166,6 +166,8 @@ call wrf_message("**************************************************************
    chem_select: SELECT CASE(config_flags%chem_opt)
      CASE (GOCART_SIMPLE)
        CALL wrf_debug(15,'calling only gocart aerosols driver from chem_driver')
+     CASE (GOCART_BCCO)
+       CALL wrf_debug(15,'calling only black carbon aerosols from chem_driver')
      CASE (GOCARTRADM2_KPP)
        CALL wrf_debug(15,'calling gocart and radmkpp driver from chem_driver')
      CASE (GOCARTRADM2)
@@ -531,10 +533,10 @@ end if
     stepphot=nint(photdt*60./dt)
     stepchem=nint(chemdt*60./dt)
   ! stepfirepl=plumerisefire_frq*60/nint(dt)
-    stepfirepl=nint(plumerisefire_frq*60/dt)
+    stepfirepl=int(nint(real(plumerisefire_frq*60,8)/dt))
 #if ( WRFPLUS == 1 )
-    stepscaleant=nint(scaleant_frq*60/dt)
-    stepscalebb=nint(scalebb_frq*60/dt)
+    stepscaleant=int(nint(real(scaleant_frq,8)*60.D0/dt))
+    stepscalebb=int(nint(real(scalebb_frq,8)*60.D0/dt))
 #endif
     stepbioe=max(stepbioe,1)
     stepphot=max(stepphot,1)
@@ -587,16 +589,6 @@ end if
 ! regiistry. For now, we will do a simple check to trap a change in the
 ! desired size of num_chem and assume that if the size is the same, the
 ! species will be too.  wig, 24-Oct-2005
-
-!DEBUG -JJG
-!     write(msg,*) &
-!        'chem_opt, num_chem', config_flags%chem_opt, num_chem, &
-!        'scale_emiss_opt, num_scaleant', config_flags%scale_emiss_opt, num_scaleant, &
-!        'scale_burn_opt, num_scalebb', config_flags%scale_burn_opt, num_scalebb,  &
-!        'emiss_opt, biomass_burn_opt', config_flags%emiss_opt, config_flags%biomass_burn_opt, &
-!        'bl_pbl_physics', config_flags%bl_pbl_physics
-!
-!     call wrf_message( trim(msg) )
 
      if( .not.allocated(is_aerosol) ) then
         allocate (is_aerosol(num_chem))
@@ -993,6 +985,64 @@ ENDIF ghg_block
 !                if(i.eq.19.and.j.eq.19)write(0,*)TCOSZ(i,j),ttday(i,j),julday, gmtp, sza, cosszax,xlonn,rlat
            enddo
           enddo
+#if ( WRFPLUS == 1 )
+     CASE (GOCART_BCCO)
+       if(config_flags%phot_opt .NE. 0 )then
+         call wrf_error_fatal("GOCART simple initialization, phot_opt  MUST BE ZERO")
+       endif
+       CALL wrf_debug(15,'call GOCART chem/aerosols initialization')
+        ch_dust(:,:)=0.8D-9
+        ch_ss(:,:)=1.
+        if( .NOT. config_flags%restart )then
+        if(config_flags%chem_in_opt == 0 )then
+           do j=jts,jte
+              do k=kts,kte
+                 do i=its,ite
+                   do n=1,num_chem
+                     chem(i,k,j,n)=1.e-12
+                   enddo
+!!                   chem(i,k,j,p_dms)=0.1e-6
+!!                   chem(i,k,j,p_so2)=5.e-6
+!!                   chem(i,k,j,p_sulf)=3.e-6
+!!                   chem(i,k,j,p_msa)=0.1e-6
+                   chem(i,k,j,p_bc1)=0.1e-3
+                   chem(i,k,j,p_bc2)=0.1e-3
+!!                   chem(i,k,j,p_oc1)=0.1e-3
+!!                   chem(i,k,j,p_oc2)=0.1e-3
+!!                   chem(i,k,j,p_p25)=1.
+                 enddo
+              enddo
+           enddo
+         endif
+!
+! next is done to scale background oh and no3 in dependence on average zenith angle and day/night for no3
+! this is done since background values are only available as average/month. It will not be necessary if other
+! chemistry packages are used that provide oh,no3,h2o2
+!
+         endif
+           ndystep=86400/ifix(dt)
+           do j=jts,jte
+                 do i=its,ite
+                   tcosz(i,j)=0.
+                   ttday(i,j)=0.
+                   rlat=xlat(i,j)*3.1415926535590/180.
+                   xlonn=xlong(i,j)
+                   do n=1,ndystep
+                      xtime=n*dt/60.
+                      ixhour=ifix(gmt+.01)+ifix(xtime/60.)
+                      xhour=float(ixhour)
+                      xmin=60.*gmt+(xtime-xhour*60.)
+                      gmtp=mod(xhour,24.)
+                      gmtp=gmtp+xmin/60.
+                      CALL szangle(1, 1, julday, gmtp, sza, cosszax,xlonn,rlat)
+                      TCOSZ(i,j)=TCOSZ(I,J)+cosszax(1,1) 
+                      if(cosszax(1,1).gt.0.)ttday(i,j)=ttday(i,j)+dt
+                    enddo
+!                if(i.eq.19.and.j.eq.19)write(0,*)'in cheminit'
+!                if(i.eq.19.and.j.eq.19)write(0,*)TCOSZ(i,j),ttday(i,j),julday, gmtp, sza, cosszax,xlonn,rlat
+           enddo
+          enddo
+#endif
       CASE (MOZCART_KPP)
         CALL wrf_debug(15,'MOZCART dust initialization')
         ch_dust(:,:) = 0.8D-9

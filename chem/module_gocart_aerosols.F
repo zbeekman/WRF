@@ -64,10 +64,10 @@ CONTAINS
 ! dependent on that
 !
           tt2=tc(3)-tt1
-          chem(i,k,j,p_bc1)=tc(1)/mwdry*mw_c*1.e9
-          chem(i,k,j,p_oc1)=tc(2)/mwdry*mw_c*1.e9
-          chem(i,k,j,p_bc2)=tc(3)/mwdry*mw_c*1.e9
-          chem(i,k,j,p_oc2)=(tc(4)+8.*tt2)/mwdry*mw_c*1.e9
+          chem(i,k,j,p_bc1)=tc(1)/mwdry*mw_c*1.d9
+          chem(i,k,j,p_oc1)=tc(2)/mwdry*mw_c*1.d9
+          chem(i,k,j,p_bc2)=tc(3)/mwdry*mw_c*1.d9
+          chem(i,k,j,p_oc2)=(tc(4)+8.d0*tt2)/mwdry*mw_c*1.d9
 
        enddo
        enddo
@@ -109,7 +109,7 @@ end subroutine gocart_aerosols_driver
          do k=kts,kte
          do i=its,ite
             ii=min(ide-1,i)
-            sulfate=chem(ii,k,jj,p_sulf)*mwso4/mwdry*1.e3
+            sulfate=chem(ii,k,jj,p_sulf)*mwso4/mwdry*1.d3
             do n=p_p25,p_dust_1
                pm2_5_dry(i,k,j) = pm2_5_dry(i,k,j)+chem(ii,k,jj,n)        
             enddo
@@ -129,7 +129,7 @@ end subroutine gocart_aerosols_driver
          do k=kts,kte
             do i=its,ite
                ii=min(ide-1,i)
-               sulfate=chem(ii,k,jj,p_sulf)*mwso4/mwdry*1.e3
+               sulfate=chem(ii,k,jj,p_sulf)*mwso4/mwdry*1.d3
                do n=p_p25,p_dust_3
                   pm10(i,k,j) = pm10(i,k,j)+chem(ii,k,jj,n)        
                enddo

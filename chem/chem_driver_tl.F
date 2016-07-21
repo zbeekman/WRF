@@ -320,6 +320,10 @@ SUBROUTINE chem_driver_tl(grid, config_flags &
     CALL WRF_DEBUG(15, &
              'calling only gocart aerosols driver from chem_driver')
     haveaer = .false.
+  CASE (GOCART_BCCO) 
+    CALL WRF_DEBUG(15, &
+             'calling only black carbon aerosols from chem_driver')
+    haveaer = .false.
   CASE (GOCARTRACM_KPP) 
     CALL WRF_DEBUG(15, 'calling gocart and racm driver from chem_driver'&
             )
@@ -678,8 +682,8 @@ chem_tile_loop_1:DO ij=1,grid%num_tiles
               grid%e_bio,p_phy,chem,g_chem,rho,g_rho,dz8w,g_dz8w,                          &
               grid%ne_area,emis_ant,emis_vol,grid%tsk,      &
               grid%erod,g,emis_seas,emis_dust,tracer,g_tracer, &
-              scaleant,g_scaleant,grid%scaleant_frq,grid%stepscaleant,grid%num_ant_steps,  &
-              scalebb,g_scalebb,grid%scalebb_frq,grid%stepscalebb,grid%num_bb_steps,       &
+              scaleant,g_scaleant,grid%scaleant_frq,grid%stepscaleant,grid%num_ant_steps,grid%scaleant_rpt_int, &
+              scalebb,g_scalebb,grid%scalebb_frq,grid%stepscalebb,grid%num_bb_steps,grid%scalebb_rpt_int,     &
               grid%check_count, grid%checkpoint_interval,                                  &
               ebu , ebu_in,grid%mean_fct_agtf,grid%mean_fct_agef,grid%mean_fct_agsv,       &
               grid%mean_fct_aggr,grid%firesize_agtf, &

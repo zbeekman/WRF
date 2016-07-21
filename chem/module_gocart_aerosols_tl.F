@@ -69,14 +69,14 @@ CONTAINS
 &                  , g_pc2)
           g_tt2 = g_tc(3) - g_tt1
           tt2 = tc(3) - tt1
-          g_chem(i, k, j, p_bc1) = mw_c*1.e9*g_tc(1)/mwdry
-          chem(i, k, j, p_bc1) = tc(1)/mwdry*mw_c*1.e9
-          g_chem(i, k, j, p_oc1) = mw_c*1.e9*g_tc(2)/mwdry
-          chem(i, k, j, p_oc1) = tc(2)/mwdry*mw_c*1.e9
-          g_chem(i, k, j, p_bc2) = mw_c*1.e9*g_tc(3)/mwdry
-          chem(i, k, j, p_bc2) = tc(3)/mwdry*mw_c*1.e9
-          g_chem(i, k, j, p_oc2) = mw_c*1.e9*(g_tc(4)+8.*g_tt2)/mwdry
-          chem(i, k, j, p_oc2) = (tc(4)+8.*tt2)/mwdry*mw_c*1.e9
+          g_chem(i, k, j, p_bc1) = mw_c*1.d9*g_tc(1)/mwdry
+          chem(i, k, j, p_bc1) = tc(1)/mwdry*mw_c*1.d9
+          g_chem(i, k, j, p_oc1) = mw_c*1.d9*g_tc(2)/mwdry
+          chem(i, k, j, p_oc1) = tc(2)/mwdry*mw_c*1.d9
+          g_chem(i, k, j, p_bc2) = mw_c*1.d9*g_tc(3)/mwdry
+          chem(i, k, j, p_bc2) = tc(3)/mwdry*mw_c*1.d9
+          g_chem(i, k, j, p_oc2) = mw_c*1.d9*(g_tc(4)+8.*g_tt2)/mwdry
+          chem(i, k, j, p_oc2) = (tc(4)+8.d0*tt2)/mwdry*mw_c*1.d9
         END DO
       END DO
     END DO
@@ -132,8 +132,8 @@ CONTAINS
           ELSE
             ii = ide - 1
           END IF
-          g_sulfate = 1.e3*mwso4*g_chem(ii, k, jj, p_sulf)/mwdry
-          sulfate = chem(ii, k, jj, p_sulf)*mwso4/mwdry*1.e3
+          g_sulfate = 1.d3*mwso4*g_chem(ii, k, jj, p_sulf)/mwdry
+          sulfate = chem(ii, k, jj, p_sulf)*mwso4/mwdry*1.d3
           DO n=p_p25,p_dust_1
             g_pm2_5_dry(i, k, j) = g_pm2_5_dry(i, k, j) + g_chem(ii, k, &
 &              jj, n)
@@ -166,8 +166,8 @@ CONTAINS
           ELSE
             ii = ide - 1
           END IF
-          g_sulfate = 1.e3*mwso4*g_chem(ii, k, jj, p_sulf)/mwdry
-          sulfate = chem(ii, k, jj, p_sulf)*mwso4/mwdry*1.e3
+          g_sulfate = 1.d3*mwso4*g_chem(ii, k, jj, p_sulf)/mwdry
+          sulfate = chem(ii, k, jj, p_sulf)*mwso4/mwdry*1.d3
           DO n=p_p25,p_dust_3
             g_pm10(i, k, j) = g_pm10(i, k, j) + g_chem(ii, k, jj, n)
             pm10(i, k, j) = pm10(i, k, j) + chem(ii, k, jj, n)

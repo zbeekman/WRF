@@ -447,6 +447,26 @@ CONTAINS
         enddo
         enddo
         enddo
+      CASE (GOCART_BCCO)
+          do j=jts,jte
+          do i=its,ite
+          do k=kts,kte
+        conv_rho=r_q*4.828e-4/rho_phy(i,k,j)*dtstep/(dz8w(i,k,j)*60.)
+        chem(i,k,j,p_co)  = chem(i,k,j,p_co)                           &
+                         +ebu(i,k,j,p_ebu_co) &
+#if ( WRFPLUS == 1 )
+                      *scalebb(i,j,p_scbb_co) &
+#endif
+                      *conv_rho
+        chem(i,k,j,p_bc1)  =  chem(i,k,j,p_bc1)                        &
+                         +r_q*ebu(i,k,j,p_ebu_bc) &
+#if ( WRFPLUS == 1 )
+                      *scalebb(i,j,p_scbb_bc) &
+#endif
+                     /rho_phy(i,k,j)*dtstep/dz8w(i,k,j)
+        enddo
+        enddo
+        enddo
       CASE (GOCARTRACM_KPP,GOCARTRADM2_KPP,GOCARTRADM2)
           do j=jts,jte
           do i=its,ite

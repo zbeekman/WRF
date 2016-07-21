@@ -17,8 +17,8 @@ CONTAINS
          v_phy,vvel,e_bio,p_phy,chem,rho_phy,dz8w,ne_area,emis_ant,        &
          emis_vol,tsk,erod,g,emis_seas,emis_dust,tracer,                   &
 #if ( WRFPLUS == 1 )
-         scaleant,scaleant_frq,stepscaleant,num_ant_steps,                 &
-         scalebb,scalebb_frq,stepscalebb,num_bb_steps,                     &
+         scaleant,scaleant_frq,stepscaleant,num_ant_steps,scaleant_rpt_int,&
+         scalebb,scalebb_frq,stepscalebb,num_bb_steps,scalebb_rpt_int,     &
          check_count, checkpoint_interval,                                 &
 #endif
          ebu, ebu_in,mean_fct_agtf,mean_fct_agef,                          &
@@ -142,6 +142,7 @@ CONTAINS
    INTEGER,      INTENT(IN) :: scaleant_frq,scalebb_frq,                   &
                                stepscaleant,stepscalebb,                   &
                                num_ant_steps,num_bb_steps,                 &
+                               scaleant_rpt_int,scalebb_rpt_int,           &
                                check_count, checkpoint_interval
    INTEGER, OPTIONAL, INTENT(IN) ::  cycle_count, cycle_interval
 #endif
@@ -625,7 +626,8 @@ CONTAINS
            config_flags%biomass_burn_opt == BIOMASSB_GHG  .OR. &
            config_flags%biomass_burn_opt == BIOMASSB &
 #if ( WRFPLUS == 1 )
-           .OR. config_flags%biomass_burn_opt == WRFPLUS_BB &
+           .OR. config_flags%biomass_burn_opt == ADTLBB &
+           .OR. config_flags%biomass_burn_opt == ADTLBB_BCCO &
 #endif
             ) then
         IF ( ktau==1 ) then
@@ -679,6 +681,7 @@ CONTAINS
          IF ( present(cycle_count) .and. check_count .eq. 1) THEN
             iant=iant+(cycle_count-1)*cycle_interval/scaleant_frq
          ENDIF
+         IF ( scaleant_rpt_int .gt. 0 ) iant = mod(iant-1 , scaleant_rpt_int) + 1
       ENDIF
       IF(iant .GT. num_ant_steps .OR. iant .LE. 0) THEN
          write(message,*)'emissions_driver: need to increase num_ant_steps; ktauc,iant,check_count,checkpoint_interval,cycle_count,cycle_interval,scaleant_frq,curr_secs = ',ktau,iant,check_count,checkpoint_interval,cycle_count,cycle_interval,scaleant_frq,curr_secs
@@ -701,6 +704,7 @@ CONTAINS
          IF ( present(cycle_count) .and. check_count .eq. 1 ) THEN
             ibb=ibb+(cycle_count-1)*cycle_interval/scalebb_frq
          ENDIF
+         IF ( scalebb_rpt_int .gt. 0 ) ibb = mod(ibb-1 , scalebb_rpt_int) + 1
       ENDIF
       IF(ibb .GT. num_bb_steps .OR. ibb .LE. 0) THEN
          write(message,*)'emissions_driver: need to increase num_bb_steps, ktauc,ibb = ',ktau,ibb
@@ -843,7 +847,7 @@ CONTAINS
     fire_select:  SELECT CASE(config_flags%biomass_burn_opt)
      CASE (BIOMASSB,BIOMASSB_MOZC,BIOMASSB_MOZ,BIOMASSB_GHG &
 #if ( WRFPLUS == 1 )
-           ,WRFPLUS_BB &
+           ,ADTLBB, ADTLBB_BCCO &
 #endif
            )
 !      if( do_plumerisefire )then
@@ -1722,7 +1726,7 @@ CONTAINS
 
 #if ( WRFPLUS == 1 )
 !Simple emissions scaling from NEI MADE/SORGAM to GOCART
-       if(config_flags%emiss_opt == WRFPLUS_ANT) then
+       if(config_flags%emiss_opt == ADTLANT) then
        do j=jts,jte  
           do i=its,ite  
              do k=kts,min(config_flags%kemit,kte-ksub)
@@ -1764,6 +1768,77 @@ CONTAINS
        end do
        endif
 #endif
+
+    CASE (GOCART_BCCO)
+!
+! simple fix for now
+!
+!
+       if(config_flags%emiss_opt <=  5  ) then
+       do j=jts,jte  
+          do i=its,ite
+             do k=kts,min(config_flags%kemit,kte-ksub)
+                chem(i,k,j,p_bc1)  = chem(i,k,j,p_bc1)                     &
+                     +(emis_ant(i,k,j,p_e_eci) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_eci) &
+#endif
+                     + emis_ant(i,k,j,p_e_ecj) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_ecj) &
+#endif
+                     )*alt(i,k,j)*dtstep/dz8w(i,k,j)
+             end do
+          end do
+       end do
+       endif
+!
+! next for global gocart emissions
+!
+       if(config_flags%emiss_opt == 6  ) then
+       do j=jts,jte  
+          do i=its,ite  
+             do k=kts,min(config_flags%kemit,kte-ksub)
+                chem(i,k,j,p_bc1)  = chem(i,k,j,p_bc1)                     &
+                     +emis_ant(i,k,j,p_e_bc) &
+#if ( WRFPLUS == 1 )
+                      *scaleant(i,iant,j,p_scant_bc) &
+#endif
+                      *alt(i,k,j)*dtstep/dz8w(i,k,j)
+             end do
+          end do
+       end do
+       endif
+! do this here for now, quick and dirty
+
+
+!Simple emissions scaling from NEI MADE/SORGAM to GOCART
+       if(config_flags%emiss_opt == ADTLANT_BCCO) then
+       do j=jts,jte  
+          do i=its,ite  
+             do k=kts,min(config_flags%kemit,kte-ksub)
+                conv = 4.828e-4/rho_phy(i,k,j)*dtstep/(dz8w(i,k,j)*60.)
+                chem(i,k,j,p_bc1)  = chem(i,k,j,p_bc1)                     &
+                     +(emis_ant(i,k,j,p_e_eci) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_bc) &
+#endif
+                     + emis_ant(i,k,j,p_e_ecj) &
+#if ( WRFPLUS == 1 )
+                     *scaleant(i,iant,j,p_scant_bc) &
+#endif
+                     )*alt(i,k,j)*dtstep/dz8w(i,k,j)
+
+                chem(i,k,j,p_co)  = chem(i,k,j,p_co)                       &
+                         +emis_ant(i,k,j,p_e_co) &
+#if ( WRFPLUS == 1 )
+                         *scaleant(i,iant,j,p_scant_co) &
+#endif
+                         *conv
+             end do
+          end do
+       end do
+       endif
     CASE DEFAULT
        call wrf_debug(15,'emissions_driver NOT CALLING gas add_... routines')
 

@@ -218,6 +218,9 @@ CONTAINS
            config_flags%chem_opt /= CHEM_VOLC_4BIN .and.                  &
            config_flags%chem_opt /= DUST           .and.                  &
            config_flags%chem_opt /= GOCART_SIMPLE  .and.                  &
+#if ( WRFPLUS == 1 )
+           config_flags%chem_opt /= GOCART_BCCO .and.                  &
+#endif
            config_flags%chem_opt /= GOCARTRACM_KPP )THEN
           call wesely_driver(id,ktau,dtstep,                              &
                config_flags,current_month,                                &
@@ -290,7 +293,11 @@ CONTAINS
                   dvel(its:ite,1,j,p_dvel_terpooh) = m2cm*ddvel(its:ite,j,p_terpooh)
                enddo
           endif
-       ELSEIF ( config_flags%chem_opt == GOCART_SIMPLE ) then
+       ELSEIF ( config_flags%chem_opt == GOCART_SIMPLE &
+#if ( WRFPLUS == 1 )
+                .OR. config_flags%chem_opt == GOCART_BCCO &
+#endif
+              ) then
           call wesely_driver(id,ktau,dtstep,                              &
                config_flags,current_month,                                &
                gmt,julday,t_phy,moist,p8w,t8w,raincv,                     &

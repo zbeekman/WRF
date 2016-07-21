@@ -350,6 +350,10 @@ SUBROUTINE setup_gasprofile_maps(chem_opt, numgas)
 
   case (GOCART_SIMPLE)
      call wrf_debug("setup_profile_maps: nothing done for gocart simple")
+#if ( WRFPLUS == 1 )
+  case (GOCART_BCCO)
+     call wrf_debug("setup_profile_maps: nothing done for gocart bcco")
+#endif
   case (CHEM_VASH)
      call wrf_debug("setup_profile_maps: nothing done for volcanic ash")
   case (CHEM_VOLC)
@@ -738,6 +742,20 @@ SUBROUTINE input_chem_profile (si_grid)
       si_grid%chem(ims:ime,kms:kme,jms:jme,p_oc1 ) = 1.e-2
       si_grid%chem(ims:ime,kms:kme,jms:jme,p_oc2 ) = 1.e-2
       si_grid%chem(ims:ime,kms:kme,jms:jme,p_p25 ) = 1.
+#if ( WRFPLUS == 1 )
+   ELSE IF ( si_grid%chem_opt == GOCART_BCCO ) THEN
+      si_grid%chem(ims:ime,kms:kme,jms:jme,1:num_chem) = 1.e-12
+      si_grid%chem(ims:ime,kms:kme,jms:jme,p_co ) = 0.08
+!!      si_grid%chem(ims:ime,kms:kme,jms:jme,p_so2) = 1.e-6
+!!      si_grid%chem(ims:ime,kms:kme,jms:jme,p_sulf) = 3.e-6
+!!      si_grid%chem(ims:ime,kms:kme,jms:jme,p_dms) = 1.e-6
+!!      si_grid%chem(ims:ime,kms:kme,jms:jme,p_msa) = 1.e-6
+      si_grid%chem(ims:ime,kms:kme,jms:jme,p_bc1 ) = 1.e-2
+      si_grid%chem(ims:ime,kms:kme,jms:jme,p_bc2 ) = 1.e-2
+!!      si_grid%chem(ims:ime,kms:kme,jms:jme,p_oc1 ) = 1.e-2
+!!      si_grid%chem(ims:ime,kms:kme,jms:jme,p_oc2 ) = 1.e-2
+!!      si_grid%chem(ims:ime,kms:kme,jms:jme,p_p25 ) = 1.
+#endif
    ELSE IF ( si_grid%chem_opt==CO2_TRACER .OR. si_grid%chem_opt==GHG_TRACER ) THEN
        ! Do nothing, since for GHGs initialization is done in chemics_init.F
    ELSE
@@ -1467,6 +1485,10 @@ END SUBROUTINE bdy_chem_value_ghg
           i_bdy_method = 5
       else if (config_flags%chem_opt == GOCART_SIMPLE) then
           i_bdy_method = 7
+#if ( WRFPLUS == 1 )
+      else if (config_flags%chem_opt == GOCART_BCCO) then
+          i_bdy_method = 7
+#endif
       else if (config_flags%chem_opt == DUST) then
           i_bdy_method = 7
       else if (config_flags%chem_opt == CHEM_VASH) then
@@ -2121,7 +2143,10 @@ END SUBROUTINE bdy_chem_value_ghg
 
      case (GOCART_SIMPLE)
         get_last_gas = p_msa
-
+#if ( WRFPLUS == 1 )
+     case (GOCART_BCCO)
+        get_last_gas = p_co
+#endif
      case (CBM4_KPP)
         get_last_gas = p_ho2
      case (CHEM_VASH)

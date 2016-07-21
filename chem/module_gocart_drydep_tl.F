@@ -133,14 +133,18 @@ CONTAINS
 &                       g_ustar, hflux, ilwi, ps, z0, g_z0, dvel, g_dvel&
 &                       , drydf, g, rmol(i, j), g_rmol(i, j), aer_res(i, &
 &                       j), g_aer_res(i, j))
-        DO nv=p_p25,num_chem
+!!        DO nv=p_p25,num_chem
+!!          g_ddvel(i, j, nv) = g_dvel(1, 1)
+!!          ddvel(i, j, nv) = dvel(1, 1)
+!!        END DO
+        DO nv = max(numgas+1,2),num_chem
           g_ddvel(i, j, nv) = g_dvel(1, 1)
           ddvel(i, j, nv) = dvel(1, 1)
         END DO
-        g_ddvel(i, j, p_sulf) = g_dvel(1, 1)
-        ddvel(i, j, p_sulf) = dvel(1, 1)
-        g_ddvel(i, j, p_msa) = g_dvel(1, 1)
-        ddvel(i, j, p_msa) = dvel(1, 1)
+        IF (p_sulf .gt. 0) g_ddvel(i, j, p_sulf) = g_dvel(1, 1)
+        IF (p_sulf .gt. 0) ddvel(i, j, p_sulf) = dvel(1, 1)
+        IF (p_msa .gt. 0) g_ddvel(i, j, p_msa) = g_dvel(1, 1)
+        IF (p_msa .gt. 0) ddvel(i, j, p_msa) = dvel(1, 1)
       END DO
     END DO
   END SUBROUTINE G_GOCART_DRYDEP_DRIVER

@@ -121,14 +121,18 @@ CONTAINS
       CALL POPINTEGER4(ad_from)
       CALL POPINTEGER4(ad_to)
       DO i=ad_to,ad_from,-1
-        a_dvel(1, 1) = a_dvel(1, 1) + a_ddvel(i, j, p_msa)
+        IF (p_msa .gt. 0) a_dvel(1, 1) = a_dvel(1, 1) + a_ddvel(i, j, p_msa)
         a_ddvel(i, j, p_msa) = 0.0_8
-        a_dvel(1, 1) = a_dvel(1, 1) + a_ddvel(i, j, p_sulf)
+        IF (p_sulf .gt. 0) a_dvel(1, 1) = a_dvel(1, 1) + a_ddvel(i, j, p_sulf)
         a_ddvel(i, j, p_sulf) = 0.0_8
-        DO nv=num_chem,p_p25,-1
+        DO nv = num_chem,max(numgas+1,2),-1
           a_dvel(1, 1) = a_dvel(1, 1) + a_ddvel(i, j, nv)
           a_ddvel(i, j, nv) = 0.0_8
         END DO
+!!        DO nv=num_chem,p_p25,-1
+!!          a_dvel(1, 1) = a_dvel(1, 1) + a_ddvel(i, j, nv)
+!!          a_ddvel(i, j, nv) = 0.0_8
+!!        END DO
         CALL A_DEPVEL_GOCART(config_flags, ipr, ii, imx, jmx, lmx, &
 &                       airden, delz_sfc, pblz, a_pblz, ts, ustar, &
 &                       a_ustar, hflux, ilwi, ps, z0, a_z0, dvel, a_dvel&

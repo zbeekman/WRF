@@ -509,7 +509,8 @@ real::t1,t2,t3,t4
               IF(grid%emiss_opt == ECPTEC .or. grid%emiss_opt == GOCART_ECPTEC   &
                                          .or. grid%biomass_burn_opt == BIOMASSB &
 #if ( WRFPLUS == 1 ) 
-                                         .or. grid%biomass_burn_opt == WRFPLUS_BB &
+                                         .or. grid%biomass_burn_opt == ADTLBB &
+                                         .or. grid%biomass_burn_opt == ADTLBB_BCCO &
 #endif
                                          ) THEN
                  message = 'READING EMISSIONS DATA OPT 3'
@@ -552,7 +553,8 @@ real::t1,t2,t3,t4
               IF(grid%emiss_opt == ECPTEC .or. grid%emiss_opt == GOCART_ECPTEC   &
                                          .or. grid%biomass_burn_opt == BIOMASSB &
 #if ( WRFPLUS == 1 ) 
-                                         .or. grid%biomass_burn_opt == WRFPLUS_BB &
+                                         .or. grid%biomass_burn_opt == ADTLBB &
+                                         .or. grid%biomass_burn_opt == ADTLBB_BCCO &
 #endif
                                          ) THEN
                  message = 'READING EMISSIONS DATA OPT 3'

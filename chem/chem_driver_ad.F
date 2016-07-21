@@ -208,9 +208,6 @@ SUBROUTINE chem_driver_ad(grid, config_flags &
     do_photstep = .true.
   END IF
   IF ( runad .EQ. INT( curr_secs, 8)) THEN !+ REAL(grid%dt, 8), 8) ) THEN
-!DELETE-JJG
-!  IF (ktau .EQ. 1) THEN
-!DELETE-JJG
     dtstepc = grid%dt
   ELSE
     tmptimeinterval = DOMAIN_GET_CURRENT_TIME(grid) - LAST_CHEM_TIME(grid%id)
@@ -325,6 +322,10 @@ SUBROUTINE chem_driver_ad(grid, config_flags &
   CASE (GOCART_SIMPLE)
     CALL WRF_DEBUG(15, &
              'calling only gocart aerosols driver from chem_driver')
+    haveaer = .false.
+  CASE (GOCART_BCCO) 
+    CALL WRF_DEBUG(15, &
+             'calling only black carbon aerosols from chem_driver')
     haveaer = .false.
   CASE (GOCARTRACM_KPP)
     CALL WRF_DEBUG(15, 'calling gocart and racm driver from chem_driver'&
@@ -633,7 +634,8 @@ chem_tile_loop_ad:DO ij=1,grid%num_tiles
            config_flags%biomass_burn_opt == BIOMASSB_MOZ  .OR. &
            config_flags%biomass_burn_opt == BIOMASSB_GHG  .OR. &
            config_flags%biomass_burn_opt == BIOMASSB &
-           .OR. config_flags%biomass_burn_opt == WRFPLUS_BB &
+           .OR. config_flags%biomass_burn_opt == ADTLBB &
+           .OR. config_flags%biomass_burn_opt == ADTLBB_BCCO &
             ) then
         IF ( ktau==1 ) then
            do_plumerisefire = .false.
@@ -780,8 +782,8 @@ chem_tile_loop_ad:DO ij=1,grid%num_tiles
               grid%gmt,ijulian,rri,t_phy,moist,p8w,t8w,u_phy,v_phy,vvel, &
               grid%e_bio,p_phy,chem,rho,dz8w,grid%ne_area,emis_ant,emis_vol,grid%tsk, &
               grid%erod,g,emis_seas,emis_dust,tracer, &
-              scaleant,grid%scaleant_frq,grid%stepscaleant,grid%num_ant_steps, &
-              scalebb,grid%scalebb_frq,grid%stepscalebb,grid%num_bb_steps, &
+              scaleant,grid%scaleant_frq,grid%stepscaleant,grid%num_ant_steps,grid%scaleant_rpt_int, &
+              scalebb,grid%scalebb_frq,grid%stepscalebb,grid%num_bb_steps,grid%scalebb_rpt_int, &
               grid%check_count, grid%checkpoint_interval,                            &
               ebu , ebu_in,grid%mean_fct_agtf,grid%mean_fct_agef,grid%mean_fct_agsv, &
               grid%mean_fct_aggr,grid%firesize_agtf, &
@@ -1050,8 +1052,8 @@ chem_tile_loop_ad:DO ij=1,grid%num_tiles
               grid%e_bio,p_phy,chem,a_chem,rho,a_rho,dz8w,a_dz8w, &
               grid%ne_area,emis_ant,emis_vol,grid%tsk, &
               grid%erod,g,emis_seas,emis_dust,tracer,a_tracer, &
-              scaleant,a_scaleant,grid%scaleant_frq,grid%stepscaleant,grid%num_ant_steps, &
-              scalebb,a_scalebb,grid%scalebb_frq,grid%stepscalebb,grid%num_bb_steps, &
+              scaleant,a_scaleant,grid%scaleant_frq,grid%stepscaleant,grid%num_ant_steps,grid%scaleant_rpt_int, &
+              scalebb,a_scalebb,grid%scalebb_frq,grid%stepscalebb,grid%num_bb_steps,grid%scalebb_rpt_int,     &
               grid%check_count, grid%checkpoint_interval,                            &
               ebu , ebu_in,grid%mean_fct_agtf,grid%mean_fct_agef,grid%mean_fct_agsv, &
               grid%mean_fct_aggr,grid%firesize_agtf, &

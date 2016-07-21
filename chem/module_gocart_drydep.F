@@ -111,20 +111,32 @@ CONTAINS
                          airden, delz_sfc, pblz, ts, ustar, hflux, ilwi, &
                          ps, z0, dvel, drydf,g,rmol(i,j),aer_res(i,j))
 
-      do nv = p_p25,num_chem
+!!      do nv = p_p25,num_chem
+!!        ddvel(i,j,nv) = dvel(1,1)
+!!      enddo
+      do nv = max(numgas+1,2),num_chem
         ddvel(i,j,nv) = dvel(1,1)
       enddo
-      ddvel(i,j,p_sulf) = dvel(1,1)
-      ddvel(i,j,p_msa)  = dvel(1,1)
-     
-      depvelocity(i,j) = ddvel(i,j,p_dust_5)
+      if (p_sulf .gt. 0) ddvel(i,j,p_sulf) = dvel(1,1)
+      if (p_msa .gt. 0) ddvel(i,j,p_msa)  = dvel(1,1)
+
+      if (p_dust_5 .gt. 0) then     
+         depvelocity(i,j) = ddvel(i,j,p_dust_5)
 ! drydep [ug/m2/s] = dvel [m/s] * chem [ug/kg] * airden [kg/m3]
-      dustdrydep_1(i,j)=-dvel(1,1)*chem(i,1,j,p_dust_1)*airden(1,1)
-      dustdrydep_2(i,j)=-dvel(1,1)*chem(i,1,j,p_dust_2)*airden(1,1)
-      dustdrydep_3(i,j)=-dvel(1,1)*chem(i,1,j,p_dust_3)*airden(1,1)
-      dustdrydep_4(i,j)=-dvel(1,1)*chem(i,1,j,p_dust_4)*airden(1,1)
-      dustdrydep_5(i,j)=-dvel(1,1)*chem(i,1,j,p_dust_5)*airden(1,1)   
-      
+         dustdrydep_1(i,j)=-dvel(1,1)*chem(i,1,j,p_dust_1)*airden(1,1)
+         dustdrydep_2(i,j)=-dvel(1,1)*chem(i,1,j,p_dust_2)*airden(1,1)
+         dustdrydep_3(i,j)=-dvel(1,1)*chem(i,1,j,p_dust_3)*airden(1,1)
+         dustdrydep_4(i,j)=-dvel(1,1)*chem(i,1,j,p_dust_4)*airden(1,1)
+         dustdrydep_5(i,j)=-dvel(1,1)*chem(i,1,j,p_dust_5)*airden(1,1)   
+      else
+         depvelocity(i,j) = 0.D0
+         dustdrydep_1(i,j) = 0.D0
+         dustdrydep_2(i,j) = 0.D0
+         dustdrydep_3(i,j) = 0.D0
+         dustdrydep_4(i,j) = 0.D0
+         dustdrydep_5(i,j) = 0.D0
+      end if
+
     enddo
   enddo
 
