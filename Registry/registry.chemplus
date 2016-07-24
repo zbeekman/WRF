@@ -3813,8 +3813,6 @@ state    real  g_pm10           ikj     misc        1         -      i{18}h{18} 
 # GOCART Packages (no Ozone chemistry in this choice)
 package   nta_gocart_simple     nta_chem_opt==300                   -             a_chem:a_so2,a_sulf,a_dms,a_msa,a_p25,a_bc1,a_bc2,a_oc1,a_oc2,a_dust_1,a_dust_2,a_dust_3,a_dust_4,a_dust_5,a_seas_1,a_seas_2,a_seas_3,a_seas_4,a_p10;g_chem:g_so2,g_sulf,g_dms,g_msa,g_p25,g_bc1,g_bc2,g_oc1,g_oc2,g_dust_1,g_dust_2,g_dust_3,g_dust_4,g_dust_5,g_seas_1,g_seas_2,g_seas_3,g_seas_4,g_p10
 
-package   nta_gocart_bcco     nta_chem_opt==304                   -             a_chem:a_co,a_bc1,a_bc2;g_chem:g_co,g_bc1,g_bc2
-
 #
 #package   nta_gocartracm_kpp     nta_chem_opt==301                   -             a_chem:a_so2,a_sulf,a_no2,a_no,a_o3,a_hno3,a_h2o2,a_ald,a_hcho,a_op1,a_op2,a_paa,a_ora1,a_ora2,a_nh3,a_n2o5,a_no3,a_pan,a_hc3,a_hc5,a_hc8,a_eth,a_co,a_ete,a_olt,a_oli,a_tol,a_xyl,a_aco3,a_tpan,a_hono,a_hno4,a_ket,a_gly,a_mgly,a_dcb,a_onit,a_csl,a_iso,a_co2,a_ch4,a_udd,a_hket,a_api,a_lim,a_dien,a_macr,a_ho,a_ho2,a_dms,a_msa,a_p25,a_bc1,a_bc2,a_oc1,a_oc2,a_dust_1,a_dust_2,a_dust_3,a_dust_4,a_dust_5,a_seas_1,a_seas_2,a_seas_3,a_seas_4,a_p10;g_chem:g_so2,g_sulf,g_no2,g_no,g_o3,g_hno3,g_h2o2,g_ald,g_hcho,g_op1,g_op2,g_paa,g_ora1,g_ora2,g_nh3,g_n2o5,g_no3,g_pan,g_hc3,g_hc5,g_hc8,g_eth,g_co,g_ete,g_olt,g_oli,g_tol,g_xyl,g_aco3,g_tpan,g_hono,g_hno4,g_ket,g_gly,g_mgly,g_dcb,g_onit,g_csl,g_iso,g_co2,g_ch4,g_udd,g_hket,g_api,g_lim,g_dien,g_macr,g_ho,g_ho2,g_dms,g_msa,g_p25,g_bc1,g_bc2,g_oc1,g_oc2,g_dust_1,g_dust_2,g_dust_3,g_dust_4,g_dust_5,g_seas_1,g_seas_2,g_seas_3,g_seas_4,g_p10
 #
@@ -3868,9 +3866,22 @@ package   sc_biomassb_moz       scale_burn_opt==3             -          scalebb
 # GHG biomass burning
 package   sc_biomassb_ghg  scale_burn_opt==5          -             scalebb:scbb_co,scbb_co2,scbb_ch4;a_scalebb:a_scbb_co,a_scbb_co2,a_scbb_ch4;g_scalebb:g_scbb_co,g_scbb_co2,g_scbb_ch4
 
+
 #
-#Additional WRFPLUS emissions packages not located in registry.chem
+#Additional packages for 4D-Var (not available in WRF-Chem)
 #
+
+## 4D-Var chem and nta_chem packages
+#Excluding many species to reduce memory footprint and wall-time of an inversion.
+package   gocart_bcco     chem_opt==304                   -             chem:co,bc1,bc2
+
+package   nta_gocart_bcco     nta_chem_opt==304                   -             a_chem:a_co,a_bc1,a_bc2;g_chem:g_co,g_bc1,g_bc2
+
+
+##4D-Var ANT options for emissions (emiss_opt) and scaling factors (scale_emiss_opt)
+### Create new options or add species as necessary.  Each species requires membership in the following 4D arrays: emis_ant, scaleant, g_scaleant, a_scaleant. Modification of these options and creation of new ones requires corresponding code in emission_driver source files. These options should have matching entries in the WRFDA registry.var_chemplus file, with the addition of the alpha_ant array.
+
+#Excluding many anthropogenic species to reduce memory footprint.  
 package   adtlant     emiss_opt==98                  -             emis_ant:e_so2,e_pm25i,e_pm25j,e_eci,e_ecj,e_orgi,e_orgj,e_so4i,e_so4j,e_no3i,e_no3j
 package   adtlant_bcco  emiss_opt==99                  -             emis_ant:e_co,e_eci,e_ecj
 
@@ -3879,7 +3890,10 @@ package   sc_adtlant     scale_emiss_opt==98                        -           
 package   sc_adtlant_bcco  scale_emiss_opt==99                        -             scaleant:scant_co,scant_bc;g_scaleant:g_scant_co,g_scant_bc;a_scaleant:a_scant_co,a_scant_bc
 
 
-#Not including pm25,pm10,sulf,dms in BB emissions because not present in FINN (use extra memory and generates extraneous error messages)
+##4D-Var BB options for emissions (biomass_burn_opt) and scaling factors (scale_burn_opt)
+### Create new options or add species as necessary.  Each species requires membership in the following 4D arrays: ebu, ebu_in, scalebb, g_scalebb, a_scalebb. Modification of these options and creation of new ones requires corresponding code in emission_driver source files.  These options should have matching entries in the WRFDA registry.var_chemplus file, with the addition of the alpha_bb array.
+
+#Excluding pm25,pm10,sulf,dms in BB emissions because not present in FINN (they use extra memory and generate extraneous error messages). 
 package   adtlbb      biomass_burn_opt==98             -          state:mean_fct_agtf,mean_fct_agef,mean_fct_agsv,mean_fct_aggr,firesize_agtf,firesize_agef,firesize_agsv,firesize_aggr;ebu:ebu_so2,ebu_oc,ebu_bc;ebu_in:ebu_in_so2,ebu_in_oc,ebu_in_bc
 package   adtlbb_bcco   biomass_burn_opt==99             -          state:mean_fct_agtf,mean_fct_agef,mean_fct_agsv,mean_fct_aggr,firesize_agtf,firesize_agef,firesize_agsv,firesize_aggr;ebu:ebu_co,ebu_bc;ebu_in:ebu_in_co,ebu_in_bc
 
@@ -3890,6 +3904,8 @@ package   sc_adtlbb_bcco      scale_burn_opt==99             -          scalebb:
 #package   adtlbb      biomass_burn_opt==98             -          state:mean_fct_agtf,mean_fct_agef,mean_fct_agsv,mean_fct_aggr,firesize_agtf,firesize_agef,firesize_agsv,firesize_aggr;ebu:ebu_pm25,ebu_pm10,ebu_so2,ebu_oc,ebu_bc,ebu_sulf,ebu_dms;ebu_in:ebu_in_pm25,ebu_in_pm10,ebu_in_so2,ebu_in_oc,ebu_in_bc,ebu_in_sulf,ebu_in_dms
 #package   sc_adtlbb         scale_burn_opt==98             -          scalebb:scbb_pm25,scbb_pm10,scbb_so2,scbb_oc,scbb_bc,scbb_sulf,scbb_dms;g_scalebb:g_scbb_pm25,g_scbb_pm10,g_scbb_so2,g_scbb_oc,g_scbb_bc,g_scbb_sulf,g_scbb_dms;a_scalebb:a_scbb_pm25,a_scbb_pm10,a_scbb_so2,a_scbb_oc,a_scbb_bc,a_scbb_sulf,a_scbb_dms
 
+
+## Observation packages.  The order of the species in each array (chem_acft, acft_hx, g_acft_hx, a_acft_hx, chem_surf, surf_hx, g_surf_hx, a_surf_hx) should be the same and corresponds to the order of the observations in the input files AIRCRAFT_DATA.txt and SURFACE_DATA.txt. Add new options and species as needed. Observation operators for each species must be in share/mediation_pertmod_io.F of the WRFPLUS directory.  Your desired options must also appear in the WRFDA registry.var_chemplus file.
 package   bc_only          chemda_opt==1                      -          acft_hx:acft_bc;g_acft_hx:g_acft_bc;a_acft_hx:a_acft_bc;surf_hx:surf_bc;g_surf_hx:g_surf_bc;a_surf_hx:a_surf_bc
 package   oc_only          chemda_opt==2                      -          acft_hx:acft_oc;g_acft_hx:g_acft_oc;a_acft_hx:a_acft_oc;surf_hx:surf_oc;g_surf_hx:g_surf_oc;a_surf_hx:a_surf_oc
 package   co_only          chemda_opt==3                      -          acft_hx:acft_co;g_acft_hx:g_acft_co;a_acft_hx:a_acft_co;surf_hx:surf_co;g_surf_hx:g_surf_co;a_surf_hx:a_surf_co
