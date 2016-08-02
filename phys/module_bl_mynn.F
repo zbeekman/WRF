@@ -140,6 +140,8 @@ MODULE module_bl_mynn
   !for TKE in the upper PBL/cloud layer.
   REAL, PARAMETER :: scaleaware=1.
 
+  !Temporary switch to deactivate the mixing of chemical species (already done when WRF_CHEM = 1)
+  INTEGER, PARAMETER :: bl_mynn_mixchem = 0
 
 ! JAYMES-
 ! Constants used for empirical calculations of saturation
@@ -326,7 +328,7 @@ CONTAINS
 !     # As to dtl, ...gh, see subroutine mym_turbulence.
 !
 !-------------------------------------------------------------------
-  SUBROUTINE  mym_initialize ( &! spp_pbl,rstoch_col, & 
+  SUBROUTINE  mym_initialize ( &
        &            kts,kte,&
        &            dz, zw,  &
        &            u, v, thl, qw, &
@@ -357,9 +359,6 @@ CONTAINS
     REAL :: phm,vkz,elq,elv,b1l,b2l,pmz=1.,phh=1.,flt=0.,flq=0.,tmpq
     REAL :: zi
     REAL, DIMENSION(kts:kte) :: theta
-
-!    REAL, DIMENSION(kts:kte) :: rstoch_col
-!    INTEGER ::spp_pbl
 
 !   **  At first ql, vt and vq are set to zero.  **
     DO k = kts,kte
@@ -400,7 +399,7 @@ CONTAINS
 !
     DO l = 1,lmax
 !
-       CALL mym_length ( & !spp_pbl,rstoch_col, &
+       CALL mym_length ( & 
             &            kts,kte,&
             &            dz, zw, &
             &            rmo, flt, flq, &
@@ -602,7 +601,7 @@ CONTAINS
 !     NOTE: the mixing lengths are meant to be calculated at the full-
 !           sigmal levels (or interfaces beween the model layers).
 !
-  SUBROUTINE  mym_length ( & !spp_pbl,rstoch_col,& 
+  SUBROUTINE  mym_length ( & 
     &            kts,kte,&
     &            dz, zw, &
     &            rmo, flt, flq, &
@@ -661,8 +660,6 @@ CONTAINS
     REAL :: afk,abk,zwk,zwk1,dzk,qdz,vflx,bv,tau_cloud,elb,elb_cloud,els,els1,elf, &
             & el_stab,el_unstab,el_mf,el_stab_mf,elb_mf
 
-!    INTEGER, INTENT(IN)   :: spp_pbl
-!    REAL, DIMENSION(kts:kte), INTENT(in)   :: rstoch_col
 
     IF ( bl_mynn_mixlength .EQ. 0 ) THEN
        cns  = 2.7
@@ -883,14 +880,6 @@ CONTAINS
        IF ( bl_mynn_mixlength .GE. 1 ) THEN ! include scale-awareness, except for original MYNN
          el(k) = el(k)*Psig_bl
        END IF
-
-!      Stochastic perturbations of turbulent mixing length
-!       if (spp_pbl==1) then
-!          if (k.lt.25) then
-!             el(k)= el(k) + el(k)* rstoch_col(k) * MAX(exp(-MAX(zwk-3000.,0.0)/2000.),0.01)
-!          endif
-!       endif
-
 
        IF ( wrf_at_debug_level(MYNN_DBG_LVL) ) THEN
          IF (el(k) > 1200.) THEN
@@ -1256,7 +1245,7 @@ CONTAINS
 !     # dtl, dqw, dtv, gm and gh are allowed to share storage units with
 !       dfm, dfh, dfq, tcd and qcd, respectively, for saving memory.
 !
-  SUBROUTINE  mym_turbulence (& !spp_pbl,rstoch_col,& 
+  SUBROUTINE  mym_turbulence (& 
     &            kts,kte,&
     &            levflag, &
     &            dz, zw, &
@@ -1314,10 +1303,6 @@ CONTAINS
     DOUBLE PRECISION  q3sq, t3sq, r3sq, c3sq, dlsq, qdiv
     DOUBLE PRECISION  e1, e2, e3, e4, enum, eden, wden
 
-!   Stochastic
-!    INTEGER,  INTENT(IN)                          ::    spp_pbl
-!    REAL, DIMENSION(KTS:KTE)                      ::    rstoch_col
-
 
 !
 !    tv0 = 0.61*tref
@@ -1338,7 +1323,7 @@ CONTAINS
     &            ql, vt, vq, &
     &            dtl, dqw, dtv, gm, gh, sm, sh )
 !
-    CALL mym_length ( & !spp_pbl,rstoch_col, &
+    CALL mym_length ( & 
     &            kts,kte, &
     &            dz, zw, &
     &            rmo, flt, flq, &
@@ -3183,7 +3168,7 @@ ENDIF
   END SUBROUTINE tridiag
 
 ! ==================================================================
-  SUBROUTINE mynn_bl_driver( & !spp_pbl,pattern_spp_pbl, &
+  SUBROUTINE mynn_bl_driver( & 
        &initflag,grav_settling,         &
        &delt,dz,dx,znt,                 &
        &u,v,w,th,qv,qc,qi,qni,qnc,      &
@@ -3340,11 +3325,6 @@ ENDIF
 !JOE-end GRIMS
     INTEGER, SAVE :: levflag
 
-! Stochastic fields 
-!     INTEGER,  INTENT(IN),OPTIONAL                                      ::spp_pbl
-!     REAL, DIMENSION( ims:ime, kms:kme, jms:jme ), INTENT(IN),OPTIONAL  ::pattern_spp_pbl
-!     REAL, DIMENSION(KTS:KTE)                         ::    rstoch_col
-
 
     IF ( wrf_at_debug_level(MYNN_DBG_LVL) ) THEN
         WRITE ( mynn_message , FMT='(A)' ) &
@@ -3438,12 +3418,6 @@ ENDIF
                 tsq1(k)=tsq(i,k,j)
                 qsq1(k)=qsq(i,k,j)
                 cov1(k)=cov(i,k,j)
-!                if (spp_pbl==1) then
-!                    rstoch_col(k)=pattern_spp_pbl(i,k,j)
-!                else
-!                    rstoch_col(k)=0.0
-!                endif
-
 
                 IF ( bl_mynn_tkebudget == 1) THEN
                    !TKE BUDGET VARIABLES
@@ -3467,7 +3441,7 @@ ENDIF
                 Psig_shcu(i,j)=1.0
              ENDIF
 
-             CALL mym_initialize ( & !spp_pbl,rstoch_col, & 
+             CALL mym_initialize ( & 
                   &kts,kte,    &
                   &dz1, zw, u1, v1, thl, sqv,  &
                   &PBLH(i,j), th1, sh,         &
@@ -3575,12 +3549,6 @@ ENDIF
              tsq1(k)=tsq(i,k,j)
              qsq1(k)=qsq(i,k,j)
              cov1(k)=cov(i,k,j)
-!             if (spp_pbl==1) then
-!                rstoch_col(k)=pattern_spp_pbl(i,k,j)
-!             else
-!                rstoch_col(k)=0.0
-!             endif
-
 
              !edmf
              edmf_a1(k)=0.0
@@ -3684,7 +3652,7 @@ ENDIF
 
           IF (bl_mynn_edmf == 1) THEN
             !PRINT*,"Calling StEM Mass-Flux: i= ",i," j=",j
-            CALL StEM_mf(& !spp_pbl,rstoch_col,&
+            CALL StEM_mf(& 
                &kts,kte,delt,zw,p1,               &
                &bl_mynn_edmf_mom,                 &
                &bl_mynn_edmf_tke,                 &
@@ -3710,7 +3678,7 @@ ENDIF
             )
 
           ELSEIF (bl_mynn_edmf == 2) THEN
-            CALL temf_mf( & !spp_pbl,rstoch_col,&
+            CALL temf_mf( &
                &kts,kte,delt,zw,p1,ex1,           &
                &u1,v1,w1,th1,thl,thetav,          &
                &sqw,sqv,sqc,qke1,                 &
@@ -3744,7 +3712,7 @@ ENDIF
                &edmf_qc1,                        &
                &Vt, Vq, th1)
 
-          CALL mym_turbulence ( & !spp_pbl,rstoch_col,& 
+          CALL mym_turbulence ( &
                &kts,kte,levflag, &
                &dz1, zw, u1, v1, thl, sqc, sqw,  &
                &qke1, tsq1, qsq1, cov1,          &
@@ -3817,6 +3785,7 @@ ENDIF
                &bl_mynn_edmf_mom)
 
 #if (WRF_CHEM == 1)
+    IF (bl_mynn_mixchem == 1) THEN
           CALL mynn_mix_chem(kts,kte,          &
                levflag,grav_settling,           &
                delt, dz1,                       &
@@ -3833,6 +3802,7 @@ ENDIF
                ! mass flux components
                & s_awchem1,                      &
                &bl_mynn_cloudmix)
+    ENDIF
 #endif
 
 !
@@ -3876,13 +3846,6 @@ ENDIF
                !make BL clouds scale aware - may already be done in mym_condensation
                qc_bl(i,k,j)=qc_bl1D(k) !*Psig_shcu(i,j)
                cldfra_bl(i,k,j)=cldfra_bl1D(k) !*Psig_shcu(i,j)
-             ! Stochastic perturbations to cldfra_bl and qc_bl
-             !  if (spp_pbl==1) then
-             !      cldfra_bl(i,k,j)= cldfra_bl(i,k,j)*(1.0-rstoch_col(k))
-             !     IF ((cldfra_bl(i,k,j) > 1.0) .or. (cldfra_bl(i,k,j) < 0.0)) then
-             !        cldfra_bl(i,k,j)=MAX(MIN(cldfra_bl(i,k,j),1.0),0.0)
-             !     ENDIF
-             !  ENDIF
              ENDIF
              el_pbl(i,k,j)=el(k)
              qke(i,k,j)=qke1(k)
@@ -4170,7 +4133,7 @@ ENDIF
 !  4) some extra limits for numerical stability
 ! This scheme remains under development, so consider it experimental code. 
 !
-  SUBROUTINE StEM_mf( & !spp_pbl,rstoch_col,&
+  SUBROUTINE StEM_mf( & 
                  & kts,kte,dt,zw,p,         &
                  & momentum_opt,            &
                  & tke_opt,                 &
@@ -4197,9 +4160,6 @@ ENDIF
                  &F_QC,F_QI,                &
                  &Psig_shcu) 
 
-! Stochastic  
-!     INTEGER,  INTENT(IN),OPTIONAL ::spp_pbl
-!     REAL, DIMENSION(KTS:KTE)      ::    rstoch_col
   ! inputs:
      INTEGER, INTENT(IN) :: KTS,KTE,momentum_opt,tke_opt
      REAL,DIMENSION(KTS:KTE), INTENT(IN) :: U,V,W,TH,THL,TK,QT,QV,QC,THV,P,qke
@@ -4258,6 +4218,7 @@ ENDIF
      REAL,DIMENSION(nchem) :: chemn
      REAL,DIMENSION(KTS:KTE+1,1:NUP, nchem) :: UPCHEM
      INTEGER :: ic
+     REAL,DIMENSION(KTS:KTE+1, nchem) :: edmf_chem
 #endif
 
   !JOE: add declaration of ERF
@@ -4570,20 +4531,20 @@ ENDIF
 
   DO k=KTS,KTE
      DO I=1,NUP
-       s_aw(k)   = s_aw(K)    + UPA(K,I)*UPW(K,I)*Psig_w !* (1.0+rstoch_col(k))
-       s_awthl(k)= s_awthl(K) + UPA(K,i)*UPW(K,I)*UPTHL(K,I)*Psig_w !* (1.0+rstoch_col(k))
-       s_awqt(k) = s_awqt(K)  + UPA(K,i)*UPW(K,I)*UPQT(K,I)*Psig_w !* (1.0+rstoch_col(k))
-       s_awqc(k) = s_awqc(K)  + UPA(K,i)*UPW(K,I)*UPQC(K,I)*Psig_w !* (1.0+rstoch_col(k))
+       s_aw(k)   = s_aw(K)    + UPA(K,I)*UPW(K,I)*Psig_w 
+       s_awthl(k)= s_awthl(K) + UPA(K,i)*UPW(K,I)*UPTHL(K,I)*Psig_w
+       s_awqt(k) = s_awqt(K)  + UPA(K,i)*UPW(K,I)*UPQT(K,I)*Psig_w
+       s_awqc(k) = s_awqc(K)  + UPA(K,i)*UPW(K,I)*UPQC(K,I)*Psig_w
        IF (momentum_opt > 0) THEN
-         s_awu(k)  = s_awu(K)   + UPA(K,i)*UPW(K,I)*UPU(K,I)*Psig_w !* (1.0+rstoch_col(k))
-         s_awv(k)  = s_awv(K)   + UPA(K,i)*UPW(K,I)*UPV(K,I)*Psig_w !* (1.0+rstoch_col(k))
+         s_awu(k)  = s_awu(K)   + UPA(K,i)*UPW(K,I)*UPU(K,I)*Psig_w
+         s_awv(k)  = s_awv(K)   + UPA(K,i)*UPW(K,I)*UPV(K,I)*Psig_w
        ENDIF
        IF (tke_opt > 0) THEN
-         s_awqke(k)= s_awqke(K) + UPA(K,i)*UPW(K,I)*UPQKE(K,I)*Psig_w !* (1.0+rstoch_col(k))
+         s_awqke(k)= s_awqke(K) + UPA(K,i)*UPW(K,I)*UPQKE(K,I)*Psig_w
        ENDIF
 #if (WRF_CHEM == 1)
        do ic = 1,nchem
-          s_awchem(k,ic) = s_awchem(k,ic) + UPA(K,i)*UPW(K,I)*UPCHEM(K,I,ic)*Psig_w !* (1.0+rstoch_col(k))
+          s_awchem(k,ic) = s_awchem(k,ic) + UPA(K,i)*UPW(K,I)*UPCHEM(K,I,ic)*Psig_w 
        enddo
 #endif
      ENDDO
@@ -5343,7 +5304,7 @@ SUBROUTINE SCALE_AWARE(dx,PBL1,Psig_bl,Psig_shcu)
 !    cf3d_temfx -> cldfra_bl1d
 !    au -> moist_a
 
-  SUBROUTINE temf_mf( & !spp_pbl,rstoch_col,&
+  SUBROUTINE temf_mf( & 
                  & kts,kte,dt,zw,p,pi1d,     &
                  & u,v,w,th,thl,thv,qt,qv,qc,&
                  & qke,ust,flt,flq,flqv,flqc,&
@@ -5371,9 +5332,6 @@ SUBROUTINE SCALE_AWARE(dx,PBL1,Psig_bl,Psig_shcu)
                  &F_QC,F_QI,psig,            &
                  &ii,jj,ids,ide,jds,jde)
 
-  ! Stochastic
-!     INTEGER, INTENT(IN)   :: spp_pbl
-!     REAL, DIMENSION(kts:kte), INTENT(in)   :: rstoch_col 
   ! inputs:
      INTEGER, INTENT(IN) :: kts,kte,ii,jj,ids,ide,jds,jde
      REAL,DIMENSION(kts:kte), INTENT(IN) :: u,v,w,th,thl,qt,qv,qc,thv,p,pi1d
@@ -6051,17 +6009,17 @@ SUBROUTINE SCALE_AWARE(dx,PBL1,Psig_bl,Psig_shcu)
             ! WA TEST 6/14/16 don't use very small updrafts to be consistent
             ! with block above
             if (edmf_a(k)>1e-3) then
-            s_aw(k)   = edmf_a(k)*edmf_w(k)*psig_w !* (1.0+rstoch_col(k))
-            s_awthl(k)= edmf_a(k)*edmf_w(k)*edmf_thl(k)*psig_w !* (1.0+rstoch_col(k)) 
-            s_awqt(k) = edmf_a(k)*edmf_w(k)*edmf_qt(k)*psig_w !* (1.0+rstoch_col(k))
-            s_awqc(k) = edmf_a(k)*edmf_w(k)*edmf_qc(k)*psig_w !* (1.0+rstoch_col(k))
+            s_aw(k)   = edmf_a(k)*edmf_w(k)*psig_w
+            s_awthl(k)= edmf_a(k)*edmf_w(k)*edmf_thl(k)*psig_w
+            s_awqt(k) = edmf_a(k)*edmf_w(k)*edmf_qt(k)*psig_w 
+            s_awqc(k) = edmf_a(k)*edmf_w(k)*edmf_qc(k)*psig_w
             s_awqv(k) = s_awqt(k) - s_awqc(k)
-            s_awu(k)  = edmf_a(k)*edmf_w(k)*edmf_u(k)*psig_w !* (1.0+rstoch_col(k)) 
-            s_awv(k)  = edmf_a(k)*edmf_w(k)*edmf_v(k)*psig_w !* (1.0+rstoch_col(k))
-            s_awqke(k) = edmf_a(k)*edmf_w(k)*edmf_qke(k)*psig_w !* (1.0+rstoch_col(k))
+            s_awu(k)  = edmf_a(k)*edmf_w(k)*edmf_u(k)*psig_w
+            s_awv(k)  = edmf_a(k)*edmf_w(k)*edmf_v(k)*psig_w
+            s_awqke(k) = edmf_a(k)*edmf_w(k)*edmf_qke(k)*psig_w
 #if (WRF_CHEM == 1)
             do ic = 1,nchem
-               s_awchem(k,ic) = edmf_w(k)*edmf_chem(k,ic)*psig_w !* (1.0+rstoch_col(k))
+               s_awchem(k,ic) = edmf_w(k)*edmf_chem(k,ic)*psig_w
             enddo
 #endif
             endif

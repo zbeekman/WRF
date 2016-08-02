@@ -83,7 +83,7 @@ CONTAINS
   END SUBROUTINE mynn_sf_init_driver
 
 !-------------------------------------------------------------------
-   SUBROUTINE SFCLAY_mynn(& !spp_pbl,pattern_spp_pbl,           &
+   SUBROUTINE SFCLAY_mynn(& 
                      U3D,V3D,T3D,QV3D,P3D,dz8w,               &
                      CP,G,ROVCP,R,XLV,PSFCPA,CHS,CHS2,CQS2,CPM,    &
                      ZNT,UST,PBLH,MAVAIL,ZOL,MOL,REGIME,PSIM,PSIH, &
@@ -219,7 +219,6 @@ CONTAINS
       INTEGER,  OPTIONAL,  INTENT(IN)   ::     ISFTCFLX, IZ0TLND,&
                                                 bl_mynn_cloudpdf,&
                                                 icloud_bl
-      !INTEGER,  INTENT(IN),OPTIONAL    ::    spp_pbl
 
 !===================================
 ! 3D VARIABLES
@@ -235,7 +234,6 @@ CONTAINS
 
       REAL,     DIMENSION( ims:ime, kms:kme, jms:jme ) ::   qc_bl, &
                                                         cldfra_bl
-      !REAL, DIMENSION( ims:ime, kms:kme, jms:jme ), INTENT(IN),OPTIONAL ::pattern_spp_pbl
 !===================================
 ! 2D VARIABLES
 !===================================
@@ -293,8 +291,6 @@ CONTAINS
                                                            dz8w1d, & !level 1 height
                                                            dz2w1d    !level 2 height
 
-      REAL,     DIMENSION( its:ite ) ::                 rstoch1D
-
       ! VARIABLE FOR PASSING TO MYM_CONDENSATION
       REAL,     DIMENSION(kts:kts+1 ) :: dummy1,dummy2,dummy3,dummy4, &
                                          dummy5,dummy6,dummy7,dummy8, &
@@ -326,11 +322,6 @@ CONTAINS
            P1D(i) =P3D(i,kts,j)
            T1D(i) =T3D(i,kts,j)
            RHO1D(i)=RHO3D(i,kts,j)
-           !if (spp_pbl==1) then
-           !    rstoch1D(i)=pattern_spp_pbl(i,kts,j)
-           !else
-           !    rstoch1D(i)=0.0
-           !endif
         ENDDO
 
         IF (itimestep==1) THEN
@@ -403,7 +394,7 @@ CONTAINS
            ENDDO
         ENDIF
 
-        CALL SFCLAY1D_mynn(& !spp_pbl,rstoch1D,                  &
+        CALL SFCLAY1D_mynn(& 
                 J,U1D,V1D,T1D,QV1D,P1D,dz8w1d,rho1d,    &
                 U1D2,V1D2,dz2w1d,                                  &
                 CP,G,ROVCP,R,XLV,PSFCPA(ims,j),CHS(ims,j),CHS2(ims,j),&
@@ -435,7 +426,7 @@ CONTAINS
     END SUBROUTINE SFCLAY_MYNN
 
 !-------------------------------------------------------------------
-   SUBROUTINE SFCLAY1D_mynn(& !spp_pbl,rstoch1D,   &
+   SUBROUTINE SFCLAY1D_mynn(&
                      J,U1D,V1D,T1D,QV1D,P1D,dz8w1d,rho1d,   &
                      U1D2,V1D2,dz2w1d,                             &
                      CP,G,ROVCP,R,XLV,PSFCPA,CHS,CHS2,CQS2,CPM,    &
@@ -476,7 +467,6 @@ CONTAINS
 !-----------------------------
       INTEGER,  INTENT(IN) :: ISFFLX
       INTEGER,  OPTIONAL,  INTENT(IN )   ::     ISFTCFLX, IZ0TLND
-      !INTEGER,    INTENT(IN)             ::     spp_pbl
 
 !-----------------------------
 ! 1D ARRAYS
@@ -512,7 +502,6 @@ CONTAINS
                                                              WSPD, &
                                                                BR, &
                                                         PSIM,PSIH
-      !REAL,     DIMENSION( its:ite ), INTENT(IN)   ::     rstoch1D
 
       ! DIAGNOSTIC OUTPUT
       REAL,     DIMENSION( ims:ime ), INTENT(OUT)   ::    U10,V10, &
@@ -793,7 +782,7 @@ CONTAINS
                 ENDIF
              ELSEIF ( ISFTCFLX .EQ. 4 ) THEN
                 CALL zilitinkevich_1995(ZNT(i),z_t(i),z_q(i),restar,&
-                                   UST(I),KARMAN,XLAND(I),IZ0TLND) !,spp_pbl,rstoch1D(i))
+                                   UST(I),KARMAN,XLAND(I),IZ0TLND) 
              ENDIF
           ELSE
              !DEFAULT TO COARE 3.0/3.5
@@ -825,7 +814,7 @@ CONTAINS
                    !IF IZ0TLND==4, THEN PSIQ WILL BE RECALCULATED USING
                    !PAN ET AL (1994), but PSIT FROM ZILI WILL BE USED.
                    CALL zilitinkevich_1995(ZNT(i),z_t(i),z_q(i),restar,&
-                                  UST(I),KARMAN,XLAND(I),IZ0TLND) !,spp_pbl,rstoch1D(i))
+                                  UST(I),KARMAN,XLAND(I),IZ0TLND)
                 ELSEIF ( IZ0TLND .EQ. 2 ) THEN
                    CALL Yang_2008(ZNT(i),z_t(i),z_q(i),UST(i),MOL(I),&
                                   qstar(I),restar,visc,XLAND(I))
@@ -836,7 +825,7 @@ CONTAINS
              ELSE
                 !DEFAULT TO ZILITINKEVICH
                 CALL zilitinkevich_1995(ZNT(i),z_t(i),z_q(i),restar,&
-                                        UST(I),KARMAN,XLAND(I),0) !,spp_pbl,rstoch1D(i))
+                                        UST(I),KARMAN,XLAND(I),0)
              ENDIF
           ENDIF
 
@@ -1318,7 +1307,7 @@ CONTAINS
 END SUBROUTINE SFCLAY1D_mynn
 !-------------------------------------------------------------------          
    SUBROUTINE zilitinkevich_1995(Z_0,Zt,Zq,restar,ustar,KARMAN,&
-       & landsea,IZ0TLND2) !,spp_pbl,rstoch)
+       & landsea,IZ0TLND2)
 
        ! This subroutine returns the thermal and moisture roughness lengths
        ! from Zilitinkevich (1995) and Zilitinkevich et al. (2001) over
@@ -1336,9 +1325,6 @@ END SUBROUTINE SFCLAY1D_mynn
        REAL :: CZIL  !=0.100 in Chen et al. (1997)
                      !=0.075 in Zilitinkevich (1995)
                      !=0.500 in Lemone et al. (2008)
-       !INTEGER,  INTENT(IN)  ::    spp_pbl
-       !REAL,     INTENT(IN)  ::    rstoch
-
 
        IF (landsea-1.5 .GT. 0) THEN    !WATER
 
@@ -1368,16 +1354,6 @@ END SUBROUTINE SFCLAY1D_mynn
           ELSE
              CZIL = 0.10
           END IF
-
-! perturb thermal and moisture roughness lenth by +/-50%
-! uses same perturbation pattern for perturbing cloud fraction 
-! and turbulent mixing length (module_sf_mynn.F), but 
-! twice the amplitude; 
-! multiplication with -1.0 anticorrelates patterns
-          !if (spp_pbl==1) then
-          !   CZIL  = CZIL - 2.0 * rstoch * CZIL
-          !endif
-
 
           Zt = Z_0*EXP(-KARMAN*CZIL*SQRT(restar))
           Zt = MIN( Zt, Z_0/2.)
