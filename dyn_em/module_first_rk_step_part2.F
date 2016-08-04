@@ -756,7 +756,7 @@ BENCH_START(vert_diff_tim)
                                       tracer_tend, num_tracer,                     &
                                       grid%u_2, grid%v_2,                                  &
                                       grid%t_2,grid%u_base,grid%v_base,grid%t_base,grid%qv_base,          &
-                                      grid%mut,grid%tke_2,config_flags, &
+                                      grid%tke_2,config_flags, &
                                       grid%defor13,grid%defor23,grid%defor33,                   &
                                       nba_mij, num_nba_mij,          & !JDM
                                       grid%div, moist, chem, scalar,tracer,         &
@@ -788,7 +788,7 @@ BENCH_START(hor_diff_tim)
                                       scalar_tend, num_scalar,                 &
                                       tracer_tend, num_tracer,                 &
                                       grid%t_2, th_phy,                           &
-                                      grid%mut, grid%tke_2, config_flags,              &
+                                      grid%tke_2, config_flags,              &
                                       grid%defor11, grid%defor22, grid%defor12,             &
                                       grid%defor13, grid%defor23,   &
                                       nba_mij, num_nba_mij,         & !JDM
