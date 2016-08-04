@@ -31,10 +31,18 @@ subroutine da_calculate_gradj(it, iter, cv_size, cv_size_jb, cv_size_je, cv_size
    integer          :: jl_start, jl_end             ! Start/end indices of Jl.
    real             :: jo_partial                   ! jo for this processor
    type (y_type)    :: jo_grad_y                    ! Grad_y(jo)
+#if (WRF_CHEM != 1)
 #ifdef CLOUD_CV
    integer          :: mz(13)
 #else
    integer          :: mz(7)
+#endif
+#else
+#ifdef CLOUD_CV
+   integer          :: mz(15)
+#else
+   integer          :: mz(9)
+#endif
 #endif
    real             :: grad_jo(cv_size)
    real             :: grad_jb(cv_size)
@@ -57,10 +65,20 @@ subroutine da_calculate_gradj(it, iter, cv_size, cv_size_jb, cv_size_je, cv_size
    !-------------------------------------------------------------------------
    ! [0.0] initialization:
    !-------------------------------------------------------------------------
+#if (WRF_CHEM != 1)
 #ifdef CLOUD_CV
-   mz = (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz, be%v6%mz, be%v7%mz,be%v8%mz, be%v9%mz, be%v10%mz,be%v11%mz, be%alpha%mz, be % ne /)
+   mz = (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz, be%v6%mz, be%v7%mz, be%v8%mz, be%v9%mz, be%v10%mz, be%v11%mz, be%alpha%mz, be%ne /)
 #else
-  mz = (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz,be%alpha%mz, be % ne /)
+   mz = (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz, be%alpha%mz, be%ne /)
+#endif
+#else
+#ifdef CLOUD_CV
+   mz = (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz, be%v6%mz, be%v7%mz, be%v8%mz, be%v9%mz, be%v10%mz, be%v11%mz, be%alpha%mz, be%ne, &
+           be%alpha_ant_chem(PARAM_FIRST_SCALAR)%mz, be%alpha_bb_chem(PARAM_FIRST_SCALAR)%mz /)
+#else
+   mz = (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz, be%alpha%mz, be%ne, &
+           be%alpha_ant_chem(PARAM_FIRST_SCALAR)%mz, be%alpha_bb_chem(PARAM_FIRST_SCALAR)%mz /)
+#endif
 #endif
    je_start   = cv_size_jb + 1
    je_end     = cv_size_jb + cv_size_je
@@ -83,18 +101,35 @@ subroutine da_calculate_gradj(it, iter, cv_size, cv_size_jb, cv_size_je, cv_size
    ! [1.0] calculate grad_v (jo):
    !-------------------------------------------------------------------------
    call da_allocate_y(iv, jo_grad_y)
-   
+#if (WRF_CHEM == 1)
+   call da_allocate_y_chem(iv, jo_grad_y)
+#endif
+
    if (present(re)) then
       call da_calculate_grady(iv, re, jo_grad_y)   
       if ( iter > 0 .and. test_gradient ) jcdf_flag = .true.
       call da_transform_vtoy_adj(cv_size, be, grid%ep, grad_jo, iv, &
-              grid%vp, grid%vv, grid%vp6, grid%vv6, xbx, jo_grad_y, grid, config_flags, jcdf_flag)
+              grid%vp, grid%vv, grid%vp6, grid%vv6, &
+              xbx, jo_grad_y, grid, config_flags, jcdf_flag &
+#if (WRF_CHEM == 1)
+              , grid%vch &
+#endif
+              )
    else
       call da_transform_vtoy(cv_size, be, grid%ep, cv, iv, grid%vp, &
-              grid%vv, grid%vp6, grid%vv6, xbx, y, grid, config_flags)
+              grid%vv, grid%vp6, grid%vv6, xbx, y, grid, config_flags &
+#if (WRF_CHEM == 1)
+              , grid%vch &
+#endif
+              )
       call da_calculate_grady(iv, y, jo_grad_y)   
       call da_transform_vtoy_adj(cv_size, be, grid%ep, grad_jo, iv, &
-              grid%vp, grid%vv, grid%vp6, grid%vv6, xbx, jo_grad_y, grid, config_flags, .true.)
+              grid%vp, grid%vv, grid%vp6, grid%vv6, &
+              xbx, jo_grad_y, grid, config_flags, .true. &
+#if (WRF_CHEM == 1)
+              , grid%vch &
+#endif
+              )
       grad_jo = - grad_jo    !! Compensate for sign in calculation of grad_v (Jo)
    end if
       

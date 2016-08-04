@@ -31,12 +31,23 @@ subroutine da_calculate_j(it, iter, cv_size, cv_size_jb, cv_size_je, cv_size_jp,
    integer          :: je_start, je_end             ! Start/end indices of Je.
    integer          :: jl_start, jl_end             ! Start/end indices of Je.
    real             :: jo_partial                   ! jo for this processor
+#if (WRF_CHEM == 1)
+   real             :: joc_partial                  ! jo for cross-validation for this processor
+#endif
    type (y_type)    :: jo_grad_y ! Grad_y(jo)
    real             :: cv_xhat_jb(cv_size_jb), cv_xhat_je(cv_size_je), cv_xhat_jl(cv_size_jl)
+#if (WRF_CHEM != 1)
 #ifdef CLOUD_CV
    integer          :: mz(13)
 #else
    integer          :: mz(7)
+#endif
+#else
+#ifdef CLOUD_CV
+   integer          :: mz(15)
+#else
+   integer          :: mz(9)
+#endif
 #endif
    integer          :: ndynopt
    real             :: dtemp1x
@@ -59,10 +70,22 @@ subroutine da_calculate_j(it, iter, cv_size, cv_size_jb, cv_size_je, cv_size_jp,
    !-------------------------------------------------------------------------
    ! [0.0] initialization:
    !-------------------------------------------------------------------------
+#if (WRF_CHEM != 1)
 #ifdef CLOUD_CV
-   mz = (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz, be%v6%mz, be%v7%mz,be%v8%mz, be%v10%mz,be%v9%mz,be%v11%mz, be%alpha%mz, be % ne /)
+   mz = (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz, &
+           be%v6%mz, be%v7%mz, be%v8%mz, be%v9%mz, be%v10%mz, be%v11%mz, be%alpha%mz, be%ne /)
 #else
-   mz = (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz, be%alpha%mz, be % ne /)
+   mz = (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz, be%alpha%mz, be%ne /)
+#endif
+#else
+#ifdef CLOUD_CV
+   mz = (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz, &
+           be%v6%mz, be%v7%mz,  be%v8%mz, be%v9%mz, be%v10%mz, be%v11%mz, be%alpha%mz, be%ne,&
+           be%alpha_ant_chem(PARAM_FIRST_SCALAR)%mz, be%alpha_bb_chem(PARAM_FIRST_SCALAR)%mz /)
+#else
+   mz = (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz, be%alpha%mz, be%ne, &
+           be%alpha_ant_chem(PARAM_FIRST_SCALAR)%mz, be%alpha_bb_chem(PARAM_FIRST_SCALAR)%mz /)
+#endif
 #endif
    je_start = cv_size_jb + 1
    je_end   = cv_size_jb + cv_size_je
@@ -72,6 +95,9 @@ subroutine da_calculate_j(it, iter, cv_size, cv_size_jb, cv_size_je, cv_size_jp,
    jl_end =   cv_size_jb + cv_size_je + cv_size_jp + cv_size_jl
 
    call da_allocate_y(iv, jo_grad_y)
+#if (WRF_CHEM == 1)
+   call da_allocate_y_chem(iv, jo_grad_y)
+#endif
 
    !-------------------------------------------------------------------------
    ! [1.0] calculate jo:
@@ -82,7 +108,11 @@ subroutine da_calculate_j(it, iter, cv_size, cv_size_jb, cv_size_je, cv_size_jp,
    if (iter > 0) &
       call da_transform_vtoy(cv_size, be, grid%ep, xhat, iv, grid%vp, grid%vv,&
                               grid%vp6, grid%vv6, xbx, y, &
-                              grid, config_flags                      )
+                              grid, config_flags          &
+#if (WRF_CHEM == 1)
+                              , grid%vch &
+#endif
+                              )
 
    ! [1.2] compute residual (o-a) = (o-b) - h x~
 
@@ -90,7 +120,11 @@ subroutine da_calculate_j(it, iter, cv_size, cv_size_jb, cv_size_je, cv_size_jp,
 
    ! [1.3] calculate jo:
 
-   call da_jo_and_grady(iv, re, jo_partial, j % jo, jo_grad_y)
+   call da_jo_and_grady(iv, re, jo_partial, j % jo, jo_grad_y &
+#if (WRF_CHEM == 1)
+                        , joc_partial &
+#endif
+                        )
 
    if (test_dm_exact) then
       ! jo_partial has been already summed at lower level
@@ -98,6 +132,10 @@ subroutine da_calculate_j(it, iter, cv_size, cv_size_jb, cv_size_je, cv_size_jp,
    else
       j % jo % total = wrf_dm_sum_real(jo_partial)
    end if
+
+#if (WRF_CHEM == 1)
+      j % jo % crossval = wrf_dm_sum_real(joc_partial)
+#endif
 
    ! [1.4] calculate jc-dfi:
 

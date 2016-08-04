@@ -1,4 +1,8 @@
-subroutine da_transform_vtox(grid, cv_size, xbx, be, ep, cv, vv, vp)
+subroutine da_transform_vtox(grid, cv_size, xbx, be, ep, cv, vv, vp &
+#if (WRF_CHEM == 1)
+                        ,vch &
+#endif
+                        )
 
    !--------------------------------------------------------------------------
    ! Purpose: Control variable transform x' = Uv. 
@@ -15,10 +19,18 @@ subroutine da_transform_vtox(grid, cv_size, xbx, be, ep, cv, vv, vp)
    type(vp_type),  intent(out)   :: vv   ! grdipt/eof cv (local).
    type(vp_type),  intent(inout) :: vp   ! grdipt/level cv (local).
 
+#if (WRF_CHEM == 1)
+   type(xch_type), optional, intent(out) :: vch   ! Grid point/EOF equivalent.
+#endif
+
    if (trace_use) call da_trace_entry("da_transform_vtox")
 
    call da_zero_x (grid%xa)
    
+#if (WRF_CHEM == 1)
+   call da_zero_xch_type (grid%xach)
+#endif
+
    if (.not. use_background_errors) then
       if (trace_use) call da_trace_exit("da_transform_vtox")
       return
@@ -33,9 +45,27 @@ subroutine da_transform_vtox(grid, cv_size, xbx, be, ep, cv, vv, vp)
    else if ( (fg_format == fg_format_wrf_arw_regional .or.   &
               fg_format == fg_format_wrf_nmm_regional) .and. &
               (.not. cv_options == 3) )then
-      call da_transform_vtovv(grid, cv_size, be, cv, vv)
+#if (WRF_CHEM == 1)
+      if (present(vch)) then
+         call da_transform_vtovv(grid, cv_size, be, cv, vv, vch)
+      else
+#endif
+         call da_transform_vtovv(grid, cv_size, be, cv, vv)
+#if (WRF_CHEM == 1)
+      end if
+#endif
    end if
-   
+
+#if (WRF_CHEM == 1)
+   if ( cv_options == 10 .and. present(vch)) then
+   !----------------------------------------------------------------------
+   ! [2.0c]: Perform x = u_ch vch transform:
+   !----------------------------------------------------------------------
+      call da_transform_vchtox(grid, vch, be)
+
+   else
+#endif
+
    !----------------------------------------------------------------------
    ! [2.0]: Perform vp = u_v vv transform:
    !----------------------------------------------------------------------
@@ -75,6 +105,10 @@ subroutine da_transform_vtox(grid, cv_size, xbx, be, ep, cv, vv, vp)
    !----------------------------------------------------------------------
 
    call da_transform_vptox(grid, vp, be, ep)
+
+#if (WRF_CHEM == 1)
+   end if
+#endif
 
    end if
    

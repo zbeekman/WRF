@@ -123,6 +123,28 @@ subroutine da_setup_cv(be)
       end if
    end if
 
+   !--------------------------------------------------------------
+   ! [4] Define and add chem emiss cv sizes
+   !--------------------------------------------------------------
+#if (WRF_CHEM == 1)
+      iy = ite - its + 1
+      jx = jte - jts + 1
+
+      ij = iy * jx              ! cv space size same as state space size
+
+      be % cv % sizeant (:) = 0
+      do ic = PARAM_FIRST_SCALAR, num_scaleant
+         be % cv % sizeant (ic) = ij * be % alpha_ant_chem(ic) % mz
+      end do
+
+      be % cv % sizebb (:) = 0
+      do ic = PARAM_FIRST_SCALAR, num_scalebb
+         be % cv % sizebb (ic) = ij * be % alpha_bb_chem(ic) % mz
+      end do
+
+      be % cv % size_jb = be % cv % size_jb + sum (be % cv % sizeant (:)) + sum( be % cv % sizebb (:) )
+#endif
+
    if (trace_use) call da_trace_exit("da_setup_cv")
 
 end subroutine da_setup_cv

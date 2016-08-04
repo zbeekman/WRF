@@ -1,4 +1,8 @@
-subroutine da_cv_to_vv (cv_size, rcv, mzs, vv)
+subroutine da_cv_to_vv (cv_size, rcv, mzs, vv &
+#if (WRF_CHEM == 1)
+                        ,vch &
+#endif
+                        )
 
    !---------------------------------------------------------------------------
    ! Purpose: Fill (local) vv arrays from 1D (local) cv array.
@@ -10,6 +14,9 @@ subroutine da_cv_to_vv (cv_size, rcv, mzs, vv)
    real,           intent(in)    :: rcv(1:cv_size) ! Control variables v.
    integer,        intent(in)    :: mzs(:) ! Background error structure levels.
    type (vp_type), intent(inout) :: vv          ! Grdipt/EOF cv_array.
+#if (WRF_CHEM == 1)
+   type (xch_type), optional, intent(inout) :: vch          ! Grdipt/EOF cv_array.
+#endif
 
    integer   :: is,ie       ! Local grid range in y coordinate.
    integer   :: js,je       ! Local grid range in x coordinate.
@@ -19,6 +26,10 @@ subroutine da_cv_to_vv (cv_size, rcv, mzs, vv)
    integer   :: cv_s,cv_e   ! Starting and ending indices into CV array.
    integer   :: ijm         ! Size of interior of v1 through v5 arrays.
    integer   :: ijmn        ! Size of interior of alpha cv arrays.
+#if (WRF_CHEM == 1)
+   integer   :: ma, mb      ! Max anthro and bioburn time coordinates
+   integer   :: ic          ! chem loop iterator
+#endif
 
    if (trace_use) call da_trace_entry("da_cv_to_vv")
 
@@ -151,6 +162,38 @@ subroutine da_cv_to_vv (cv_size, rcv, mzs, vv)
 !     vv % alpha(is:ie,js:je,1:mz,1:ne) = RESHAPE(rcv(cv_s:cv_e),(/ix, jy, mz, ne/))
       vv % alpha(its_int:ite_int,jts_int:jte_int,1:mz,1:ne) = RESHAPE(rcv(cv_s:cv_e),(/ix, jy, mz, ne/))
    end if
+
+#if (WRF_CHEM == 1)
+   if (present(vch)) then
+      ix = ie-is+1
+      jy = je-js+1
+#ifdef CLOUD_CV
+      ma = mzs(14)
+      mb = mzs(15)
+#else
+      ma = mzs(8)
+      mb = mzs(9)
+#endif
+      if ( ma > 0 ) then
+         ijm = ix * jy * ma
+         do ic = PARAM_FIRST_SCALAR, num_scaleant
+            cv_s = cv_e + 1
+            cv_e = cv_s + ijm - 1
+            vch % alpha_ant(is:ie,js:je,1:ma,ic) = RESHAPE(rcv(cv_s:cv_e),(/ix, jy, ma/))
+         end do
+      end if
+
+      if ( mb > 0 ) then
+         ijm = ix * jy * mb
+         do ic = PARAM_FIRST_SCALAR, num_scalebb
+            cv_s = cv_e + 1
+            cv_e = cv_s + ijm - 1
+            vch % alpha_bb(is:ie,js:je,1:mb,ic) = RESHAPE(rcv(cv_s:cv_e),(/ix, jy, mb/))
+         end do
+      end if
+   end if
+
+#endif
 
    if (trace_use) call da_trace_exit("da_cv_to_vv")
 

@@ -24,6 +24,11 @@ subroutine da_cv_to_global(cv_size, cv_size_global, x, grid, mzs, xg )
    type (vp_type) :: vv_x    ! Grdipt/EOF cv_array (local)
    type (vp_type) :: vv_xg   ! Grdipt/EOF cv_array (global)
    type (xpose_type) :: xpg  ! global dimensions
+#if (WRF_CHEM == 1)
+   type (xch_type) :: vvc_x  ! Grdipt/EOF cv_array (local)
+   type (xch_type) :: vvc_xg ! Grdipt/EOF cv_array (global)
+   integer :: ic, mz_ant, mz_bb
+#endif
    integer :: ids, ide, jds, jde, kds, &
               ims, ime, jms, jme, kms, &
               ips, ipe, jps, jpe, kps 
@@ -56,8 +61,18 @@ subroutine da_cv_to_global(cv_size, cv_size_global, x, grid, mzs, xg )
    allocate(vv_x%v10(ims:ime,jms:jme,mzs(10)))
    allocate(vv_x%v11(ims:ime,jms:jme,mzs(11)))   
    allocate(vv_x%alpha(ims_int:ime_int,jms_int:jme_int,kms_int:kme_int,mzs(13)))
+#if (WRF_CHEM == 1)
+   mz_ant=mzs(14)
+   mz_bb =mzs(15)
+#endif
 #else
    allocate(vv_x%alpha(ims_int:ime_int,jms_int:jme_int,kms_int:kme_int,mzs(7)))
+#if (WRF_CHEM == 1)
+   mz_ant=mzs(8)
+   mz_bb =mzs(9)
+   allocate(vvc_x%alpha_ant(ims:ime,jms:jme,mz_ant,num_scaleant))
+   allocate(vvc_x%alpha_bb(ims:ime,jms:jme,mz_bb,num_scalebb))
+#endif
 #endif
 
    call da_cv_to_vv (cv_size, x, mzs, vv_x )
@@ -82,6 +97,10 @@ subroutine da_cv_to_global(cv_size, cv_size_global, x, grid, mzs, xg )
 !     allocate(vv_xg%alpha(ids:ide,jds:jde,kds:kde,mzs(7)))
       allocate(vv_xg%alpha(ids_int:ide_int,jds_int:jde_int,kds_int:kde_int,mzs(7)))
 #endif
+#if (WRF_CHEM == 1)
+      allocate(vvc_xg%alpha_ant(ids:ide,jds:jde,mz_ant,num_scaleant))
+      allocate(vvc_xg%alpha_bb(ids:ide,jds:jde,mz_bb,num_scalebb))
+#endif
    else
       ! Allocate dummy array for non-monitor process to keep Fortran
       ! CICO happy...
@@ -99,6 +118,10 @@ subroutine da_cv_to_global(cv_size, cv_size_global, x, grid, mzs, xg )
       allocate(vv_xg%v11(1,1,1))
 #endif
       allocate(vv_xg%alpha(1,1,1,1))
+#if (WRF_CHEM == 1)
+      allocate(vvc_xg%alpha_ant(1,1,1,1))
+      allocate(vvc_xg%alpha_bb(1,1,1,1))
+#endif
    end if
 
    ! TOdo:  encapsulate this crap!  
@@ -117,6 +140,14 @@ subroutine da_cv_to_global(cv_size, cv_size_global, x, grid, mzs, xg )
    call da_patch_to_global(grid, vv_x%v9,    vv_xg%v9,    mzs(9))
    call da_patch_to_global(grid, vv_x%v10,    vv_xg%v10,    mzs(10))
    call da_patch_to_global(grid, vv_x%v11,    vv_xg%v11,    mzs(11))
+#endif
+#if (WRF_CHEM == 1)
+   do ic = PARAM_FIRST_SCALAR, num_scaleant
+      call da_patch_to_global(grid, vvc_x%alpha_ant(:,:,:,ic),    vvc_xg%alpha_ant(:,:,:,ic),    mz_ant)
+   end do
+   do ic = PARAM_FIRST_SCALAR, num_scalebb
+      call da_patch_to_global(grid, vvc_x%alpha_ant(:,:,:,ic),    vvc_xg%alpha_ant(:,:,:,ic),    mz_bb)
+   end do
 #endif
 #ifdef CLOUD_CV
    if ( mzs(13) > 0 ) then
@@ -146,6 +177,10 @@ subroutine da_cv_to_global(cv_size, cv_size_global, x, grid, mzs, xg )
    ! deallocate vv_x
    deallocate (vv_x%v1, vv_x%v2, vv_x%v3, vv_x%v4, vv_x%v5, vv_x%alpha)
 #endif
+#if (WRF_CHEM == 1)
+   ! deallocate vvc_x
+   deallocate (vvc_x%alpha_ant, vvc_x%alpha_bb)
+#endif
    if (rootproc) then
       ! finally, collapse data back into a globally-sized cv-array
       xpg%ids = ids; xpg%ide = ide
@@ -157,7 +192,11 @@ subroutine da_cv_to_global(cv_size, cv_size_global, x, grid, mzs, xg )
       xpg%kds = kds; xpg%kde = kde
       xpg%kms = kds; xpg%kme = kde
       xpg%kts = kds; xpg%kte = kde
-      call da_vv_to_cv(vv_xg, xpg, mzs, cv_size_global, xg)
+      call da_vv_to_cv(vv_xg, xpg, mzs, cv_size_global, xg &
+#if (WRF_CHEM == 1)
+         , vvc_xg &
+#endif
+      )
    end if
 #ifdef CLOUD_CV
    ! deallocate vv_xg
@@ -165,6 +204,10 @@ subroutine da_cv_to_global(cv_size, cv_size_global, x, grid, mzs, xg )
 #else
    ! deallocate vv_xg
    deallocate(vv_xg%v1, vv_xg%v2, vv_xg%v3, vv_xg%v4, vv_xg%v5, vv_xg%alpha)
+#endif
+#if (WRF_CHEM == 1)
+   ! deallocate vvc_xg
+   deallocate (vvc_xg%alpha_ant, vvc_xg%alpha_bb)
 #endif
    if (trace_use) call da_trace_exit("da_cv_to_global")    
 

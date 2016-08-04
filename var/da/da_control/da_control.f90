@@ -6,6 +6,9 @@ module da_control
 
    use module_driver_constants, only : max_domains, max_eta, max_moves, max_bogus, &
                                        max_outer_iterations, max_instruments, max_plevs, &
+#if (WRF_CHEM == 1)
+                                       max_trackchem, &
+#endif
                                        max_ocean, num_ob_indexes
 
    implicit none
@@ -494,6 +497,10 @@ module da_control
    integer, parameter :: tamdar    = 26
    integer, parameter :: tamdar_sfc = 27
    integer, parameter :: rain      = 28
+#if (WRF_CHEM == 1)
+   integer, parameter :: chem_surf = 29
+   integer, parameter :: chem_acft = 30
+#endif
 
    character(len=14), parameter :: obs_names(num_ob_indexes) = (/ &
       "sound         ", &
@@ -524,6 +531,10 @@ module da_control
       "tamdar        ", &
       "tamdar_sfc    ", &
       "rain          " &
+#if (WRF_CHEM == 1)
+     ,"chem_surf     " &
+     ,"chem_acft     " &
+#endif
    /)
 
    integer, parameter :: max_no_fm = 290

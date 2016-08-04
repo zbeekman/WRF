@@ -10,6 +10,9 @@ subroutine da_setup_background_errors(grid, be)
    type (domain), intent(in)   :: grid
 !  type (xb_type), intent(in)  :: xb       ! First guess structure.
    type (be_type), intent(out) :: be       ! Back. errors structure.
+#if (WRF_CHEM == 1)
+   integer :: ic
+#endif
 
    if (trace_use) call da_trace_entry("da_setup_background_errors")
 
@@ -56,6 +59,22 @@ subroutine da_setup_background_errors(grid, be)
    be % v10% mz = 0
    be % v11% mz = 0
 #endif
+
+#if (WRF_CHEM == 1)
+!   grid%num_alpha_chem = max(num_chem_surf-1,num_chem_acft-1)
+   allocate (be%alpha_ant_chem (num_scaleant) )
+   do ic = 1, num_scaleant
+      be % alpha_ant_chem(ic) % mz = 0
+   end do
+   allocate (be%cv%sizeant (num_scaleant) )
+
+   allocate (be%alpha_bb_chem (num_scalebb) )
+   do ic = 1, num_scalebb
+      be % alpha_bb_chem(ic) % mz = 0
+   end do
+   allocate (be%cv%sizebb (num_scalebb) )
+#endif
+
    if (global) then
       call da_setup_be_global(be)
    else if(fg_format == fg_format_wrf_arw_regional) then    
@@ -63,6 +82,10 @@ subroutine da_setup_background_errors(grid, be)
          call da_setup_be_regional (grid%xb, be, grid)
       else if(cv_options == 3 ) then
          call da_setup_be_ncep_gfs (grid, be)
+#if (WRF_CHEM == 1)
+      else if(cv_options == 10 ) then
+            call da_setup_be_chem (grid, be)
+#endif
       else 
          write(unit=message(1),fmt='(A,I4)') &
              'Invalid CV option chosen:  cv_options = ', cv_options

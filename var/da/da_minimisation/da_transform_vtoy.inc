@@ -1,5 +1,9 @@
 subroutine da_transform_vtoy(cv_size, be, ep, cv, iv, vp, vv, vp6, vv6, xbx, &
-                              y, grid, config_flags)
+                              y, grid, config_flags &
+#if (WRF_CHEM == 1)
+                        ,vch &
+#endif
+                        )
 
    !----------------------------------------------------------------------
    ! Purpose:  Does transform of control variable (V) to Obs-space (Y)
@@ -16,6 +20,9 @@ subroutine da_transform_vtoy(cv_size, be, ep, cv, iv, vp, vv, vp6, vv6, xbx, &
    type(vp_type),              intent(inout) :: vp6     ! Grdipt/level CV for 6h.
    type(vp_type),              intent(inout) :: vv     ! Grdipt/EOF CV.
    type(vp_type),              intent(inout) :: vv6     ! Grdipt/EOF CV for 6h.
+#if (WRF_CHEM == 1)
+   type(xch_type), optional, intent(out) :: vch   ! CHEM CV
+#endif
    type(xbx_type),             intent(inout) :: xbx    ! For header & non-grid arrays.
    type(y_type),               intent(inout) :: y      ! y = H(x_inc).
    type(domain),               intent(inout) :: grid
@@ -33,7 +40,15 @@ subroutine da_transform_vtoy(cv_size, be, ep, cv, iv, vp, vv, vp6, vv6, xbx, &
 
    if (var4d) then
 #ifdef VAR4D
-      call da_transform_vtox(grid, be%cv%size_jb, xbx, be, ep, cv(1:be%cv%size_jb), vv, vp)
+#if (WRF_CHEM == 1)
+      if (present(vch)) then
+         call da_transform_vtox(grid, be%cv%size_jb, xbx, be, ep, cv(1:be%cv%size_jb), vv, vp, vch)
+      else
+#endif
+         call da_transform_vtox(grid, be%cv%size_jb, xbx, be, ep, cv(1:be%cv%size_jb), vv, vp)
+#if (WRF_CHEM == 1)
+      end if
+#endif
       call domain_clock_get( grid, start_timestr=timestr )
       call da_transfer_xatowrftl(grid, config_flags, 'tl01', timestr)
 
@@ -63,6 +78,10 @@ subroutine da_transform_vtoy(cv_size, be, ep, cv, iv, vp, vv, vp6, vv6, xbx, &
 
       call da_tl_model
 
+#if (WRF_CHEM == 1) 
+      call da_transfer_wrftltoy_chem(grid, iv, y)
+#endif
+
       if (num_fgat_time > 1 .and. use_rainobs) then
          ! Buffer to save var4d_bin_rain rainfall
          allocate (hr_rainc (ims:ime,jms:jme,1:num_fgat_time))
@@ -83,6 +102,7 @@ subroutine da_transform_vtoy(cv_size, be, ep, cv, iv, vp, vv, vp6, vv6, xbx, &
          call domain_clockprint(150, grid, 'get CurrTime from clock,')
       endif
 
+      if (checkpoint_interval .eq. 0 ) then
       do nobwin= num_fgat_time, 1 , -1
 
          call domain_clock_get( grid, current_timestr=timestr )
@@ -109,7 +129,8 @@ subroutine da_transform_vtoy(cv_size, be, ep, cv, iv, vp, vv, vp6, vv6, xbx, &
          call domain_clockprint(150, grid, 'DEBUG :  get CurrTime from clock,')
 
       end do
-      
+      endif
+
       ! Caculate var4d_bin_rain rainfall
       if (num_fgat_time > 1 .and. use_rainobs) then
          do nobwin=num_fgat_time, 1, -1

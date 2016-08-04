@@ -1,4 +1,8 @@
-subroutine da_transform_vtox_adj(grid, cv_size, xbx, be, ep, vp, vv, cv)
+subroutine da_transform_vtox_adj(grid, cv_size, xbx, be, ep, vp, vv, cv &
+#if (WRF_CHEM == 1)
+                        ,vch &
+#endif
+                        )
 
    !--------------------------------------------------------------------------
    ! Purpose: Control variable transform Adjoint
@@ -15,6 +19,9 @@ subroutine da_transform_vtox_adj(grid, cv_size, xbx, be, ep, vp, vv, cv)
    type(vp_type),  intent(out)   :: vv   ! grdipt/eof cv (local).
    real,           intent(inout) :: cv(1:cv_size) ! control variables.
 
+#if (WRF_CHEM == 1)
+   type(xch_type), optional, intent(out) :: vch   ! Grid point/EOF equivalent.
+#endif
 
    if (.not. use_background_errors) return
 
@@ -27,7 +34,18 @@ subroutine da_transform_vtox_adj(grid, cv_size, xbx, be, ep, vp, vv, cv)
       call da_apply_be_adj( be, cv, vp, grid)
 
    else
-  
+
+#if (WRF_CHEM == 1)
+   if ( cv_options == 10 .and. present(vch) ) then
+   !----------------------------------------------------------------------
+   ! [2.0c]: Perform x = u_ch vch transform:
+   !----------------------------------------------------------------------
+      call da_zero_xch_type (vch)
+      call da_transform_vchtox_adj(grid, vch, be)
+
+   else
+#endif
+
    !-------------------------------------------------------------------------
    ! [3.0]: Perform x = u_p vp transform::
    !-------------------------------------------------------------------------
@@ -66,7 +84,11 @@ subroutine da_transform_vtox_adj(grid, cv_size, xbx, be, ep, vp, vv, cv)
          vp % alpha(its_int:ite_int,jts_int:jte_int,kts_int:kte_int,1:be%ne)
       end if
    end if
-   
+
+#if (WRF_CHEM == 1)
+   end if
+#endif
+
    end if
 
    !-------------------------------------------------------------------------
@@ -78,7 +100,15 @@ subroutine da_transform_vtox_adj(grid, cv_size, xbx, be, ep, vp, vv, cv)
    else if ( (fg_format == fg_format_wrf_arw_regional .or. &
               fg_format == fg_format_wrf_nmm_regional) .and. &
               (.not. cv_options == 3) ) then
-      call da_transform_vtovv_adj(grid, cv_size, be, cv, vv)
+#if (WRF_CHEM == 1)
+      if (present(vch)) then
+         call da_transform_vtovv_adj(grid, cv_size, be, cv, vv, vch)
+      else
+#endif
+         call da_transform_vtovv_adj(grid, cv_size, be, cv, vv)
+#if (WRF_CHEM == 1)
+      end if
+#endif
    end if
 
    if (trace_use) call da_trace_exit("da_transform_vtox_adj")

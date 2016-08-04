@@ -29,7 +29,16 @@ module da_obs_io
       pi, ob_format_gpsro, ob_format_ascii, analysis_date, kms,kme, v_interp_h,v_interp_p, &
       wind_sd,wind_sd_synop,wind_sd_tamdar,wind_sd_mtgirs,wind_sd_profiler,wind_sd_geoamv,wind_sd_polaramv, &
       wind_sd_airep,wind_sd_sound,wind_sd_metar,wind_sd_ships,wind_sd_qscat,wind_sd_buoy,wind_sd_pilot,wind_stats_sd,&
+#if (WRF_CHEM == 1)
+      num_ts, num_surf_obs, num_acft_obs, num_platform, chem_surf, chem_acft, &
+      use_chem_surfobs, use_chem_acftobs, time_step, &
+#endif
       thin_conv, thin_conv_ascii
+
+#if (WRF_CHEM == 1)
+   use module_state_description, only : num_chem_surf, num_chem_acft
+   use module_dm, only : wrf_dm_sum_reals
+#endif
 
    use da_define_structures, only : iv_type, multi_level_type, multi_level_type_BUFR, &
       radar_multi_level_type, y_type, field_type, each_level_type, &
@@ -71,6 +80,9 @@ contains
 #include "da_scan_obs_radar.inc"
 #include "da_scan_obs_rain.inc" 
 #include "da_read_obs_rain.inc"
+#if (WRF_CHEM == 1)
+#include "da_read_obs_chem.inc"
+#endif
 #include "da_read_errfac.inc"
 #include "da_use_obs_errfac.inc"
 #include "da_write_obs.inc"

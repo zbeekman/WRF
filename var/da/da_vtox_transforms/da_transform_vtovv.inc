@@ -1,4 +1,8 @@
-subroutine da_transform_vtovv(grid, cv_size, be, cv, vv)
+subroutine da_transform_vtovv(grid, cv_size, be, cv, vv &
+#if (WRF_CHEM == 1)
+                        ,vch &
+#endif
+                        )
 
    !-----------------------------------------------------------------------
    ! Purpose: TBD
@@ -11,6 +15,11 @@ subroutine da_transform_vtovv(grid, cv_size, be, cv, vv)
    type(be_type), intent(in)    :: be   ! Background error structure.
    real,          intent(in)    :: cv(cv_size)   ! control variables.
    type(vp_type), intent(inout) :: vv   ! Grid point/EOF equivalent.
+
+#if (WRF_CHEM == 1) 
+   type(xch_type), optional, intent(inout) :: vch   ! Grid point/EOF equivalent.
+   integer :: ic
+#endif
 
    integer :: s(4)   ! Index bounds into arrays.
    integer :: n      ! Loop counter.
@@ -28,9 +37,25 @@ subroutine da_transform_vtovv(grid, cv_size, be, cv, vv)
       ! [1.0] Fill vv arrays from 1-dimensional cv array.
       !-------------------------------------------------------------------------
 #ifdef CLOUD_CV
+#if (WRF_CHEM == 1)
+      if (present(vch)) then
+      call da_cv_to_vv(cv_size, cv, (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz,  be%v6%mz, be%v7%mz, be%v8%mz, be%v9%mz, be%v10%mz, be%v11%mz, be%alpha%mz, be%ne, be%alpha_ant_chem(PARAM_FIRST_SCALAR)%mz, be%alpha_bb_chem(PARAM_FIRST_SCALAR)%mz /), vv, vch)
+      else
+#endif
       call da_cv_to_vv(cv_size, cv, (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz,  be%v6%mz, be%v7%mz, be%v8%mz, be%v9%mz, be%v10%mz, be%v11%mz, be%alpha%mz, be%ne /), vv)
+#if (WRF_CHEM == 1)
+      end if
+#endif
 #else
+#if (WRF_CHEM == 1) 
+      if (present(vch)) then
+      call da_cv_to_vv(cv_size, cv, (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz, be%alpha%mz, be%ne, be%alpha_ant_chem(PARAM_FIRST_SCALAR)%mz, be%alpha_bb_chem(PARAM_FIRST_SCALAR)%mz /), vv, vch)
+      else
+#endif
       call da_cv_to_vv(cv_size, cv, (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz, be%alpha%mz, be%ne /), vv)
+#if (WRF_CHEM == 1) 
+      end if
+#endif
 #endif
    endif					! use wavelets:
    if( .not. use_rf .or. do_normalize ) s(1:2)=1
@@ -248,6 +273,32 @@ subroutine da_transform_vtovv(grid, cv_size, be, cv, vv)
          end do
       endif
    endif
+
+#if (WRF_CHEM == 1)
+   ! [2.9] Transform emission control variables
+
+   do ic = PARAM_FIRST_SCALAR, num_scaleant
+      mz = be % alpha_ant_chem (ic) % mz
+      if( use_rf .and. mz > 0 ) then
+         call da_transform_through_rf(grid, mz, be % alpha_ant_chem (ic) % rf_alpha, &
+                                                be % alpha_ant_chem (ic) % val, &
+                                                vch % alpha_ant (:,:,:,ic) )
+      elseif( .not. use_rf ) then
+         call da_error(__FILE__,__LINE__,(/"no da_transform_through_wavelet for alpha_ant"/))
+      endif
+   end do
+
+   do ic = PARAM_FIRST_SCALAR, num_scalebb
+      mz = be % alpha_bb_chem (ic) % mz
+      if( use_rf .and. mz > 0 ) then
+         call da_transform_through_rf(grid, mz, be % alpha_bb_chem (ic) % rf_alpha, &
+                                                be % alpha_bb_chem (ic) % val, &
+                                                vch % alpha_bb (:,:,:,ic) )
+      elseif( .not. use_rf ) then
+         call da_error(__FILE__,__LINE__,(/"no da_transform_through_wavelet for alpha_bb"/))
+      endif
+   end do
+#endif
 
    if (trace_use) call da_trace_exit("da_transform_vtovv")
 

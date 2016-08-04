@@ -9,6 +9,9 @@ module da_setup_structures
 
    use da_define_structures, only : xbx_type,be_subtype, be_type, y_type, j_type, &
       iv_type,da_allocate_background_errors,da_allocate_observations, &
+#if (WRF_CHEM == 1)
+      da_allocate_background_errors_chem, da_allocate_observations_chem, &
+#endif
       multi_level_type,each_level_type, da_allocate_observations_rain
    use da_wrf_interfaces, only : wrf_debug
    use da_control, only : trace_use,vert_evalue,stdout,rootproc, &
@@ -19,6 +22,15 @@ module da_setup_structures
       num_ob_indexes,kts, kte, time_window_max, time_window_min, &
       max_fgat_time, num_fgat_time, dt_cloud_model, &
       use_ssmiretrievalobs,use_radarobs,use_ssmitbobs,use_qscatobs, num_procs, use_rainobs, &
+#if (WRF_CHEM == 1)
+      num_surf_obs, num_acft_obs, num_ts, &
+      use_chem_surfobs, use_chem_acftobs, chem_surf, chem_acft, &
+      num_ant_steps, num_bb_steps, &
+      rf_lengthscale_ant, rf_lengthscale_bb, &
+      sigma_ant, sigma_bb, scaleant_frq, scalebb_frq, &
+      temporal_corr, multiday_corr, &
+      timescale_h_ant, timescale_d_ant, timescale_h_bb, timescale_d_bb, &
+#endif
       num_pseudo, missing, ob_format, ob_format_bufr,ob_format_ascii, ob_format_madis, ob_format_gpsro, &
       use_airepobs, use_tamdarobs, test_dm_exact, use_amsuaobs, use_amsubobs, &
       use_airsobs, use_bogusobs, sfc_assi_options, use_eos_amsuaobs, &
@@ -64,11 +76,21 @@ module da_setup_structures
       chi_u_t_factor, chi_u_ps_factor,chi_u_rh_factor, t_u_rh_factor, ps_u_rh_factor, &
       interpolate_stats, be_eta, thin_rainobs, fgat_rain_flags, use_iasiobs, &
       use_seviriobs, jds_int, jde_int, anal_type_hybrid_dual_res, use_amsr2obs, nrange
+#if (WRF_CHEM == 1)
+   use module_state_description, only : num_chem_surf, num_chem_acft, &
+      num_scaleant, num_scalebb, PARAM_FIRST_SCALAR
+#endif
 
    use da_obs, only : da_fill_obs_structures, da_store_obs_grid_info, da_store_obs_grid_info_rad, &
+#if (WRF_CHEM == 1)
+                      da_store_obs_grid_info_acft, da_fill_obs_structures_chem, &
+#endif
                       da_fill_obs_structures_rain, da_fill_obs_structures_radar, da_set_obs_missing,da_set_3d_obs_missing
    use da_obs_io, only : da_read_obs_bufr,da_read_obs_radar, &
       da_scan_obs_radar,da_scan_obs_ascii,da_read_obs_ascii, &
+#if (WRF_CHEM == 1)
+      da_read_obs_chem, &
+#endif
       da_read_obs_bufrgpsro, da_scan_obs_rain, da_read_obs_rain
    use da_par_util1, only : da_proc_sum_real, da_proc_sum_int, da_proc_sum_ints
    use da_par_util, only : da_patch_to_global
@@ -114,6 +136,9 @@ contains
 #include "da_setup_be_ncep_gfs.inc"
 #include "da_setup_be_regional.inc"
 #include "da_setup_be_nmm_regional.inc"
+#if (WRF_CHEM == 1)
+#include "da_setup_be_chem.inc"
+#endif
 #include "da_setup_cv.inc"
 #include "da_chgvres.inc"
 #include "da_setup_flow_predictors.inc"
@@ -123,6 +148,9 @@ contains
 #include "da_setup_obs_structures_madis.inc"
 #include "da_setup_obs_structures_rain.inc"
 #include "da_setup_obs_structures_radar.inc"
+#if (WRF_CHEM == 1)
+#include "da_setup_obs_structures_chem.inc"
+#endif
 #include "da_setup_obs_interp_wts.inc"
 #include "da_setup_runconstants.inc"
 #include "da_cloud_model.inc"

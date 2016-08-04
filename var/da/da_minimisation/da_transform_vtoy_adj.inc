@@ -1,5 +1,9 @@
 subroutine da_transform_vtoy_adj(cv_size, be, ep, cv, iv, vp, vv, vp6, vv6, xbx, y, &
-   grid, config_flags, jcdf_flag)
+   grid, config_flags, jcdf_flag &
+#if (WRF_CHEM == 1)
+                        , vch &
+#endif
+                        )
 
    !-------------------------------------------------------------------------
    ! Purpose:  Does Adjoint of control variable (V) transform to Obs-space(Y)
@@ -16,6 +20,9 @@ subroutine da_transform_vtoy_adj(cv_size, be, ep, cv, iv, vp, vv, vp6, vv6, xbx,
    type(vp_type),              intent(inout) :: vp6    ! Grdipt/level CV for 6h.
    type(vp_type),              intent(inout) :: vv     ! Grdipt/EOF CV.
    type(vp_type),              intent(inout) :: vv6    ! Grdipt/EOF CV for 6h.
+#if (WRF_CHEM == 1)
+   type(xch_type), optional, intent(out) :: vch   ! CHEM CV
+#endif
    type(xbx_type),             intent(inout) :: xbx    ! For header & non-grid arrays.
    type(y_type),               intent(inout) :: y      ! y = H(x_inc).
    type(domain),               intent(inout) :: grid
@@ -120,6 +127,7 @@ subroutine da_transform_vtoy_adj(cv_size, be, ep, cv, iv, vp, vv, vp6, vv6, xbx,
          end do
       endif
 
+      if ( checkpoint_interval .eq. 0 ) then
       do nobwin=num_fgat_time, 1, -1
 
          call domain_clock_get( grid, current_timestr=timestr )
@@ -152,6 +160,7 @@ subroutine da_transform_vtoy_adj(cv_size, be, ep, cv, iv, vp, vv, vp6, vv6, xbx,
          call domain_clockprint(150, grid, 'DEBUG Adjoint Forcing:  get CurrTime from clock,')
 
       end do
+      endif
 
       if (num_fgat_time > 1) then
          call nl_get_time_step ( grid%id, time_step_seconds)
@@ -159,10 +168,17 @@ subroutine da_transform_vtoy_adj(cv_size, be, ep, cv, iv, vp, vv, vp6, vv6, xbx,
          call domain_clockprint(150, grid, 'get CurrTime from clock,')
       endif
 
-      if ( trajectory_io ) then
+      if ( trajectory_io .and. checkpoint_interval .eq. 0 ) then
          ! for memory io, we need to up-side-down the adjoint forcing linked list generated in previous step.
           call upsidedown_ad_forcing
       endif
+
+#if (WRF_CHEM == 1)
+      ! Now the same for in-situ chemical observations.  Online obs operators eliminate need for window bins and
+      ! offline interpolation.  da_transform_xtoy_chem_adj and da_transfer_wrftltoy_chem_adj combined into one sub.
+      ! -JJG
+      call da_transfer_wrftltoy_chem_adj(grid, iv, y)
+#endif
 
       call da_ad_model
 
@@ -189,9 +205,20 @@ subroutine da_transform_vtoy_adj(cv_size, be, ep, cv, iv, vp, vv, vp6, vv6, xbx,
       end if
 
       call da_zero_x(grid%xa)
+#if (WRF_CHEM == 1)
+      call da_zero_xch_type (grid%xach)
+#endif
       call da_transfer_xatowrftl_adj(grid, config_flags, 'gr01')
-      call da_transform_vtox_adj(grid, be%cv%size_jb, xbx, be, ep, vp, vv, cv(1:be%cv%size_jb))
-  
+#if (WRF_CHEM == 1)
+      if (present(vch)) then
+         call da_transform_vtox_adj(grid, be%cv%size_jb, xbx, be, ep, vp, vv, cv(1:be%cv%size_jb), vch)
+      else
+#endif
+         call da_transform_vtox_adj(grid, be%cv%size_jb, xbx, be, ep, vp, vv, cv(1:be%cv%size_jb))
+#if (WRF_CHEM == 1)
+      end if
+#endif
+
       if (num_fgat_time > 1 .and. use_rainobs) then
          deallocate (a_hr_rainc )
          deallocate (a_hr_rainnc)

@@ -29,6 +29,11 @@ subroutine da_update_firstguess(grid, out_filename)
                             use_radar_rhv, use_radar_rqv    
   use module_state_description, only : p_qv, p_qc, p_qr, p_qi, &
                                        p_qs, p_qg
+#if (WRF_CHEM == 1)
+  use module_domain_type, only : fieldlist
+  use da_control,    only : use_chem_surfobs, use_chem_acftobs, stdout
+  use module_state_description, only : num_scaleant, num_scalebb, PARAM_FIRST_SCALAR
+#endif
 
   implicit none
 
@@ -50,7 +55,7 @@ subroutine da_update_firstguess(grid, out_filename)
   character(len=4)   :: staggering=' N/A'
   character(len=3)   :: ordering  
   character(len=80), dimension(3)  ::  dimnames
-  character(len=31)  :: rmse_var  
+  character(len=80)  :: rmse_var  
   integer            :: dh1
   integer            :: i,j,k
   integer            :: ndim1
@@ -68,6 +73,11 @@ subroutine da_update_firstguess(grid, out_filename)
   character(len=4) ::  fgname
   integer :: julyr, julday
   real    :: gmt
+#if (WRF_CHEM == 1)
+  integer :: ic
+  character(len=200)  :: varname
+  type( fieldlist ), pointer :: p
+#endif
 
   wrf_real=104
   end_index1=0
@@ -85,11 +95,19 @@ subroutine da_update_firstguess(grid, out_filename)
      if (file_name == 'ana02') then
         fgname = 'fg02'
      else
+#if (WRF_CHEM == 1)
+        fgname = 'fgc'
+#else
         fgname = 'fg'
+#endif
      endif
   else
      file_name = 'wrfvar_output'
+#if (WRF_CHEM == 1)
+     fgname = 'fgc'
+#else
      fgname = 'fg'
+#endif
   endif
 
   if (rootproc) then
@@ -1099,6 +1117,163 @@ if ( (use_radarobs .and. use_radar_rhv) .or. (use_radarobs .and. use_radar_rqv) 
    end if     ! end of update QGRAUP
 end if        ! end of radar or radiance
 !-------------End of update QCLOUD, QRAIN, QICE, QSNOW & QGROUP
+
+#if (WRF_CHEM == 1)
+!The code can be modified if scaleant and scalebb members are already present in the original wrfinput file,
+! but should not need to be. -JJGuerrette 07/2015
+if ( use_chem_surfobs .or. use_chem_acftobs ) then
+!
+!  write scaleant members
+!
+  p => grid%head_statevars
+  varname = ''
+  do while (trim(varname) .ne. 'SCALEANT' .and. ASSOCIATED( p ))
+     p => p%next
+     varname = trim( p%DataName )
+  end do
+
+  if ( trim(varname) .eq. 'SCALEANT' ) then
+     ndim1 = p%Ndim - 1
+     ordering = p%MemoryOrder
+     staggering = p%Stagger
+     start_index(1) = p%sd1
+     start_index(2) = p%sd2
+     start_index(3) = p%sd3
+     end_index1(1) = p%ed1
+     end_index1(2) = p%ed2
+     end_index1(3) = p%ed3
+ 
+     do ic = PARAM_FIRST_SCALAR, num_scaleant
+#ifdef DM_PARALLEL
+        if (rootproc) then
+          allocate( globbuf((ide-1-ids+3)*(jde-1-jds+3)*(kde-1-kds+3)))
+        else
+          allocate( globbuf( 1 ) )
+        endif
+        globbuf=0.0
+        CALL wrf_patch_to_global_double ( grid%scaleant(:,:,:,ic), globbuf, 1, '', 'xyz' ,      &
+                                          ids, ide-1,          jds, jde-1,          kds, kde-1, &
+                                          ims, ime,            jms, jme,            kms, kme,   &
+                                          ips, min(ipe,ide-1), jps, min(jpe,jde-1), kps, kpe-1  )
+#endif
+        if (rootproc) then
+           do k= 1,nsig_regional
+              do j= 1,nlat_regional
+                 do i= 1,nlon_regional
+#ifdef DM_PARALLEL
+                    field3(i,j,k)=globbuf(i+(j-1)*(nlon_regional+1)+(k-1)*(nlon_regional+1)*(nlat_regional+1))
+#else
+                    field3(i,j,k)=grid%scaleant(i,j,k,ic)
+#endif
+                 end do
+              end do
+           end do
+           rmse_var = TRIM( p%dname_table(grid%id,ic) )
+           dimnames(1) = TRIM(p%dimname1)
+           dimnames(2) = TRIM(p%dimname2)
+           dimnames(3) = TRIM(p%dimname3)
+!          write(6,*)' rmse_var=',trim(rmse_var)
+!          write(6,*)' ordering=',ordering
+!          write(6,*)' WrfType,WRF_REAL=',WrfType,WRF_REAL
+!          write(6,*)' ndim1=',ndim1
+!          write(6,*)' staggering=',staggering
+!          write(6,*)' start_index=',start_index
+!          write(6,*)' end_index1=',end_index1
+           call ext_ncd_write_field(dh1,DateStr1,TRIM(rmse_var),         &
+                                   field3,WRF_REAL,0,0,0,ordering,       &
+                                   staggering, dimnames ,                &
+                                   start_index,end_index1,               & !dom
+                                   start_index,end_index1,               & !mem
+                                   start_index,end_index1,               & !pat
+                                   ierr                                 )
+        end if  ! end of rootproc
+#ifdef DM_PARALLEL
+        deallocate(globbuf) 
+#endif
+     end do
+  else
+     write(unit=message(1),fmt='(a)') "Failed to find SCALEANT in statevar list!"
+     call da_error(__FILE__,__LINE__,message(1:1))
+  end if
+
+!
+!  write scalebb members
+!
+  p => grid%head_statevars
+  varname = ''
+  do while (trim(varname) .ne. 'SCALEBB' .and. ASSOCIATED( p ))
+     p => p%next
+     varname = trim( p%DataName )
+  end do
+
+  if ( trim(varname) .eq. 'SCALEBB' ) then
+     ndim1 = p%Ndim - 1
+     ordering = p%MemoryOrder
+     staggering = p%Stagger
+     start_index(1) = p%sd1
+     start_index(2) = p%sd2
+     start_index(3) = p%sd3
+     end_index1(1) = p%ed1
+     end_index1(2) = p%ed2
+     end_index1(3) = p%ed3
+ 
+     do ic = PARAM_FIRST_SCALAR, num_scalebb
+#ifdef DM_PARALLEL
+        if (rootproc) then
+          allocate( globbuf((ide-1-ids+3)*(jde-1-jds+3)*(kde-1-kds+3)))
+        else
+          allocate( globbuf( 1 ) )
+        endif
+        globbuf=0.0
+        CALL wrf_patch_to_global_double ( grid%scalebb(:,:,:,ic), globbuf, 1, '', 'xyz' ,       &
+                                          ids, ide-1,          jds, jde-1,          kds, kde-1, &
+                                          ims, ime,            jms, jme,            kms, kme,   &
+                                          ips, min(ipe,ide-1), jps, min(jpe,jde-1), kps, kpe-1  )
+#endif
+        if (rootproc) then
+           do k= 1,nsig_regional
+              do j= 1,nlat_regional
+                 do i= 1,nlon_regional
+#ifdef DM_PARALLEL
+                    field3(i,j,k)=globbuf(i+(j-1)*(nlon_regional+1)+(k-1)*(nlon_regional+1)*(nlat_regional+1))
+#else
+                    field3(i,j,k)=grid%scalebb(i,j,k,ic)
+#endif
+                 end do 
+              end do
+           end do 
+           rmse_var = TRIM( p%dname_table(grid%id,ic) )
+           dimnames(1) = TRIM(p%dimname1)
+           dimnames(2) = TRIM(p%dimname2)
+           dimnames(3) = TRIM(p%dimname3)
+!          write(6,*)' rmse_var=',trim(rmse_var)
+!          write(6,*)' ordering=',ordering
+!          write(6,*)' WrfType,WRF_REAL=',WrfType,WRF_REAL
+!          write(6,*)' ndim1=',ndim1
+!          write(6,*)' staggering=',staggering
+!          write(6,*)' start_index=',start_index
+!          write(6,*)' end_index1=',end_index1
+           call ext_ncd_write_field(dh1,DateStr1,TRIM(rmse_var),         &
+                                   field3,WRF_REAL,0,0,0,ordering,       &
+                                   staggering, dimnames ,                &
+                                   start_index,end_index1,               & !dom
+                                   start_index,end_index1,               & !mem
+                                   start_index,end_index1,               & !pat
+                                   ierr                                 )
+        end if  ! end of rootproc
+#ifdef DM_PARALLEL
+        deallocate(globbuf) 
+#endif
+     end do
+  else
+     write(unit=message(1),fmt='(a)') "Failed to find SCALEBB in statevar list!"
+     call da_error(__FILE__,__LINE__,message(1:1))
+
+  end if
+
+
+end if
+#endif
 
   if (rootproc) then
      deallocate(field2,field3,field3u,field3v,field3ph)

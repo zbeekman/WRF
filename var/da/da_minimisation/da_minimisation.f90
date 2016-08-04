@@ -13,9 +13,17 @@ module da_minimisation
 #endif
 
    use module_domain, only : domain, ep_type, vp_type, x_type, domain_clockprint, &
+#if (WRF_CHEM == 1)
+                             xch_type, &
+#endif
                              domain_clockadvance, domain_clock_get, domain_clock_set
    use module_state_description, only : dyn_em,dyn_em_tl,dyn_em_ad,p_g_qv, &
-       p_g_qc, p_g_qr, num_moist, PARAM_FIRST_SCALAR
+       p_g_qc, p_g_qr, num_moist, &
+#if (WRF_CHEM == 1)
+       num_chem, &
+       num_scaleant, num_scalebb, &
+#endif
+      PARAM_FIRST_SCALAR
 
 !#ifdef DM_PARALLEL
 !   use mpi, only : mpi_barrier
@@ -43,6 +51,12 @@ module da_minimisation
       var_scaling4,var_scaling5,var_scaling3, jo_unit, test_gradient, &
       print_detail_grad,omb_set_rand,grad_unit,cost_unit, num_pseudo, cv_options, &
       cv_size_domain_je,cv_size_domain_jb, cv_size_domain_jp, cv_size_domain_js, cv_size_domain_jl, &
+#if (WRF_CHEM == 1)
+      chem_surf, chem_acft, num_platform, &
+      sigma_r_acft, sigma_c_acft, &
+      num_ant_steps, num_bb_steps, &
+#endif
+      info_stop, &
       sound, mtgirs, sonde_sfc, synop, profiler, gpsref, gpspw, polaramv, geoamv, ships, metar, &
       satem, radar, ssmi_rv, ssmi_tb, ssmt1, ssmt2, airsr, pilot, airep,tamdar, tamdar_sfc, rain, &
       bogus, buoy, qscat,pseudo, radiance, monitor_on, max_ext_its, use_rttov_kmatrix,&
@@ -53,8 +67,12 @@ module da_minimisation
       orthonorm_gradient, its, ite, jts, jte, kts, kte, ids, ide, jds, jde, kds, kde, cp, &
       use_satcv, sensitivity_option, print_detail_outerloop, adj_sens, filename_len, &
       ims, ime, jms, jme, kms, kme, ips, ipe, jps, jpe, kps, kpe, fgat_rain_flags, var4d_bin_rain, freeze_varbc, &
-      use_wpec, wpec_factor
+      use_wpec, wpec_factor, &
+      checkpoint_interval
    use da_define_structures, only : iv_type, y_type,  j_type, be_type, &
+#if (WRF_CHEM == 1)
+      da_allocate_y_chem, da_zero_xch_type, &
+#endif
       xbx_type, jo_type, da_allocate_y,da_zero_x,da_zero_y,da_deallocate_y, &
       da_zero_vp_type, qhat_type
    use da_dynamics, only : da_wpec_constraint_lin,da_wpec_constraint_adj
@@ -120,6 +138,13 @@ module da_minimisation
       da_jo_and_grady_rain, da_get_hr_rain, da_transform_xtoy_rain, &
       da_transform_xtoy_rain_adj
 
+#if (WRF_CHEM == 1)
+   use da_chem, only : da_get_innov_vector_chem_surf, da_get_innov_vector_chem_acft, &
+      da_residual_chem_surf, da_residual_chem_acft, &
+      da_jo_and_grady_chem_surf, da_jo_and_grady_chem_acft, &
+      da_calculate_grady_chem_surf, da_calculate_grady_chem_acft
+#endif
+
    use da_reporting, only : da_message, da_warning, da_error
    use da_satem, only : da_calculate_grady_satem, da_ao_stats_satem, &
       da_oi_stats_satem, da_get_innov_vector_satem, da_residual_satem, &
@@ -148,6 +173,9 @@ module da_minimisation
    use da_tools_serial, only : da_get_unit,da_free_unit
    use da_tracing, only : da_trace_entry, da_trace_exit,da_trace
    use da_transfer_model, only : da_transfer_wrftltoxa,da_transfer_xatowrftl, &
+#if (WRF_CHEM == 1)
+      da_transfer_wrftltoy_chem, da_transfer_wrftltoy_chem_adj, &
+#endif
       da_transfer_xatowrftl_adj,da_transfer_wrftltoxa_adj
 #if defined(RTTOV) || defined(CRTM)
    use da_varbc, only : da_varbc_tl,da_varbc_adj,da_varbc_precond,da_varbc_coldstart
@@ -165,7 +193,7 @@ module da_minimisation
       mu6_2, psfc6, moist6
    use da_transfer_model, only : da_transfer_xatowrftl_lbc, da_transfer_xatowrftl_adj_lbc, &
       da_transfer_wrftl_lbc_t0, da_transfer_wrftl_lbc_t0_adj, da_get_2nd_firstguess
-   USE module_io_wrf, only : auxinput6_only
+   USE module_io_wrf, only : auxinput6_only, auxhist18_alarm
 #endif
 
    implicit none
@@ -199,6 +227,9 @@ contains
 #include "da_amat_mul.inc"
 #include "da_kmat_mul.inc"
 #include "da_lanczos_io.inc"
+#if (WRF_CHEM == 1)
+#include "da_calculate_aminusb.inc"
+#endif
 #include "da_swap_xtraj.inc"
 #include "da_read_basicstates.inc"
 end module da_minimisation

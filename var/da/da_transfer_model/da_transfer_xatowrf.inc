@@ -25,6 +25,9 @@ subroutine da_transfer_xatowrf(grid, config_flags)
    type(grid_config_rec_type), intent(in) :: config_flags
 
    integer :: i, j, k
+#if (WRF_CHEM == 1)
+   integer :: ic
+#endif
 
    real    :: sdmd, s1md
 
@@ -702,6 +705,29 @@ subroutine da_transfer_xatowrf(grid, config_flags)
       grid%moist_btxe = grid%moist_btxe + model_grid%g_moist_btxe
       grid%moist_btys = grid%moist_btys + model_grid%g_moist_btys
       grid%moist_btye = grid%moist_btye + model_grid%g_moist_btye
+
+#if (WRF_CHEM == 1)
+      ! Don't ever want scale < 0; alpha < 0 is no problem
+      do ic = PARAM_FIRST_SCALAR, num_scaleant
+         do j=jts,jte
+            do i=its,ite
+               do k=1, num_ant_steps
+                  grid%scaleant(i,j,k,ic) = exp(grid%xbch%alpha_ant(i,j,k,ic) + grid%xach%alpha_ant(i,j,k,ic))
+               end do
+            end do
+         end do
+      end do
+
+      do ic = PARAM_FIRST_SCALAR, num_scalebb
+         do j=jts,jte
+            do i=its,ite
+               do k=1, num_bb_steps
+                  grid%scalebb(i,j,k,ic) = exp(grid%xbch%alpha_bb(i,j,k,ic) + grid%xach%alpha_bb(i,j,k,ic))
+               end do
+            end do
+         end do
+      end do
+#endif
 
    ENDIF
 #endif

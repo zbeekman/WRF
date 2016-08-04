@@ -10,6 +10,10 @@ module da_transfer_model
    use module_io_domain, only : open_r_dataset, close_dataset, input_auxinput17, &
       output_auxinput7, open_w_dataset
    use module_state_description, only : dyn_em_ad, dyn_em, dyn_em_tl, &
+#if (WRF_CHEM == 1)
+      num_chem_surf, num_chem_acft, num_scaleant, num_scalebb, &
+      PARAM_FIRST_SCALAR, &
+#endif
       p_qv, p_qh, p_qr, p_qi, p_qs, p_qg, p_qc, param_first_scalar, num_moist, &
       p_g_qv, p_g_qh, p_g_qr, p_g_qi, p_g_qs, p_g_qg, p_g_qc, &
       p_a_qv, p_a_qh, p_a_qr, p_a_qi, p_a_qs, p_a_qg, p_a_qc
@@ -38,11 +42,20 @@ module da_transfer_model
       dt_cloud_model, cp, use_ssmiretrievalobs, var4d_detail_out, &
       vertical_ip_sqrt_delta_p, vertical_ip_delta_p,check_rh_simple, check_rh_tpw, &
       t_kelvin, num_fgat_time, num_pseudo, iso_temp, interval_seconds, trajectory_io, &
+      cv_options, &
+#if (WRF_CHEM == 1)
+      chem_surf, chem_acft, num_platform, num_ant_steps, num_bb_steps, &
+      init_scale, num_ts, crossval_chem_surfobs, crossval_chem_acftobs, &
+#endif
       ids,ide,jds,jde,kds,kde, ims,ime,jms,jme,kms,kme, num_fft_factors, &
       its,ite,jts,jte,kts,kte, ips,ipe,jps,jpe,kps,kpe, qlimit, &
       update_sfcdiags, use_wrf_sfcinfo
    use da_control, only: base_pres_strat, base_lapse_strat
+#if (WRF_CHEM == 1)
+   use da_define_structures, only : xbx_type, be_type, iv_type, y_type
+#else
    use da_define_structures, only : xbx_type, be_type
+#endif
    use da_par_util, only : da_patch_to_global
    use da_physics, only : da_check_rh_simple,da_roughness_from_lanu, &
       da_sfc_wtq,da_tpq_to_rh,da_trh_to_td,da_wrf_tpq_2_slp,da_integrat_dz, &
@@ -71,7 +84,7 @@ module da_transfer_model
    use module_big_step_utilities_em, only : calc_mu_uv
    use g_module_big_step_utilities_em, only : g_calc_mu_uv
    use a_module_big_step_utilities_em, only : a_calc_mu_uv
-   USE module_io_wrf, only : auxinput8_alarm, auxhist8_alarm, auxhist7_alarm
+   USE module_io_wrf, only : auxinput8_alarm, auxhist8_alarm, auxhist17_alarm
 #ifdef DM_PARALLEL
    use mediation_pertmod_io, only : da_halo_em_e_ad
 #endif
@@ -82,6 +95,9 @@ module da_transfer_model
    contains
 
 #include "da_transfer_wrftoxb.inc"
+#if (WRF_CHEM == 1)
+#include "da_transfer_wrftoxb_chem.inc"
+#endif
 #include "da_transfer_wrf_nmm_regional_toxb.inc"
 #include "da_transfer_kmatoxb.inc"
 #include "da_transfer_xatowrf.inc"
@@ -102,4 +118,9 @@ module da_transfer_model
 #include "da_setup_firstguess_kma.inc"
 #include "da_get_2nd_firstguess.inc"
 
+#if (WRF_CHEM == 1)
+#include "da_transfer_wrftltoy_chem.inc"
+#include "da_transfer_wrftltoy_chem_adj.inc"
+#include "da_transfer_xatowrf_temp.inc"
+#endif
 end module da_transfer_model

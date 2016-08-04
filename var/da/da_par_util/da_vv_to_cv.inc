@@ -1,4 +1,8 @@
-subroutine da_vv_to_cv(vv, xp, mzs, cv_size, rcv)
+subroutine da_vv_to_cv(vv, xp, mzs, cv_size, rcv &
+#if (WRF_CHEM == 1)
+                        , vch &
+#endif
+                        )
 
    !---------------------------------------------------------------------------
    ! Purpose: Fill (local) 1D cv array from 3D (local) vv arrays.
@@ -7,6 +11,9 @@ subroutine da_vv_to_cv(vv, xp, mzs, cv_size, rcv)
    implicit none
 
    type (vp_type), intent(in)    :: vv          ! Grdipt/EOF rcv.
+#if (WRF_CHEM == 1)
+   type (xch_type), optional, intent(inout) :: vch          ! Grdipt/EOF rcv for chem
+#endif
    type (xpose_type), intent(in) :: xp          ! Dimensions and xpose buffers.
    integer,        intent(in)    :: mzs(:)      ! Background error structure levels.
    integer,        intent(in)    :: cv_size     ! Length of CV array.
@@ -20,6 +27,10 @@ subroutine da_vv_to_cv(vv, xp, mzs, cv_size, rcv)
    integer   :: cv_s,cv_e   ! Starting and ending indices into CV array.
    integer   :: ijm         ! Size of interior of v1 through v5 arrays.
    integer   :: ijmn        ! Size of interior of alpha cv arrays.
+#if (WRF_CHEM == 1)
+   integer   :: ma, mb      ! Max anthro and bioburn time coordinates
+   integer   :: ic          ! chem loop iterator
+#endif
 
 #ifdef NORESHAPE
    integer   :: i,j,k,ijk,m,n
@@ -285,6 +296,60 @@ subroutine da_vv_to_cv(vv, xp, mzs, cv_size, rcv)
       rcv(cv_s:cv_e) = RESHAPE(vv % alpha(its_int:ite_int,jts_int:jte_int,1:mz,1:ne), (/ijmn/))
 #endif
    end if
+
+#if (WRF_CHEM == 1)
+   if (present(vch) ) then
+      ix = ie-is+1
+      jy = je-js+1
+#ifdef CLOUD_CV
+      ma = mzs(12)
+      mb = mzs(13)
+#else
+      ma = mzs(8)
+      mb = mzs(9)
+#endif
+      if ( ma > 0 ) then
+         ijm = ix * jy * ma
+         do ic = PARAM_FIRST_SCALAR, num_scaleant
+            cv_s = cv_e + 1
+            cv_e = cv_s + ijm - 1
+#ifdef NORESHAPE
+            do k=1,ma
+               do j=js,je
+                  do i=is,ie
+                     ijk = ijk + 1
+                     rcv(ijk) = vch % alpha_ant(i,j,k,ic)
+                  end do
+               end do
+            end do
+#else
+            rcv(cv_s:cv_e) = RESHAPE(vch % alpha_ant(is:ie,js:je,1:ma,ic))
+#endif
+         end do
+      end if
+
+      if ( mb > 0 ) then
+         ijm = ix * jy * mb
+         do ic = PARAM_FIRST_SCALAR, num_scalebb
+            cv_s = cv_e + 1
+            cv_e = cv_s + ijm - 1
+#ifdef NORESHAPE
+            do k=1,mb
+               do j=js,je
+                  do i=is,ie
+                     ijk = ijk + 1
+                     rcv(ijk) = vch % alpha_bb(i,j,k,ic)
+                  end do
+               end do
+            end do
+#else
+            rcv(cv_s:cv_e) = RESHAPE(vch % alpha_bb(is:ie,js:je,1:mb,ic))
+#endif
+         end do
+      end if
+   end if
+
+#endif
 
    if (trace_use) call da_trace_exit("da_vv_to_cv")
 

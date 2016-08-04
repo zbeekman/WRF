@@ -39,10 +39,18 @@ subroutine da_minimise_lz(grid, config_flags,            &
    integer, intent(out)              :: neign
    
    integer                           :: i, j, k, n, inst, iter
+#if (WRF_CHEM != 1)
 #ifdef CLOUD_CV
    integer                           :: mz(13), info, nsstwrk
 #else
    integer                           :: mz(7), info, nsstwrk
+#endif
+#else
+#ifdef CLOUD_CV
+   integer                           :: mz(15), info, nsstwrk
+#else
+   integer                           :: mz(9), info, nsstwrk
+#endif
 #endif
    integer                           :: npred, ipred
    integer                           :: jp_start, jp_end       ! Start/end indices of Jp.
@@ -59,7 +67,12 @@ subroutine da_minimise_lz(grid, config_flags,            &
    real                              :: adj_rhs, adj_sum_rhs ! < cv, cv >
    real                              :: j_total, j0_total
    real                              :: dfs, dfsmax
-   
+#if (WRF_CHEM == 1)
+   character(len=2) :: iterc,itc
+   character(len=3) :: dummychar=""
+   integer          :: ii
+#endif
+
    if (trace_use) call da_trace_entry("da_minimise_lz")
 
    write(unit=stdout,fmt='(A)') 'Minimize cost function using Lanczos method'
@@ -68,11 +81,23 @@ subroutine da_minimise_lz(grid, config_flags,            &
    !-------------------------------------------------------------------------
    ! [1.0] Initialization:
    !-------------------------------------------------------------------------
+#if (WRF_CHEM != 1)
 #ifdef CLOUD_CV
-   mz = (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz,  be%v6%mz, be%v7%mz,  be%v8%mz, be%v9%mz, be%v10%mz, be%v11%mz, be%alpha%mz, be % ne /)
+   mz = (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz, &
+           be%v6%mz, be%v7%mz, be%v8%mz, be%v9%mz, be%v10%mz, be%v11%mz, be%alpha%mz, be%ne /)
 #else
-   mz = (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz,be%alpha%mz, be % ne /)
-#endif   
+   mz = (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz, be%alpha%mz, be%ne /)
+#endif
+#else
+#ifdef CLOUD_CV
+   mz = (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz, &
+           be%v6%mz, be%v7%mz, be%v8%mz, be%v9%mz, be%v10%mz, be%v11%mz, be%alpha%mz, be%ne, &
+           be%alpha_ant_chem(PARAM_FIRST_SCALAR)%mz, be%alpha_bb_chem(PARAM_FIRST_SCALAR)%mz /)
+#else
+   mz = (/ be%v1%mz, be%v2%mz, be%v3%mz, be%v4%mz, be%v5%mz, be%alpha%mz, be%ne, &
+           be%alpha_ant_chem(PARAM_FIRST_SCALAR)%mz, be%alpha_bb_chem(PARAM_FIRST_SCALAR)%mz /)
+#endif
+#endif
    jp_start   = be % cv % size_jb + be % cv % size_je + 1
    jp_end     = be % cv % size_jb + be % cv % size_je + be % cv % size_jp
    
@@ -86,7 +111,7 @@ subroutine da_minimise_lz(grid, config_flags,            &
    end if
    ghat      = - ghat0
    beta(0)   = SQRT(da_dot_cv(cv_size, ghat, ghat, grid, mz, jp_start, jp_end))
-   qhat(:,0) = 0.0
+   qhat(:,0) = 0.D0
    j_grad_norm_target = beta(0)
 
    write(unit=stdout,fmt='("Starting outer iteration : ",i3)') it
@@ -156,18 +181,30 @@ subroutine da_minimise_lz(grid, config_flags,            &
     ! Print Cost Function and Infomation Content
     !-----------------------------------
       j_total = j0_total + 0.5 * da_dot_cv(cv_size,ghat0,xhat,grid,mz,jp_start,jp_end)
+      write(unit=stdout,fmt='(A)') 'Iter     Cost Function       Info Content'
       write(unit=stdout,fmt=12)iter, j_total, dfs      	 
 12    format(i3,5x,1PD15.8,5x,1PD15.8)
 
     ! Stop minimization based on Information Content
     ! ----------------------------------------------
-      if (sqrt(dfs) < eps(it) * sqrt(dfsmax)) exit
+      if (sqrt(dfs) < eps(it) * sqrt(dfsmax) .and. info_stop) exit
 
     ! Option to calculate J Cost Function explicitly
     ! ----------------------------------------------
       if (calculate_cg_cost_fn) &
          call da_calculate_j(it, iter, cv_size, be%cv%size_jb, be%cv%size_je, be%cv%size_jp, &
 	                     be%cv%size_jl, xbx, be, iv, xhat, cv, re, y, j_cost, fhat, grid, config_flags)
+
+    ! Print current eigenvalues
+    ! ----------------------------------------------
+      write(unit=stdout,fmt='(A,2I5)') 'it, iter = ',it,iter
+      write(dummychar,fmt='(I0)') iter
+      write(unit=stdout,fmt='(A,'//trim(dummychar)//'D23.12)') 'Ritz eigenvalues: ',eignval(1:iter)     
+      do ii = 1,iter
+         write(unit=stdout,fmt='(A,I3,A,'//trim(dummychar)//'D23.12)') 'EIGENVECTOR',ii,': ',eignvec(ii,1:iter) 
+      end do
+      write(unit=stdout,fmt='(A,I5)') 'Number of converged eigenpairs: ', neign
+
    end do
 
    !-------------------------------------------------------------------------
