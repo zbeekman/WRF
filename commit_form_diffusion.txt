@@ -1,0 +1,63 @@
+TYPE: no impact
+
+KEYWORDS: ARW diffusion cleanup
+
+SOURCE: internal
+
+PURPOSE: Remove unnecessary "mu" arguments, remove "I was here" comments.  Prepare 
+code for hybrid coordinate port.
+
+DESCRIPTION OF CHANGES: 
+With the conservation modifications introduced for ARW diffusion (from Stefan
+Tulich), there are quite a few places where the "mu" field is no longer required.
+In anticipation of the hybrid vertical coordinate introduction, those are all
+being removed.  All of the horizontal and vertical diffusion calls now use
+density (rho).  The only routines in the module that still use "mu" are 
+tke_rhs, tke_shear, tke_buoyancy, tke_dissap.  The calls to the diffusion 
+routines from first_rk_step_part2 are modified to remove "mu".  For the routines
+in module_diffusion_em.F that use "mu", the declarations and other averaging
+computations are removed.
+
+A few "I was here" comments are removed:
+!SNT
+!JDM
+!new code
+!new
+... and some comments from a Rich Rotunno reference.
+
+I removed all of the original code that Stefan Tulich's mods replaced (they
+were commented out, and should be removed).
+
+Finally, I removed all of the trailing blanks.
+ 
+LIST OF MODIFIED FILES (annotated if not obvious, not required to be on a single line): 
+M       dyn_em/module_diffusion_em.F  (lots of lines of changes)
+M       dyn_em/module_first_rk_step_part2.F  (one line each in h and v diffusion calls)
+
+TESTS CONDUCTED:
+1) A regression test is about to be started.
+
+2) I have done some simple bit-for-bit tests, and I get the same results (before vs 
+after my mods).  I did a fully optimized 24-h Jan 2000 case, and a fully optimized
+hill2d_x case.  I'll do a more rigorous test with the regression results.
+
+==============
+
+I did quite a bit of source code diffing to make the diffs as clean as possible.  If 
+you are interested in looking, do an xxdiff of the two files:
+xxdiff ${OLD_DIR}/module_diffusion_em.F ${NEW_DIR}/module_diffusion_em.F
+THEN under "Options" for xxdiff, turn on all of the "Ignore" settings: trailing blanks,
+whitespace, case, blank lines.  This will take the code diffs from 332 places down to a
+manageable 138.  However, this still picks up all of the "!JDM" and "!SNT" changes.  
+
+To zap those comment differences, run the xxdiff on the manufactured .f90 files.  Then 
+there are only 67 places with diffs (about 10 of those are from the automatic line 
+numbers from the wrf_error_fatal calls).  The important diffs can be reviewed pretty 
+quickly from the two module_diffusion_em.f90 files.
+
+set OLD_DIR = /glade/scratch/gill/MU/TOP_OF_REPO/MU/WRFV3_9506_pristine/dyn_em
+set NEW_DIR = /glade/scratch/gill/MU/TOP_OF_REPO/MU/WRFV3_9506_diffusion/dyn_em
+
+I cleaned up these directories for my diffing.  After I tar up the files for a 
+regression test, I'll rebuild these WRF directories.  They will be available 
+after 7 PM on Weds.
