@@ -584,6 +584,9 @@
 #  include "HALO_NMM_INIT_37.inc"
 #  include "HALO_NMM_INIT_38.inc"
 #  include "HALO_NMM_INIT_39.inc"
+!GF -  to get 0 on boundaries for convective tendencies
+#  include "HALO_NMM_INIT_40.inc"
+#  include "HALO_NMM_INIT_41.inc"
 #endif
 !
       if((allowed_to_read .and. .not. restrt) .or. anal) then
@@ -704,22 +707,14 @@
                             IMS,IME,JMS,JME,KMS,KME, &
                             ITS,ITE,JTS,JTE,KTS,KTE)
          call init_swath(grid, config_flags, &
-              (allowed_to_read .and. .not. restrt),&
-              allowed_to_read)
+              (allowed_to_read .and. .not. restrt) )
     ENDIF
     IF(ANAL .or. allowed_to_read) THEN
-       call wrf_debug(1,'Request update to area of interest in start_domain_nmm.')
        grid%update_interest=.true.
     ENDIF
 ! End Sam Trahan's doing for vortex tracker initialization
 #endif
 #if ( HWRF == 1 )
-! Begin Sam Trahan's change to merge two log messages for WRF_NMM
-    IF(allowed_to_read .and. .not. restrt) THEN
-       grid%avgPchg=0
-    ENDIF
-! End Sam Trahan's change to merge two log messages for WRF_NMM
-
 !zhang's doing
   IF((.NOT.RESTRT .AND. .NOT.ANAL) .OR. .NOT.allowed_to_read)THEN
 !end of zhang's doing
@@ -730,8 +725,12 @@
         DO I=IFS,IFE
           grid%pdsl(I,J)  =grid%pd(I,J)*grid%res(I,J)
           grid%prec(I,J)  =0.
-          IF(allowed_to_read)grid%acprec(I,J)=0.  ! This is gopal's inclusion for moving nest
-          grid%cuprec(I,J)=0.
+          IF(allowed_to_read)then   !GF
+            grid%acprec(I,J)=0.  ! This is gopal's inclusion for moving nest
+            grid%cuprec(I,J)=0.  ! include this too!
+          ENDIF
+!          IF(allowed_to_read)grid%acprec(I,J)=0.  ! This is gopal's inclusion for moving nest
+!          grid%cuprec(I,J)=0.
           rg=1./g
           ht=grid%fis(i,j)*rg
 !!!       fisx=ht*g
@@ -940,11 +939,51 @@
         DO J=JFS,JFE
         DO I=IFS,IFE
           IF(grid%q(I,J,K)<EPSQ)grid%q(I,J,K)=EPSQ
+!          grid%train(I,J,K)=0.        !GF commented out, put below
+!          grid%tcucn(I,J,K)=0.        !GF commented out, put below
+        ENDDO
+        ENDDO
+        ENDDO
+
+!GF begin
+       IF(allowed_to_read)then 
+        DO K=KPS,KPE
+        DO J=JFS,JFE
+        DO I=IFS,IFE
           grid%train(I,J,K)=0.
           grid%tcucn(I,J,K)=0.
         ENDDO
         ENDDO
         ENDDO
+
+!***  initialize convective tendency arrays
+!***  (should have a diag flag to check if present)
+        DO K=KPS,KPE
+        DO J=JFS,JFE
+        DO I=IFS,IFE
+          grid%DTHCUDT(I,J,K)=0.
+          grid%DQVCUDT(I,J,K)=0.
+          grid%DQCCUDT(I,J,K)=0.
+          grid%DQICUDT(I,J,K)=0.
+          grid%DQRCUDT(I,J,K)=0.
+          grid%DQSCUDT(I,J,K)=0.
+        ENDDO
+        ENDDO
+        ENDDO
+
+        if(config_flags%cu_rad_feedback) then
+          DO J=JFS,JFE
+          DO K=KPS,KPE
+          DO I=IFS,IFE
+            grid%QC_CU(I,K,J)=0.
+            grid%QI_CU(I,K,J)=0.
+          ENDDO
+          ENDDO
+          ENDDO
+        endif
+
+       ENDIF
+!GF - end
 !
 !***
 !***  INITIALIZE MAX/MIN TEMPERATURES.
@@ -2168,6 +2207,8 @@
      &             ,ITS, ITE, JTS, JTE, KTS, KTE                        &
      &             ,NUM_URBAN_LAYERS,NUM_URBAN_HI                       &
      &             ,GRID%RAINCV_A,GRID%RAINCV_B                         &
+     &             ,gd_cloud=grid%gd_cloud,gd_cloud2=grid%gd_cloud2     & !GF Optional GF-Cu
+     &             ,qc_cu=grid%qc_cu,qi_cu=grid%qi_cu                   & !GF Optional GF-Cu
      &               ,ISNOWXY=grid%ISNOWXY, ZSNSOXY=grid%ZSNSOXY, TSNOXY=grid%TSNOXY,    & ! Optional Noah-MP
      &                SNICEXY=grid%SNICEXY, SNLIQXY=grid%SNLIQXY, TVXY=grid%TVXY,        & ! Optional Noah-MP
      &                TGXY=grid%TGXY, CANICEXY=grid%CANICEXY,                            & ! Optional Noah-MP
@@ -2561,6 +2602,11 @@
 #  include "HALO_NMM_INIT_37.inc"
 #  include "HALO_NMM_INIT_38.inc"
 #  include "HALO_NMM_INIT_39.inc"
+!GF - for convective tendencies
+#  include "HALO_NMM_INIT_40.inc"
+#  include "HALO_NMM_INIT_41.inc"
+!GF - end
+
 #endif
 !#define COPY_OUT
 !#include "scalar_derefs.inc"

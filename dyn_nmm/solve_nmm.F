@@ -29,7 +29,7 @@
       USE MODULE_COMM_DM
 #endif
 #if ( HWRF == 1 )
-      USE MODULE_SWATH,                 ONLY : UPDATE_INTEREST, SUSTAINED_WIND, CHECK_FOR_KID_MOVE
+      USE MODULE_SWATH,                 ONLY : UPDATE_INTEREST
       USE MODULE_HIFREQ,                ONLY: HIFREQ_WRITE, HIFREQ_OPEN
 #endif
       USE MODULE_TORNADO_GENESIS,       ONLY: CALC_TORNADO_GENESIS, RESET_TORNADO_GENESIS
@@ -118,7 +118,6 @@
       INTEGER :: NUM_AEROSOLC
 !
       REAL :: DT_INV,FICE,FRAIN,GPS,QI,QR,QW,WC,WP
-      REAL :: dwdt_damping_lev
 !
       LOGICAL :: LAST_TIME,OPERATIONAL_PHYSICS,ETAMP_PHYSICS
 !
@@ -150,7 +149,7 @@
      &,            cucnvc_tim,gsmdrive_tim,hdiff_tim,bocoh_tim          &
      &,            pfdht_tim,ddamp_tim,bocov_tim,uv_htov_tim,sum_tim    &
 #if ( HWRF == 1 )
-     &,            sst_tim,flux_tim,hifreq_tim,wav_tim,cplstep_tim      &
+     &,            sst_tim,flux_tim,hifreq_tim                          &
 #endif
      &,            diag_tim,adjppt_tim,tornado_tim                      
 
@@ -163,7 +162,6 @@
       real,save :: exch_tim_max
       real :: ttim,btimx
       real :: et_max,this_tim
-      double precision :: fhr
       integer :: n_print_time
 !
 !-----------------------------------------------------------------------
@@ -183,7 +181,6 @@
       INTEGER :: IDTADT 
       INTEGER :: IDTADC
       INTEGER :: KS                                                        ! species index in 4d tracer array
-      INTEGER :: istat_perf                                                        ! species index in 4d tracer array
 !
       REAL,SAVE :: SUMDRRW
 !
@@ -306,7 +303,8 @@
 !
 !!!!! IF(WRF_DM_ON_MONITOR() )THEN
         WRITE(MESSAGE,125)grid%id,grid%ntsd,grid%ntsd*GRID%DT/3600.
-  125   FORMAT(' SOLVE_NMM: ',I3,' TIMESTEP IS ',I0,'   TIME IS ',F7.3,' HOURS')
+  125   FORMAT(' SOLVE_NMM: ',I3,' TIMESTEP IS ',I5,'   TIME IS ',F7.3,' HOURS')
+        CALL WRF_MESSAGE(TRIM(MESSAGE))
 !!!!  ENDIF
 !
 !-----------------------------------------------------------------------
@@ -315,7 +313,6 @@
       IDTADT=model_config_rec%IDTADT
       IDTADC=model_config_rec%IDTADC
       WP=model_config_rec%WP(grid%id)
-      dwdt_damping_lev=model_config_rec%dwdt_damping_lev(grid%id)
 !
 !-----------------------------------------------------------------------
       CALL WRF_GET_DM_COMMUNICATOR(MPI_COMM_COMP)
@@ -391,6 +388,7 @@
       ALLOCATE(RTHRATEN(IMS:IME,KMS:KME,JMS:JME),STAT=ISTAT)
 !
         IF(CONFIG_FLAGS%CU_PHYSICS==GDSCHEME.OR.                        &
+     &  CONFIG_FLAGS%CU_PHYSICS==GFSCHEME.OR.              &  !GF
      &  CONFIG_FLAGS%CU_PHYSICS==TIEDTKESCHEME.OR.                      &
      &  CONFIG_FLAGS%CU_PHYSICS==KFETASCHEME)THEN
 
@@ -399,6 +397,9 @@
         DO I=IMS,IME
           TTEN(I,K,J)=grid%t(I,J,K)
           QTEN(I,K,J)=grid%q(I,J,K)
+          RTHBLTEN(i,k,j) = 0.               !GF
+          RQVBLTEN(i,k,j) = 0.               !GF
+          RTHRATEN(i,k,j) = 0.               !GF
         ENDDO
         ENDDO
         ENDDO
@@ -472,8 +473,6 @@
         tornado_tim=0.
 #if ( HWRF == 1 )
         sst_tim=0.
-        cplstep_tim=0.
-        wav_tim=0.
         flux_tim=0.
         hifreq_tim=0.
 #endif
@@ -553,14 +552,6 @@
           grid%XLOC_1=(IDE-1)/2     ! This maneuvers the storm to the center of the nest quickly
           grid%YLOC_1=(JDE-1)/2     ! This maneuvers the storm to the center of the nest quickly
         ENDIF
-
-        ! If we have any nests, check to see if they moved so we know
-        ! if we need to update the nest-centric area of interest:
-        IF(grid%ntsd>1 .and. MOD(grid%ntsd,grid%nphs)==0) THEN
-           grid%update_interest = grid%update_interest .or. &
-                check_for_kid_move(grid,config_flags)
-        ENDIF
-
 #endif
 
       ENDIF
@@ -813,7 +804,7 @@
                          grid%HLON,grid%HLAT,grid%VLON,grid%VLAT,grid%sm,                   &
                          grid%i_parent_start,grid%j_parent_start,  &
                          grid%guessdtc,grid%dtc)
-        cplstep_tim=cplstep_tim+now_time()-btimx
+        sst_tim=sst_tim+now_time()-btimx
       ENDIF
 !<-:coupling insertion
 !
@@ -1205,7 +1196,7 @@
      &        ,grid%fns,grid%few,grid%fne,grid%fse                                          &
      &        ,grid%t,grid%u,grid%v,grid%w,grid%w_tot,grid%q,grid%cwm                                            &
      &        ,grid%def3d,grid%hdac,grid%baro                                              &
-     &        ,WP,dwdt_damping_lev                                                 &
+     &        ,WP                                                 &
      &        ,grid%ihe,grid%ihw,grid%ive,grid%ivw                                          &
      &        ,IDS,IDF,JDS,JDF,KDS,KDE                                  &
      &        ,IMS,IME,JMS,JME,KMS,KME                                  &
@@ -1500,7 +1491,6 @@
      &                ,RTHRATEN                                        &  
      &                ,grid%re_cloud,grid%re_ice,grid%re_snow          &  ! G. Thompson
      &                ,grid%has_reqc,grid%has_reqi,grid%has_reqs       &  ! G. Thompson
-     &                ,grid%hrswpd,grid%hrlwpd                         &  ! J. Henderson AER
      &                ,grid%SWUPT,grid%SWUPTC,grid%SWDNT,grid%SWDNTC   &
      &                ,grid%SWUPB,grid%SWUPBC,grid%SWDNB,grid%SWDNBC   &
      &                ,grid%LWUPT,grid%LWUPTC,grid%LWDNT,grid%LWDNTC   &
@@ -1582,10 +1572,6 @@
         btimx=now_time()
         CALL ATM_GETSST(grid%sst,grid%sm)
         sst_tim=sst_tim+now_time()-btimx
-        btimx=now_time()
-        CALL atm_getcur(grid%scurx, grid%scury)    !BT
-        CALL atm_getwstate(grid%charn,grid%msang)  !BT
-        wav_tim=wav_tim+now_time()-btimx
 !<-:Coupling insertion
       ENDIF
 #endif
@@ -1593,7 +1579,7 @@
 !***  TURBULENT PROCESSES 
 !----------------------------------------------------------------------
 !
-      turbl_time: IF(MOD(grid%ntsd,GRID%NPHS)==0)THEN
+      IF(MOD(grid%ntsd,GRID%NPHS)==0)THEN
 !
         btimx=now_time()
 !
@@ -1617,7 +1603,6 @@
      &            ,grid%czen,grid%czmean,grid%sigt4,grid%rlwin,grid%rswin,grid%radot                 &
      &            ,grid%pd,grid%res,grid%pint,grid%t,grid%q,grid%cwm,grid%f_ice,grid%f_rain,grid%sr                 &
      &            ,grid%q2,grid%u,grid%v,grid%ths,grid%nmm_tsk,grid%sst,grid%prec,grid%sno                     &
-     &            ,grid%scurx,grid%scury                                              &
      &            ,grid%fis,grid%z0,grid%mz0,grid%z0base,grid%ustar,grid%mixht,grid%pblh,grid%lpbl,grid%el_pbl    &   !KWON MZ0
      &            ,MOIST,SCALAR,grid%rmol,grid%mol                                      &
      &            ,grid%exch_h,grid%exch_m,grid%f,grid%akhs,grid%akms,grid%akhs_out,grid%akms_out         &
@@ -1656,9 +1641,6 @@
      &            ,GRID%HPBL2D, GRID%EVAP2D, GRID%HEAT2D,GRID%RC2D               &  !S&P Kwon
      &            ,GRID%SFCHEADRT,GRID%INFXSRT,GRID%SOLDRAIN           &  !Hydrology, no-op right now
      &            ,grid%cd_out,grid%ch_out                             &
-     &            ,grid%ulowl,grid%vlowl                               &
-     &            ,grid%zsig1,grid%rchno                               &
-     &            ,grid%charn,grid%msang                               &
      &            ,grid%DUBLDT,grid%DVBLDT,grid%DTHBLDT,grid%DQVBLDT   &!wang added PBL tendency output
      &            ,IDS,IDF,JDS,JDF,KDS,KDE                             &
      &            ,IMS,IME,JMS,JME,KMS,KME                             &
@@ -1671,9 +1653,6 @@
 !
         turbl_tim=turbl_tim+now_time()-btimx
 #if ( HWRF == 1 )
-        btimx=now_time()
-        call sustained_wind(grid,config_flags,ips,ipe,jps,jpe,.true.)
-        diag_tim=diag_tim+now_time()-btimx
 !------------------------------------------------------------------------------
 !*** ATMOSPHERIC MODEL OUTPUTS FROM PARENT AND NESTED GRID FOR DMITRYs COUPLER
 !------------------------------------------------------------------------------
@@ -1700,16 +1679,16 @@
 ! Coupling insertion:->
         btimx=now_time()
         call ATM_DOFLUXES(grid%twbs,grid%qwbs,grid%rlwin,grid%rswin,grid%radot,grid%rswout, &
-        grid%taux,grid%tauy,grid%pint,grid%prec)
-        CALL atm_prepwindp(grid%ulowl,grid%vlowl,grid%rchno,grid%zsig1) !BT
+        grid%taux,grid%tauy,grid%pint,grid%prec,grid%u10,grid%v10)
         flux_tim=flux_tim+now_time()-btimx
 !<-:Coupling insertion
 !
-      ENDIF
+
         IF(GRID%ID .EQ. 1 .AND. MOD(grid%ntsd,grid%NPHS)==0)THEN
           btimx=now_time()
           flux_tim=flux_tim+now_time()-btimx
         ENDIF
+      ENDIF
 #endif
 !
 #ifdef NMM_FIND_LOAD_IMBALANCE
@@ -1786,11 +1765,7 @@
      &             ,ITS,ITE,JTS,JTE,KTS,KTE)
 !
         cltend_tim=cltend_tim+now_time()-btimx
-     ELSE
-        btimx=now_time()
-        call sustained_wind(grid,config_flags,ips,ipe,jps,jpe,.false.)
-        diag_tim=diag_tim+now_time()-btimx
-     ENDIF turbl_time
+     ENDIF
 !
 !----------------------------------------------------------------------
 !***  CONVECTIVE PRECIPITATION
@@ -1798,6 +1773,7 @@
 !
       IF(MOD(grid%ntsd,GRID%NCNVC)==0.AND.                              &
      &   (CONFIG_FLAGS%CU_PHYSICS.eq.KFETASCHEME .or.                     &
+     &   CONFIG_FLAGS%CU_PHYSICS.eq.GFSCHEME .OR.                         & !GF
      &   CONFIG_FLAGS%CU_PHYSICS.eq.OSASSCHEME .or.                       &
      &   CONFIG_FLAGS%CU_PHYSICS.eq.NSASSCHEME .or.                       &
      &   CONFIG_FLAGS%CU_PHYSICS.eq.MESO_SAS .or.                         &   !Kwon
@@ -1828,6 +1804,7 @@
 !***  GET TENDENCIES FOR GD SCHEME.
 !    
         IF(CONFIG_FLAGS%CU_PHYSICS==GDSCHEME.OR.                        &
+     &  CONFIG_FLAGS%CU_PHYSICS==GFSCHEME.OR.                           & !GF
      &  CONFIG_FLAGS%CU_PHYSICS==TIEDTKESCHEME.OR.                      &
      &  CONFIG_FLAGS%CU_PHYSICS==KFETASCHEME)THEN
           DT_INV=1./GRID%DT
@@ -1854,6 +1831,8 @@
        ENDIF
 !
 !----------------------------------------------------------------------
+       call wrf_message('call cucnvc')
+       call start_timing
         call check_grid(grid,config_flags,'before CUCNVC', &
             ids,ide,jds,jde,kds,kde, &
             ims,ime,jms,jme,kms,kme, &
@@ -1885,7 +1864,6 @@
      &             ,grid%hpbl2d,grid%evap2d,grid%heat2d                &
      &             ,grid%dx_nmm,grid%dy_nmm                            & !wang, dx2d, dy
      &             ,grid%scalefun, grid%scalefun1                           & !wang
-     &             ,grid%sigmu, grid%sigmu1                           & !wang
      &             ,grid%avcnvc,grid%acutim,grid%ihe,grid%ihw          &
      &             ,GRID,CONFIG_FLAGS                                  &
      &             ,IDS,IDF,JDS,JDF,KDS,KDE                            &
@@ -1896,6 +1874,7 @@
             ids,ide,jds,jde,kds,kde, &
             ims,ime,jms,jme,kms,kme, &
             its,ite,jts,jte,kts,kte)
+        call end_timing('cucnvc')
 !----------------------------------------------------------------------
 !
         cucnvc_tim=cucnvc_tim+now_time()-btimx
@@ -1910,11 +1889,15 @@
 !        IF(MOD(grid%ntsd,GRID%NCNVC).eq.0.and.(CONFIG_FLAGS%CU_PHYSICS.eq.OSASSCHEME))THEN
 ! update to match HWRFV2 behaviour - review later (1/15/10)
 !
+! GFSCHEME included below as this code block is for schemes with momentum
+! tendencies from the convection scheme.  -GF
+!
 !emc_2010_bugfix_h50
         IF(MOD(grid%ntsd, GRID%NCNVC).eq.0.and.                 &
      &    (CONFIG_FLAGS%CU_PHYSICS.eq.OSASSCHEME.or.            &
      &     CONFIG_FLAGS%CU_PHYSICS.eq.NSASSCHEME.or.            &
      &     CONFIG_FLAGS%CU_PHYSICS.eq.MESO_SAS.or.              & !Kwon
+     &     CONFIG_FLAGS%CU_PHYSICS.eq.GFSCHEME.or.              & !GF
      &     CONFIG_FLAGS%CU_PHYSICS.eq.SASSCHEME))THEN 
 !emc_2010_bugfix_h50
 !
@@ -2420,7 +2403,7 @@
              pfdht_tim + ddamp_tim + bocov_tim + uv_htov_tim + diag_tim +  &
              tornado_tim
 #if ( HWRF == 1 )
-        sum_tim = sum_tim + sst_tim + flux_tim + hifreq_tim + wav_tim + cplstep_tim
+        sum_tim = sum_tim + sst_tim + flux_tim + hifreq_tim
 #endif
 #if defined(NMM_FIND_LOAD_IMBALANCE)
         sum_tim=sum_tim + loadimbal_tim + previmbal_tim
@@ -2485,10 +2468,6 @@
 #if ( HWRF == 1 )
         write(message,17)' sst_tim=',sst_tim,' pct=',sst_tim/sum_tim*100.
         call wrf_message(trim(message))
-        write(message,17)' cplstep_tim=',cplstep_tim,' pct=',cplstep_tim/sum_tim*100.
-        call wrf_message(trim(message))
-        write(message,17)' wav_tim=',wav_tim,' pct=',wav_tim/sum_tim*100.
-        call wrf_message(trim(message))
         write(message,17)' flux_tim=',flux_tim,' pct=',flux_tim/sum_tim*100.
         call wrf_message(trim(message))
         write(message,17)' hifreq_tim=',hifreq_tim,' pct=',hifreq_tim/sum_tim*100.
@@ -2530,6 +2509,7 @@
 #ifdef MOVE_NESTS
    IF ( grid%num_moves.EQ.-99 ) THEN
      btimx=now_time()
+      call start_timing()
       call stats_for_move(grid,config_flags &
                          ,IDS,IDE,JDS,JDE,KDS,KDE &
                          ,IMS,IME,JMS,JME,KMS,KME &
@@ -2537,6 +2517,7 @@
                          ,ITS,ITE,JTS,JTE,KTS,KTE)
 3303  format('stats_for_move on domain ',I0)
       write(message,3303) grid%id
+      call end_timing(message)
    CALL wrf_debug ( 100 , 'nmm stats_for_move: after advection' )
      diag_tim=diag_tim+now_time()-btimx
    ENDIF
@@ -2580,7 +2561,6 @@
 ! Coupling insertion:->
         btimx=now_time()
         call ATM_SENDFLUXES
-        CALL atm_sendwindp  !BT
         flux_tim=flux_tim+now_time()-btimx
 !<-:Coupling insertion
 !
@@ -2782,7 +2762,7 @@
 !----------------------------------------------------------------------
 !!!!  DO 500 K=KTS,KTE+KK     !Unflipped
 !!!!  DO 500 K=KTE+KK,KTS,-1
-      write_layers: DO K=KDE-1,KDS,-1   !Write LM layers top down for checking
+      DO 500 K=KDE-1,KDS,-1   !Write LM layers top down for checking
 !----------------------------------------------------------------------
 !
 #if defined(DM_PARALLEL) && !defined(STUBMPI)
@@ -2875,7 +2855,7 @@
 
 !
 !----------------------------------------------------------------------
-      ENDDO write_layers
+  500 CONTINUE
 !
       IF(MYPE==0)CLOSE(IUNIT)
 !----------------------------------------------------------------------
@@ -2972,7 +2952,7 @@
 !----------------------------------------------------------------------
 !!!!  DO 500 K=KTS,KTE+KK     !Unflipped
 !!!!  DO 500 K=KTE+KK,KTS,-1
-      write_layers: DO K=KDE-1,KDS,-1   !Write LM layers top down for checking
+      DO 500 K=KDE-1,KDS,-1   !Write LM layers top down for checking
 !----------------------------------------------------------------------
 !
 #if defined(DM_PARALLEL) && !defined(STUBMPI)
@@ -3064,7 +3044,7 @@
 #endif
 !
 !----------------------------------------------------------------------
-      ENDDO write_layers
+  500 CONTINUE
 !
       IF(MYPE==0)CLOSE(IUNIT)
 !----------------------------------------------------------------------

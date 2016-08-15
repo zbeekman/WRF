@@ -1163,9 +1163,9 @@
                ( model_config_rec%cu_physics(i) .NE. G3SCHEME ) ) THEN
                 wrf_err_message = '--- ERROR: Using cu_diag=1 requires use of one of the following CU schemes:'
                 CALL wrf_message ( wrf_err_message )
-                wrf_err_message = '---          Grell (G3) CU scheme' 
+                wrf_err_message = '---          Grell (GD,GF or G3) CU scheme' 
                 CALL wrf_message ( wrf_err_message )
-                wrf_err_message = '---          Grell-Devenyi (GD) CU scheme' 
+                wrf_err_message = '---          Kain-Fritsch (KF) CU scheme' 
          !       CALL wrf_error_fatal ( wrf_err_message )
          CALL wrf_debug ( 0, TRIM( wrf_err_message ) )
          fatal_error = .true.

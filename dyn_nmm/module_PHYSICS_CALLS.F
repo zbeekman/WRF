@@ -79,7 +79,6 @@
      &                    ,RTHRATEN                                     &
      &                    ,re_cloud,re_ice,re_snow                      & ! G. Thompson
      &                    ,has_reqc,has_reqi,has_reqs                   & ! G. Thompson
-     &                    ,hrswpd,hrlwpd                                & ! J. Henderson AER
      &                    ,SWUPT,SWUPTC,SWDNT,SWDNTC                    &
      &                    ,SWUPB,SWUPBC,SWDNB,SWDNBC                    &
      &                    ,LWUPT,LWUPTC,LWDNT,LWDNTC                    &
@@ -202,9 +201,6 @@
 !..Additions for coupling cloud physics effective radii and radiation.  G. Thompson
       REAL,DIMENSION(IMS:IME,JMS:JME,KMS:KME),INTENT(IN):: re_cloud, re_ice, re_snow
       INTEGER, INTENT(IN):: has_reqc, has_reqi, has_reqs
-
-!..Output daily longwave and shortwave heating rates: ! J. Henderson AER
-      REAL,DIMENSION(IMS:IME,JMS:JME,KMS:KME),INTENT(OUT):: hrlwpd,hrswpd
 !
       LOGICAL,INTENT(IN) :: RESTRT
 !
@@ -428,7 +424,6 @@
      &       ,aer_asy_opt=config_flags%aer_asy_opt,aer_asy_val=config_flags%aer_asy_val             &
      &                 ,RTHRATENLW=THRATENLW,RTHRATENSW=THRATENSW       &
      &                 ,RTHRATEN=RTHRATEN                               &
-     &                 ,HRSWPD=HRSWPD, HRLWPD=HRLWPD                    & ! J. Henderson AER
      &                 ,CEN_LAT=grid%cen_lat                            &
      &                 ,GLW=TOTLWDN,GSW=SWNETDN,SWDOWN=TOTSWDN          &
      &                 ,XLAT=grid%HLAT,XLONG=grid%HLON,ALBEDO=ALBEDO,EMISS=EPSR   &
@@ -759,7 +754,6 @@
 !- RLWIN/RSWIN - downward longwave/shortwave at the surface (also TOTLWDN/TOTSWDN in RADIATION)
      &                ,PD,RES,PINT,T,Q,CWM,F_ICE,F_RAIN,SR              &
      &                ,Q2,U,V,THS,TSFC,SST,PREC,SNO                     &
-     &                ,SCURX,SCURY                                      &
      &                ,FIS,Z0,MZ0,Z0BASE,USTAR,MIXHT,PBLH,LPBL,EL_MYJ   &   !MZ0: MOMENTUM Z0 (KWON)
      &                ,MOIST,SCALAR,RMOL,MOL                            &
      &                ,EXCH_H,EXCH_M,F,AKHS,AKMS,AKHS_OUT,AKMS_OUT      &
@@ -791,9 +785,6 @@
      &                ,HPBL2D, EVAP2D, HEAT2D,RC2D                      &  !Kwon S&P
      &                ,SFCHEADRT,INFXSRT,SOLDRAIN                       &  !Hydrology, no-op right now
      &                ,cd_out,ch_out                                    &
-     &                ,ulowl, vlowl                                     &
-     &                ,zkmax, ribn                                      &
-     &                ,charn, msang                                     &
      &                ,DUBLDT,DVBLDT,DTHBLDT,DQVBLDT                    & !wang added PBL tendency output
      &                ,IDS,IDE,JDS,JDE,KDS,KDE                          &
      &                ,IMS,IME,JMS,JME,KMS,KME                          &
@@ -929,7 +920,6 @@
                                                     ,SFCEXC,SMSTAV      &
                                                     ,SOILTB,TWBS
 !
-      REAL,DIMENSION(IMS:IME,JMS:JME),INTENT(IN)  :: scurx, scury
 
       REAL,DIMENSION(IMS:IME,JMS:JME),INTENT(INOUT) :: cd_out,ch_out
       REAL,DIMENSION(IMS:IME,JMS:JME,KMS:KME),INTENT(INOUT) :: &
@@ -938,9 +928,7 @@
                                                       ,DUBLDT          &  
                                                       ,DVBLDT         
 
-      REAL,DIMENSION(IMS:IME,JMS:JME),INTENT(INOUT) :: taux, tauy
-      REAL,DIMENSION(IMS:IME,JMS:JME),INTENT(INOUT) :: zkmax, ribn
-      REAL,DIMENSION(IMS:IME,JMS:JME),INTENT(IN) :: charn, msang
+      REAL,DIMENSION(IMS:IME,JMS:JME),INTENT(OUT) :: taux, tauy
       REAL,DIMENSION(IMS:IME,JMS:JME,KMS:KME),INTENT(IN) :: PINT
 !
       REAL,DIMENSION(IMS:IME,JMS:JME,KMS:KME),INTENT(INOUT) :: CWM      &
@@ -1026,8 +1014,6 @@
      &                                          ,T_PHY,TH_PHY,TKE       &
      &                                          ,DUDT_GWD,DVDT_GWD      & ! GWD
      &                                          ,U_PHY,V_PHY,Z
-
-      REAL,DIMENSION(IMS:IME,JMS:JME), INTENT(OUT) :: ULOWL, VLOWL
 !
       REAL,DIMENSION(:,:,:,:),ALLOCATABLE :: MOIST_TRANS
 !
@@ -1093,12 +1079,6 @@
       IFNDALBSI = 0
       IFNDSNOWSI = 0
       IFNDICEDEPTH = 0
-
-      ! BR is replaced by SF_GFDL inside SURFACE_DRIVER.  This variable
-      ! was uninitialized.  The variable RIBN or RCHNO in the Registry
-      ! are retained accross timesteps.  This is a bug fix to avoid junk
-      ! data in RCHNO at the I=IDE and J=JDE locations.
-      BR=10
 
       SEAICE_ALBEDO_DEFAULT = CONFIG_FLAGS%SEAICE_ALBEDO_DEFAULT
       SEAICE_THICKNESS_OPT = CONFIG_FLAGS%SEAICE_THICKNESS_OPT
@@ -1325,10 +1305,6 @@
             V_PHY(I,K,J)=(V(I+IHE(J),J,K)+V(I+IHW(J),J,K)               &
      &                   +V(I,J+1,K)+V(I,J-1,K))                        &
      &                   *0.25
-          IF ( K == KTS ) THEN
-             ULOWL(I,J) = U_PHY(I,K,J)
-             VLOWL(I,J) = V_PHY(I,K,J)
-          ENDIF
           ENDDO
         ENDDO
       ENDDO
@@ -1442,10 +1418,7 @@
      &          ,PBLH=PBLH,PI_PHY=PI_PHY,PSHLTR=PSHLTR,PSIH=PSIH        &
      &          ,PSIM=PSIM,P_PHY=P_PHY,Q10=Q10,Q2=Q2X,QFX=QWBS,TAUX=TAUX,TAUY=TAUY,QSFC=QS  &
      &          ,QSHLTR=QSHLTR,QZ0=QZ0                                  &
-     &          ,ZKMAX=ZKMAX,RIBN=RIBN                                  &
-     &          ,CHARN=CHARN,MSANG=MSANG,SCURX=SCURX,SCURY=SCURY        &
      &          ,ICOEF_SF=CONFIG_FLAGS%ICOEF_SF                         &
-     &          ,IWAVECPL=CONFIG_FLAGS%IWAVECPL                         &
      &          ,LCURR_SF=CONFIG_FLAGS%LCURR_SF                         &!for gfdl-sf drag
 #if (HWRF==1)
      &          ,pert_Cd=config_flags%pert_Cd                           &
@@ -1648,7 +1621,6 @@
 !BSF &               ,RQGBLTEN=RQGBLTEN                               & !BSF
      &               ,TSK=TSFC,XLAND=XLAND,ZNT=Z0                     &
 #if ( HWRF == 1 )
-     &               ,MSANG=MSANG,SCURX=SCURX,SCURY=SCURY,IWAVECPL=CONFIG_FLAGS%IWAVECPL,LCURR_SF=CONFIG_FLAGS%LCURR_SF &
      &               ,MZNT=MZ0                                        &
 #endif
      &               ,HT=SFCZ                                         &   !KWON
@@ -2293,7 +2265,6 @@
      &                 ,HPBL2D,EVAP2D,HEAT2D                            &     !Kwon S&P
      &                 ,DX2D,DYNMM                                      &     !WANG scale-aware sas
      &                 ,SCALEFUN, SCALEFUN1                             & !scale functions
-     &                 ,SIGMU, SIGMU1                                   & !updraft fraction
      &                 ,AVCNVC,ACUTIM,IHE,IHW                           &
      &                 ,GRID,CONFIG_FLAGS                               &
      &                 ,IDS,IDE,JDS,JDE,KDS,KDE                         &
@@ -2342,7 +2313,6 @@
       REAL,DIMENSION(IMS:IME,JMS:JME),INTENT(INOUT) :: SCALEFUN,SCALEFUN1 ! Wang scale-sware sas
                                                                      ! scale
                                                                      ! functions
-       REAL,DIMENSION(IMS:IME,JMS:JME),INTENT(INOUT) :: SIGMU,SIGMU1 ! Wang, updraft fractional area
 
 !
       REAL,DIMENSION(IMS:IME,JMS:JME),INTENT(INOUT) :: HPBL2D,EVAP2D,HEAT2D     !Kwon S&P
@@ -2465,6 +2435,8 @@
      &                                          ,T_PHY,TH_PHY           &
      &                                          ,U_PHY,V_PHY,WINT
 !
+      REAL,DIMENSION(IMS:IME,KMS:KME,JMS:JME) :: DUDT_PHY,DVDT_PHY     !GF
+!
       REAL,DIMENSION(IMS:IME,JMS:JME,ENSDIM) :: ZERO_GD
 !
       REAL,DIMENSION(:,:,:,:),ALLOCATABLE :: MOIST_TRANS
@@ -2537,6 +2509,9 @@
      &   CONFIG_FLAGS%CU_PHYSICS==MESO_SAS)RETURN             !Kwon
       IF(MOD(NTSD,NCNVC)/=0.AND.                                      &
      &   CONFIG_FLAGS%CU_PHYSICS==SCALESASSCHEME)RETURN        ! Wang
+      IF(MOD(NTSD,NCNVC)/=0.AND.                                      &
+     &   CONFIG_FLAGS%CU_PHYSICS==GFSCHEME)RETURN             !GF
+
       
 !-----------------------------------------------------------------------
       NSTEP_CNV=NCNVC
@@ -2737,6 +2712,8 @@
             V_PHY(I,K,J)=(V(I+IHE(J),J,K)+V(I+IHW(J),J,K)               &
      &                   +V(I,J+1,K)+V(I,J-1,K))                        &
      &                   *0.25
+            DUDT_PHY(i,k,j)=0.0                               !GF
+            DVDT_PHY(i,k,j)=0.0                               !GF
           ENDDO
           ENDDO
 !
@@ -2818,6 +2795,8 @@
      &                 ,APR_CAPME=APR_CAPME,APR_CAPMI=APR_CAPMI         &
      &                 ,MASS_FLUX=MASS_FLUX,XF_ENS=XF_ENS               &
      &                 ,PR_ENS=PR_ENS                                   &
+     &                 ,clos_choice=config_flags%clos_choice            & !GF
+     &                 ,ishallow=config_flags%ishallow                  & !GF
      &                 ,GD_CLOUD=GD_CLOUD,GD_CLOUD2=GD_CLOUD2           &
      &                 ,KTOP_DEEP=KTOP_DEEP                             &
      &                 ,ENSDIM=ENSDIM,MAXIENS=1,MAXENS=3                &
@@ -2827,6 +2806,7 @@
      &                 ,RQICUTEN=RQICUTEN,RQSCUTEN=RQSCUTEN             &
      &                 ,RTHBLTEN=RTHBLTEN,RQVBLTEN=RQVBLTEN             &
      &                 ,RTHRATEN=RTHRATEN                               &
+     &                 ,DUDT_PHY=DUDT_PHY,DVDT_PHY=DVDT_PHY             & !GF
 #if (NMM_CORE==1)
      &                 ,RUCUTEN=DUCUDT, RVCUTEN=DVCUDT, MOMMIX=MOMMIX   &
                        ,store_rand=store_rand                           &
@@ -2839,8 +2819,7 @@
      &                 ,SHALL=grid%shall                                &
      &                 ,HPBL2D=HPBL2D,EVAP2D=EVAP2D,HEAT2D=HEAT2D       &     !Kwon S&P
      &                 ,DX2D=DX2D,DYNMM=DYNMM                          &     !Wang scale-sware SAS 
-     &                 ,SCALEFUN=SCALEFUN, SCALEFUN1=SCALEFUN1          &    ! scale function
-     &                 ,SIGMU=SIGMU, SIGMU1=SIGMU1                      &    ! updraft fraction
+     &                 ,SCALEFUN=SCALEFUN, SCALEFUN1=SCALEFUN1          &
      &                 ,pgcon=config_flags%sas_pgcon                    &
      &                 ,sas_mass_flux=config_flags%sas_mass_flux        &
      &                 ,shalconv=config_flags%sas_shal_conv             &
@@ -2859,10 +2838,16 @@
 !
 #if (NMM_CORE==1)
 !$omp parallel do                                                       &
-!$omp& private(i,j,k)
-        DO K=KMS,KME
-        DO J=JMS,JME
-        DO I=IMS,IME
+!$omp& private(i,iendx,j,k)
+!GF - change loop indices to fix bdy issue
+!        DO K=KMS,KME
+!        DO J=JMS,JME
+!        DO I=IMS,IME
+      DO K=KTS,KTE
+      DO J=MYJS2,MYJE2
+        IENDX=MYIE1
+        IF(MOD(J,2)==0.AND.ITE==IDE-1)IENDX=IENDX-1
+        DO I=MYIS1,IENDX
            DTHCUDT(i,j,k)=RTHCUTEN(i,k,j)
            DQVCUDT(i,j,k)=RQVCUTEN(i,k,j)
            DQRCUDT(i,j,k)=RQRCUTEN(i,k,j)
@@ -2872,6 +2857,26 @@
         ENDDO
         ENDDO
         ENDDO
+!
+!GF - Transfer u,v tendencies from GF convection to ducudt,dvcudt
+! to use existing code to go from mass pts to u,v pts.
+! This is just transferring from an (ikj) array to (ijk).
+!
+      if (CONFIG_FLAGS%CU_PHYSICS==GFSCHEME) then
+!$omp parallel do                                                       &
+!$omp& private(i,iendx,j,k)
+      DO K=KTS,KTE
+      DO J=MYJS2,MYJE2
+        IENDX=MYIE1
+        IF(MOD(J,2)==0.AND.ITE==IDE-1)IENDX=IENDX-1
+        DO I=MYIS1,IENDX
+          DUCUDT(i,j,k)=DUDT_PHY(i,k,j)
+          DVCUDT(i,j,k)=DVDT_PHY(i,k,j)
+        ENDDO
+        ENDDO
+        ENDDO
+
+      endif
 #endif
 
 !-----------------------------------------------------------------------
@@ -2937,12 +2942,8 @@
           endif
 #if ( HWRF == 1 )
           if(have_swath) then
-             if(grid%interesting(i,j)/=0) then
-                grid%precip_swath(i,j) = grid%precip_swath(i,j) + PCPCOL
-                if(size(grid%cuprecip_swath)>0) then
-                   grid%cuprecip_swath(i,j) = grid%cuprecip_swath(i,j) + PCPCOL
-                endif
-             endif
+             if(grid%interesting(i,j)/=0) &
+                  grid%precip_swath(i,j) = grid%precip_swath(i,j) + PCPCOL
           endif
 #endif
 !
@@ -3014,7 +3015,7 @@
 !
           cps_select: SELECT CASE(config_flags%cu_physics)
 !
-          CASE (KFSCHEME,KFETASCHEME,GDSCHEME,SASSCHEME,SCALESASSCHEME,MESO_SAS,OSASSCHEME,NSASSCHEME,TIEDTKESCHEME)
+          CASE (KFSCHEME,KFETASCHEME,GDSCHEME,SASSCHEME,SCALESASSCHEME,MESO_SAS,OSASSCHEME,NSASSCHEME,TIEDTKESCHEME,GFSCHEME)
            IF(config_flags%mp_physics==fer_mp_hires_advect) THEN
              ! Update QI and QRIMEF:
              call QITEND_FER_HIRES_ADVECT( &
