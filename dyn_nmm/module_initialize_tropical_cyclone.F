@@ -413,6 +413,14 @@ real      ,DIMENSION(grid%sm31:grid%em31,grid%sm32:grid%em32,1:grid%num_soil_cat
      num_metgrid_levels = grid%num_metgrid_levels
 
 !---------------------------------------------------------------------
+! bug fix for albedo and emissivity
+      DO j = jts, MIN(jte,jde-1)
+         DO i = its, MIN(ite,ide-1)
+           grid%landmask(I,J) = 0.
+         END DO
+       END DO
+! end bug fix for albedo and emissivity
+
 !
 ! gopal's doing for ideal cases
 !
