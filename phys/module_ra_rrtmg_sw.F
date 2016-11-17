@@ -9173,7 +9173,7 @@
 !           input aerosol optical depth at 0.55 microns for each aerosol type (ecaer)
 ! iaer = 10, input total aerosol optical depth, single scattering albedo 
 !            and asymmetry parameter (tauaer, ssaaer, asmaer) directly
-      if ( aer_opt .eq. 0 .or. aer_opt .eq. 2 ) then
+      if ( aer_opt.eq.0 .or. aer_opt.eq.2 .or. aer_opt.eq.3) then
       iaer = 10
       else if ( aer_opt .eq. 1 ) then
       iaer = 6
@@ -9802,6 +9802,11 @@ MODULE module_ra_rrtmg_sw
 
 use module_model_constants, only : cp
 USE module_wrf_error
+#if (HWRF == 1)
+USE module_state_description, ONLY : FER_MP_HIRES, FER_MP_HIRES_ADVECT, ETAMP_HWRF 
+#else
+USE module_state_description, ONLY : FER_MP_HIRES, FER_MP_HIRES_ADVECT
+#endif
 !USE module_dm
 
 use parrrsw, only : nbndsw, ngptsw, naerec
@@ -10383,10 +10388,16 @@ CONTAINS
             ENDIF
 
          ENDIF
-!!! wang for mp option=5 or 85  (new Ferrier- Aligo or called fer_hires
-!scheme), QI3D saves
-!all!!frozen water (ice+snow)
-           IF ( mp_physics == 5 .OR. mp_physics == 85 ) THEN
+! For mp option=5, 15 or 85  (new Ferrier- Aligo or called fer_hires
+! scheme), QI3D saves all frozen water (ice+snow)
+#if (HWRF == 1)
+           IF ( mp_physics == FER_MP_HIRES .OR. &
+                mp_physics == FER_MP_HIRES_ADVECT .or. &
+                mp_physics == ETAMP_HWRF ) THEN
+#else
+           IF ( mp_physics == FER_MP_HIRES .OR. &
+                mp_physics == FER_MP_HIRES_ADVECT) THEN
+#endif
                   DO K=kts,kte
                      qi1d(k) = qi3d(i,k,j)
                      qs1d(k) = 0.0
@@ -10395,8 +10406,7 @@ CONTAINS
                      qc1d(k) = max(0.,qc1d(k))
                   ENDDO
            ENDIF
-!!! wang
-
+!
 !         EMISS0=EMISS(I,J)
 !         GLW0=0. 
 !         OLR0=0. 
@@ -10438,8 +10448,11 @@ CONTAINS
                ENDDO
             ELSE
                DO K=kts,kte
-!                  recloud1D(ncol,K) = 5.0
-                   recloud1D(ncol,K) = 10.0  ! was 5.0
+#if (EM_CORE==1)
+                  recloud1D(ncol,K) = 5.0
+#else
+                  recloud1D(ncol,K) = 10.0  ! was 5.0
+#endif
                ENDDO
             ENDIF
 
@@ -10471,6 +10484,9 @@ CONTAINS
                ENDDO
             ELSE
                DO K=kts,kte
+#if (EM_CORE==1) 
+                  resnow1D(ncol,K) = 10.0
+#else
                  tem2 = 25.0  !- was 10.0
                  tem3=1.e3*rho1d(k)*qi1d(k)  !- IWC (g m^-3)
                  if (tem3>thresh) then       !- Only when IWC>1.e-9 g m^-3
@@ -10487,7 +10503,7 @@ CONTAINS
                     tem2 = max(25.,tem2)
                  endif
                  reice1D(ncol,K) = min(tem2, 135.72)   !- 1.0315*reice <= 140 microns 
-!                  resnow1D(ncol,K) = 10.0
+#endif
                ENDDO
             ENDIF
          ENDIF
@@ -10733,7 +10749,11 @@ CONTAINS
             reliq(ncol,k) = recloud1d(ncol,k)
          end do
       endif
+#if (EM_CORE==1) 
+      if (iceflgsw .ge. 4) then
+#else
       if (iceflgsw .ge. 3) then   !BSF: was .ge. 4
+#endif
          do k = kts, kte
             reice(ncol,k) = reice1d(ncol,k)
          end do
@@ -10863,7 +10883,7 @@ CONTAINS
 
       if ( use_aer3d ) then
 ! ---- jararias 11/2012
-         if ( aer_opt .eq. 2) then
+         if ( aer_opt .eq. 2 .or. aer_opt.eq.3) then
             do nb=1,nbndsw
                do k=kts,kte
                   tauaer(ncol,k,nb)=tauaer3d_sw(i,k,j,nb)

@@ -15,6 +15,9 @@
 #ifdef _WIN32
 #include <Winsock2.h>
 #endif
+#ifdef NCEP_DEBUG_MULTIDIR
+// #  include <errno.h>
+#endif
 
 #define STANDARD_ERROR 2
 
@@ -27,7 +30,7 @@
 
 #define F_PACK
 
-RSL_LITE_ERROR_DUP1 ( int *me )
+void RSL_LITE_ERROR_DUP1 ( int *me )
 {
     int newfd,rc ;
     char filename[256] ;

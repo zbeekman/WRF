@@ -36,6 +36,7 @@ MODULES = \
 	module_bl_mrf.o \
 	module_bl_gfs.o \
 	module_bl_gfs2011.o \
+	module_bl_gfsedmf.o \
 	module_bl_myjpbl.o \
 	module_bl_qnsepbl.o \
 	module_bl_acm.o \
@@ -64,6 +65,7 @@ MODULES = \
 	module_cu_gf.o \
 	module_cu_nsas.o \
 	module_cu_sas.o \
+	module_cu_scalesas.o \
 	module_cu_mesosas.o \
 	module_cu_osas.o \
 	module_cu_kfcup.o \
@@ -186,7 +188,8 @@ DIAGNOSTIC_MODULES_EM = \
 	module_diag_afwa_hail.o \
 	module_diag_cl.o \
 	module_diag_misc.o \
-	module_diag_pld.o
+	module_diag_pld.o \
+	module_diag_zld.o
   
 DIAGNOSTIC_MODULES_NMM = \
 	module_diag_refl.o

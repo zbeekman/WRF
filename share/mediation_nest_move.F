@@ -8,20 +8,22 @@ SUBROUTINE med_nest_move ( parent, nest )
    USE module_configure, ONLY : grid_config_rec_type, model_config_rec, model_to_grid_config_rec
    USE module_state_description
 !   USE module_io_domain
+#if defined(DM_PARALLEL) && ! defined(STUBMPI)
    USE module_dm, ONLY : wrf_dm_move_nest,nest_task_offsets,mpi_comm_to_kid,mpi_comm_to_mom, which_kid
+#endif
    IMPLICIT NONE
    TYPE(domain) , POINTER                     :: parent, nest, grid
    INTEGER dx, dy, origdy       ! number of parent domain points to move
 #ifdef MOVE_NESTS
   ! Local 
    CHARACTER*256 mess
-   INTEGER i, j, p, parent_grid_ratio
+   INTEGER i, j, k, p, parent_grid_ratio
    INTEGER px, py       ! number and direction of nd points to move
    INTEGER                         :: ids , ide , jds , jde , kds , kde , &
                                       ims , ime , jms , jme , kms , kme , &
                                       ips , ipe , jps , jpe , kps , kpe
    INTEGER ierr, fid, comzilla, kid
-#ifdef HWRF
+#if ( HWRF == 1 )
    REAL,PARAMETER           :: con_g       =9.80665e+0! gravity             (m/s2)
    REAL,PARAMETER           :: con_rd      =2.8705e+2 ! gas constant air    (J/kg/K)
    REAL                     :: TLAP,TBAR,EPSI
@@ -31,9 +33,9 @@ SUBROUTINE med_nest_move ( parent, nest )
    TYPE (grid_config_rec_type)   :: config_flags
    LOGICAL, EXTERNAL :: wrf_dm_on_monitor
    LOGICAL, EXTERNAL :: should_not_move
-#ifdef HWRF
+#if ( HWRF == 1 )
 !XUEJIN added for HWRFx
-   INTEGER                  :: k,idum1,idum2 
+   INTEGER                  :: idum1,idum2 
    INTEGER                  :: ITS,ITE,JTS,JTE,KTS,KTE
 #else
 !
@@ -45,7 +47,7 @@ SUBROUTINE med_nest_move ( parent, nest )
         IMPLICIT NONE
         TYPE(domain) , POINTER                 :: parent , nest
      END SUBROUTINE med_interp_domain
-!#ifdef HWRFX
+!#if ( HWRF == 1 )X
 ! XUEJIN added this directive here to exclude the ARW code
 !#else
      SUBROUTINE start_domain ( grid , allowed_to_move )
@@ -58,7 +60,7 @@ SUBROUTINE med_nest_move ( parent, nest )
 #if ( EM_CORE == 1 )
      SUBROUTINE shift_domain_em ( grid, disp_x, disp_y  &
 !
-# include <dummy_new_args.inc>
+# include "dummy_new_args.inc"
 !
                            )
         USE module_domain, ONLY : domain
@@ -66,7 +68,7 @@ SUBROUTINE med_nest_move ( parent, nest )
         IMPLICIT NONE
         INTEGER disp_x, disp_y
         TYPE(domain) , POINTER                 :: grid
-# include <dummy_new_decl.inc>
+# include "dummy_new_decl.inc"
      END SUBROUTINE shift_domain_em
 #endif
 #if ( NMM_CORE == 1 )
@@ -91,7 +93,7 @@ SUBROUTINE med_nest_move ( parent, nest )
                                     IMS,IME,JMS,JME,KMS,KME, &
                                     IPS,IPE,JPS,JPE,KPS,KPE  )
 !
-#ifdef HWRF
+#if ( HWRF == 1 )
 !XUEJIN added for HWRFx
          USE MODULE_MODEL_CONSTANTS
 #else
@@ -126,17 +128,17 @@ SUBROUTINE med_nest_move ( parent, nest )
 
      SUBROUTINE shift_domain_nmm ( grid, disp_x, disp_y &
 !
-# include <dummy_new_args.inc>
+# include "dummy_new_args.inc"
 !
                            )
         USE module_domain
         IMPLICIT NONE
         INTEGER disp_x, disp_y
         TYPE(domain) , POINTER                 :: grid
-#include <dummy_new_decl.inc>
+#include "dummy_new_decl.inc"
      END SUBROUTINE shift_domain_nmm
 #endif
-#ifdef HWRF
+#if ( HWRF == 1 )
 ! XUEJIN added this directive here to exclude the ARW code
 #else
      LOGICAL FUNCTION time_for_move ( parent , nest , dx , dy )
@@ -147,7 +149,7 @@ SUBROUTINE med_nest_move ( parent, nest )
      END FUNCTION time_for_move
 #endif
 
-#ifdef HWRF
+#if ( HWRF == 1 )
 #if (NMM_CORE == 1 && NMM_NEST == 1)
 !     LOGICAL FUNCTION nest_roam ( parent , nest , dx , dy )  !REPLACED BY KWON
 !
@@ -162,7 +164,7 @@ SUBROUTINE med_nest_move ( parent, nest )
 #endif
 #endif
 
-#ifdef HWRF
+#if ( HWRF == 1 )
 ! XUEJIN added this directive here to exclude the ARW code
 #else
      SUBROUTINE  input_terrain_rsmas ( grid ,                  &
@@ -221,9 +223,7 @@ SUBROUTINE med_nest_move ( parent, nest )
 
 ! mask should be defined in nest domain
 
-!called on d03 when d02 is being considered for move
-
-#ifdef HWRF
+#if ( HWRF == 1 )
   check_direction_of_move: IF ( direction_of_move ( parent , nest , dx, dy ) ) THEN
 #else
   check_for_move: IF ( time_for_move ( parent , nest , dx, dy ) ) THEN
@@ -275,14 +275,14 @@ SUBROUTINE med_nest_move ( parent, nest )
 #if ( EM_CORE == 1 )
      CALL shift_domain_em( grid, dx, dy  &
 !
-# include <actual_new_args.inc>
+# include "actual_new_args.inc"
 !
                            )
 #endif
 #if (NMM_CORE == 1 && NMM_NEST == 1)
      CALL shift_domain_nmm( grid, dx, dy &
 !
-# include <actual_new_args.inc>
+# include "actual_new_args.inc"
 !
                           )
 #endif
@@ -293,6 +293,7 @@ SUBROUTINE med_nest_move ( parent, nest )
      grid%i_parent_start = grid%i_parent_start + px / grid%parent_grid_ratio 
      grid%j_parent_start = grid%j_parent_start + py / grid%parent_grid_ratio
 
+#if defined(DM_PARALLEL) && ! defined(STUBMPI)
      IF ( (parent%active_this_task .OR. grid%active_this_task) ) THEN
        IF ( parent%active_this_task ) THEN
          comzilla = mpi_comm_to_kid( which_kid( grid%id ) , parent%id )
@@ -313,6 +314,7 @@ SUBROUTINE med_nest_move ( parent, nest )
        CALL wrf_message(TRIM(mess))
      ENDIF
      CALL pop_communicators_for_domain(grid%id)
+#endif
 
 #if (NMM_CORE == 1 && NMM_NEST == 1)
 
@@ -343,7 +345,7 @@ SUBROUTINE med_nest_move ( parent, nest )
                              ips, ipe, jps, jpe, kps, kpe    )
 
     IF ( nest%active_this_task ) THEN
-#ifdef HWRF
+#if ( HWRF == 1 )
 !   adjust pint & pressure depth due to height change in nest_terrain
 !     assume lapse rate of 6.1K/1km
       TLAP=6.1/(con_g*1000.)
@@ -498,11 +500,14 @@ SUBROUTINE med_nest_move ( parent, nest )
      nest%press_adj = .FALSE.
 #endif
 
+#if defined(DM_PARALLEL) && ! defined(STUBMPI)
+
      IF ( nest%active_this_task ) THEN
        CALL push_communicators_for_domain(nest%id)
        CALL start_domain ( nest , .FALSE. )
        CALL pop_communicators_for_domain
      ENDIF
+#endif
      config_flags%restart = saved_restart_value
      grid%restart = saved_restart_value
      CALL nl_set_restart ( 1,  saved_restart_value )
@@ -526,7 +531,7 @@ SUBROUTINE med_nest_move ( parent, nest )
      ENDIF
 #endif
 !
-#ifdef HWRF
+#if ( HWRF == 1 )
    ENDIF check_direction_of_move
 #else
    ENDIF check_for_move
@@ -666,6 +671,16 @@ call wrf_debug(1,message)
                                      ids, ide-1 , jds , jde-1 , 1 , 1 , &
                                      ims, ime   , jms , jme   , 1 , 1 , &
                                      ips, ipe   , jps , jpe   , 1 , 1   )
+#if(NMM_CORE==1)
+     CALL wrf_patch_to_global_real ( grid%hlat , xlat , grid%domdesc, "z", "xy", &
+                                     ids, ide-1 , jds , jde-1 , 1 , 1 , &
+                                     ims, ime   , jms , jme   , 1 , 1 , &
+                                     ips, ipe   , jps , jpe   , 1 , 1   )
+     CALL wrf_patch_to_global_real ( grid%hlon , xlong , grid%domdesc, "z", "xy", &
+                                     ids, ide-1 , jds , jde-1 , 1 , 1 , &
+                                     ims, ime   , jms , jme   , 1 , 1 , &
+                                     ips, ipe   , jps , jpe   , 1 , 1   )
+#else
      CALL wrf_patch_to_global_real ( grid%xlat , xlat , grid%domdesc, "z", "xy", &
                                      ids, ide-1 , jds , jde-1 , 1 , 1 , &
                                      ims, ime   , jms , jme   , 1 , 1 , &
@@ -674,6 +689,7 @@ call wrf_debug(1,message)
                                      ids, ide-1 , jds , jde-1 , 1 , 1 , &
                                      ims, ime   , jms , jme   , 1 , 1 , &
                                      ips, ipe   , jps , jpe   , 1 , 1   )
+#endif
      CALL wrf_patch_to_global_real ( grid%ht , terrain , grid%domdesc, "z", "xy", &
                                      ids, ide-1 , jds , jde-1 , 1 , 1 , &
                                      ims, ime   , jms , jme   , 1 , 1 , &
@@ -1220,7 +1236,7 @@ LOGICAL FUNCTION should_not_move ( id )
   should_not_move = retval
 END FUNCTION
 
-#ifdef HWRF
+#if ( HWRF == 1 )
 LOGICAL FUNCTION direction_of_move2 ( parent , grid , move_cd_x, move_cd_y )
    USE module_domain
    USE module_configure
@@ -1841,13 +1857,15 @@ LOGICAL FUNCTION direction_of_move ( parent , grid , move_cd_x, move_cd_y )
 END FUNCTION direction_of_move
 #endif
 
+
 SUBROUTINE reconcile_nest_positions_over_tasks ( grid )
    USE module_driver_constants, ONLY : max_nests, max_domains
    USE module_domain, ONLY : domain, find_grid_by_id
    USE module_utility
    USE module_configure, ONLY : grid_config_rec_type, model_config_rec, model_to_grid_config_rec
    USE module_state_description
-   USE module_dm, ONLY : wrf_dm_move_nest,nest_task_offsets,mpi_comm_to_kid,mpi_comm_to_mom, which_kid &
+#ifdef DM_PARALLEL
+   USE module_dm, ONLY : wrf_dm_move_nest, nest_task_offsets,mpi_comm_to_kid,mpi_comm_to_mom, which_kid &
                         ,comm_start, nest_pes_x, nest_pes_y,local_communicator
    IMPLICIT NONE
    TYPE(domain) , POINTER                     :: grid, result_grid
@@ -1864,9 +1882,9 @@ SUBROUTINE reconcile_nest_positions_over_tasks ( grid )
      ! which task is active?
        IF ( ASSOCIATED( grid%nests(kid)%ptr ) ) THEN
           ! check to see if the starting task for the nest is within the range of tasks
-	  ! of the parent's local communicator; that task should be the root of the bcast on this grid's (the parent's) communicator
+          ! of the parent's local communicator; that task should be the root of the bcast on this grid's (the parent's) communicator
           ! since it is active in both the parent and nest and should have valid parent_start information;
-          ! otoh, if it is outside then the parent and nest are not sharing processors 
+          ! otoh, if it is outside then the parent and nest are not sharing processors
           itask = comm_start( grid%nests(kid)%ptr%id ) - comm_start( grid%id )
           buf(:,1) = model_config_rec%i_parent_start
           buf(:,2) = model_config_rec%j_parent_start
@@ -1888,4 +1906,6 @@ SUBROUTINE reconcile_nest_positions_over_tasks ( grid )
      END DO
     ENDIF
    ENDIF
+#endif
 END SUBROUTINE reconcile_nest_positions_over_tasks
+

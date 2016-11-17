@@ -6,7 +6,11 @@ SUBROUTINE med_feedback_domain ( parent_grid , nested_grid )
    USE module_domain
    USE module_configure
    USE module_intermediate_nmm
+#ifdef DM_PARALLEL
    USE module_dm, only: local_communicator, intercomm_active!,push_communicators_for_domain,pop_communicators_for_domain
+#else
+   USE module_dm, ONLY: intercomm_active
+#endif
    IMPLICIT NONE
    TYPE(domain), POINTER :: parent_grid , nested_grid
    TYPE(domain), POINTER :: grid
@@ -55,7 +59,7 @@ SUBROUTINE med_feedback_domain ( parent_grid , nested_grid )
          TYPE(domain), POINTER :: grid          ! name of the grid being dereferenced (must be "grid")
          TYPE(domain), POINTER :: nested_grid
          TYPE (grid_config_rec_type)            :: config_flags
-#        include <dummy_new_decl.inc>
+#        include "dummy_new_decl.inc"
       END SUBROUTINE feedback_domain_em_part1
       SUBROUTINE feedback_domain_em_part2 ( grid, intermediate_grid , nested_grid, config_flags   &
 !
@@ -68,7 +72,7 @@ SUBROUTINE med_feedback_domain ( parent_grid , nested_grid )
          TYPE(domain), POINTER :: intermediate_grid
          TYPE(domain), POINTER :: nested_grid
          TYPE (grid_config_rec_type)            :: config_flags
-#        include <dummy_new_decl.inc>
+#        include "dummy_new_decl.inc"
       END SUBROUTINE feedback_domain_em_part2
       SUBROUTINE update_after_feedback_em ( grid  &
 !
@@ -78,7 +82,7 @@ SUBROUTINE med_feedback_domain ( parent_grid , nested_grid )
          USE module_domain
          USE module_configure
          TYPE(domain), TARGET :: grid          ! name of the grid being dereferenced (must be "grid")
-#        include <dummy_new_decl.inc>
+#        include "dummy_new_decl.inc"
       END SUBROUTINE update_after_feedback_em
 #endif
 #endif
@@ -101,7 +105,7 @@ SUBROUTINE med_feedback_domain ( parent_grid , nested_grid )
          TYPE(domain), POINTER :: grid          ! name of the grid being dereferenced (must be "grid")
          TYPE(domain), POINTER :: nested_grid
          TYPE (grid_config_rec_type)            :: config_flags
-#        include <dummy_new_decl.inc>
+#        include "dummy_new_decl.inc"
       END SUBROUTINE feedback_domain_nmm_part1
 !
       SUBROUTINE feedback_domain_nmm_part2 ( grid, intermediate_grid , nested_grid, config_flags   &
@@ -115,7 +119,7 @@ SUBROUTINE med_feedback_domain ( parent_grid , nested_grid )
          TYPE(domain), POINTER :: intermediate_grid
          TYPE(domain), POINTER :: nested_grid
          TYPE (grid_config_rec_type)            :: config_flags
-#        include <dummy_new_decl.inc>
+#        include "dummy_new_decl.inc"
 
       END SUBROUTINE feedback_domain_nmm_part2
 
@@ -136,8 +140,7 @@ SUBROUTINE med_feedback_domain ( parent_grid , nested_grid )
    CALL model_to_grid_config_rec ( nested_grid%id , model_config_rec , config_flags )
    parent_grid%ht_coarse = parent_grid%ht
    grid => nested_grid%intermediate_grid
-#  if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
-!   IF ( intercomm_active( grid%id ) ) THEN
+#  if (defined(MOVE_NESTS) || ((!defined(KEEP_INT_AROUND)) && (!defined(SGIALTIX)) && (!defined(FUJITSU_FX10))))
    CALL alloc_space_field ( grid, grid%id , 1 , 2 , .TRUE. , intercomm_active( grid%id ),    &
                             grid%sd31, grid%ed31, grid%sd32, grid%ed32, grid%sd33, grid%ed33, &
                             grid%sm31,  grid%em31,  grid%sm32,  grid%em32,  grid%sm33,  grid%em33, &
@@ -178,7 +181,7 @@ SUBROUTINE med_feedback_domain ( parent_grid , nested_grid )
    CALL pop_communicators_for_domain
 
    grid => nested_grid%intermediate_grid
-#  if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
+#  if (defined(MOVE_NESTS) || ((!defined(KEEP_INT_AROUND)) && (!defined(SGIALTIX)) && (!defined(FUJITSU_FX10))))
    IF ( intercomm_active( grid%id ) ) THEN
    CALL dealloc_space_field ( grid )
    ENDIF
@@ -200,7 +203,7 @@ SUBROUTINE med_feedback_domain ( parent_grid , nested_grid )
    CALL model_to_grid_config_rec ( nested_grid%id , model_config_rec , config_flags )
    grid => nested_grid%intermediate_grid
 !dusan orig     CALL alloc_space_field ( grid, grid%id , 1 , 2 , .TRUE. ,     &
-#  if (defined(MOVE_NESTS) || (!defined(SGIALTIX) && (!defined(FUJITSU_FX10))))
+#  if (defined(MOVE_NESTS) || ((!defined(KEEP_INT_AROUND)) && (!defined(SGIALTIX)) && (!defined(FUJITSU_FX10))))
 !   IF (  grid%active_this_task ) THEN
    CALL ensure_space_field &
                           ( grid, grid%id , 1 , 3 , .FALSE. , grid%active_this_task ,    &

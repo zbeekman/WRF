@@ -49,7 +49,7 @@ CONTAINS
 
         CALL init_domain_nmm (grid &
 !
-#include <actual_new_args.inc>
+#include "actual_new_args.inc"
 !
       )
 
@@ -59,7 +59,7 @@ CONTAINS
 !---------------------------------------------------------------------
    SUBROUTINE init_domain_nmm ( grid &
 !
-# include <dummy_new_args.inc>
+# include "dummy_new_args.inc"
 !
    )
 
@@ -71,7 +71,7 @@ CONTAINS
 !     TYPE (domain), POINTER :: grid
       TYPE (domain)          :: grid
 
-# include <dummy_new_decl.inc>
+# include "dummy_new_decl.inc"
 
       TYPE (grid_config_rec_type)              :: config_flags
 
@@ -167,7 +167,7 @@ CONTAINS
 
         REAL, PARAMETER:: DTR=0.01745329
         REAL, PARAMETER:: W_NMM=0.08
-#if defined(HWRF)
+#if ( HWRF == 1 )
         REAL, PARAMETER:: DDFC=1.0
 #else
         REAL, PARAMETER:: DDFC=8.0
@@ -192,7 +192,7 @@ CONTAINS
         REAL, PARAMETER:: TG0=258.16
         REAL, PARAMETER:: TGA=30.0
     integer :: numzero,numexamined
-#ifdef HWRF
+#if ( HWRF == 1 )
 !============================================================================
 !   gopal's doing for ocean coupling
 !============================================================================
@@ -210,9 +210,9 @@ CONTAINS
         if (ALLOCATED(TG_ALT)) DEALLOCATE(TG_ALT)
 
 !#define COPY_IN
-!#include <scalar_derefs.inc>
+!#include "scalar_derefs.inc"
 #ifdef DM_PARALLEL
-#    include <data_calls.inc>
+#    include "data_calls.inc"
 #endif
 
       SELECT CASE ( model_data_order )
@@ -416,7 +416,7 @@ CONTAINS
      &,                            IMS,IME,JMS,JME,KMS,KME        &
      &,                            ITS,ITE,JTS,JTE,KTS,KTE )
 
-#if defined(HWRF)
+#if ( HWRF == 1 )
           if(.not. grid%use_prep_hybrid) then
 #endif
 
@@ -445,7 +445,7 @@ CONTAINS
      &,                            IMS,IME,JMS,JME,KMS,KME        &
      &,                            ITS,ITE,JTS,JTE,KTS,KTE )
 
-#if defined(HWRF)
+#if ( HWRF == 1 )
           endif
 #endif
 
@@ -495,7 +495,7 @@ CONTAINS
         if (grid%tsk_gc(I,J) .gt. 0.) then
            grid%nmm_tsk(I,J)=grid%tsk_gc(I,J)
         else
-#if defined(HWRF)
+#if ( HWRF == 1 )
                 if(grid%use_prep_hybrid) then
                    if(grid%t(I,J,1)<100) then
                       write(*,*) 'NO VALID SURFACE TEMPERATURE: I,J,TSK_GC(I,J),T(I,J,1) = ', &
@@ -506,7 +506,7 @@ CONTAINS
                 else
 #endif
            grid%nmm_tsk(I,J)=grid%t_gc(I,J,1) ! stopgap measure
-#if defined(HWRF)
+#if ( HWRF == 1 )
                 endif
 #endif
         endif
@@ -528,7 +528,7 @@ CONTAINS
         if (internal_time_loop .eq. 1) then
 
         if (eta_levels(1) .ne. 1.0) then
-#if defined(HWRF)
+#if ( HWRF == 1 )
              if(grid%use_prep_hybrid) then
                 call wrf_error_fatal('PREP_HYBRID ERROR: eta_levels is not specified, but use_prep_hybrid=.true.')
              end if
@@ -612,7 +612,7 @@ CONTAINS
        enddo
        write(message,*) 'TOTAL NEAR-ZERO FIS POINTS: ',numzero,' OF ',numexamined
        call wrf_debug(10,message)
-#if defined(HWRF)
+#if ( HWRF == 1 )
        interp_notph: if(.not. grid%use_prep_hybrid) then
 #endif
       if (.NOT. allocated(PDVP))     allocate(PDVP(IMS:IME,JMS:JME))
@@ -772,7 +772,7 @@ CONTAINS
 
       IF (ALLOCATED(QTMP)) DEALLOCATE(QTMP)
       IF (ALLOCATED(QTMP)) DEALLOCATE(QTMP2)
-#if defined(HWRF)
+#if ( HWRF == 1 )
        else ! we are using prep_hybrid
           ! Compute surface pressure:
           grid%psfc_out=grid%pdtop+grid%pd
@@ -836,17 +836,27 @@ CONTAINS
 
          endif
 
-#if defined(HWRF)
+#if ( HWRF == 1 )
        if(.not.grid%use_prep_hybrid) then
 #endif
 !  new deallocs
         DEALLOCATE(p3d_out,p3dv_out,p3dv_in)
-#if defined(HWRF)
+#if ( HWRF == 1 )
        end if
 #endif
 
      END IF     !   <----- END OF VERTICAL INTERPOLATION PART ---->
 
+     DO j = jts, MIN(jde-1,jte) ! <--- Initialize the arrays from WW/Ocean Biju!
+        DO i = its, MIN(ide-1,ite)
+          grid%scurx(i,j) = 0.0
+          grid%scury(i,j) = 0.0
+          grid%charn(i,j) = 0.0185
+          grid%msang(i,j) = 0.0
+          grid%rchno(i,j) = 1e-03
+          grid%zsig1(i,j) = 20.0
+        END DO
+     END DO           ! <----- END ---->
 
 !! compute SST at each time if updating SST
         if (config_flags%sst_update == 1) then
@@ -1036,7 +1046,7 @@ CONTAINS
      &,                                ITS,ITE,JTS,JTE,1,1 )
 
         IF (WRF_DM_ON_MONITOR()) THEN
-#if defined(HWRF)
+#if ( HWRF == 1 )
           ! SM_G is still needed for the high-res grid
 #else
           DEALLOCATE(SM_G)
@@ -2018,7 +2028,7 @@ CONTAINS
        write(message,*)'STUFF MOVED TO REGISTRY:',grid%IDTAD,          &
      & grid%NSOIL,grid%NRADL,grid%NRADS,grid%NPHS,grid%NCNVC,grid%sigma
        CALL wrf_message( TRIM(message) )
-#ifdef HWRF
+#if ( HWRF == 1 )
 !=========================================================================================
 !   gopal's doing for ocean coupling. Produce a high resolution grid for the entire domain
 !=========================================================================================
@@ -2035,7 +2045,7 @@ CONTAINS
      grid%sbd0=sbd
      grid%wbd0=wbd
 
-#ifdef HWRF     
+#if ( HWRF == 1 )     
     CALL EARTH_LATLON ( grid%HLAT,grid%HLON,grid%VLAT,grid%VLON,  & !output
                         grid%DLMD,grid%DPHD,WBD,SBD,    & !inputs 
                         tph0d,tlm0d,             &
@@ -2053,7 +2063,7 @@ CONTAINS
 #endif
 
 !#define COPY_OUT
-!#include <scalar_derefs.inc>
+!#include "scalar_derefs.inc"
       RETURN
 
    END SUBROUTINE init_domain_nmm
@@ -2088,7 +2098,7 @@ CONTAINS
          cos(rlat1)*cos(rlat2)*sin((rlon1-rlon2)/2)**2)))
   end function greatarc
 
-#ifdef HWRF
+#if ( HWRF == 1 )    
    SUBROUTINE make_coupler_fort65(grid,&
         NDLMD,NDPHD,NWBD,NSBD,&
         NIDE,NJDE,PIFE,PJFE,tph0d,tlm0d)
@@ -2138,13 +2148,11 @@ CONTAINS
           pits, pite, pjts, pjte, 1, 1)
 
      if(.not.wrf_dm_on_monitor()) then
-        call wrf_debug(1,"Wait for master to write fort.65.")
         call MPI_Barrier(local_communicator,ierr)
-        call wrf_debug(1,"Master finished writing fort.65.  Good master.  Kind master.")
         deallocate(bigsm,bighlat,bighlon)
         return
      else
-        call wrf_debug(1,'I am the master.  Will work on fort.65 stuff.')
+        call wrf_debug(100,'Working on fort.65 stuff.')
      endif
 
      allocate(NHLAT(nide,njde),NHLON(nide,njde),NVLAT(nide,njde))
@@ -2239,7 +2247,6 @@ CONTAINS
         call wrf_error_fatal(message)
      endif
      
-     call wrf_debug(1,'Master writes.')
      open(file='fort.65',unit=65,form='UNFORMATTED')
      WRITE(65)NHLAT(1:NIDE,1:NJDE)
      WRITE(65)NHLON(1:NIDE,1:NJDE)
@@ -2255,9 +2262,7 @@ CONTAINS
      deallocate(HBWGT1,HBWGT2,HBWGT3,HBWGT4,HNEAR_I,HNEAR_J)
      deallocate(bigsm,bighlat,bighlon)
 
-     call wrf_debug(1,"Master finished writing fort.65.")
      call MPI_Barrier(local_communicator,ierr)
-     call wrf_debug(1,"Master rejoined everyone.")
    END SUBROUTINE make_coupler_fort65
 #endif
 

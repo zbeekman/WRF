@@ -18,6 +18,7 @@ CONTAINS
                      ,cudtacttime                                     & 
                      ,rainc,raincv,pratec,nca                         &
                      ,cldfra_dp,cldfra_sh,w_up                        & !ckay for subgrid cloud
+                     ,udr_kf,ddr_kf,uer_kf,der_kf,timec_kf,kf_edrates & !kf_edrates
                      ,QC_CU,QI_CU                                     &
                      ,z,z_at_w,dz8w,mavail,pblh,p8w,psfc,tsk          &
                      ,tke_pbl, ust                                    &
@@ -27,12 +28,13 @@ CONTAINS
                      ,hfx,qfx,cldfra,cldfra_mp_all,tpert2d            &
                      ,htop,hbot,kpbl,ht                               &
                      ,ensdim,maxiens,maxens,maxens2,maxens3           &
+                     ,shall                                           & !CuP, wig 18-Sep-2006
 #if (EM_CORE == 1)
                      !BSINGH - For WRFCuP Scheme
                      ,akpbl, br,regime,t2,q2                            & !CuP, wig 3-Aug-2006
                      ,slopeSfc, slopeEZ, sigmaSfc, sigmaEZ            & !CuP, wig 7-Aug-2006
                      ,cupflag, cldfra_cup, cldfratend_cup             & !CuP, wig 18-Sep-2006
-                     ,shall, taucloud, tactive                        & !CuP, wig 18-Sep-2006
+                     ,taucloud, tactive                               & !CuP, wig 18-Sep-2006
                      ,activeFrac                                      & !CuP, lkb 4-May-2010
                      ,tstar, lnterms, lnint                           & !CuP, wig 4-Oct-2006
                      ,numBins, thBinSize, rBinSize                    & !CUP, lkb 4-Nov-2009
@@ -92,8 +94,13 @@ CONTAINS
                      ,ktop_deep &
                  ! Optional arguments for SAS scheme
                      ,pgcon,sas_mass_flux                             &
+                     ,pert_sas,ens_random_seed                        &
+                     ,ens_sasamp                                      &
                      ,shalconv,shal_pgcon                             &
                      ,HPBL2D,EVAP2D,HEAT2D                            &     !Kwon for SAS2010 shallow convection
+                     ,DX2D, DYNMM                                     &     !Wang for scale-aware SAS
+                     ,SCALEFUN,SCALEFUN1                              & !wang scale functions 
+                     ,SIGMU,SIGMU1                                    & !wang updraft fraction
                  ! Optional arguments for NSAS scheme
                      ,mp_physics                                      &
                  ! Optional moisture and other tendencies
@@ -125,6 +132,7 @@ CONTAINS
                                           ,G3SCHEME,GFSCHEME          &
                                           ,P_QC,P_QI,Param_FIRST_SCALAR &
                                           ,CAMZMSCHEME, SASSCHEME     &
+                                          ,SCALESASSCHEME             &  !Wang,add scale-sware sas
                                           ,OSASSCHEME,MESO_SAS        &  !Kwon
                                           ,NSASSCHEME                 &
 #if (EM_CORE == 1)
@@ -156,6 +164,7 @@ CONTAINS
    USE module_cu_gf     , ONLY : gfdrv
    USE module_cu_g3     , ONLY : g3drv,conv_grell_spread3d
    USE module_cu_sas    , ONLY : cu_sas
+   USE module_cu_scalesas    , ONLY : cu_scalesas
 #if (EM_CORE == 1)
    USE module_cu_kfcup  , ONLY : KF_CUP_CPS !wig, 3-Aug-2006 !BSINGH - For WRFCuP scheme 
 #endif
@@ -367,15 +376,21 @@ CONTAINS
    LOGICAL,      INTENT(IN   )    ::   is_CAMMGMP_used !BSINGH:01/31/2013: Added for CAMZM
 
    REAL, INTENT(IN), OPTIONAL :: pgcon,shal_pgcon,sas_mass_flux
+   logical,intent(in),optional  :: pert_sas
+   integer,intent(in),optional  :: ens_random_seed
+   real,intent(in),optional     :: ens_sasamp
    INTEGER, INTENT(IN), OPTIONAL :: shalconv
 
    INTEGER,DIMENSION( ims:ime, jms:jme ),                        &
            INTENT(IN ) ::                                LOWLYR
+
+   !BSINGH - For WRFCuP scheme
+   REAL,DIMENSION( ims:ime, jms:jme ),                           &
+           INTENT(INOUT) ::                               shall    !CuP, wig 18-Sep-2006
 #if (EM_CORE == 1)
    !BSINGH - For WRFCuP scheme
    REAL,DIMENSION( ims:ime, jms:jme ),                           &
-           INTENT(INOUT) ::                               shall, & !CuP, wig 18-Sep-2006
-                                                       taucloud, & !CuP, wig 1-Oct-2006
+           INTENT(INOUT) ::                            taucloud, & !CuP, wig 1-Oct-2006
                                                         tactive, & !CuP, wig 1-Oct-2006
                                                      activeFrac, & !CuP, lkb 5-May-2010
                                                      wCloudBase    !CuP, lkb 29-April-2010  
@@ -414,6 +429,18 @@ CONTAINS
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                 &
          INTENT(INOUT)  ::                            cldfra_dp  &
                                                     , cldfra_sh
+
+!kf_edrates
+   REAL,  DIMENSION( ims:ime, kms:kme, jms:jme ),                 &
+         INTENT(INOUT)  ::                            udr_kf     &
+                                                    , ddr_kf     &
+                                                    , uer_kf     &
+                                                    , der_kf
+
+   REAL,  DIMENSION( ims:ime , jms:jme ), INTENT(INOUT) ::        &
+          timec_kf
+
+   INTEGER, INTENT(IN   )        ::   kf_edrates
 
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                 &
          INTENT(INOUT ),OPTIONAL ::                        w_up
@@ -482,6 +509,13 @@ CONTAINS
 
    REAL, DIMENSION( ims:ime , jms:jme ), OPTIONAL,               &    !Kwon for sas2010 shallow convection
                     INTENT(INOUT) ::  HPBL2D, EVAP2D, HEAT2D
+
+   REAL, DIMENSION( ims:ime , jms:jme ), OPTIONAL,               &    
+                    INTENT(IN) ::  DX2D                           ! Wang for scale-aware SAS
+   REAL, OPTIONAL,  INTENT(IN) ::  DYNMM                          ! Wang for scale-aware SAS  
+   REAL, DIMENSION( ims:ime , jms:jme ), OPTIONAL,INTENT(INOUT) :: &
+                                   SCALEFUN,SCALEFUN1,SIGMU,SIGMU1    
+
 !
    REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                 &
                    INTENT(INOUT) :: rucuten,rvcuten
@@ -832,6 +866,9 @@ CONTAINS
                ,RQICUTEN=rqicuten ,RQSCUTEN=rqscuten            &
                ,F_QV=f_qv,F_QC=f_qc,F_QR=f_qr                   &
                ,F_QI=f_qi,F_QS=f_qs                             &
+               ,UDR_KF=udr_kf,DDR_KF=ddr_kf                     & !kf_edrates
+               ,UER_KF=uer_kf,DER_KF=der_kf                     & 
+               ,TIMEC_KF=timec_kf,KF_EDRATES=kf_edrates         & 
                                                                 )
 
      CASE (BMJSCHEME)
@@ -871,6 +908,7 @@ CONTAINS
                ,STEPCU=stepcu                                   &
                ,CU_ACT_FLAG=cu_act_flag ,WARM_RAIN=warm_rain    &
                ,QV=qv_curr                                      &
+               ,SHALL=shall                                     & !BSINGH - For WRFCuP scheme added "shall"
                ,IDS=ids,IDE=ide,JDS=jds,JDE=jde,KDS=kds,KDE=kde &
                ,IMS=ims,IME=ime,JMS=jms,JME=jme,KMS=kms,KME=kme &
                ,ITS=its,ITE=ite,JTS=jts,JTE=jte,KTS=kts,KTE=kte &
@@ -884,7 +922,10 @@ CONTAINS
                ,F_QI=f_qi,F_QS=f_qs                             &
                ,CLDFRA_DP_KF=cldfra_dp                          & ! ckay for sub-grid cloud
                ,CLDFRA_SH_KF=cldfra_sh                          &
-               ,QC_KF=QC_CU,QI_KF=QI_CU                         )
+               ,QC_KF=QC_CU,QI_KF=QI_CU                         &
+               ,UDR_KF=udr_kf,DDR_KF=ddr_kf                     & !kf_edrates
+               ,UER_KF=uer_kf,DER_KF=der_kf                     & 
+               ,TIMEC_KF=timec_kf,KF_EDRATES=kf_edrates         ) 
 
 #if (EM_CORE==1)
      CASE (MSKFSCHEME)
@@ -919,6 +960,9 @@ CONTAINS
                ,CLDFRA_SH_KF=cldfra_sh                          &
                ,W_UP=w_up                                       & ! ckay
                ,QC_KF=QC_CU,QI_KF=QI_CU                         &
+               ,UDR_KF=udr_kf,DDR_KF=ddr_kf                     & !kf_edrates
+               ,UER_KF=uer_kf,DER_KF=der_kf                     & 
+               ,TIMEC_KF=timec_kf,KF_EDRATES=kf_edrates         & 
                ,ZOL=zol,WSTAR=wstar,UST=ust,PBLH=pblh           )  !ckay
 #endif
 
@@ -984,9 +1028,42 @@ CONTAINS
                ,P_QC=p_qc                                       &
                ,MOMMIX=MOMMIX  &
                ,pgcon=pgcon,sas_mass_flux=sas_mass_flux         &
+               ,pert_sas=pert_sas,ens_random_seed=ens_random_seed   &
+               ,ens_sasamp=ens_sasamp &
                ,shalconv=shalconv,shal_pgcon=shal_pgcon         &
                ,hpbl2d=hpbl2d,evap2d=evap2d,heat2d=heat2d       &
                ,P_QI=p_qi,P_FIRST_SCALAR=param_first_scalar     &
+               ,IDS=ids,IDE=ide,JDS=jds,JDE=jde,KDS=kds,KDE=kde &
+               ,IMS=ims,IME=ime,JMS=jms,JME=jme,KMS=kms,KME=kme &
+               ,ITS=its,ITE=ite,JTS=jts,JTE=jte,KTS=kts,KTE=kte &
+                                                                )
+     CASE (SCALESASSCHEME)   ! Wang 2015-12-11 added to call scale-aware SAS
+                                                                                                                                           
+          IF ( adapt_step_flag_pass ) THEN
+            WRITE( wrf_err_message , * ) 'The SCALE-AWARE SAS cumulus option will not work properly with an adaptive time step'
+            CALL wrf_error_fatal ( wrf_err_message )
+          END IF
+          CALL wrf_debug(100,'in cu_scalesas')
+          CALL CU_SCALESAS(                                     &
+                DT=dt,ITIMESTEP=itimestep,STEPCU=STEPCU         &
+               ,RTHCUTEN=RTHCUTEN,RQVCUTEN=RQVCUTEN             &
+               ,RQCCUTEN=RQCCUTEN,RQICUTEN=RQICUTEN             &
+               ,RUCUTEN=RUCUTEN, RVCUTEN=RVCUTEN                &
+               ,RAINCV=RAINCV,PRATEC=tmpPRATEC,HTOP=HTOP,HBOT=HBOT &
+               ,U3D=u,V3D=v,W=w,T3D=t                           &
+               ,QV3D=QV_CURR,QC3D=QC_CURR,QI3D=QI_CURR          &
+               ,PI3D=pi,RHO3D=rho                               &
+               ,DZ8W=dz8w,PCPS=p,P8W=p8w,XLAND=XLAND            &
+               ,CU_ACT_FLAG=CU_ACT_FLAG                         &
+               ,P_QC=p_qc                                       &
+               ,MOMMIX=MOMMIX  &
+               ,pgcon=pgcon,sas_mass_flux=sas_mass_flux         &
+               ,shalconv=shalconv,shal_pgcon=shal_pgcon         &
+               ,hpbl2d=hpbl2d,evap2d=evap2d,heat2d=heat2d       &
+               ,P_QI=p_qi,P_FIRST_SCALAR=param_first_scalar     &
+               ,DX2D=dx2d,DY=dynmm                              & ! 2 new 
+               ,SCALEFUN=SCALEFUN,SCALEFUN1=SCALEFUN1           & ! CNV scale functions
+               ,SIGMU=SIGMU,SIGMU1=SIGMU1                       & ! CNV updraft fractions
                ,IDS=ids,IDE=ide,JDS=jds,JDE=jde,KDS=kds,KDE=kde &
                ,IMS=ims,IME=ime,JMS=jms,JME=jme,KMS=kms,KME=kme &
                ,ITS=its,ITE=ite,JTS=jts,JTE=jte,KTS=kts,KTE=kte &

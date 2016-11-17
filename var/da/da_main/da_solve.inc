@@ -449,6 +449,14 @@
       be % v3 % mz = 0
       be % v4 % mz = 0
       be % v5 % mz = 0
+#ifdef CLOUD_CV
+      be % v6  % mz = 0
+      be % v7  % mz = 0
+      be % v8  % mz = 0
+      be % v9  % mz = 0
+      be % v10 % mz = 0
+      be % v11 % mz = 0
+#endif
    end if
 
     ! overwrite variables defined in da_setup_cv.inc set in the call to da_setup_background_errors
@@ -686,7 +694,7 @@
             call da_allocate_y (iv, re)
             call da_allocate_y (iv, y)
             call da_check_gradient (grid, config_flags, cv_size, xhat, cvt, 1.0e-10, 8, &
-                         xbx, be, iv, y, re, j) 
+                 xbx, be, iv, y, re, j)
             call da_deallocate_y (re)
             call da_deallocate_y (y)
          endif
@@ -740,8 +748,9 @@
 
 	 
       else
+
          call da_minimise_cg( grid, config_flags, it, be % cv % size, & 
-            xbx, be, iv, j_grad_norm_target, xhat, cvt, re, y, j )
+              xbx, be, iv, j_grad_norm_target, xhat, cvt, re, y, j)
       end if
  
       ! Update outer-loop control variable
@@ -976,6 +985,9 @@
             deallocate (iv%instid(i)%vegfra)
             deallocate (iv%instid(i)%vegtyp)
             deallocate (iv%instid(i)%clwp)
+            if ( index(iv%instid(i)%rttovid_string,'amsr2') > 0 ) then
+               deallocate (iv%instid(i)%clw)
+            end if
             deallocate (iv%instid(i)%ps)
             deallocate (iv%instid(i)%tb_xb)
             deallocate (iv%instid(i)%tb_qc)

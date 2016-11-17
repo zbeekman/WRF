@@ -732,14 +732,17 @@ CONTAINS
          parent%nests(kid)%ptr => new_grid
          new_grid%child_of_parent(1) = kid    ! note assumption that nest can have only 1 parent
          if ( iau_opt .eq. 1) parent%num_nests = parent%num_nests + 1
+#if ( NMM_CORE == 1 ) 
 !jm 20150810, this replaces the compile-time logic associated with the CPP constant HRD_MULTIPLE_STORMS
 ! used in solve_nmm of the HWRF version to decide whether or not to call the coupler.  If there is more than
 ! one nest to a parent then that implies there are multiple storms, so we turn off the coupling.
          IF ( parent%num_nests .GT. 1 ) THEN
            CALL nl_set_multi_storm(1,.FALSE.)
          ENDIF
+#endif
       END IF
       new_grid%id = domain_id                 ! this needs to be assigned prior to calling wrf_patch_domain
+      new_grid%active_this_task = active
 
       CALL wrf_patch_domain( domain_id  , new_domdesc , parent, parent_id, parent_domdesc , &
 
@@ -775,9 +778,6 @@ CONTAINS
 !      IF (active) THEN
         ! only allocate state if this set of tasks actually computes that domain, jm 20140822
       new_grid%active_this_task = active
-!debug write(0,*)__FILE__,__LINE__,'new_grid%id ',new_grid%id
-!debug write(0,*)__FILE__,__LINE__,'new_grid%active_this_task ',new_grid%active_this_task
-!debug write(0,*)__FILE__,__LINE__,'new_grid%is_intermediate ',new_grid%is_intermediate
       CALL alloc_space_field ( new_grid, domain_id , 3 , 3 , .FALSE. , active,     &
                                sd1, ed1, sd2, ed2, sd3, ed3,       &
                                sm1,  em1,  sm2,  em2,  sm3,  em3,  &
@@ -964,6 +964,7 @@ CONTAINS
         ALLOCATE( grid%track_lon_domain( grid%track_loc_in ) )
         ALLOCATE( grid%track_i( grid%track_loc_in ) )
         ALLOCATE( grid%track_j( grid%track_loc_in ) )
+
       grid%track_loc        = 0
       grid%track_loc_domain = 0
       grid%track_have_calculated = .FALSE.
@@ -1535,19 +1536,19 @@ CONTAINS
          else
             if(size_changed) &
 
-write(0,"('grid%id  ',i9,l)")grid%id,grid%is_intermediate
-write(0,"('d31  ',4i9)")grid%alloced_sd31 , sd31 , grid%alloced_ed31 , ed31
-write(0,"('d32  ',4i9)")grid%alloced_sd32 , sd32 , grid%alloced_ed32 , ed32
-write(0,"('d33  ',4i9)")grid%alloced_sd33 , sd33 , grid%alloced_ed33 , ed33
-write(0,"('m31  ',4i9)")grid%alloced_sm31 , sm31 , grid%alloced_em31 , em31
-write(0,"('m32  ',4i9)")grid%alloced_sm32 , sm32 , grid%alloced_em32 , em32
-write(0,"('m33  ',4i9)")grid%alloced_sm33 , sm33 , grid%alloced_em33 , em33
-write(0,"('mx31 ',4i9)")grid%alloced_sm31x , sm31x , grid%alloced_em31x , em31x
-write(0,"('mx32 ',4i9)")grid%alloced_sm32x , sm32x , grid%alloced_em32x , em32x
-write(0,"('mx33 ',4i9)")grid%alloced_sm33x , sm33x , grid%alloced_em33x , em33x
-write(0,"('my31 ',4i9)")grid%alloced_sm31y , sm31y , grid%alloced_em31y , em31y
-write(0,"('my32 ',4i9)")grid%alloced_sm32y , sm32y , grid%alloced_em32y , em32y
-write(0,"('my33 ',4i9)")grid%alloced_sm33y , sm33y , grid%alloced_em33y , em33y
+! write(0,"('grid%id  ',i9,l)")grid%id,grid%is_intermediate
+! write(0,"('d31  ',4i9)")grid%alloced_sd31 , sd31 , grid%alloced_ed31 , ed31
+! write(0,"('d32  ',4i9)")grid%alloced_sd32 , sd32 , grid%alloced_ed32 , ed32
+! write(0,"('d33  ',4i9)")grid%alloced_sd33 , sd33 , grid%alloced_ed33 , ed33
+! write(0,"('m31  ',4i9)")grid%alloced_sm31 , sm31 , grid%alloced_em31 , em31
+! write(0,"('m32  ',4i9)")grid%alloced_sm32 , sm32 , grid%alloced_em32 , em32
+! write(0,"('m33  ',4i9)")grid%alloced_sm33 , sm33 , grid%alloced_em33 , em33
+! write(0,"('mx31 ',4i9)")grid%alloced_sm31x , sm31x , grid%alloced_em31x , em31x
+! write(0,"('mx32 ',4i9)")grid%alloced_sm32x , sm32x , grid%alloced_em32x , em32x
+! write(0,"('mx33 ',4i9)")grid%alloced_sm33x , sm33x , grid%alloced_em33x , em33x
+! write(0,"('my31 ',4i9)")grid%alloced_sm31y , sm31y , grid%alloced_em31y , em31y
+! write(0,"('my32 ',4i9)")grid%alloced_sm32y , sm32y , grid%alloced_em32y , em32y
+! write(0,"('my33 ',4i9)")grid%alloced_sm33y , sm33y , grid%alloced_em33y , em33y
 
                  call wrf_debug(1,'ensure_space_field: deallocating and reallocating a grid because grid size changed.')
          end if
@@ -1761,7 +1762,7 @@ write(0,"('my33 ',4i9)")grid%alloced_sm33y , sm33y , grid%alloced_em33y , em33y
 
       INTEGER                             ::  ierr
 
-# include <deallocs.inc>
+# include "deallocs.inc"
 
    END SUBROUTINE dealloc_space_field
 

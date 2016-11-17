@@ -114,6 +114,8 @@ PROGRAM real_data
 #else
    CALL initial_config
 #endif
+   
+   CALL nl_set_use_wps_input ( 1,1 )
 
    CALL check_nml_consistency
    CALL set_physics_rconfigs
@@ -245,7 +247,7 @@ SUBROUTINE med_sidata_input ( grid , config_flags )
    INTEGER     :: sm31y, em31y, sm32y, em32y, sm33y, em33y
 #endif
 
-#if defined(HWRF)
+#if ( HWRF == 1 )
   ! Sam Says:
 
   ! The *INIT arrays are used to read init data written out by hwrf_prep_hybrid
@@ -337,7 +339,7 @@ SUBROUTINE med_sidata_input ( grid , config_flags )
       write(message,*) 'TRIM(config_flags%auxinput1_inname): ', TRIM(config_flags%auxinput1_inname)
       CALL wrf_message(message)
        
-#if defined(HWRF)
+#if ( HWRF == 1 )
      ifph_onlyfirst: if(.not.grid%use_prep_hybrid .or. loop==1) then
 #endif
       IF (config_flags%auxinput1_inname(1:10) .eq. 'real_input') THEN
@@ -420,7 +422,7 @@ SUBROUTINE med_sidata_input ( grid , config_flags )
       CASE DEFAULT
         CALL wrf_error_fatal('real: not valid io_form_auxinput1')
       END SELECT
-#if defined(HWRF)
+#if ( HWRF == 1 )
      endif ifph_onlyfirst
 #endif
 
@@ -438,7 +440,7 @@ SUBROUTINE med_sidata_input ( grid , config_flags )
 
       CALL init_domain ( grid )
 
-#if defined(HWRF)
+#if ( HWRF == 1 )
      read_phinit: if(grid%use_prep_hybrid) then
 #if defined(DM_PARALLEL)
         if(.not. wrf_dm_on_monitor()) then
@@ -699,7 +701,7 @@ SUBROUTINE assemble_output ( grid , config_flags , loop , time_loop_max )
    USE module_bc
    IMPLICIT NONE
 
-#if defined(HWRF)
+#if ( HWRF == 1 )
   external get_wrf_debug_level
   integer :: debug
 #endif
@@ -740,7 +742,7 @@ character *24 :: temp24 , temp24b
    INTEGER     :: sm31y, em31y, sm32y, em32y, sm33y, em33y
 #endif
 
-#if defined(HWRF)
+#if ( HWRF == 1 )
   ! Sam says:
 
   ! The *B arrays are used to read boundary data written out by hwrf_prep_hybrid
@@ -761,7 +763,7 @@ character *24 :: temp24 , temp24b
 
 #include "deref_kludge.h"
 
-#if defined(HWRF)
+#if ( HWRF == 1 )
   alloc_ph_arrays=.false.
   call get_wrf_debug_level(debug)
 #endif
@@ -1100,7 +1102,7 @@ character *24 :: temp24 , temp24b
 !-----------------------------------------------------------------------
 
      call wrf_debug(1,'LOOP>1, so start making non-init boundary conditions')
-#if defined(HWRF)
+#if ( HWRF == 1 )
 
      bdytmp_useph: if(grid%use_prep_hybrid) then
         call wrf_debug(1,'ALLOCATE PREP_HYBRID BOUNDARY ARRAYS')
@@ -1313,7 +1315,7 @@ character *24 :: temp24 , temp24b
 
            CALL output_auxinput4 ( id4, grid , config_flags , ierr )
 
-#if defined( HWRF)
+#if ( HWRF == 1 )
      endif bdytmp_useph
 #endif
 
@@ -1337,7 +1339,7 @@ character *24 :: temp24 , temp24b
          CALL domain_clockadvance( grid )
       END IF
 
-#if defined(HWRF)
+#if ( HWRF == 1 )
      bdytmp_notph: if(.not.grid%use_prep_hybrid) then
 #endif
 !-----------------------------------------------------------------------
@@ -1467,7 +1469,7 @@ character *24 :: temp24 , temp24b
 	endif
           END DO
         ENDIF
-#if defined(HWRF)
+#if ( HWRF == 1 )
      endif bdytmp_notph
 #endif
 !-----------------------------------------------------------------------
@@ -1675,7 +1677,7 @@ character *24 :: temp24 , temp24b
 
    END IF main_loop_test
 
-#if defined(HWRF)
+#if ( HWRF == 1 )
   if(alloc_ph_arrays) then
      call wrf_debug(1,'DEALLOCATE PREP_HYBRID BOUNARY ARRAYS')
      deallocate(TB,QB,CWMB,UB,VB,PDB)

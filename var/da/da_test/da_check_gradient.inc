@@ -87,7 +87,6 @@ subroutine da_check_gradient(grid, config_flags, cv_size, xhat, cv, pdx, itertes
    call da_message((/' The test direction is the opposite of the gradient '/))
 
    xdir  = -1.0  * grad
-   
    !----------------------------------------------------------------------------
    ! [1.2] Set function f value and derivative at origin
    !----------------------------------------------------------------------------

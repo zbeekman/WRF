@@ -163,7 +163,7 @@ RSL_LITE_NESTING_RESET (
 }
 
 /* parent->nest */
-RSL_LITE_TO_CHILD_INFO ( msize_p,                        /* number of tasks in minor dim of nest's mesh */
+void RSL_LITE_TO_CHILD_INFO ( msize_p,                        /* number of tasks in minor dim of nest's mesh */
                          cips_p, cipe_p, cjps_p, cjpe_p, /* patch dims of SOURCE DOMAIN */
                          iids_p, iide_p, ijds_p, ijde_p, /* domain dims of INTERMEDIATE DOMAIN */
                          nids_p, nide_p, njds_p, njde_p, /* domain dims of CHILD DOMAIN */
@@ -313,7 +313,7 @@ fprintf(stderr,"%s %d a %d b %d\n",__FILE__,__LINE__,s_ntasks_nest_x*s_ntasks_ne
 /********************************************/
 
 /* nest->parent */
-RSL_LITE_TO_PARENT_INFO ( msize_p, 
+void RSL_LITE_TO_PARENT_INFO ( msize_p, 
                           nips_p, nipe_p, njps_p, njpe_p, /* patch dims of SOURCE DOMAIN (CHILD) */
                           cids_p, cide_p, cjds_p, cjde_p, /* domain dims of TARGET DOMAIN (PARENT) */
                           offset_p, 
@@ -467,10 +467,8 @@ rsl_lite_to_peerpoint_msg ( nbuf_p, buf )
   char *
     buf ;        /* (I) Buffer containing the data to be packed. */
 {
-  int nbuf ;
-  int *p, *q ;
-  char *c, *d ;
-  int i ;
+  int nbuf, i, imax;
+  int * p, * q;
   char mess[4096] ;
 
   RSL_TEST_ERR(buf==NULL,"2nd argument is NULL.  Field allocated?") ;
@@ -483,22 +481,9 @@ rsl_lite_to_peerpoint_msg ( nbuf_p, buf )
     RSL_TEST_ERR(1,mess) ;
   }
 
-  if ( nbuf % sizeof(int) == 0 ) {
-    for ( p = (int *)buf, q = (int *) &(Sendbuf[Sendbufcurs]), i = 0 ; i < nbuf ; i += sizeof(int) )
-    {
-      *q++ = *p++ ;
-    }
-  }
-  else
-  {
-    for ( c = buf, d = &(Sendbuf[Sendbufcurs]), i = 0 ; i < nbuf ; i++ )
-    {
-      *d++ = *c++ ;
-    }
-  }
+  memcpy(&(Sendbuf[Sendbufcurs]),buf,nbuf);
 
   Sendbufcurs += nbuf ;
-
 }
 
 /********************************************/
@@ -579,7 +564,9 @@ rsl_lite_allgather_msgs ( mytask_p, ntasks_par_p, ntasks_nest_p, offset_p, comm,
       "rsl_lite_allgather_msgs: rsl_to_child_info or rsl_to_parent_info not called first" ) ;
   }
 
+#ifndef STUBMPI
   ntasks = MAX(ntasks_par,ntasks_nest+*offset_p) ;
+#endif
 
   RSL_TEST_ERR( ntasks >= RSL_MAXPROC ,
     "rsl_lite_allgather_msgs: raise the compile time value of MAXPROC" ) ;
@@ -671,8 +658,7 @@ rsl_lite_from_peerpoint_info ( ig_p, jg_p, retval_p )
     *retval_p = 0 ;
     RSL_FREE( Recvbuf ) ;
   }
-     
-  return ;
+  
 }
 
 /********************************************/
@@ -704,23 +690,13 @@ rsl_lite_from_peerpoint_msg ( len_p, buf )
   int *
     buf ;            /* (O) Destination buffer. */
 {
-  int *p, *q ;
-  char *c, *d ;
-  int i ;
+  int  * p, * q ;
+  int  i, imax, len=*len_p;
 
-  if ( *len_p % sizeof(int) == 0 ) {
-    for ( p = (int *)&(Recvbuf[Rbufcurs+Rpointcurs]), q = buf , i = 0 ; i < *len_p ; i += sizeof(int) ) 
-    {
-      *q++ = *p++ ;
-    }
-  } else {
-    for ( c = &(Recvbuf[Rbufcurs+Rpointcurs]), d = (char *) buf , i = 0 ; i < *len_p ; i++ )
-    {
-      *d++ = *c++ ;
-    }
-  }
-
-  Rpointcurs += *len_p ;
+  if(len<0)
+    len=Rreclen - Rpointcurs; /* len<0 is magic for "give me all of it" */
+  memcpy(buf,&(Recvbuf[Rbufcurs+Rpointcurs]),len);
+  Rpointcurs += len;
 }
 
 /********************************************/
