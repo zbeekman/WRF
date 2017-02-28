@@ -159,7 +159,7 @@ CONTAINS
                                         TAUX,                           & ! gopal's doing for Ocean coupling
                                         TAUY
 
-      REAL, DIMENSION(ims:ime, jms:jme), INTENT(OUT) ::                 &
+      REAL, DIMENSION(ims:ime, jms:jme), INTENT(INOUT) ::                 &
                                         U10,                            &
                                         V10                            
 
@@ -246,6 +246,7 @@ CONTAINS
                                         gamma,                          &
                                         xcur,                           &
                                         ycur
+
 
       INTEGER ::                                                        &
                                         I,                              &
@@ -897,16 +898,33 @@ CONTAINS
       real*8 :: gasdev,ran1          !zhang
       real :: rr                     !zhang
       logical,save :: pert_Cd_local            !zhang
-      integer,save :: ens_random_seed_local         !zhang
+      CHARACTER(len=3) :: env_memb,env_pp
+      integer,save :: ens_random_seed_local,env_pp_local         !zhang
       real,save :: ens_Cdamp_local         !zhang
       data ens_random_seed_local/0/
+      data env_pp_local/0/
       if ( ens_random_seed_local .eq. 0 ) then
-!        CALL nl_get_pert_Cd(1,pert_Cd)
-!        CALL nl_get_ens_random_seed(1,ens_random_seed)
-!        CALL nl_get_ens_Cdamp(1,ens_Cdamp)
+         CALL getenv("ENSDA_PP", env_pp)
+         CALL getenv("ENSDA_MEMB", env_memb)
+!         print*, "env_pp===",env_pp
+!         print*, "env_memb==",env_memb
+         read(env_pp,'(i3.3)') env_pp_local
+         ens_random_seed_local=99
+         pert_Cd_local=.false.
+         ens_Cdamp_local=0.0
+! env_pp=1: do physics perturbations for ensda members, ens_random_seed must be 99
+         if ( env_pp_local .eq. 1 ) then
+         read(env_memb,'(i3.3)') ens_random_seed_local
+         pert_Cd_local=.true.
+         ens_Cdamp_local=ens_Cdamp
+         endif
+! ens_random_seed!=99 do physics perturbation for ensemble forecasts, env_pp must be zero
+         if ( ens_random_seed  .ne. 99 ) then
          ens_random_seed_local=ens_random_seed
          pert_Cd_local=pert_Cd
          ens_Cdamp_local=ens_Cdamp
+         endif
+      print*, "Cd ===", ens_random_seed_local,pert_Cd_local,ens_Cdamp_local
       endif
 #endif
 
@@ -989,11 +1007,12 @@ CONTAINS
           !windmks=wind(i)*.01
           windmks=wind10p(i)*.01
           if ( iwavecpl .eq. 1 ) then
-            if (  ntstep == 0 ) then
-              call  znot_m_v1(windmks,znotm)
-              zoc(i)  = -100.*znotm
+            call znot_wind10m(windmks,znott,znotm,icoef_sf)
+            !Check if Charnock parameter ratio is received in a proper range.
+            if ( alpha(i) .ge. 0.2 .and. alpha(i) .le. 5. ) then
+              znotm = znotm*alpha(i)
             endif
-            call  znot_t_v2(windmks,znott)
+            zoc(i)  = -100.*znotm
             zot(i) =  -100* znott
           else
 !            if ( icoef_sf .EQ. 1) then
@@ -1720,16 +1739,14 @@ CONTAINS
       do i = its,ite
 !!!
         if ( iwavecpl .eq. 1 .and. zoc(i) .le. 0.0 ) then
-          windmks = wind(i) * 0.01
-          ustar = windmks / xxfm(i)
+          windmks = wind10(i) * 0.01
+          call znot_wind10m(windmks,znott,znotm,icoef_sf)
           !Check if Charnock parameter ratio is received in a proper range.
           if ( alpha(i) .ge. 0.2 .and. alpha(i) .le. 5. ) then
-            call  znot_m_v1(windmks,znotm)
             znotm = znotm*alpha(i)
-          else
-            call  znot_m_v1(windmks,znotm)
           endif
           zoc(i)  = -100.*znotm
+          zot(i) =  -100* znott
         endif
 !!!!
         fxh(i) = bq1(i)*(theta(i) - tsg(i))
@@ -1744,9 +1761,11 @@ CONTAINS
 !                i, zot(i),zoc(i), cdm(i),cdm2(i), tsg(i),wind(i)
 #if HWRF==1
 ! randomly perturb the Cd
-        if( pert_Cd_local ) then
-        rr=2.0*ens_Cdamp_local*ran1(ens_random_seed_local)-ens_Cdamp_local
+        if( pert_Cd_local .and. ens_random_seed_local .gt. 0 ) then
+        rr=2.0*ens_Cdamp_local*ran1(-ens_random_seed_local)-ens_Cdamp_local
+        print*, "zhang cd a=", cdm(i)
         cdm(i) = cdm(i) *(1.0+rr)
+        print*, "zhang cd b=", cdm(i)
         endif
 #endif
 
@@ -1833,5 +1852,18 @@ CONTAINS
    ENDDO
 
   END SUBROUTINE hwrfsfcinit
+
+  SUBROUTINE ustar_charn_to_znot(ustar, zch, znot)
+  IMPLICIT NONE
+
+    REAL,    INTENT (IN)      :: ustar
+    REAL,    INTENT (INOUT)   :: zch
+    REAL,    INTENT (OUT)     :: znot
+    REAL grav, zchf
+    PARAMETER(grav = 9.806650)
+       znot = ustar*ustar*zch/grav
+    END SUBROUTINE ustar_charn_to_znot
+
+   
 
 END MODULE module_sf_gfdl

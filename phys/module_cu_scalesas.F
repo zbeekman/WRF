@@ -16,6 +16,7 @@ CONTAINS
                  P_QC,                                              & 
                  MOMMIX, & ! gopal's doing
                  PGCON,sas_mass_flux,                               &
+                 pert_sas, ens_random_seed, ens_sasamp,             &
                  shalconv,shal_pgcon,                               &
                  HPBL2D,EVAP2D,HEAT2D,                              & !Kwon for shallow convection
                  P_QI,P_FIRST_SCALAR,                               & 
@@ -133,6 +134,9 @@ CONTAINS
       REAL, OPTIONAL, INTENT(IN) :: PGCON,sas_mass_flux,shal_pgcon
       INTEGER, OPTIONAL, INTENT(IN) :: shalconv
       REAL(kind=kind_phys)       :: PGCON_USE,SHAL_PGCON_USE,massf
+      logical,intent(in)  :: pert_sas
+      integer,intent(in)  :: ens_random_seed
+      real,intent(in)     :: ens_sasamp
       INTEGER :: shalconv_use
       REAL, DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(INOUT) ::      &
                                         RQCCUTEN,                       &
@@ -385,6 +389,7 @@ CONTAINS
         SLIMSK(i)=ABS(XLAND(i,j)-2.)
 
         garea(I)=DX2D(i,j)*DY*2.0         !wang,  grid box area in m^2
+        KCNV(I)=0                         !wang, initialize KCNV
       ENDDO
 
 #if (NMM_CORE == 1)
@@ -449,7 +454,8 @@ CONTAINS
           
         CALL scale_sascnvn(IM,IM,KX,JCAP,DELT,DEL,PRSL,PS,PHIL,QL,     &   
             q1,t1,u1,v1,cldwrk,rn,kbot,ktop,kcnv,nint(slimsk),garea,       &
-            dot,ncloud,ud_mf,dd_mf,dt_mf,cnvw,cnvc,SIGMU_out,SCALEFUN_out)
+            dot,ncloud,ud_mf,dd_mf,dt_mf,cnvw,cnvc,SIGMU_out,SCALEFUN_out, &
+            pert_sas, ens_random_seed, ens_sasamp)
 !
 
       do i=its,ite
@@ -638,7 +644,8 @@ CONTAINS
       subroutine scale_sascnvn(im,ix,km,jcap,delt,delp,prslp,psp,phil,ql,  &
      &     q1,t1,u1,v1,cldwrk,rn,kbot,ktop,kcnv,islimsk,garea,             &
 !     &     dot,ncloud,ud_mf,dd_mf,dt_mf,cnvw,cnvc, tmpout9)
-     &     dot,ncloud,ud_mf,dd_mf,dt_mf,cnvw,cnvc, sigmuout,scaldfunc)
+     &     dot,ncloud,ud_mf,dd_mf,dt_mf,cnvw,cnvc, sigmuout,scaldfunc,     &
+     &     pert_sas, ens_random_seed, ens_sasamp)
 !    &     q1,t1,u1,v1,rcs,cldwrk,rn,kbot,ktop,kcnv,islimsk,
 !    &     dot,ncloud,ud_mf,dd_mf,dt_mf,me)
 !
@@ -706,6 +713,10 @@ CONTAINS
      &                     ptem,    ptem1,   ptem2,                    &
      &                     pgcon
 !
+      logical,intent(in)  :: pert_sas
+      integer,intent(in)  :: ens_random_seed
+      real,intent(in)     :: ens_sasamp
+
       integer              kb(im), kbcon(im), kbcon1(im),              &
      &                     ktcon(im), ktcon1(im), ktconn(im),          &
      &                     jmin(im), lmin(im), kbmax(im),              &
@@ -799,6 +810,39 @@ CONTAINS
 !c    &            .743,.813,.886,.947,1.138,1.377,1.896/
       real(kind=kind_phys) tf, tcr, tcrf
       parameter (tf=233.16, tcr=263.16, tcrf=1.0/(tcr-tf))
+
+#if HWRF==1
+      real*8 :: gasdev,ran1          !zhang
+      real :: rr                     !zhang
+      logical,save :: pert_sas_local            !zhang
+      integer,save :: ens_random_seed_local,env_pp_local         !zhang
+      real,save :: ens_sasamp_local         !zhang
+      data ens_random_seed_local/0/
+      data env_pp_local/0/
+      CHARACTER(len=3) :: env_memb,env_pp
+      if ( ens_random_seed_local .eq. 0 ) then
+         CALL getenv("ENSDA_PP", env_pp)
+         CALL getenv("ENSDA_MEMB", env_memb)
+         read(env_pp,'(i3.3)') env_pp_local
+         ens_random_seed_local=99
+         pert_sas_local=.false.
+         ens_sasamp_local=0.0
+! env_pp=1: do physics perturbations for ensda members, ens_random_seed must be 99
+         if ( env_pp_local .eq. 1 ) then
+         read(env_memb,'(i3.3)') ens_random_seed_local
+         pert_sas_local=.true.
+         ens_sasamp_local=ens_sasamp
+         endif
+! ens_random_seed!=99 do physics perturbation for ensemble forecasts, env_pp  must be zero
+         if ( ens_random_seed  .ne. 99 ) then
+         ens_random_seed_local=ens_random_seed
+         pert_sas_local=pert_sas
+         ens_sasamp_local=ens_sasamp
+         endif
+         print*, "SAS ==", ens_random_seed_local,pert_sas_local,ens_sasamp_local
+      endif
+#endif
+
 !
 !c-----------------------------------------------------------------------
 !
@@ -1175,6 +1219,15 @@ CONTAINS
           ptem1= .5*(cinpcrmx-cinpcrmn)
           cinpcr = cinpcrmx - ptem * ptem1
           tem1 = pfld(i,kb(i)) - pfld(i,kbcon(i))
+#if HWRF==1
+! randomly perturb the convection trigger
+          if( pert_sas_local .and. ens_random_seed .gt. 0 ) then
+          rr=2.0*ens_sasamp_local*ran1(-ens_random_seed_local)-ens_sasamp_local
+          print*, "zhang inde sas=a", rr,ens_sasamp_local,ens_random_seed_local,cinpcr       
+          cinpcr=cinpcr+rr
+          print*, "zhang inde sas=b", rr,ens_sasamp_local,ens_random_seed_local,cinpcr       
+          endif
+#endif
           if(tem1.gt.cinpcr) then
              cnvflg(i) = .false.
           endif
@@ -3257,7 +3310,7 @@ CONTAINS
             ucko(i,k) = 0.
             vcko(i,k) = 0.
             dbyo(i,k) = 0.
-!           pwo(i,k)  = 0.
+            pwo(i,k)  = 0.
             dellal(i,k) = 0.
             to(i,k)   = t1(i,k)
             qo(i,k)   = q1(i,k)
@@ -4270,7 +4323,7 @@ CONTAINS
         deltbar(i) = 0.
         delubar(i) = 0.
         delvbar(i) = 0.
-!       qcond(i) = 0.
+        qcond(i) = 0.
       enddo
       do k = 1, km
         do i = 1, im
@@ -4472,4 +4525,3 @@ CONTAINS
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       END MODULE module_cu_scalesas
-

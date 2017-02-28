@@ -94,8 +94,10 @@ CONTAINS
                      ,ktop_deep &
                  ! Optional arguments for SAS scheme
                      ,pgcon,sas_mass_flux                             &
+#if (HWRF==1)
                      ,pert_sas,ens_random_seed                        &
                      ,ens_sasamp                                      &
+#endif
                      ,shalconv,shal_pgcon                             &
                      ,HPBL2D,EVAP2D,HEAT2D                            &     !Kwon for SAS2010 shallow convection
                      ,DX2D, DYNMM                                     &     !Wang for scale-aware SAS
@@ -376,9 +378,11 @@ CONTAINS
    LOGICAL,      INTENT(IN   )    ::   is_CAMMGMP_used !BSINGH:01/31/2013: Added for CAMZM
 
    REAL, INTENT(IN), OPTIONAL :: pgcon,shal_pgcon,sas_mass_flux
+#if (HWRF==1) 
    logical,intent(in),optional  :: pert_sas
    integer,intent(in),optional  :: ens_random_seed
    real,intent(in),optional     :: ens_sasamp
+#endif 
    INTEGER, INTENT(IN), OPTIONAL :: shalconv
 
    INTEGER,DIMENSION( ims:ime, jms:jme ),                        &
@@ -1028,7 +1032,9 @@ CONTAINS
                ,P_QC=p_qc                                       &
                ,MOMMIX=MOMMIX  &
                ,pgcon=pgcon,sas_mass_flux=sas_mass_flux         &
+#if (HWRF==1)
                ,pert_sas=pert_sas,ens_random_seed=ens_random_seed   &
+#endif 
                ,ens_sasamp=ens_sasamp &
                ,shalconv=shalconv,shal_pgcon=shal_pgcon         &
                ,hpbl2d=hpbl2d,evap2d=evap2d,heat2d=heat2d       &
@@ -1058,6 +1064,8 @@ CONTAINS
                ,P_QC=p_qc                                       &
                ,MOMMIX=MOMMIX  &
                ,pgcon=pgcon,sas_mass_flux=sas_mass_flux         &
+               ,pert_sas=pert_sas,ens_random_seed=ens_random_seed   &
+               ,ens_sasamp=ens_sasamp &
                ,shalconv=shalconv,shal_pgcon=shal_pgcon         &
                ,hpbl2d=hpbl2d,evap2d=evap2d,heat2d=heat2d       &
                ,P_QI=p_qi,P_FIRST_SCALAR=param_first_scalar     &
