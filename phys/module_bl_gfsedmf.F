@@ -717,8 +717,6 @@ CONTAINS
       CHARACTER(len=3) :: env_memb,env_pp
       data ens_random_seed_local/0/
       data env_pp_local/0/
-      data ens_random_seed_local/0/
-!      print*, 'zhang in pbl==========='
       if ( ens_random_seed_local .eq. 0 ) then
          CALL getenv("ENSDA_PP", env_pp)
          CALL getenv("ENSDA_MEMB", env_memb)
@@ -728,15 +726,16 @@ CONTAINS
          ens_pblamp_local=0.0
 ! env_pp=1: do physics perturbations for ensda members, ens_random_seed must be 99
          if ( env_pp_local .eq. 1 ) then
-         read(env_memb,'(i3.3)') ens_random_seed_local
-         pert_pbl_local=.true.
-         ens_pblamp_local=ens_pblamp
-         endif
+            read(env_memb,'(i3.3)') ens_random_seed_local
+            pert_pbl_local=.true.
+            ens_pblamp_local=ens_pblamp
+         else
 ! ens_random_seed!=99 do physics perturbation for ensemble forecasts, env_pp must be zero
-         if ( ens_random_seed  .ne. 99 ) then
-         pert_pbl_local=pert_pbl
-         ens_random_seed_local=ens_random_seed
-         ens_pblamp_local=ens_pblamp
+            if ( ens_random_seed_local  .ne. 99 ) then
+            ens_random_seed_local=ens_random_seed
+            pert_pbl_local=pert_pbl
+            ens_pblamp_local=ens_pblamp
+            endif
          endif
        print*,"PBL==",ens_random_seed_local,pert_pbl_local,ens_pblamp_local
 !      print*, "zhang in pbl= one time ", pert_pbl_local,ens_random_seed_local, ens_pblamp_local                                         
@@ -1114,8 +1113,10 @@ CONTAINS
            hpbl(i) = zl(i,k-1) + rbint*(zl(i,k)-zl(i,k-1))
 #if (HWRF==1)
 !zhang adding PBL perturtion
-            if ( pert_pbl_local .and. ens_random_seed_local .gt. 0 ) then
+!zzz            if ( pert_pbl_local .and. ens_random_seed_local .gt. 0 ) then
+            if ( pert_pbl_local ) then
             rr=(2.0*ens_pblamp_local*ran1(-ens_random_seed_local)-ens_pblamp_local)
+            ens_random_seed_local=ran1(-ens_random_seed_local)*1000
             print*, "zhang PBL aa", rr, ens_pblamp_local,ens_random_seed_local,HPBL(I)         
             HPBL(I) = HPBL(I)*(1.0+rr)
             print*, "zhang PBL bb", rr, ens_pblamp_local,ens_random_seed_local,HPBL(I)         

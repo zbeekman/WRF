@@ -829,15 +829,16 @@ CONTAINS
          ens_sasamp_local=0.0
 ! env_pp=1: do physics perturbations for ensda members, ens_random_seed must be 99
          if ( env_pp_local .eq. 1 ) then
-         read(env_memb,'(i3.3)') ens_random_seed_local
-         pert_sas_local=.true.
-         ens_sasamp_local=ens_sasamp
-         endif
+            read(env_memb,'(i3.3)') ens_random_seed_local
+            pert_sas_local=.true.
+            ens_sasamp_local=ens_sasamp
+         else
 ! ens_random_seed!=99 do physics perturbation for ensemble forecasts, env_pp  must be zero
-         if ( ens_random_seed  .ne. 99 ) then
-         ens_random_seed_local=ens_random_seed
-         pert_sas_local=pert_sas
-         ens_sasamp_local=ens_sasamp
+            if ( ens_random_seed_local  .ne. 99 ) then
+            ens_random_seed_local=ens_random_seed
+            pert_sas_local=pert_sas
+            ens_sasamp_local=ens_sasamp
+            endif
          endif
          print*, "SAS ==", ens_random_seed_local,pert_sas_local,ens_sasamp_local
       endif
@@ -1221,11 +1222,13 @@ CONTAINS
           tem1 = pfld(i,kb(i)) - pfld(i,kbcon(i))
 #if HWRF==1
 ! randomly perturb the convection trigger
-          if( pert_sas_local .and. ens_random_seed .gt. 0 ) then
+!zzz          if( pert_sas_local .and. ens_random_seed_local .gt. 0 ) then
+          if( pert_sas_local ) then
           rr=2.0*ens_sasamp_local*ran1(-ens_random_seed_local)-ens_sasamp_local
-          print*, "zhang inde sas=a", rr,ens_sasamp_local,ens_random_seed_local,cinpcr       
+          ens_random_seed_local=ran1(-ens_random_seed_local)*1000
+          print*, "zhang inde sas=a", cinpcr,ens_sasamp_local,ens_random_seed_local,cinpcr       
           cinpcr=cinpcr+rr
-          print*, "zhang inde sas=b", rr,ens_sasamp_local,ens_random_seed_local,cinpcr       
+          print*, "zhang inde sas=b", cinpcr,ens_sasamp_local,ens_random_seed_local,cinpcr       
           endif
 #endif
           if(tem1.gt.cinpcr) then
@@ -4525,3 +4528,57 @@ CONTAINS
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       END MODULE module_cu_scalesas
+
+      FUNCTION ran1(idum)
+      implicit none
+      integer idum,ia,im,iq,ir,ntab,ndiv
+      real*8 am,eps,rnmx
+      real*8 ran1
+      parameter (ia=16807,im=2147483647,am=1./im,iq=127773,ir=2836, &
+     &           ntab=32,ndiv=1+(im-1)/ntab,eps=1.2e-7,rnmx=1.-eps)
+      integer j,k,iv(32),iy,junk
+      common /random/ junk,iv,iy
+      data iv /ntab*0/, iy /0/
+      if (idum.le.0.or.iy.eq.0) then
+         idum=max(-idum,1)
+         do j=ntab+8,1,-1
+            k=idum/iq
+            idum=ia*(idum-k*iq)-ir*k
+            if (idum.lt.0) idum=idum+im
+            if (j.le.ntab) iv(j)=idum
+         enddo
+         iy=iv(1)
+      endif
+      k=idum/iq
+      idum=ia*(idum-k*iq)-ir*k
+      if (idum.lt.0) idum=idum+im
+      j=1+iy/ndiv
+      iy=iv(j)
+      iv(j)=idum
+      ran1=min(am*iy,rnmx)
+      return
+      END FUNCTION ran1
+
+      FUNCTION gasdev(idum)
+      INTEGER idum
+      REAL*8 gasdev
+!CU    USES ran1
+      INTEGER iset
+      REAL*8 fac,gset,rsq,v1,v2,ran1
+      SAVE iset,gset
+      DATA iset/0/
+      if (iset.eq.0) then
+   1    v1=2.*ran1(idum)-1.
+        v2=2.*ran1(idum)-1.
+        rsq=v1**2+v2**2
+        if(rsq.ge.1..or.rsq.eq.0.)goto 1
+        fac=sqrt(-2.*log(rsq)/rsq)
+        gset=v1*fac
+        gasdev=v2*fac
+        iset=1
+      else
+        gasdev=gset
+        iset=0
+      endif
+      return
+      END FUNCTION gasdev
