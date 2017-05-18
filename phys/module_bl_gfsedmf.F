@@ -1114,11 +1114,12 @@ CONTAINS
 !zhang adding PBL perturtion
 !zzz            if ( pert_pbl_local .and. ens_random_seed_local .gt. 0 ) then
             if ( pert_pbl_local ) then
-            rr=(2.0*ens_pblamp_local*ran1(-ens_random_seed_local)-ens_pblamp_local)
+!            print*, "zhang PBL ens_random_seed==", ens_random_seed,ens_random_seed_local
             ens_random_seed_local=ran1(-ens_random_seed_local)*1000
-            print*, "zhang PBL aa", rr, ens_pblamp_local,ens_random_seed_local,HPBL(I)
+            rr=(2.0*ens_pblamp_local*ran1(-ens_random_seed_local)-ens_pblamp_local)
+!            print*, "zhang PBL aa", rr, ens_pblamp_local,ens_random_seed_local,HPBL(I)
             HPBL(I) = HPBL(I)*(1.0+rr)
-            print*, "zhang PBL bb", rr, ens_pblamp_local,ens_random_seed_local,HPBL(I)
+!            print*, "zhang PBL bb", rr, ens_pblamp_local,ens_random_seed_local,HPBL(I)
             endif
 #endif
 

@@ -1762,11 +1762,12 @@ CONTAINS
 ! randomly perturb the Cd
 !zzz        if( pert_Cd_local .and. ens_random_seed_local .gt. 0 ) then
         if( pert_Cd_local ) then
-        rr=2.0*ens_Cdamp_local*ran1(-ens_random_seed_local)-ens_Cdamp_local
+!        print*, "zhang cd ens_random_seed==",ens_random_seed,ens_random_seed_local
         ens_random_seed_local=ran1(-ens_random_seed_local)*1000
-        print*, "zhang cd a=", rr,cdm(i),ens_Cdamp_local,ens_random_seed_local
+        rr=2.0*ens_Cdamp_local*ran1(-ens_random_seed_local)-ens_Cdamp_local
+!        print*, "zhang cd a=", rr,cdm(i),ens_Cdamp_local,ens_random_seed_local
         cdm(i) = cdm(i) *(1.0+rr)
-        print*, "zhang cd b=", rr,cdm(i),ens_Cdamp_local,ens_random_seed_local
+!        print*, "zhang cd b=", rr,cdm(i),ens_Cdamp_local,ens_random_seed_local
         endif
 #endif
 

@@ -861,7 +861,7 @@ CONTAINS
             ens_sasamp_local=ens_sasamp
             endif
          endif
-         print*, "DESAS ==", ens_random_seed_local,pert_sas_local,ens_sasamp_local
+         print*, "DESAS OLD ==", ens_random_seed_local,pert_sas_local,ens_sasamp_local
       endif
 #endif
 !
@@ -1244,11 +1244,12 @@ CONTAINS
 ! randomly perturb the convection trigger
 !zzz          if( pert_sas_local .and. ens_random_seed_local .gt. 0 ) then
           if( pert_sas_local ) then
-          rr=2.0*ens_sasamp_local*ran1(-ens_random_seed_local)-ens_sasamp_local
+!          print*,"ens_random_seed==",ens_random_seed,ens_random_seed_local
           ens_random_seed_local=ran1(-ens_random_seed_local)*1000
-          print*, "zhang inde sas=a", cinpcr,ens_sasamp_local,ens_random_seed_local,cinpcr
+          rr=2.0*ens_sasamp_local*ran1(-ens_random_seed_local)-ens_sasamp_local
+!          print*, "zhang inde sas=a", cinpcr,ens_sasamp_local,ens_random_seed_local,cinpcr
           cinpcr=cinpcr+rr
-          print*, "zhang inde sas=b", cinpcr,ens_sasamp_local,ens_random_seed_local,cinpcr
+!          print*, "zhang inde sas=b", cinpcr,ens_sasamp_local,ens_random_seed_local,cinpcr
           endif
 #endif
           if(tem1.gt.cinpcr) then
@@ -4756,7 +4757,7 @@ CONTAINS
             ens_sasamp_local=ens_sasamp
             endif
          endif
-         print*, "SAS ==", ens_random_seed_local,pert_sas_local,ens_sasamp_local
+         print*, "DESAS ==", ens_random_seed_local,pert_sas_local,ens_sasamp_local
       endif
 #endif
 !
@@ -5134,11 +5135,12 @@ CONTAINS
 ! randomly perturb the convection trigger
 !zzz          if( pert_sas_local .and. ens_random_seed_local .gt. 0 ) then
           if( pert_sas_local ) then
-          rr=2.0*ens_sasamp_local*ran1(-ens_random_seed_local)-ens_sasamp_local
+!          print*,"ens_random_seed==",ens_random_seed,ens_random_seed_local
           ens_random_seed_local=ran1(-ens_random_seed_local)*1000
-          print*, "zhang inde desas=a", cinpcr,ens_sasamp_local,ens_random_seed_local,cinpcr
+          rr=2.0*ens_sasamp_local*ran1(-ens_random_seed_local)-ens_sasamp_local
+!          print*, "zhang inde desas=a", cinpcr,ens_sasamp_local,ens_random_seed_local,cinpcr
           cinpcr=cinpcr+rr
-          print*, "zhang inde desas=b", cinpcr,ens_sasamp_local,ens_random_seed_local,cinpcr
+!          print*, "zhang inde desas=b", cinpcr,ens_sasamp_local,ens_random_seed_local,cinpcr
           endif
 #endif
           if(tem1 > cinpcr) then
@@ -7391,11 +7393,12 @@ CONTAINS
 ! randomly perturb the convection trigger
 !zzz          if( pert_sas_local .and. ens_random_seed_local .gt. 0 ) then
           if( pert_sas_local ) then
-          rr=2.0*ens_sasamp_local*ran1(-ens_random_seed_local)-ens_sasamp_local
+!          print*, "zhang inde ens_random_seed=", ens_random_seed,ens_random_seed_local
           ens_random_seed_local=ran1(-ens_random_seed_local)*1000
-          print*, "zhang inde shsas=a", cinpcr,ens_sasamp_local,ens_random_seed_local,cinpcr
+          rr=2.0*ens_sasamp_local*ran1(-ens_random_seed_local)-ens_sasamp_local
+!          print*, "zhang inde shsas=a", cinpcr,ens_sasamp_local,ens_random_seed_local,cinpcr
           cinpcr=cinpcr+rr
-          print*, "zhang inde shsas=b", cinpcr,ens_sasamp_local,ens_random_seed_local,cinpcr
+!          print*, "zhang inde shsas=b", cinpcr,ens_sasamp_local,ens_random_seed_local,cinpcr
           endif
 #endif
           if(tem1 > cinpcr) then
