@@ -64,15 +64,15 @@ CONTAINS
 !-------------------------------------------------------------
    IMPLICIT NONE
       integer, parameter :: ideep=1
-      integer, parameter :: imid_gf=0
-! ichoice now in namelist, as in EM core (deep only) - EG
-!      integer, parameter :: ichoice=0   ! 0 2 5 8 11 GG
-      integer, parameter :: ichoicem=0  ! 0 1 2 8 11 GG
+!      integer, parameter :: imid_gf=0
+      integer :: imid_gf=0
+! ichoice (for deep) now in namelist, as in EM core - EG
+!      integer, parameter :: ichoice=0   ! 0 2 5 8 13 GG
+      integer, parameter :: ichoicem=5  ! 0 2 5 13 GG
 !Closure for shallow (1=stabilization,2=zws,3=dhdt,0=avg of 1,2,3)
       integer, parameter :: ichoice_s=2 ! 0 1 2 3     !As in FIM
       real, parameter :: aodccn=0.1
-!      real :: dts,fpi,fp
-      integer, parameter :: dicycle=1   !0,1,2 - diurnal cycle flag
+      integer, parameter :: dicycle=0   !0,1,2 - diurnal cycle flag
       integer, parameter :: dicycle_m=0 !- diurnal cycle flag
 
 !-------------------------------------------------------------
@@ -83,11 +83,8 @@ CONTAINS
    LOGICAL periodic_x,periodic_y
 
   
-      real :: beta,betam,dts,fpi,fp
+   real :: beta,betam,dts,fpi,fp
    INTEGER,      INTENT(IN   ) :: ishallow_g3,ichoice
-
-!   REAL,         INTENT(IN   ) :: XLV, R_v
-!   REAL,         INTENT(IN   ) :: CP,G
 
    REAL,  DIMENSION( ims:ime , kms:kme , jms:jme )         ,    &
           INTENT(IN   ) ::                                      &
@@ -270,10 +267,6 @@ CONTAINS
 !      jendc=min(jte,jde-5)
 !   END IF
 
-!!!!!!!!!!!!!!! test
-!   itf=MIN(ite,ide-1)
-!   ktf=MIN(kte,kde-1)
-!   jtf=MIN(jte,jde-1)
 
    itf = ite
    ktf = kte
@@ -383,16 +376,25 @@ CONTAINS
         prets(i) = 0.
         pretm(i) = 0.
 
-        dxi(i)=(dy*dy+dx2d(i,j)*dx2d(i,j))**0.5
         mconv(i)=0.
 
         ccn(i)=150.
 
-!#if (NMM_CORE == 1 )
-!        sigmu(i,j)=0.
-!        scalefun(i,j)=0.
-!#endif
      ENDDO
+#if (NMM_CORE==1)
+! For the NMM grid, gridarea(I)=DX2D(i,j)*DY*2.0
+! so use dxi = sqrt(gridarea)
+     DO I= its,itf
+        dxi(i)=(dy*dx2d(i,j)*2.0)**0.5
+     ENDDO
+!#else
+!     DO I= its,itf
+!        dxi(i)= dx
+!     ENDDO
+#endif
+
+! TEST!!! Turn on mid-level convection for coarser grids
+!      if (maxval(dxi).gt.10000.) imid_gf=1
 
 !     do k=kts,kte
 !     DO I= its,ite
@@ -408,7 +410,7 @@ CONTAINS
          zo(i,k)=zo(i,k-1)+.5*(dz8w(i,k-1,j)+dz8w(i,k,j))
          enddo
      ENDDO
-!    if(j.eq.jpr .and. (ipr.gt.its .and. ipr.lt.itf))write(0,*)psur(ipr),ter11(ipr),kpbli(ipr)
+
      DO K=kts,ktf
      DO I=ITS,ITF
          po(i,k)=p(i,k,j)*.01
@@ -492,15 +494,6 @@ CONTAINS
 !
        if(ishallow_g3 == 1 )then
 
-!
-! this turns off shallow convection when deep convection is active
-!
-!      do i=its,ite
-!       if(pret(i).gt.0.)then
-!           ierrs(i)=1
-!       endif
-!      enddo
-!
 ! call shallow
 !
           call CUP_gf_sh (                                              &
@@ -512,7 +505,7 @@ CONTAINS
               zus,xmbs,kbcons,ktops,k22s,ierrs,ierrcs,    &
 ! output tendencies
               outts,outqs,outqcs,cnvwt,prets,cupclws,             &
-! dimesnional variables
+! dimensional variables
               itf,ktf,its,ite, kts,kte,ipr)
           do i=its,itf
            if(xmbs(i).le.0.)cutens(i)=0.
@@ -557,7 +550,6 @@ CONTAINS
               ,dxi           &
               ,mconv         &
               ,omeg          &
-
               ,cactiv        &
               ,cnvwtm        &
               ,zum           &
@@ -620,11 +612,9 @@ CONTAINS
               ,ccn           &
               ,dt            &
               ,0             &
-
               ,kpbli         &
               ,dhdt          &
               ,xlandi        &
-
               ,zo            &
               ,forcing       &
               ,t2d           &
@@ -642,7 +632,6 @@ CONTAINS
               ,dxi           &
               ,mconv         &
               ,omeg          &
-
               ,cactiv       &
               ,cnvwt        &
               ,zu           &
@@ -686,7 +675,7 @@ CONTAINS
             enddo
             enddo
       CALL neg_check('deep',ipr,dt,qcheck,outq,outt,outu,outv,   &
-                                         outqc,pret,its,ite,kts,kte,itf,ktf,ktop)
+                                 outqc,pret,its,ite,kts,kte,itf,ktf,ktop)
 !
       endif
 
