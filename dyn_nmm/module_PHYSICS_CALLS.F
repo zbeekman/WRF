@@ -2276,6 +2276,7 @@
      &                 ,xmb_shallow,k22_shallow                         & !GF
      &                 ,kbcon_shallow,ktop_shallow                      & !GF
      &                 ,ierr_shallow                                    & !GF
+     &                 ,TCUCNI                                          & !GF
      &                 ,PDTOP,PT,PD,RES,PINT,T,Q,CWM,TCUCN              &
      &                 ,OMGALF,U,V,W,Z,FIS,W0AVG                        &
      &                 ,PREC,ACPREC,CUPREC,CUPPT,CPRATE                 &
@@ -2402,6 +2403,7 @@
       REAL,DIMENSION(IDS:IDE,JDS:JDE)               :: DATA1 
       LOGICAL, EXTERNAL::wrf_dm_on_monitor
 #endif
+      REAL,DIMENSION(IMS:IME,JMS:JME,KMS:KME),INTENT(INOUT) :: TCUCNI
       REAL,DIMENSION(IMS:IME,JMS:JME,KMS:KME),INTENT(INOUT) :: CWM      &
      &                                                        ,OMGALF   &
      &                                                        ,Q,T      &
@@ -3077,6 +3079,7 @@
           T(I,J,K)=T(I,J,K)+DTDT*DTCNVC
           Q(I,J,K)=Q(I,J,K)+DQDT*DTCNVC
           TCUCN(I,J,K)=TCUCN(I,J,K)+DTDT
+          TCUCNI(I,J,K)=DTDT              ! GF - Instantaneous T tend
           MOIST_TRANS(I,K,J,P_QV)=Q(I,J,K)/(1.-Q(I,J,K))       !Convert to mixing ratio
 !
           cps_select: SELECT CASE(config_flags%cu_physics)
@@ -3138,6 +3141,7 @@
      &                   ,DX,DY,SM,HBM2,FIS                             &
      &                   ,DETA1,DETA2,AETA1,AETA2,ETA1,ETA2             &
      &                   ,PDTOP,PT,PD,RES,PINT,T,Q,CWM,TRAIN            &
+     &                   ,TRAINI                                        & !GF
      &                   ,MOIST,SCALAR,N_SCALAR                         &
      &                   ,F_ICE,F_RAIN,F_RIMEF,SR                       &
      &                   ,PREC,ACPREC,AVRAIN                            &
@@ -3197,6 +3201,7 @@
 !
       REAL,DIMENSION(IMS:IME,JMS:JME,KMS:KME),INTENT(INOUT) :: CWM,Q    &
      &                                                        ,T,TRAIN
+      REAL,DIMENSION(IMS:IME,JMS:JME,KMS:KME),INTENT(INOUT) :: TRAINI   ! GF
 !
       REAL,DIMENSION(IMS:IME,KMS:KME,JMS:JME),INTENT(INOUT) :: F_ICE    &   !<--- Used only with physics (IKJ)
      &                                                        ,F_RAIN   &
@@ -3456,6 +3461,7 @@
           DO I=MYIS1,IENDX
             TNEW=TH_PHY(I,K,J)*PI_PHY(I,K,J)
             TRAIN(I,J,K)=TRAIN(I,J,K)+(TNEW-T(I,J,K))*RDTPHS
+            TRAINI(I,J,K)=(TNEW-T(I,J,K))*RDTPHS            !GF - instantaneous
             T(I,J,K)=TNEW
             Q(I,J,K)=MOIST_TRANS(I,K,J,P_QV)/(1.+MOIST_TRANS(I,K,J,P_QV))
             CWM(I,J,K)=CWM_PHY(I,K,J)

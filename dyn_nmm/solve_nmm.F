@@ -1885,6 +1885,7 @@
      &             ,grid%GD_CLOUD,grid%GD_CLOUD2,grid%ktop_deep                  &
      &             ,grid%xmb_shallow,grid%k22_shallow,grid%kbcon_shallow,grid%ktop_shallow   &   !GF
      &             ,grid%ierr_shallow                                            & !GF
+     &             ,grid%tcucni                                        & !GF
      &             ,grid%pdtop,grid%pt,grid%pd,grid%res,grid%pint,grid%t,grid%q,grid%cwm,grid%tcucn                 &
      &             ,grid%omgalf,grid%u,grid%v,grid%w,grid%z,grid%fis,grid%w0avg                           &
      &             ,grid%prec,grid%acprec,grid%cuprec,grid%cuppt,grid%cprate                    &
@@ -1992,6 +1993,7 @@
      &               ,grid%dx_nmm(ITS,JC),GRID%DY,grid%sm,grid%hbm2,grid%fis               &
      &               ,grid%deta1,grid%deta2,grid%aeta1,grid%aeta2,grid%eta1,grid%eta2                &
      &               ,grid%pdtop,grid%pt,grid%pd,grid%res,grid%pint,grid%t,grid%q,grid%cwm,grid%train               &
+     &               ,grid%traini                                      & !GF
      &               ,MOIST,SCALAR,NUM_SCALAR                          &
      &               ,grid%f_ice,grid%f_rain,grid%f_rimef,grid%sr                          &
      &               ,grid%prec,grid%acprec,grid%avrain                               &

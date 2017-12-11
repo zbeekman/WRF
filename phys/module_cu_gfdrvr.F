@@ -296,8 +296,15 @@ CONTAINS
      DO I= its,ite
        rthcuten(i,k,j)=0.
        rqvcuten(i,k,j)=0.
-!       rucuten(i,k,j)=0.
-!       rvcuten(i,k,j)=0.
+     enddo
+     enddo
+     enddo
+
+     do k=kts,kte
+     DO J = jts,jte  
+     DO I= its,ite
+       rucuten(i,j,k)=0.
+       rvcuten(i,j,k)=0.
      enddo
      enddo
      enddo

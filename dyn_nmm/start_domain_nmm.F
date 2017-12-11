@@ -966,6 +966,8 @@
         DO I=IFS,IFE
           grid%train(I,J,K)=0.
           grid%tcucn(I,J,K)=0.
+          grid%traini(I,J,K)=0.
+          grid%tcucni(I,J,K)=0.
         ENDDO
         ENDDO
         ENDDO
