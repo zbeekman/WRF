@@ -65,7 +65,7 @@ contains
 ! this module needs some subroutines from gf_deep
 !
   use module_cu_gf_deep,only:cup_env,cup_env_clev,get_cloud_bc,cup_minimi,  &
-                      get_inversion_layers,rates_up_pdf,get_cloud_bc,     &
+                      get_inversion_layers,rates_up_pdf,               &
                       cup_up_aa0,cup_kbcon,get_lateral_massflux
      implicit none
      integer                                                           &

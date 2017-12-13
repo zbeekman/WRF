@@ -21,12 +21,12 @@ MODULE module_cu_gf_deep
 ! flag to turn off or modify mom transport by downdrafts
      real, parameter :: pgcd = 1.
 !
-! aerosol awareness, do not user yet!
+! aerosol awareness, do not use yet!
 !
      integer, parameter :: autoconv=1
      integer, parameter :: aeroevap=1
      real, parameter :: ccnclean=250.
-! still 16 ensembles for clousres
+! still 16 ensemble members for closures
      integer, parameter:: maxens3=16
 
 !---meltglac-------------------------------------------------
@@ -3760,7 +3760,8 @@ ENDIF
  SUBROUTINE get_cloud_bc(mzp,array,x_aver,k22,add)
     implicit none
     integer, intent(in)     :: mzp,k22
-    real   , intent(in)     :: array(mzp)
+    real   , intent(in)     :: array(:)
+!    real   , intent(in)     :: array(mzp)
     real   , optional , intent(in)  :: add
     real   , intent(out)    :: x_aver
     integer :: i,local_order_aver,order_aver
@@ -3839,7 +3840,6 @@ ENDIF
            if(k >= kbcon(i)) dby(k)=dby(k-1)+(hcot(i,k)-heso_cup(i,k))*dz
            if(k >= kbcon(i)) dbm(k)=hcot(i,k)-heso_cup(i,k)
         enddo
-122     format(1x,i3,4e12.4)
         ktopdby(i)=maxloc(dby(:),1)
         kklev=maxloc(dbm(:),1)
         do k=maxloc(dby(:),1)+1,ktf-2
@@ -3855,18 +3855,12 @@ ENDIF
 !
 ! at least overshoot by one level
 !
-!        kfinalzu=min(max(kfinalzu,ktopdby(i)+1),ktopdby(i)+2)
-!        ktop(i)=kfinalzu
         if(kfinalzu.le.kbcon(i)+2)then
               ierr(i)=41
               ktop(i)= 0
         else
-!           call get_zu_zd_pdf(ipr,xland(i),zuh2,"UP",ierr(i),start_level(i), &
-!           call get_zu_zd_pdf(rand_vmas(i),zubeg,ipr,xland(i),zuh2,"UP",ierr(i),kbcon(i), &
-!            kfinalzu,zuo(i,kts:kte),kts,kte,ktf,beta_u,kpbl(i),csum(i),psur(i))
            call get_zu_zd_pdf(dby,dbm,kklev,p_cup(i,:),rand_vmas(i),zubeg,ipr,xland(i),zuh2,"UP1",ierr(i),k22(i), &
-            kfinalzu+1,zuo(i,kts:kte),kts,kte,ktf,beta_u,kbcon(i),csum(i),psur(i))
-123   format(1x,3i4,2f7.2,2e12.4)
+            kfinalzu+1,zuo(i,:),kts,kte,ktf,beta_u,kbcon(i),csum(i),psur(i))
         endif
       endif ! end deep
       if ( name == 'mid' ) then
@@ -3876,7 +3870,7 @@ ENDIF
        else
            kfinalzu=ktop(i)
            ktopdby(i)=ktop(i)+1
-          call get_zu_zd_pdf(dby,dbm,kklev,p_cup(i,:),rand_vmas(i),zubeg,ipr,xland(i),zuh2,"MID",ierr(i),k22(i),ktopdby(i)+1,zuo(i,kts:kte),kts,kte,ktf,beta_u,kbcon(i),csum(i),psur(i))
+          call get_zu_zd_pdf(dby,dbm,kklev,p_cup(i,:),rand_vmas(i),zubeg,ipr,xland(i),zuh2,"MID",ierr(i),k22(i),ktopdby(i)+1,zuo(i,:),kts,kte,ktf,beta_u,kbcon(i),csum(i),psur(i))
        endif
       endif ! mid
       if ( name == 'shallow' ) then
@@ -3887,7 +3881,7 @@ ENDIF
            kfinalzu=ktop(i)
            ktopdby(i)=ktop(i)+1
            call get_zu_zd_pdf(dby,dbm,kbcon(i),p_cup(i,:),rand_vmas(i),zubeg,ipr,xland(i),zuh2,"SH2",ierr(i),k22(i), &
-             ktopdby(i)+1,zuo(i,kts:kte),kts,kte,ktf,beta_u,kpbl(i),csum(i),psur(i))
+             ktopdby(i)+1,zuo(i,:),kts,kte,ktf,beta_u,kpbl(i),csum(i),psur(i))
 
          endif
          endif ! shal
@@ -3909,8 +3903,11 @@ ENDIF
  real, parameter :: beta_dd=2.5,g_beta_dd=0.8974707
  integer, intent(in) ::ipr,xland,kb,kklev,kt,kts,kte,ktf,kpbli,csum
  real, intent(in) ::max_mass,zubeg,psur
- real, intent(inout) :: zu(kts:kte),dby(kts:kte),dbm(kts:kte)
- real, intent(in) :: p(kts:kte)
+! real, intent(inout) :: zu(kts:kte),dby(kts:kte),dbm(kts:kte)
+ real, intent(inout) :: dby(kts:kte),dbm(kts:kte)
+ real, intent(inout) :: zu(:)
+! real, intent(in) :: p(kts:kte)
+ real, intent(in) :: p(:)
  real  :: zuh(kts:kte),zuh2(1:40),zul(kts:kte)
  integer, intent(inout) :: ierr
  character*(*), intent(in) ::draft
