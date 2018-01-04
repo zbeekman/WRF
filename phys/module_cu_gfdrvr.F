@@ -73,7 +73,7 @@ CONTAINS
       integer, parameter :: ichoice_s=2 ! 0 1 2 3     !As in FIM
       real, parameter :: aodccn=0.1
 !      real :: dts,fpi,fp
-      integer, parameter :: dicycle=0   !0,1,2 - diurnal cycle flag
+      integer, parameter :: dicycle=1   !0,1,2 - diurnal cycle flag
       integer, parameter :: dicycle_m=0 !- diurnal cycle flag
 
 !-------------------------------------------------------------
@@ -412,7 +412,7 @@ CONTAINS
 #endif
 
 ! Turn on mid-level convection for coarse grid only
-      if (maxval(dxi).gt.10000.) imid_gf = 1
+!      if (maxval(dxi).gt.10000.) imid_gf = 1
 
 !     do k=kts,kte
 !     DO I= its,ite

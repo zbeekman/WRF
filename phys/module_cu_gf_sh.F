@@ -381,8 +381,8 @@ contains
            itf,ktf, &
            its,ite, kts,kte)
 !
-!      call get_inversion_layers(ierr,p_cup,t_cup,z_cup,q_cup,qes_cup,k_inv_layers,&
-!                           kbcon,kstabi,dtempdz,itf,ktf,its,ite, kts,kte)
+      call get_inversion_layers(ierr,p_cup,t_cup,z_cup,q_cup,qes_cup,k_inv_layers,&
+                           kbcon,kstabi,dtempdz,itf,ktf,its,ite, kts,kte)
 !
 !
       DO i=its,itf
@@ -406,17 +406,17 @@ contains
 ! first estimate for shallow convection
 !
             ktop(i)=1
-!            if(k_inv_layers(i,1).gt.0 .and.   &
-!               (po_cup(i,kbcon(i))-po_cup(i,k_inv_layers(i,1))).lt.200.)then
-!               ktop(i)=k_inv_layers(i,1)
-!            else
+            if(k_inv_layers(i,1).gt.0 .and.   &
+               (po_cup(i,kbcon(i))-po_cup(i,k_inv_layers(i,1))).lt.200.)then
+               ktop(i)=k_inv_layers(i,1)
+            else
                do k=kbcon(i)+1,ktf
                   if((po_cup(i,kbcon(i))-po_cup(i,k)).gt.200.)then
                     ktop(i)=k
                     exit
                   endif
                enddo
-!            endif
+            endif
          endif
       enddo
 

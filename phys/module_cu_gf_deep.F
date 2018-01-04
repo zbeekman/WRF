@@ -687,10 +687,10 @@ contains
 !
 !--- get inversion layers for mid level cloud tops
 !
-!      if(imid.eq.1)then
-!      call get_inversion_layers(ierr,p_cup,t_cup,z_cup,q_cup,qes_cup,k_inv_layers, &
-!                               kbcon,kstabi,dtempdz,itf,ktf,its,ite, kts,kte)
-!      endif
+      if(imid.eq.1)then
+      call get_inversion_layers(ierr,p_cup,t_cup,z_cup,q_cup,qes_cup,k_inv_layers, &
+                               kbcon,kstabi,dtempdz,itf,ktf,its,ite, kts,kte)
+      endif
       DO i=its,itf
          if(kstabi(i).lt.kbcon(i))then
            kbcon(i)=1
@@ -707,12 +707,12 @@ contains
                entr_rate_2d(i,k)=entr_rate(i) *(1.3-frh)
             enddo
             if(imid.eq.1)then
-!                if(k_inv_layers(i,2).gt.0 .and.   &
-!                  (po_cup(i,k22(i))-po_cup(i,k_inv_layers(i,2))).lt.500.)then
-!
-!                 ktop(i)=min(kstabi(i),k_inv_layers(i,2))
-!                 ktopdby(i)=ktop(i)
-!               else
+                if(k_inv_layers(i,2).gt.0 .and.   &
+                  (po_cup(i,k22(i))-po_cup(i,k_inv_layers(i,2))).lt.500.)then
+
+                 ktop(i)=min(kstabi(i),k_inv_layers(i,2))
+                 ktopdby(i)=ktop(i)
+               else
                  do k=kbcon(i)+1,ktf
                   if((po_cup(i,k22(i))-po_cup(i,k)).gt.500.)then
                     ktop(i)=k
@@ -720,7 +720,7 @@ contains
                     exit
                   endif
                  enddo
-!               endif ! k_inv_lay
+               endif ! k_inv_lay
             endif
 
           endif
@@ -4149,74 +4149,77 @@ ENDIF
         !-local vars
         real   :: dp,l_mid,l_shal,first_deriv(kts:kte),sec_deriv(kts:kte)
         integer:: ken,kadd,kj,i,k,ilev,kk,ix,k800,k550,mid,shal
+        integer, dimension (its:ite,kts:kte) :: k_work
         !
         !-initialize k_inv_layers as undef
         l_mid=300.
         l_shal=100.
         k_inv_layers(:,:) = 1
+
          do i = its,itf
-           if(ierr(i) == 0)then
+           if(ierr(i) /= 0) cycle
            kend_p3(i)=kend(i)+3
            DO k = kts+1,kend_p3(i)+4
             !-  get the 1st der
-            first_deriv(k)= (t_cup(i,k+1)-t_cup(i,k-1))/(z_cup(i,k+1)-z_cup(i,k-1))        
-            dtempdz(i,k)=first_deriv(k)
-               enddo
+             first_deriv(k)= (t_cup(i,k+1)-t_cup(i,k-1))/(z_cup(i,k+1)-z_cup(i,k-1))        
+             dtempdz(i,k)=first_deriv(k)
+           enddo
            DO k = kts+2,kend_p3(i)+3
-            !  get the 2nd der
-            sec_deriv(k)= (first_deriv(k+1)-first_deriv(k-1))/(z_cup(i,k+1)-z_cup(i,k-1))        
-            sec_deriv(k)= abs(sec_deriv(k))        
+             !  get the 2nd der
+             sec_deriv(k)= (first_deriv(k+1)-first_deriv(k-1))/(z_cup(i,k+1)-z_cup(i,k-1))        
+             sec_deriv(k)= abs(sec_deriv(k))        
            enddo
         
-         ilev=max(kts+2,kstart(i)+1)
-         ix=1
-         k=ilev
-         DO WHILE (ilev < kend_p3(i)) !(z_cup(i,ilev)<15000.)
-           do kk=k,kend_p3(i)+2 !k,ktf-2
-             
-             if(sec_deriv(kk) <        sec_deriv(kk+1) .and.  &
-                sec_deriv(kk) < sec_deriv(kk-1)        ) then
-              k_inv_layers(i,ix)=kk
-              ix=min(5,ix+1)
-              ilev=kk+1
-              exit   
-             endif
-              ilev=kk+1
-               enddo
+           ilev=max(kts+2,kstart(i)+1)
+           ix=1
            k=ilev
-         ENDDO         
-        !- 2nd criteria
-         kadd=0
-         ken=maxloc(k_inv_layers(i,:),1)
-         do k=1,ken
-           kk=k_inv_layers(i,k+kadd)
-           if(kk.eq.1)exit
+           DO WHILE (ilev < kend_p3(i)) !(z_cup(i,ilev)<15000.)
+             do kk=k,kend_p3(i)+2 !k,ktf-2
+             
+               if(sec_deriv(kk) < sec_deriv(kk+1) .and.  &
+                  sec_deriv(kk) < sec_deriv(kk-1)        ) then
+                  k_inv_layers(i,ix)=kk
+                  ix=min(5,ix+1)
+                  ilev=kk+1
+                  exit   
+               endif
+               ilev=kk+1
+             enddo
+             k=ilev
+           ENDDO         
 
-           if( dtempdz(i,kk) < dtempdz(i,kk-1) .and. &
-               dtempdz(i,kk) < dtempdz(i,kk+1) ) then ! the layer is not a local maximum
+        !- 2nd criteria
+           kadd=0
+           ken=maxloc(k_inv_layers(i,:),1)
+           do k=1,ken
+             kk=k_inv_layers(i,k+kadd)
+             if(kk.eq.1)exit
+
+             if( dtempdz(i,kk) < dtempdz(i,kk-1) .and. &
+                 dtempdz(i,kk) < dtempdz(i,kk+1) ) then ! the layer is not a local maximum
                kadd=kadd+1
-                do kj = k,ken
-               if(k_inv_layers(i,kj+kadd).gt.1)k_inv_layers(i,kj) = k_inv_layers(i,kj+kadd)
-               if(k_inv_layers(i,kj+kadd).eq.1)k_inv_layers(i,kj) = 1
-                enddo
-           endif
-         ENDDO
-        endif
+               do kj = k,ken
+                 if(k_inv_layers(i,kj+kadd).gt.1)k_inv_layers(i,kj) = k_inv_layers(i,kj+kadd)
+                 if(k_inv_layers(i,kj+kadd).eq.1)k_inv_layers(i,kj) = 1
+               enddo
+             endif
+           ENDDO
         ENDDO
 100 format(1x,16i3)        
+
         !- find the locations of inversions around 800 and 550 hPa
-        sec_deriv(:)=1.e9
         do i = its,itf
          if(ierr(i) /= 0) cycle
 
          !- now find the closest layers of 800 and 550 hPa.         
+         sec_deriv(:)=1.e9
          do k=1,maxloc(k_inv_layers(i,:),1) !kts,kte !kstart(i),kend(i) !kts,kte
            dp=p_cup(i,k_inv_layers(i,k))-p_cup(i,kstart(i))
            sec_deriv(k)=abs(dp)-l_shal
          enddo
          k800=minloc(abs(sec_deriv),1)
-        sec_deriv(:)=1.e9
 
+         sec_deriv(:)=1.e9
          do k=1,maxloc(k_inv_layers(i,:),1) !kts,kte !kstart(i),kend(i) !kts,kte
            dp=p_cup(i,k_inv_layers(i,k))-p_cup(i,kstart(i))
            sec_deriv(k)=abs(dp)-l_mid
