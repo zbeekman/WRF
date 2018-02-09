@@ -1415,6 +1415,9 @@ rconfig   real        mommix              namelist,physics     max_domains  0.7 
 rconfig   logical     disheat             namelist,physics      max_domains  .true.    irh    "nmm input 7"
 #end HWRF:
 rconfig   integer     do_radar_ref        namelist,physics      1              0       rh       "compute radar reflectivity for a number of schemes" 
+!pzhu
+rconfig   integer     do_turb_mixing      namelist,physics      1              0       rh       "use Ping Zhu's turbulent mixing scheme" 
+!pzhu-end
 rconfig   integer     compute_radar_ref   derived               1              0       -        "compute_radar_ref" "0/1 flag: compute radar reflectivity, either do_radar_ref=1 .or. (milbrandt or NSSL schemes)"
 rconfig   integer     ra_lw_physics       namelist,physics	max_domains    0       rh0123       "ra_lw_physics"         ""      ""
 rconfig   integer     ra_sw_physics       namelist,physics	max_domains    0       rh0123       "ra_sw_physics"         ""      ""

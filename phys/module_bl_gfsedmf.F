@@ -8,6 +8,9 @@ CONTAINS
 
 !-------------------------------------------------------------------          
    SUBROUTINE BL_GFSEDMF(U3D,V3D,TH3D,T3D,QV3D,QC3D,QI3D,P3D,PI3D, &
+!pzhu
+                  refl_10cm,W3D,DO_TURB_MIXING,                    &
+!pzhu-end
                   RUBLTEN,RVBLTEN,RTHBLTEN,                        &
                   RQVBLTEN,RQCBLTEN,RQIBLTEN,          	           & 
                   CP,G,ROVCP,R,ROVG,P_QI,P_FIRST_SCALAR,           &
@@ -149,8 +152,15 @@ CONTAINS
                                         TH3D,                           &
                                         U3D,                            &
                                         V3D,                            &
+!pzhu
+                                   refl_10cm,                           &
+                                         W3D,                           &
+!pzhu-end
                                         Z   
 
+!phzu
+      INTEGER , INTENT(IN)::            DO_TURB_MIXING                                    !gopal's doing
+!pzhu-end
 
       REAL,    DIMENSION(ims:ime, kms:kme, jms:jme), INTENT(INOUT) ::   &
                                         RTHBLTEN,                       &
@@ -194,6 +204,10 @@ CONTAINS
                                         dishx,                          &
                                         THRATEN,                        & !Kwon
                                         U1,                             &
+!pzhu
+                                        refl1,                          &
+                                        W1,                             &
+!pzhu-end
                                         V1
       REAL     (kind=kind_phys), DIMENSION(its:ite, kts:kte-1) ::DKU,DKT
 
@@ -318,6 +332,10 @@ CONTAINS
 #else
           THRATEN(I,K) = 0.0
 #endif
+!pzhu
+          refl1(I,K) = refl_10cm(i,k,j)
+          W1(I,K) = W3D(i,k,j)
+!pzhu-end
           Q1(I,K,1) = QV3D(i,k,j)/(1.+QV3D(i,k,j))
           Q1(I,K,2) = QC3D(i,k,j)/(1.+QC3D(i,k,j))
           PRSL(I,K)=P3D(i,k,j)*.001
@@ -376,6 +394,9 @@ CONTAINS
       call moninedmf(im,im,kx,ntrac,ntcw,dv,du,tau,rtg,        &
 !     &   u1,v1,t1,q1,swh,hlw,xmu,                             &
      &   u1,v1,t1,q1,thraten,                                  &
+!pzhu
+                  refl1,W1,DO_TURB_MIXING,                      &
+!pzhu-end
      &   psk,rbsoil,zorl,u10m,v10m,fm,fh,                      &
      &   tsea,qss,heat,evap,stress,spd1,kpbl,                  &
      &   prsi,del,prsl,prslk,phii,phil,deltim,disheat,         &  
@@ -543,6 +564,9 @@ CONTAINS
       subroutine moninedmf(ix,im,km,ntrac,ntcw,dv,du,tau,rtg,           &
 !     &   u1,v1,t1,q1,swh,hlw,xmu,                                      &
      &   u1,v1,t1,q1,thraten,                                           &
+!pzhu
+     &     refl1,W1,DO_TURB_MIXING,                                     &
+!pzhu-end
      &   psk,rbsoil,zorl,u10m,v10m,fm,fh,                               &
      &   tsea,qss,heat,evap,stress,spd1,kpbl,                           &
      &   prsi,del,prsl,prslk,phii,phil,delt,dspheat,                    &
@@ -576,6 +600,9 @@ CONTAINS
      &                     u1(ix,km),     v1(ix,km),                 &
      &                     t1(ix,km),     q1(ix,km,ntrac),           &
      &                     swh(ix,km),    hlw(ix,km),                &
+!pzhu
+     &                     refl1(IX,KM),W1(IX,KM),                      &
+!pzhu-end
      &                     xmu(im),       psk(im),                   &
      &                     rbsoil(im),    zorl(im),                  &
      &                     u10m(im),      v10m(im),                  &
@@ -599,6 +626,13 @@ CONTAINS
       integer lcld(im),icld(im),kcld(im),krad(im)
       integer kx1(im), kpblx(im)
 !
+!pzhu
+      integer kpblw(im)
+      integer DO_TURB_MIXING
+      integer kend                                  
+      real(kind=kind_phys) hpblw(im),reflz(KM),dku1(km-1),dkt1(km-1)
+!pzhu-end
+
 !     real(kind=kind_phys) betaq(im), betat(im),   betaw(im),
       real(kind=kind_phys) evap(im),  heat(im),    phih(im),           &
      &                     phim(im),  rbdn(im),    rbup(im),           &
@@ -1472,6 +1506,208 @@ CONTAINS
          endif ! xland1 = 2
 
 #endif
+
+!pzhu  considering convection in eyewall and rainbands
+!        go to 1001
+
+#if (HWRF==1)
+         if(DO_TURB_MIXING .eq. 1) then
+   	    KPBLw(I)=KPBL(I)
+            do k=1,KM1
+               reflz(k)=DABS((refl1(I,K+1)-refl1(I,K))/(ZL(I,K+1)-ZL(I,K)))
+            enddo
+            reflz(KM)=0.0
+            do k=KPBLw(I),KM1
+               if (refl1(I,K).gt.28.0 .and. refl1(I,K+1).gt.28.0) Then 
+                  KPBL(I)=K+1
+                  HPBL(I)=ZL(I,K+1)
+               ELSE
+               EXIT
+               endif
+            enddo
+
+            do k = 1, km1
+               if(k < kpbl(i)) then
+      !           zfac = max((1.-(zi(i,k+1)-zl(i,1))/
+      !    1             (hpbl(i)-zl(i,1))), zfmin)
+                  zfac = max((1.-zi(i,k+1)/hpbl(i)), zfmin)
+              !   tem = zi(i,k+1) * (zfac**pfac)
+      !           tem = zi(i,k+1) * (zfac**pfac) * ABS(ALPHA)
+                  tem = zi(i,k+1) * (zfac**pfac) * 0.5
+
+!!!! CHANGES FOR HEIGHT-DEPENDENT K ADJUSTMENT, WANG W
+                  if(useshape .ge. 1) then
+                     sz2h=(ZI(I,K+1)-ZL(I,1))/(HPBL(I)-ZL(I,1))
+                     sz2h=max(sz2h,zfmin)
+                     sz2h=min(sz2h,1.0)
+                     zfac=(1.0-sz2h)**pfac
+!                    smax=0.148  !! max value of this shape function
+                     smax=0.148  !! max value of this shape function
+                     hmax=0.333  !! roughly height if max K
+                     skmax=hmax*(1.0-hmax)**pfac
+                     sksfc=min(ZI(I,2)/HPBL(I),0.05)  ! surface layer top, 0.05H or ZI(2) (Zi(1)=0)
+                     sksfc=sksfc*(1-sksfc)**pfac
+
+                     zfac=max(zfac,zfmin)
+    !                ashape=max(ABS(ALPHA),0.2)  ! should not be smaller than 0.2, otherwise too much adjustment(?)
+                     ashape=0.5  ! should not be smaller than 0.2, otherwise too much adjustment(?)
+                     if(useshape ==1) then
+                        ashape=( 1.0 - ((sz2h*zfac/smax)**0.25) *( 1.0 - ashape )  )
+                        tem = zi(i,k+1) * (zfac) * ashape
+                     endif
+
+                     if (useshape == 2) then   !only adjus K that is > K_surface_top
+                        ashape1=1.0
+                        if (skmax > sksfc)  ashape1=(skmax*ashape-sksfc)/(skmax-sksfc)
+                        skminusk0=ZI(I,K+1)*zfac - HPBL(i)*sksfc
+                        tem = zi(i,k+1) * (zfac) ! no adjustment
+                        if (skminusk0 > 0) then   ! only adjust K which is > surface top K
+                           tem = skminusk0*ashape1 + HPBL(i)*sksfc
+                        endif
+                     endif
+                  endif  ! endif useshape>1
+!!!! END OF CHAGES , WANG W
+
+!!If alpha >= 0, this is the only modification of K
+! if alpha = -1, the above provides the first guess for DKU, based on assumption
+! alpha = +1
+!               (other values of alpha < 0 can also be applied)
+! if alpha > 0, the above applies the alpha suppression factor and we are
+! finished
+
+                  if(pblflg(i)) then
+                     tem1 = vk * wscaleu(i) * tem
+       !             dku(i,k) = xkzmo(i,k) + tem1
+       !             dkt(i,k) = xkzo(i,k)  + tem1 * prinv(i)
+                     dku1(k) = tem1
+      !              dkt(i,k) = tem1 * prinv(i)
+                  else
+                     tem1 = vk * wscale(i) * tem
+       !             dku(i,k) = xkzmo(i,k) + tem1
+       !             dkt(i,k) = xkzo(i,k)  + tem1 * prinv(i)
+                     dku1(k) = tem1
+      !              dkt(i,k) = tem1 * prinv(i)
+                  endif
+                  dku1(k) = min(dku1(k),dkmax)
+                  dku1(k) = max(dku1(k),xkzmo(i,k))
+     !            dku(i,k) = min(dku(i,k),dkmax)
+     !            dku(i,k) = max(dku(i,k),xkzmo(i,k))
+     !            dkt(i,k) = min(dkt(i,k),dkmax)
+     !            dkt(i,k) = max(dkt(i,k),xkzo(i,k))
+     !            dktx(i,k)= dkt(i,k)
+               endif   !k<kpbl
+            enddo     !K loop
+
+! possible modification of first guess DKU, under certain conditions
+! (1) this applies only to columns over water
+
+            IF(xland1(i).eq.2)then ! sea only
+
+! (2) alpha test
+! if alpha < 0, find alpha for each column and do the loop again
+! if alpha > 0, we are finished
+
+
+               if(alpha.lt.0)then      ! variable alpha test
+
+! k-level of layer around 500 m
+                  kLOC = INT(WSPM(i,2))
+!            print *,' kLOC ',kLOC,' KPBL ',KPBL(I)
+
+! (3) only do  this IF KPBL(I) >= kLOC.  Otherwise, we are finished, with DKU as
+! if alpha = +1
+
+                  if(KPBL(I).gt.kLOC)then
+
+             !       xDKU = DKU(i,kLOC)     ! Km at k-level
+                     xDKU = DKU1(kLOC)     ! Km at k-level
+! (4) DKU check.
+! WSPM(i,1) is the KM cap for the 500-m level.
+!  if DKU at 500-m level < WSPM(i,1), do not limit Km ANYWHERE.  Alpha =
+!  abs(alpha).  No need to recalc.
+!  if DKU at 500-m level > WSPM(i,1), then alpha = WSPM(i,1)/xDKU for entire
+!  column
+                     if(xDKU.ge.WSPM(i,1)) then ! ONLY if DKU at 500-m exceeds cap, otherwise already done
+
+!                       WSPM(i,3) = WSPM(i,1)/xDKU  ! ratio of cap to Km at k-level, store in WSPM(i,3)
+                        WSPM(i,3) = WSPM(i,1)/xDKU  ! ratio of cap to Km at k-level, store in WSPM(i,3)
+                        !WSPM(i,4) = amin1(WSPM(I,3),1.0) ! this is new column alpha. cap at 1. ! should never be needed
+                        WSPM(i,4) = min(WSPM(I,3),1.0) ! this is new column alpha. cap at 1. ! should never be needed
+ !! recalculate K capped by WSPM(i,1)
+                        do k = 1, km1
+                           if(k < kpbl(i)) then
+                           !   zfac = max((1.-(zi(i,k+1)-zl(i,1))/
+             !    1          (hpbl(i)-zl(i,1))), zfmin)
+                             zfac = max((1.-zi(i,k+1)/hpbl(i)), zfmin)
+                         !   tem = zi(i,k+1) * (zfac**pfac)
+                             tem = zi(i,k+1) * (zfac**pfac) * WSPM(i,4)
+
+!!! wang use different K shape, options!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!!!! CHANGES FOR HEIGHT-DEPENDENT K ADJUSTMENT, WANG W
+                              if(useshape .ge. 1) then
+	                         sz2h=(ZI(I,K+1)-ZL(I,1))/(HPBL(I)-ZL(I,1))
+                                 sz2h=max(sz2h,zfmin)
+                                 sz2h=min(sz2h,1.0)
+                                 zfac=(1.0-sz2h)**pfac
+                                 smax=0.148  !! max value of this shape function
+                                 hmax=0.333  !! roughly height if max K
+                                 skmax=hmax*(1.0-hmax)**pfac
+                                 sksfc=min(ZI(I,2)/HPBL(I),0.05)  ! surface layer top, 0.05H or ZI(2) (Zi(1)=0)
+                                 sksfc=sksfc*(1-sksfc)**pfac
+
+                                 zfac=max(zfac,zfmin)
+                                 ashape=max(WSPM(i,4),0.2)  !! adjustment coef should not smaller than 0.2
+                                 if(useshape ==1) then
+                                    ashape=( 1.0 - ((sz2h*zfac/smax)**0.25) *( 1.0 - ashape )  )
+                                    tem = zi(i,k+1) * (zfac) * ashape
+                    !               if(k ==5) write(0,*)'min alf, height-depend alf',WSPM(i,4),ashape
+                                 endif  ! endif useshape=1
+
+                                 if (useshape == 2) then   !only adjus K that is > K_surface_top
+                                    ashape1=1.0
+                                    if (skmax > sksfc)  ashape1=(skmax*ashape-sksfc)/(skmax-sksfc)
+                                    skminusk0=ZI(I,K+1)*zfac - HPBL(i)*sksfc
+                                    tem = zi(i,k+1) * (zfac) ! no adjustment
+!                                   if(k ==5) write(0,*)'before, dku,ashape,ashpe1',tem*wscaleu(i)*vk,ashape,ashape1
+                                    if (skminusk0 > 0) then   ! only adjust K which is > surface top K
+                                       tem = skminusk0*ashape1 + HPBL(i)*sksfc
+                                    endif
+                       !            if(k ==5) write(0,*)'after, dku,k_sfc,skmax,sksfc,zi(2),hpbl',tem*wscaleu(i)*vk,WSCALEU(I)*VK*HPBL(i)*sksfc, skmax,sksfc,ZI(I,2),HPBL(I)
+                                 endif  ! endif useshape=2
+                              endif  ! endif useshape>1
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                              if (k .gt. kpblw(i)) then
+                                 if(pblflg(i)) then
+                                    tem1 = vk * wscaleu(i) * tem
+!                                   dku(i,k) = xkzmo(i,k) + tem1
+!                                   dkt(i,k) = xkzo(i,k)  + tem1 * prinv(i)
+                                    dku(i,k) = tem1
+                                    dkt(i,k) = tem1 * prinv(i)
+                                 else !pblflg
+                                    tem1 = vk * wscale(i) * tem
+!                                   dku(i,k) = xkzmo(i,k) + tem1
+             !                      dkt(i,k) = xkzo(i,k)  + tem1 * prinv(i)
+                                    dku(i,k) = tem1
+                                    dkt(i,k) = tem1 * prinv(i)
+                                 endif
+                                 dku(i,k) = min(dku(i,k),dkmax)
+                                 dku(i,k) = max(dku(i,k),xkzmo(i,k))
+                                 dkt(i,k) = min(dkt(i,k),dkmax)
+                                 dkt(i,k) = max(dkt(i,k),xkzo(i,k))
+                                 dktx(i,k)= dkt(i,k)
+                              endif  !k > kpblw
+                           endif  !k < kpbl
+                        enddo     !K loop
+                     endif ! xDKU.ge.WSPM(i,1)
+                  endif ! KPBL(I).ge.kLOC
+               endif ! alpha < 0
+            endif ! xland1 = 2
+         end if !DO_TURB_MIX = 1
+#endif
+	 !zhu-end
+	 !1001    continue
       enddo     ! I loop
 
 
@@ -1573,7 +1809,14 @@ CONTAINS
         endif
       enddo
 !
-      do k = 1, kmpbl
+!pzhu
+      if(DO_TURB_MIXING .eq. 1) then
+         kend = kmpbl
+      else
+         kend = km1
+      end if
+      do k = 1, kend
+!pzhu-end
          do i=1,im
             if(scuflg(i) .and. k < krad(i)) then
                tem1=hrad(i)-zd(i)
@@ -1595,7 +1838,10 @@ CONTAINS
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-      do k = 1, kmpbl
+!pzhu
+!      do k = 1, kmpbl
+      do k = 1, km1
+!pzhu-end
         do i=1,im
           if(scuflg(i)) then
             ! dkt(i,k) = dkt(i,k)+ckt(i,k)

@@ -1983,6 +1983,9 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                   ,F_ICE_PHY=F_ICE_PHY,F_RAIN_PHY=F_RAIN_PHY         &
                   ,F_RIMEF_PHY=F_RIMEF_PHY                           &
                   ,QC=qc_curr,QR=Qr_curr,QI=Qi_curr                  &
+!pzhu
+                  ,REFL_10CM_PHY=refl_10cm                           &
+!pzhu-end
                   ,IDS=ids,IDE=ide, JDS=jds,JDE=jde, KDS=kds,KDE=kde &
                   ,IMS=ims,IME=ime, JMS=jms,JME=jme, KMS=kms,KME=kme &
                   ,ITS=its,ITE=ite, JTS=jts,JTE=jte, KTS=kts,KTE=kte &
@@ -2015,6 +2018,9 @@ REAL, DIMENSION( ims:ime, kms:kme, jms:jme ),                        &
                   ,QV=qv_curr                                        &
                   ,LOWLYR=LOWLYR,SR=SR                               &
                   ,QC=qc_curr,QR=Qr_curr,QI=Qi_curr,QRIMEF=qrimef_curr    &
+!pzhu
+                  ,REFL_10CM_PHY=refl_10cm                           &
+!pzhu-end
                   ,IDS=ids,IDE=ide, JDS=jds,JDE=jde, KDS=kds,KDE=kde &
                   ,IMS=ims,IME=ime, JMS=jms,JME=jme, KMS=kms,KME=kme &
                   ,ITS=its,ITE=ite, JTS=jts,JTE=jte, KTS=kts,KTE=kte &

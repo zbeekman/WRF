@@ -10,6 +10,9 @@ CONTAINS
                  ,bldt,curr_secs,adapt_step_flag                   &
                  ,bldtacttime                                      & 
                  ,rublten,rvblten,rthblten                         &
+!pzhu
+                 ,refl_10cm,w_phy,do_turb_mixing                   &
+!pzhu-end
                  ,tsk,xland,znt                                    &
 #if (HWRF==1)
                  ,msang,scurx,scury,iwavecpl,lcurr_sf              &
@@ -369,6 +372,10 @@ CONTAINS
 
 
    INTEGER,    INTENT(IN   )    ::     bl_pbl_physics, ra_lw_physics,sf_sfclay_physics,sf_urban_physics,windfarm_opt
+!pzhu
+   INTEGER, OPTIONAL, INTENT(IN) :: do_turb_mixing
+!pzhu-end
+
    INTEGER,    INTENT(IN   )    ::     ysu_topdown_pblmix
    INTEGER,    OPTIONAL,  INTENT(IN   )    ::     shinhong_tke_diag
    INTEGER,    OPTIONAL,  INTENT(IN   )    ::     scalar_pblmix, tracer_pblmix
@@ -436,6 +443,10 @@ CONTAINS
                                                            v_phy, &
                                                             dz8w, &
                                                                z, &
+!pzhu
+                                                       refl_10cm, &
+                                                           w_phy, &
+!pzhu-end
                                                           th_phy
 
 !1D variables required for CAMUWPBL scheme
@@ -724,7 +735,9 @@ CONTAINS
 
    REAL,       DIMENSION( ims:ime, kms:kme, jms:jme ) ::v_phytmp
    REAL,       DIMENSION( ims:ime, kms:kme, jms:jme ) ::u_phytmp
-
+!pzhu
+   REAL,       DIMENSION( ims:ime, kms:kme, jms:jme ) ::w_phytmp
+!pzhu-end
    REAL,       DIMENSION( ims:ime, jms:jme )          ::  TSKOLD, &
                                                           USTOLD, &
                                                           ZNTOLD, &
@@ -961,6 +974,9 @@ CONTAINS
          DO k=kts,kte
             v_phytmp(i,k,j)=v_phy(i,k,j)+v_frame
             u_phytmp(i,k,j)=u_phy(i,k,j)+u_frame
+!pzhu
+            w_phytmp(i,k,j)=w_phy(i,k,j)
+!pzhu-end
          ENDDO
 
 ! PSFC : in Pa
@@ -1390,6 +1406,9 @@ CONTAINS
              CALL bl_gfsedmf(                                       &
                U3D=u_phytmp,V3D=v_phytmp                            &
               ,TH3D=th_phy,T3D=t_phy                                &
+!pzhu
+              ,refl_10cm=refl_10cm,W3D=w_phytmp,DO_TURB_MIXING=do_turb_mixing             &
+!pzhu-end
               ,QV3D=qv_curr,QC3D=qc_curr,QI3D=qi_curr               &
               ,P3D=p_phy,PI3D=pi_phy                                &
               ,RUBLTEN=rublten,RVBLTEN=rvblten,RTHBLTEN=rthblten    &

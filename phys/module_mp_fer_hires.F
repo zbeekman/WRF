@@ -241,7 +241,10 @@ INTEGER, PARAMETER :: MAX_ITERATIONS=10
      &                      dz8w,rho_phy,p_phy,pi_phy,th_phy,qv,qt,   & !gopal's doing
      &                      LOWLYR,SR,                                &
      &                      F_ICE_PHY,F_RAIN_PHY,F_RIMEF_PHY,         &
-     &                      QC,QR,QI,                                 &
+!pzhu
+!     &                      QC,QR,QI,                                 &
+     &                      QC,QR,QI,REFL_10CM_PHY,                   &
+!pzhu-end
      &                      ids,ide, jds,jde, kds,kde,                &
      &                      ims,ime, jms,jme, kms,kme,                &
      &                      its,ite, jts,jte, kts,kte                 )
@@ -273,6 +276,11 @@ INTEGER, PARAMETER :: MAX_ITERATIONS=10
       REAL, INTENT(INOUT),  DIMENSION(ims:ime,jms:jme)           ::     &
      &                                                   RAINNC,RAINNCV
       REAL, INTENT(OUT),    DIMENSION(ims:ime,jms:jme):: SR
+!pzhu
+      REAL, INTENT(OUT),    DIMENSION(ims:ime, kms:kme,jms:jme) ::      &
+     &                      refl_10cm_phy
+!pzhu-end
+
 !
 !HWRF      REAL,DIMENSION(*),INTENT(INOUT) :: MP_RESTART_STATE
 !
@@ -408,6 +416,9 @@ INTEGER, PARAMETER :: MAX_ITERATIONS=10
      &               APREC,PREC,ACPREC,SR,                              &
      &               dz8w,rho_phy,qt,t_phy,qv,F_ICE_PHY,P_PHY,          &
      &               F_RAIN_PHY,F_RIMEF_PHY,TLATGS_PHY,TRAIN_PHY,       &
+!pzhu
+     &               REFL_10CM_PHY,                                     &
+!pzhu-end
      &               ids,ide, jds,jde, kds,kde,		                &
      &               ims,ime, jms,jme, kms,kme,		                &
      &               its,ite, jts,jte, kts,kte		          )
@@ -479,7 +490,10 @@ INTEGER, PARAMETER :: MAX_ITERATIONS=10
       SUBROUTINE FER_HIRES_ADVECT (itimestep,DT,DX,DY,GID,RAINNC,RAINNCV,    & !GID
      &                      dz8w,rho_phy,p_phy,pi_phy,th_phy,qv,   & !gopal's doing
      &                      LOWLYR,SR,                                &
-     &                      QC,QR,QI,QRIMEF,                          &
+!pzhu
+!     &                      QC,QR,QI,QRIMEF,                          &
+     &                      QC,QR,QI,QRIMEF,REFL_10CM_PHY,            &
+!pzhu-end
      &                      ids,ide, jds,jde, kds,kde,                &
      &                      ims,ime, jms,jme, kms,kme,                &
      &                      its,ite, jts,jte, kts,kte                 )
@@ -509,6 +523,10 @@ INTEGER, PARAMETER :: MAX_ITERATIONS=10
       REAL, INTENT(INOUT),  DIMENSION(ims:ime,jms:jme)           ::     &
      &                                                   RAINNC,RAINNCV
       REAL, INTENT(OUT),    DIMENSION(ims:ime,jms:jme):: SR
+!pzhu
+      REAL, INTENT(OUT),    DIMENSION(ims:ime, kms:kme,jms:jme) ::      &
+     &                      refl_10cm_phy
+!pzhu-end
 !
 !HWRF      REAL,DIMENSION(*),INTENT(INOUT) :: MP_RESTART_STATE
 !
@@ -648,6 +666,9 @@ INTEGER, PARAMETER :: MAX_ITERATIONS=10
      &               APREC,PREC,ACPREC,SR,                              &
      &               dz8w,rho_phy,qt,t_phy,qv,F_ICE_PHY,P_PHY,          &
      &               F_RAIN_PHY,F_RIMEF_PHY,TLATGS_PHY,TRAIN_PHY,       &
+!pzhu
+     &               REFL_10CM_PHY,                                     &
+!pzhu-end
      &               ids,ide, jds,jde, kds,kde,		                &
      &               ims,ime, jms,jme, kms,kme,		                &
      &               its,ite, jts,jte, kts,kte		          )
@@ -718,6 +739,9 @@ INTEGER, PARAMETER :: MAX_ITERATIONS=10
      &  DTPH,LOWLYR,APREC,PREC,ACPREC,SR,                  &
      &  dz8w,RHO_PHY,CWM_PHY,T_PHY,Q_PHY,F_ICE_PHY,P_PHY,  &
      &  F_RAIN_PHY,F_RIMEF_PHY,TLATGS_PHY,TRAIN_PHY,       &
+!pzhu
+     &  REFL_10CM_PHY,                                     &
+!pzhu-end
      &  ids,ide, jds,jde, kds,kde,                         &
      &  ims,ime, jms,jme, kms,kme,                         &
      &  its,ite, jts,jte, kts,kte)
@@ -754,7 +778,10 @@ INTEGER, PARAMETER :: MAX_ITERATIONS=10
      &                                             dz8w,P_PHY,RHO_PHY
       REAL,DIMENSION( ims:ime, kms:kme, jms:jme ),INTENT(INOUT) ::      &
      &   CWM_PHY, F_ICE_PHY,F_RAIN_PHY,F_RIMEF_PHY,TLATGS_PHY           &
-     &   ,Q_PHY,TRAIN_PHY
+!pzhu
+!     &   ,Q_PHY,TRAIN_PHY
+     &   ,Q_PHY,TRAIN_PHY,REFL_10CM_PHY
+!pzhu-end
 !
 !-----------------------------------------------------------------------
 !LOCAL VARIABLES
@@ -775,7 +802,10 @@ INTEGER, PARAMETER :: MAX_ITERATIONS=10
       INTEGER :: LSFC,I,J,I_index,J_index,L,K,KFLIP
 !HWRF      REAL,DIMENSION(TEMP_DIMS) :: CWM,T,Q,TRAIN,TLATGS,P
       REAL,DIMENSION(its:ite,jts:jte,kts:kte) ::                        &
-     &   CWM,T,Q,TRAIN,TLATGS,P
+!pzhu
+!     &   CWM,T,Q,TRAIN,TLATGS,P
+     &   CWM,T,Q,TRAIN,TLATGS,P,REFL_10CM
+!pzhu-end
       REAL,DIMENSION(kts:kte,its:ite,jts:jte) :: F_ice,F_rain,F_RimeF       
       INTEGER,DIMENSION(its:ite,jts:jte) :: LMH
       REAL :: TC,WC,QI,QR,QW,Fice,Frain,DUM,ASNOW,ARAIN
@@ -956,6 +986,9 @@ ENDIF
               DUM=QR_col(L)/(QR_col(L)+QW_col(L))
             ENDIF
             F_rain(L,I,J)=DUM
+!pzhu
+            REFL_10CM(I,J,L)=DBZ_col(L)
+!pzhu-end
       !
           ENDDO
    !
@@ -999,6 +1032,9 @@ ENDIF
              F_ice_PHY(I,KFLIP,J)=F_ice(L,I,J)
              F_rain_PHY(I,KFLIP,J)=F_rain(L,I,J)
              F_RimeF_PHY(I,KFLIP,J)=F_RimeF(L,I,J)
+!pzhu
+             REFL_10CM_PHY(I,KFLIP,J)=REFL_10CM(I,J,L)
+!pzhu-end
            ENDDO
 101     CONTINUE
 !

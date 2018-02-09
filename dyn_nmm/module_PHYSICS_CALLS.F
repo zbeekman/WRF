@@ -1661,6 +1661,10 @@
      &               ,RQCBLTEN=RQCBLTEN,RQIBLTEN=RQIBLTEN             & !BSF
 !BSF &               ,RQRBLTEN=RQRBLTEN,RQSBLTEN=RQSBLTEN             & !BSF
 !BSF &               ,RQGBLTEN=RQGBLTEN                               & !BSF
+!pzhu
+     &               ,refl_10cm=grid%refl_10cm,w_phy=grid%w  & ! to calc. radar reflectivity
+     &               ,DO_TURB_MIXING=config_flags%do_turb_mixing          &
+!pzhu-end
      &               ,TSK=TSFC,XLAND=XLAND,ZNT=Z0                     &
 #if ( HWRF == 1 )
      &               ,MSANG=MSANG,SCURX=SCURX,SCURY=SCURY             &
