@@ -1811,9 +1811,9 @@ CONTAINS
 !
 !pzhu
       if(DO_TURB_MIXING .eq. 1) then
-         kend = kmpbl
-      else
          kend = km1
+      else
+         kend = kmpbl
       end if
       do k = 1, kend
 !pzhu-end
@@ -1839,8 +1839,12 @@ CONTAINS
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !pzhu
-!      do k = 1, kmpbl
-      do k = 1, km1
+      if(DO_TURB_MIXING .eq. 1) then
+         kend = km1
+       else
+         kend = kmpbl
+      end if
+      do k = 1, kend
 !pzhu-end
         do i=1,im
           if(scuflg(i)) then
