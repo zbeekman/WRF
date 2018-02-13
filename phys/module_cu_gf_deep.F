@@ -3873,6 +3873,7 @@ ENDIF
             kfinalzu+1,zuo(i,kts:kte),kts,kte,ktf,kbcon(i),csum(i),pmin_lev(i))
         endif
       endif ! end deep
+
       if ( name == 'mid' ) then
        if(ktop(i) <= kbcon(i)+2)then
               ierr(i)=41
@@ -3880,9 +3881,11 @@ ENDIF
        else
            kfinalzu=ktop(i)
            ktopdby(i)=ktop(i)+1
+           kklev = kbcon(i)+1
           call get_zu_zd_pdf_fim(kklev,p_cup(i,:),rand_vmas(i),zubeg,ipr,xland(i),zuh2,"MID",ierr(i),k22(i),kfinalzu+1,zuo(i,kts:kte),kts,kte,ktf,kbcon(i),csum(i),pmin_lev(i))
        endif
       endif ! mid
+
       if ( name == 'shallow' ) then
        if(ktop(i) <= kbcon(i)+2)then
            ierr(i)=41
@@ -3993,6 +3996,7 @@ ENDIF
    enddo
    if(maxval(zuh2(1:40)).gt.0.)  &
       zuh2(:)= zuh2(:)/ maxval(zuh2(1:40))
+
  ELSEIF(draft == "MID") then
    kb_adj=max(kb,2)
 !   tunning=p(kt)+(p(kb_adj)-p(kt))*.9 !*.33

@@ -64,17 +64,18 @@ CONTAINS
 !-------------------------------------------------------------
    IMPLICIT NONE
       integer, parameter :: ideep=1
-      integer :: imid_gf=0
+      integer :: imid_gf=0   ! changed below for dx>10km
 !      integer, parameter :: imid_gf=0
 ! ichoice now in namelist, as in EM core (deep only) - EG
 !      integer, parameter :: ichoice=0   ! 0 2 5 8 11 GG
       integer, parameter :: ichoicem=5  ! 0 1 2 8 11 GG
 !Closure for shallow (1=stabilization,2=zws,3=dhdt,0=avg of 1,2,3)
-      integer, parameter :: ichoice_s=2 ! 0 1 2 3     !As in FIM
+      integer, parameter :: ichoice_s=3 ! 0 1 2 3     !As in FIM
+!      integer, parameter :: ichoice_s=2 ! 0 1 2 3     !As in FIM
       real, parameter :: aodccn=0.1
 !      real :: dts,fpi,fp
       integer, parameter :: dicycle=1   !0,1,2 - diurnal cycle flag
-      integer, parameter :: dicycle_m=0 !- diurnal cycle flag
+      integer, parameter :: dicycle_m=1 !- diurnal cycle flag
 
 !-------------------------------------------------------------
    INTEGER,      INTENT(IN   ) ::                               &
@@ -412,7 +413,7 @@ CONTAINS
 #endif
 
 ! Turn on mid-level convection for coarse grid only
-!      if (maxval(dxi).gt.10000.) imid_gf = 1
+      if (maxval(dxi).gt.10000.) imid_gf = 1
 
 !     do k=kts,kte
 !     DO I= its,ite
