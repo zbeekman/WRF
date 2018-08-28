@@ -2595,7 +2595,8 @@ okay_to_w = .false.
       INTEGER thread_support_provided, thread_support_requested
 #  endif
       INTEGER mpi_comm_here, temp_poll
-      LOGICAL mpi_inited
+      !LOGICAL mpi_inited
+      INTEGER mpi_inited
       LOGICAL esmf_coupling
 
 !!!!! needed to sneak-peek the namelist to get parent_id
@@ -2622,7 +2623,8 @@ okay_to_w = .false.
       ENDDO
 
       CALL MPI_INITIALIZED( mpi_inited, ierr )
-      IF ( .NOT. mpi_inited ) THEN
+      !IF ( .NOT. mpi_inited ) THEN
+      IF ( mpi_inited == 0 ) THEN
         CALL WRF_ERROR_FATAL( "module_io_quilt_old.F : MPI not init'd" )
       ENDIF
       CALL wrf_get_dm_quilt_comm( mpi_comm_here )   ! jm 20151212

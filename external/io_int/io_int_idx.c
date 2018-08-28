@@ -7,7 +7,11 @@
 /* System Includes */
 #include <sys/types.h>
 #include <sys/stat.h>
+#ifdef _WIN32
+#include "mman.h"
+#else
 #include <sys/mman.h>
+#endif
 
 /* Standard Library Includes */
 #include <stdio.h>
@@ -15,8 +19,14 @@
 #include <stdint.h>
 #include <string.h>
 #include <fcntl.h>
+#ifdef _WIN32
+#include <Winsock2.h>
+#include <io.h>
+#else
+#define O_BINARY 0
 #include <unistd.h>
 #include <arpa/inet.h>
+#endif
 
 #include "io_int_idx.h"
 #include "io_int_idx_tags.h"
@@ -211,7 +221,7 @@ io_int_fmmap(const char *filename, int32_t ** fmap, int64_t * len)
 	}
 
 	/* Open the file for reading */
-	if ((ifd = open(filename, O_RDONLY)) < 0) {
+	if ((ifd = open(filename, O_RDONLY | O_BINARY)) < 0) {
 		fprintf(stderr, "unable to open file: %s", filename);
 		return (error);
 	}

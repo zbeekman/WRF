@@ -14,6 +14,8 @@
 
 #ifdef _WIN32
 #include <Winsock2.h>
+#else
+#define O_BINARY 0
 #endif
 #ifdef NCEP_DEBUG_MULTIDIR
 // #  include <errno.h>
@@ -55,7 +57,7 @@ void RSL_LITE_ERROR_DUP1 ( int *me )
      sprintf(filename,"/dev/null") ;
      }
 # endif
-    if ((newfd = open( filename, O_CREAT | O_WRONLY | O_TRUNC, 0666 )) < 0 )
+    if ((newfd = open( filename, O_CREAT | O_WRONLY | O_TRUNC | O_BINARY, 0666 )) < 0 )
     {
         perror("error_dup: cannot open rsl.out.nnnn") ;
         fprintf(stderr,"...sending output to standard output and continuing.\n") ;
@@ -85,7 +87,7 @@ void RSL_LITE_ERROR_DUP1 ( int *me )
      sprintf(filename,"/dev/null") ;
      }
 # endif
-    if ((newfd = open( filename, O_CREAT | O_WRONLY | O_TRUNC, 0666 )) < 0 )
+    if ((newfd = open( filename, O_CREAT | O_WRONLY | O_TRUNC | O_BINARY, 0666 )) < 0 )
     {
         perror("error_dup: cannot open rsl.error.log") ;
         fprintf(stderr,"...sending error to standard error and continuing.\n") ;
@@ -146,7 +148,7 @@ void RSL_LITE_ERROR_DUP1 ( int *me )
                                                                                                                                               
    sprintf(filename, "%s/%04d/rsl.out.%04d","TASKOUTPUT",*me,*me) ;
         
-   if ((newfd = open( filename, O_CREAT | O_WRONLY | O_TRUNC, 0666 )) < 0 )
+   if ((newfd = open( filename, O_CREAT | O_WRONLY | O_TRUNC | O_BINARY, 0666 )) < 0 )
    {
         perror("error_dup: cannot open ./TASKOUTPUT/nnnn/rsl.out.nnnn") ;
         fprintf(stderr,"...sending output to standard output and continuing.\n")
@@ -162,7 +164,7 @@ void RSL_LITE_ERROR_DUP1 ( int *me )
    }
         
    sprintf(filename, "%s/%04d/rsl.error.%04d","TASKOUTPUT",*me,*me) ;
-   if ((newfd = open( filename, O_CREAT | O_WRONLY | O_TRUNC, 0666 )) < 0 )
+   if ((newfd = open( filename, O_CREAT | O_WRONLY | O_TRUNC | O_BINARY, 0666 )) < 0 )
    {
        perror("error_dup: cannot open ./TASKOUTPUT/nnnn/rsl.error.nnnn") ;
        fprintf(stderr,"...sending error to standard error and continuing.\n") ;

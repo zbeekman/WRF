@@ -1,0 +1,30 @@
+# Copyright 2018 M. Riechert and D. Meyer. Licensed under the MIT License.
+
+image: Visual Studio 2017 # See https://www.appveyor.com/docs/build-environment/
+
+clone_depth: 50
+
+environment:
+  matrix:
+    - BUILD_TYPE: Release
+      MODE: serial
+      NESTING: basic
+      GRIB1: 0
+      GRIB2: 1
+      
+    - BUILD_TYPE: Release
+      MODE: dmpar
+      NESTING: basic
+      GRIB1: 0
+      GRIB2: 1
+
+
+install:
+  - call .ci\appveyor\setup-dependencies.bat
+
+build_script:
+  - call .ci\appveyor\install-wrf.bat
+
+artifacts:
+  - path: build/install
+    name: WRF

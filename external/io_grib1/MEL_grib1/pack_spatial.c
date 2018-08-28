@@ -4,15 +4,6 @@
 #include <stdlib.h>
 #include <string.h> 
 #include <math.h>
-#ifdef XT3_Catamount
-#include <features.h>
-#undef htonl
-#define htonl(x)     swap_byte4(x)
-#elif defined(_WIN32)
-#include <Winsock2.h>
-#else
-#include <netinet/in.h>
-#endif
 #include "dprints.h"		/* for dprints */
 #include "gribfuncs.h"		/* prototypes */
 #include "isdb.h"		/* WORD_BIT_CNT defn */

@@ -73,7 +73,12 @@ int GET_LANDUSE (        float *adx,
 #else
 # include <malloc/malloc.h>
 #endif
-#include <unistd.h>
+#ifdef _WIN32
+# include <io.h>
+# define F_OK 0
+#else
+# include <unistd.h>
+#endif
 #include <string.h>
 #define MAXTOPOFILES  100
 #define MAXLEN        4096

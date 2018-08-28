@@ -1,10 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
-#include <sys/resource.h>
 #include <unistd.h>
 #include <string.h>
 #include <strings.h>
+
+#ifdef _WIN32
+#define rindex(X,Y) strrchr(X,Y)
+#define index(X,Y) strchr(X,Y)
+#endif
 
 int  nChmOpts = 0;
 char rxt_tbl[5][1000][128];

@@ -4,6 +4,8 @@
  
 #ifdef _WIN32
 #include <io.h>
+#else
+#define O_BINARY 0
 #endif
 
 #ifndef CRAY
@@ -52,7 +54,7 @@ int OPEN_FILE (char *filename, char *permissions, int *outfd, int *ierr,
     permvals = O_RDONLY;
   }
 
-  *outfd = open(filename2,permvals,0644);
+  *outfd = open(filename2,permvals | O_BINARY,0644);
   if (*outfd == -1) 
     {
       fprintf(stderr,"setting ierr to -1, filename: %s\n",filename);

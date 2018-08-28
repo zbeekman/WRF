@@ -1,0 +1,14 @@
+* text=auto
+
+# Shell scripts
+*.bash eol=lf
+*.sh eol=lf
+*.csh eol=lf
+*.ksh eol=lf
+compile eol=lf
+configure eol=lf
+clean eol=lf
+
+# Registry files
+Registry/registry.* eol=lf
+Registry/Registry.* eol=lf

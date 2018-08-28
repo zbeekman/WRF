@@ -16,3 +16,7 @@
 configure.wrf*
 *.backup
 *.f90
+/build
+/.vscode
+/var/run/crtm_coeffs
+.DS_Store

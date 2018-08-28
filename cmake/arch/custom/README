@@ -1,0 +1,14 @@
+Custom configurations
+=====================
+
+This folder contains custom configurations that have to be chosen at configure time, e.g. -DARCH_CUSTOM=gnu_example.
+While default configurations are meant to provide a zero-configuration quick start for the majority of users,
+custom architecture files should be used if unusual compiler flags are required for certain environments or scenarios.
+
+See gnu_example.cmake for how to define a custom configuration file.
+See default/README for information on the meaning of the variables.
+Note that variables in custom configuration files are always prefixed with either C_ or Fortran_,
+except for 'linker', 'CC', and 'FC'.
+
+Note that specifying C/Fortran compilers with the 'CC'/'FC' variables is recommended.
+The user can still override them by specifying the same-name environment variables.

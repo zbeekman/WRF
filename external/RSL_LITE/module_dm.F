@@ -1706,7 +1706,10 @@ LOGICAL FUNCTION wrf_dm_land_logical ( inval )
    SUBROUTINE split_communicator
 #ifndef STUBMPI
       IMPLICIT NONE
-      LOGICAL mpi_inited
+      ! work-around for MS MPI until the following issue is solved:
+      ! https://social.microsoft.com/Forums/en-US/cea9a90e-6bf2-4329-8a83-49202d0b23bc
+      !LOGICAL mpi_inited
+      INTEGER mpi_inited
 !      INTEGER mpi_comm_here, mpi_comm_local, comdup, comdup2, origmytask,  mytask, ntasks, ierr, io_status
       INTEGER mpi_comm_here, mpi_comm_local, comdup, comdup2, origmytask,  ierr, io_status
       INTEGER mpi_comm_me_and_mom
@@ -1778,7 +1781,10 @@ LOGICAL FUNCTION wrf_dm_land_logical ( inval )
 #include "namelist_statements.inc"
 
       CALL MPI_INITIALIZED( mpi_inited, ierr )
-      IF ( .NOT. mpi_inited ) THEN
+      ! work-around for MS MPI until the following issue is solved:
+      ! https://social.microsoft.com/Forums/en-US/cea9a90e-6bf2-4329-8a83-49202d0b23bc
+      !IF ( .NOT. mpi_inited ) THEN
+      IF ( mpi_inited == 0 ) THEN
 # if defined(_OPENMP) && defined(MPI2_THREAD_SUPPORT)
         thread_support_requested = MPI_THREAD_FUNNELED
         CALL mpi_init_thread ( thread_support_requested, thread_support_provided, ierr )
@@ -2156,9 +2162,13 @@ LOGICAL FUNCTION wrf_dm_land_logical ( inval )
 #ifndef STUBMPI
       IMPLICIT NONE
       INTEGER mpi_comm_local, mpi_comm_here, ierr, mytask, nproc
-      LOGICAL mpi_inited
+      ! work-around for MS MPI until the following issue is solved:
+      ! https://social.microsoft.com/Forums/en-US/cea9a90e-6bf2-4329-8a83-49202d0b23bc
+      !LOGICAL mpi_inited
+      INTEGER mpi_inited
       CALL mpi_initialized( mpi_inited, ierr )
-      IF ( .NOT. mpi_inited ) THEN
+      !IF ( .NOT. mpi_inited ) THEN
+      IF ( mpi_inited == 0 ) THEN
         ! If MPI has not been initialized then initialize it and
         ! make comm_world the communicator
         ! Otherwise, something else (e.g. split_communicator) has already

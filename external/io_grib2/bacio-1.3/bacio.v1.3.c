@@ -11,6 +11,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#ifndef _WIN32
+#define O_BINARY 0
+#endif
 #ifdef MACOS
 #include <sys/malloc.h>
 #else
@@ -152,31 +155,31 @@ int BACIO
     #ifdef VERBOSE
       printf("open read only %s\n", realname);
     #endif
-     *fdes = open(realname, O_RDONLY , S_IRWXU | S_IRWXG | S_IRWXO );
+     *fdes = open(realname, O_RDONLY | O_BINARY , S_IRWXU | S_IRWXG | S_IRWXO );
   }
   else if (BAOPEN_WONLY & *mode ) {
     #ifdef VERBOSE
       printf("open write only %s\n", realname);
     #endif
-     *fdes = open(realname, O_WRONLY | O_CREAT , S_IRWXU | S_IRWXG | S_IRWXO );
+     *fdes = open(realname, O_WRONLY | O_CREAT | O_BINARY , S_IRWXU | S_IRWXG | S_IRWXO );
   }
   else if (BAOPEN_WONLY_TRUNC & *mode ) {
     #ifdef VERBOSE
       printf("open write only with truncation %s\n", realname);
     #endif
-     *fdes = open(realname, O_WRONLY | O_CREAT | O_TRUNC , S_IRWXU | S_IRWXG | S_IRWXO );
+     *fdes = open(realname, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY , S_IRWXU | S_IRWXG | S_IRWXO );
   }
   else if (BAOPEN_WONLY_APPEND & *mode ) {
     #ifdef VERBOSE
       printf("open write only with append %s\n", realname);
     #endif
-     *fdes = open(realname, O_WRONLY | O_CREAT | O_APPEND , S_IRWXU | S_IRWXG | S_IRWXO );
+     *fdes = open(realname, O_WRONLY | O_CREAT | O_APPEND | O_BINARY , S_IRWXU | S_IRWXG | S_IRWXO );
   }
   else if (BAOPEN_RW & *mode) {
     #ifdef VERBOSE
       printf("open read-write %s\n", realname);
     #endif
-     *fdes = open(realname, O_RDWR | O_CREAT , S_IRWXU | S_IRWXG | S_IRWXO );
+     *fdes = open(realname, O_RDWR | O_CREAT | O_BINARY , S_IRWXU | S_IRWXG | S_IRWXO );
   }
   else {
     #ifdef VERBOSE
@@ -394,31 +397,31 @@ int BANIO
     #ifdef VERBOSE
       printf("open read only %s\n", realname);
     #endif
-     *fdes = open(realname, O_RDONLY , S_IRWXU | S_IRWXG | S_IRWXO );
+     *fdes = open(realname, O_RDONLY | O_BINARY , S_IRWXU | S_IRWXG | S_IRWXO );
   }
   else if (BAOPEN_WONLY & *mode ) {
     #ifdef VERBOSE
       printf("open write only %s\n", realname);
     #endif
-     *fdes = open(realname, O_WRONLY | O_CREAT , S_IRWXU | S_IRWXG | S_IRWXO );
+     *fdes = open(realname, O_WRONLY | O_CREAT | O_BINARY , S_IRWXU | S_IRWXG | S_IRWXO );
   }
   else if (BAOPEN_WONLY_TRUNC & *mode ) {
     #ifdef VERBOSE
       printf("open write only with truncation %s\n", realname);
     #endif
-     *fdes = open(realname, O_WRONLY | O_CREAT | O_TRUNC , S_IRWXU | S_IRWXG | S_IRWXO );
+     *fdes = open(realname, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY , S_IRWXU | S_IRWXG | S_IRWXO );
   }
   else if (BAOPEN_WONLY_APPEND & *mode ) {
     #ifdef VERBOSE
       printf("open write only with append %s\n", realname);
     #endif
-     *fdes = open(realname, O_WRONLY | O_CREAT | O_APPEND , S_IRWXU | S_IRWXG | S_IRWXO );
+     *fdes = open(realname, O_WRONLY | O_CREAT | O_APPEND | O_BINARY , S_IRWXU | S_IRWXG | S_IRWXO );
   }
   else if (BAOPEN_RW & *mode) {
     #ifdef VERBOSE
       printf("open read-write %s\n", realname);
     #endif
-     *fdes = open(realname, O_RDWR | O_CREAT , S_IRWXU | S_IRWXG | S_IRWXO );
+     *fdes = open(realname, O_RDWR | O_CREAT | O_BINARY , S_IRWXU | S_IRWXG | S_IRWXO );
   }
   else {
     #ifdef VERBOSE

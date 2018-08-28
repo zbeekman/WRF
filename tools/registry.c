@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #ifdef _WIN32
 # include <io.h>
 # define rindex(X,Y) strrchr(X,Y)
@@ -8,7 +9,6 @@
 # include <sys/time.h>
 # include <sys/resource.h>
 # include <unistd.h>
-# include <string.h>
 # include <strings.h>
 #endif
 

@@ -110,7 +110,7 @@ int bbb ;
 
 static char zero_length_storage[] = "" ;
 
-#if !(defined(vpp) || defined(vpp2) || defined(SUN) || defined(XT3_Catamount) || defined(crayx1) || defined(MACOS) || defined(MS_SUA) )
+#if !(defined(vpp) || defined(vpp2) || defined(SUN) || defined(XT3_Catamount) || defined(crayx1) || defined(MACOS) || defined(MS_SUA) || defined(_WIN32) )
 static struct mallinfo minf ;
 #endif
 

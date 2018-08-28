@@ -6,6 +6,7 @@
 #ifdef _WIN32
 #define rindex(X,Y) strrchr(X,Y)
 #define index(X,Y) strchr(X,Y)
+#define strcasecmp(X,Y) _stricmp(X,Y)
 #endif
 
 #include "protos.h"

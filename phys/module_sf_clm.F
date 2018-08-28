@@ -1,4 +1,8 @@
    subroutine endrun
+#ifdef __INTEL_COMPILER
+   ! See https://software.intel.com/en-us/node/692509.
+   USE IFPORT
+#endif
    call abort
    return
    end

@@ -1,0 +1,100 @@
+Default configurations
+======================
+
+This folder contains default configurations that are chosen automatically if no custom architecture file
+is specified at configure time with -DARCH_CUSTOM=<custom-config>.
+Depending on the user's operating system and default compiler, the corresponding configuration files are used.
+Users can influence the compiler choice using the CC and FC environment variables.
+Default configurations are meant to provide a zero-configuration quick start for the majority of users.
+If unusual compiler flags are required for certain environments then custom architecture files should be used.
+
+Compiler flags
+--------------
+
+New compiler configurations can be added by creating new files following the pattern:
+
+COMPILER.cmake
+COMPILER_OS.cmake
+COMPILER_LANGUAGE.cmake
+COMPILER_LANGUAGE_OS.cmake
+
+COMPILER is one of the values in https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER_ID.html.
+LANGUAGE is C or Fortran.
+OS is UNIX, Linux, Darwin (=macOS), or Windows (incl. MinGW).
+For Linux and Darwin, UNIX can be used for flags common to those systems.
+
+As an example, when using the GNU compiler (gcc/gfortran) on Linux the following files
+are tested for existence and applied in the given order (general to specific) if they exist:
+
+GNU.cmake
+GNU_UNIX.cmake
+GNU_Linux.cmake
+GNU_C.cmake
+GNU_C_UNIX.cmake
+GNU_C_Linux.cmake
+GNU_Fortran.cmake
+GNU_Fortran_UNIX.cmake
+GNU_Fortran_Linux.cmake
+
+For C and Fortran, the following variables must at a minimum be defined after all available files have been applied:
+
+set(debug "-g")
+set(optimized "-O3 -funroll-loops")
+
+'debug' defines the flag to generate debugging information and is used when compiling in Debug mode.
+'optimized' defines the flags for optimizing code and is used when compiling in Release mode.
+If OPTIMIZE_C is not disabled (enabled by default), then, for C only, 'optimized' is also used in Debug mode.
+
+For Fortran, the following variables must at a minimum be defined after all available files have been applied:
+
+set(preprocess "-cpp")
+set(io "-fconvert=big-endian -frecord-marker=4")
+
+'preprocess' defines the flag for enabling the preprocessor on Fortran files.
+'io' defines the flags for Fortran unformatted I/O which for WRF should be big endian and 4 byte record length block size.
+
+The following variables are optional:
+
+set(checked "-fbounds-check") # Flags that enable additional run-time checks
+set(temps "-save-temps") # Flag that enables saving of intermediate compiler files
+set(other "-ffree-line-length-none") # Other flags not belonging into the above categories
+
+'checked' is only used when compiling in Debug mode, 'temps' only when specifically requested,
+and 'other' always.
+
+Variables that are defined in less specific files can be replaced or extended in more specific files.
+For example, in Intel_Fortran_UNIX.cmake the following is defined:
+
+set(other "-fp-model precise")
+
+In the more specific file Intel_Fortran_Darwin.cmake this variable is extended to
+work around a bug only appearing on macOS systems:
+
+set(other "${other} -fno-common")
+
+Linker flags
+------------
+
+New optional linker configurations can be added by extending the following files
+also used for compiler configurations:
+
+COMPILER.cmake
+COMPILER_OS.cmake
+
+COMPILER is one of the values in https://cmake.org/cmake/help/latest/variable/CMAKE_LANG_COMPILER_ID.html.
+OS is UNIX, Linux, Darwin (=macOS), or Windows (incl. MinGW).
+For Linux and Darwin, UNIX can be used for flags common to those systems.
+
+As an example, when using the GNU compiler (gcc/gfortran) on Linux the following files
+are tested for existence and applied in the given order (general to specific) if they exist:
+
+GNU.cmake
+GNU_UNIX.cmake
+GNU_Linux.cmake
+
+The only variable for applying additional linker flags is 'linker'.
+
+set(linker "-stack_addr 0xF10000000 -stack_size 0x64000000")
+
+As for compiler configurations, variables that are defined in less specific files can be
+replaced or extended in more specific files.

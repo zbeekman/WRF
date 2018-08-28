@@ -1,0 +1,138 @@
+# Copyright 2018 M. Riechert and D. Meyer. Licensed under the MIT License.
+
+language: python
+python: "3.6"
+
+env:
+  global:
+    - WRF_REPO=$TRAVIS_REPO_SLUG
+    - WPS_REPO=WRF-CMake/WPS
+    - WRF_COMMIT=$TRAVIS_COMMIT
+    - WPS_COMMIT=wps-cmake
+    - WATS_REPO=WRF-CMake/wats
+    - WATS_BRANCH=master
+    - WATS_DATA_REPO=WRF-CMake/wats-data
+    - WATS_MODE=wrf
+
+jobs:
+  include:
+    # Make reference build (WATS)
+    - stage: build
+      os: linux
+      dist: trusty
+      sudo: required
+      env:
+        - SYSTEM=make
+        # use Debug for faster compilation to be able to run more cases
+        - BUILD_TYPE=Debug
+        - CC=gcc
+        - FC=gfortran
+        - MODE=serial
+
+    # Make reference build (WATS)
+    - stage: build
+      os: linux
+      dist: trusty
+      sudo: required
+      env:
+        - SYSTEM=make
+        - BUILD_TYPE=Debug
+        - CC=gcc
+        - FC=gfortran
+        - MODE=dmpar
+
+    - stage: build
+      os: linux
+      dist: trusty
+      sudo: required # Need sudo to install netcdf via apt as not whitelisted 
+      env:
+        - SYSTEM=cmake
+        - BUILD_TYPE=Debug
+        - CC=gcc
+        - FC=gfortran
+        - GRIB1=0
+        - GRIB2=1
+        - MODE=serial
+        - NESTING=basic
+
+    - stage: build
+      os: linux
+      dist: trusty
+      sudo: required
+      env:
+        - SYSTEM=cmake
+        - BUILD_TYPE=Debug
+        - CC=gcc
+        - FC=gfortran
+        - GRIB1=1
+        - GRIB2=0
+        - MODE=dm+sm
+        - NESTING=basic
+        - IDEAL_CASE=ALL
+
+    - stage: build
+      os: osx
+      osx_image: xcode9.2 # https://github.com/travis-ci/travis-ci/issues/9640
+      language: generic
+      env:
+        - SYSTEM=cmake
+        - BUILD_TYPE=Debug
+        - CC=gcc-8 # GNU via Homebrew
+        - FC=gfortran-8
+        - GRIB1=1
+        - GRIB2=1
+        - MODE=serial
+        - NESTING=basic
+
+    - stage: build
+      os: osx
+      osx_image: xcode9.2 # https://github.com/travis-ci/travis-ci/issues/9640
+      language: generic
+      env:
+        - SYSTEM=cmake
+        - BUILD_TYPE=Debug
+        - CC=gcc-8 # GNU via Homebrew
+        - FC=gfortran-8
+        - GRIB1=1
+        - GRIB2=1
+        - MODE=dmpar
+        - NESTING=basic
+
+    - stage: wats
+      os: linux
+      git:
+        depth: 1 # ideally we'd like to disable cloning completely
+      before_install: skip
+      install:
+        - git clone --depth=1 --branch=$WATS_BRANCH git@github.com:$WATS_REPO.git wats
+      script:
+        - wats/.ci/travis/trigger-wats-travis.sh
+        - wats/.ci/travis/trigger-wats-appveyor.sh
+
+before_install:
+  - .ci/travis/setup-dependencies.sh
+
+install:
+  - .ci/travis/install-wrf.sh
+
+script: skip
+
+before_deploy:
+  - cd ..
+  - git clone --depth=100 --no-single-branch git@github.com:$WPS_REPO.git WPS
+  - git clone --depth=1 --branch=$WATS_BRANCH git@github.com:$WATS_REPO.git wats
+  - cd WPS
+  - git checkout $WPS_COMMIT
+  - .ci/travis/install-wps.sh
+  - cd ..
+  - pip install -r wats/requirements.txt
+  - if [[ $MODE == dm* ]]; then export MPI_FLAG=--mpi ; fi
+  - python wats/wats/main.py run --mode $WATS_MODE --wrf-dir WRF --wps-dir WPS --work-dir wats_work $MPI_FLAG
+
+deploy:
+  provider: script
+  skip_cleanup: true
+  on:
+    all_branches: true
+    condition: $SYSTEM = make
+  script: bash wats/.ci/travis/deploy-wats-data.sh wats_work/output
