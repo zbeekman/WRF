@@ -21,16 +21,20 @@ install( TARGETS real_em
 )
 
 # ideal
+add_custom_target(ideal)
 set(ideal_cases
 	ideal fire heldsuarez scm_xy tropical_cyclone
 )
 foreach(ideal_case ${ideal_cases})
-# FIXME CMake apparently can't handle multiple files which use the same module name, as is the case with module_initialize_*.F
-#    -> likely leads to a race condition as the temporary .mod0 files are stored in the same folder (?)
-#    -> restarting the build also doesn't help in this case
-# [ 99%] Building Fortran object main/CMakeFiles/ideal_em_fire.dir/__/dyn_em/module_initialize_fire.F.o
-# [ 99%] Building Fortran object main/CMakeFiles/ideal_em_ideal.dir/__/dyn_em/module_initialize_ideal.F.o
-# f951: Fatal Error: Can't rename module file 'module_initialize_ideal.mod0' to 'module_initialize_ideal.mod': No such file or directory
+	# All module_initialize_*.F files use the same "module_initialize_ideal" module name
+	# which in turn results in a file "module_initialize_ideal.mod" (and during build ".mod0")
+	# that by default is created in the same CMAKE_CURRENT_BINARY_DIR folder.
+	# Even though we don't use the .mod file it leads to deletion/copying issues if
+	# parallel compilation is enabled that are caused by race conditions. E.g.:
+	# "Can't rename module file 'module_initialize_ideal.mod0' to 'module_initialize_ideal.mod': No such file or directory"
+	# The line below tells CMake to use a separate folder for .mod files for each executable. 
+	set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mod/${ideal_case})
+
 	add_executable(ideal_em_${ideal_case}
 		ideal_em.F
 		../dyn_em/module_initialize_${ideal_case}.F
@@ -53,6 +57,8 @@ foreach(ideal_case ${ideal_cases})
 	install( TARGETS ideal_em_${ideal_case}
 		RUNTIME DESTINATION ${BIN_INSTALL_DIR}
 	)
+
+	add_dependencies(ideal ideal_em_${ideal_case})
 endforeach()
 
 # wrf
