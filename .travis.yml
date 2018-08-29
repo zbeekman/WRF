@@ -125,6 +125,8 @@ before_deploy:
   - pip install -r wats/requirements.txt
   - if [[ $MODE == dm* ]]; then export MPI_FLAG=--mpi ; fi
   - python wats/wats/main.py run --mode $WATS_MODE --wrf-dir WRF --wps-dir WPS --work-dir wats_work $MPI_FLAG
+  - pip install -r wats/.ci/travis/requirements.txt
+  - python wats/.ci/travis/cleanup-wats-data.py
 
 deploy:
   provider: pages
