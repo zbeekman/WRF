@@ -86,7 +86,6 @@ where `<install_directory>` is the directory where to install WPS and `<wrf_cmak
 
 |Name|Options|Default|Description|
 |----|-------|-------|-----------|
-|`MODE`|`serial`, `dmpar`|`serial`|Serial/parallel mode|
 |`BUILD_TYPE`|`Release`, `Debug`|`Release`|Whether to optimise/build with debug flags.|
 |`ENABLE_GRIB1`|`ON`, `OFF`|`OFF`|Enable/Disable GRIB 1 support (`ungrib` always has GRIB 1).|
 |`ENABLE_GRIB2_PNG`|`ON`, `OFF`|`ON`|Enable/Disable GRIB 2 PNG support.|
