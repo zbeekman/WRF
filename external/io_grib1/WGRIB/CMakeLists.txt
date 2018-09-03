@@ -50,5 +50,5 @@ add_executable(WGRIB
 )
 
 install(TARGETS WGRIB
-	RUNTIME DESTINATION bin
+	RUNTIME DESTINATION main
 )
