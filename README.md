@@ -27,13 +27,17 @@ WRF-CMake is designed to work alongside the current releases of WRF. This means 
 ## Installation
 
 ### Pre-built binaries
-We currently provide WRF-CMake and WPS-CMake pre-built binary distributions for Windows only.
-To download the latest releases, please see the following links:
+We currently provide WRF-CMake and WPS-CMake pre-built binary distributions for Windows, macOS and Linux ([RPM-based and Debian-based distribution-compatible](https://en.wikipedia.org/wiki/List_of_Linux_distributions)).
+To download the latest pre-compiled binary-releases, please see the following links WRF-CMake and WPS-CMake respectively:
 
 - WRF-CMake (`serial` and `dmpar`): [https://github.com/WRF-CMake/WRF/releases](https://github.com/WRF-CMake/WRF/releases).
 - WPS-CMake (`serial` and `dmpar`): [https://github.com/WRF-CMake/WPS/releases](https://github.com/WRF-CMake/WPS/releases).
 
-To use WRF-CMake and WPS-CMake built in `dmpar`, you need to download and install Microsoft MPI — download and install `msmpisetup.exe` from [https://www.microsoft.com/en-us/download/details.aspx?id=56727](https://www.microsoft.com/en-us/download/details.aspx?id=56727).
+Note that if you want to launch WRF-CMake and WPS-CMake built in `dmpar` to run on multiple processes, you need to have MPI installed on your system.
+
+- On Windows, download and install Microsoft MPI — download and install `msmpisetup.exe` from [https://www.microsoft.com/en-us/download/details.aspx?id=56727](https://www.microsoft.com/en-us/download/details.aspx?id=56727).
+- On macOS you can get it though [Homebrew](https://brew.sh/) using `brew update && brew install mpich`
+- On Linux, use your package manager to download mpich. E.g. `sudo apt install mpich` on Debian-based systems or `sudo yum install mpich` on RPM-based system like CentOS.
 
 ### Build from source
 To build WRF-CMake from source, please refer to the [WRF-CMake Installation page](README_CMAKE_INSTALL.md).
