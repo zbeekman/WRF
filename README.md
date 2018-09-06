@@ -1,11 +1,11 @@
 # WRF-CMake [![Build status](https://ci.appveyor.com/api/projects/status/86508wximkvmf95g/branch/wrf-cmake?svg=true)](https://ci.appveyor.com/project/WRF-CMake/wrf/branch/wrf-cmake) [![Build Status](https://travis-ci.com/WRF-CMake/WRF.svg?branch=wrf-cmake)](https://travis-ci.com/WRF-CMake/WRF) 
 
 - [What is WRF-CMake?](#what-is-wrf-cmake)
+- [Installation](#installation)
+    - [Pre-built binaries [Experimental]](#pre-built-binaries-[experimental])
+    - [Build from source](#build-from-source)
     - [Currently supported platforms](#currently-supported-platforms)
     - [Currently unsupported features](#currently-unsupported-features)
-- [Installation](#installation)
-    - [Pre-built binaries](#pre-built-binaries)
-    - [Build from source](#build-from-source)
 - [Changes to be upstreamed](#changes-to-be-upstreamed)
 - [Copyright and license](#copyright-and-license)
 
@@ -14,20 +14,10 @@ WRF-CMake adds CMake support to the latest version of the [Advanced Research Wea
 
 WRF-CMake is designed to work alongside the current releases of WRF. This means that you can still compile your code using the legacy Makefiles included in WRF and WPS. In the current GitHub platform we also conduct extensive compilation and regression tests at each commit.
 
-### Currently supported platforms
-- Linux with gcc/gfortran and Intel compilers
-- macOS with gcc/gfortran and Intel compilers
-- Windows with MinGW-w64 and gcc/gfortran
-
-### Currently unsupported features
-- WRF-NMM (discontinued. See: https://dtcenter.org/wrf-nmm/users/)
-- Configurations for special environments like supercomputers
-- Promotion of Fortran's REAL to DOUBLE
-
 ## Installation
 
-### Pre-built binaries
-We currently provide WRF-CMake and WPS-CMake pre-built binary distributions for Windows, macOS and Linux ([RPM-based and Debian-based distribution-compatible](https://en.wikipedia.org/wiki/List_of_Linux_distributions)).
+### Pre-built binaries [Experimental]
+We currently provide WRF-CMake and WPS-CMake pre-built binary distributions for Windows, macOS and Linux ([RPM-based and Debian-based distribution-compatible](https://en.wikipedia.org/wiki/List_of_Linux_distributions)). Please note that these pre-built binary distributions are currently experimental — we would appreciate if you could report any issues directly on GitHub [here](https://github.com/WRF-CMake/WRF/issues).
 To download the latest pre-compiled binary-releases, please see the following links WRF-CMake and WPS-CMake respectively:
 
 - WRF-CMake (`serial` and `dmpar`): [https://github.com/WRF-CMake/WRF/releases](https://github.com/WRF-CMake/WRF/releases).
@@ -41,6 +31,16 @@ Note that if you want to launch WRF-CMake and WPS-CMake built in `dmpar` to run 
 
 ### Build from source
 To build WRF-CMake from source, please refer to the [WRF-CMake Installation page](README_CMAKE_INSTALL.md).
+
+### Currently supported platforms
+- Linux with gcc/gfortran and Intel compilers
+- macOS with gcc/gfortran and Intel compilers
+- Windows with MinGW-w64 and gcc/gfortran
+
+### Currently unsupported features
+- WRF-NMM (discontinued. See: https://dtcenter.org/wrf-nmm/users/)
+- Configurations for special environments like supercomputers
+- Promotion of Fortran's REAL to DOUBLE
 
 ## Changes to be upstreamed
 - `external/io_grib1/MEL_grib1/{grib_enc.c,gribputgds.c,pack_spatial.c}`: Remove redundant header includes causing symbol conflicts in Windows
