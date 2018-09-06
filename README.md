@@ -2,7 +2,7 @@
 
 - [What is WRF-CMake?](#what-is-wrf-cmake)
 - [Installation](#installation)
-    - [Pre-built binaries [Experimental]](#pre-built-binaries-[experimental])
+    - [Pre-built binaries [Experimental]](#pre-built-binaries-experimental)
     - [Build from source](#build-from-source)
     - [Currently supported platforms](#currently-supported-platforms)
     - [Currently unsupported features](#currently-unsupported-features)
