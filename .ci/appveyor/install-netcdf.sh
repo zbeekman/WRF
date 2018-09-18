@@ -4,6 +4,9 @@ set -ex
 pushd /tmp
 git clone https://github.com/WRF-CMake/netcdf-c.git -b letmaik/mingw
 cd netcdf-c
+# FIXME: use release once branch has been merged.
+# Avoid breaking changes with letmaik/mingw branch.
+git checkout b68b29b5b29340338749831c1a7c3fa0a5079ba3
 mkdir build && cd build
 CC=gcc cmake -DCMAKE_GENERATOR="MSYS Makefiles" \
     -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
