@@ -80,7 +80,7 @@ After the installtion is complete, you can go back to [Build and Install WRF-CMa
 Temporary netCDF installation instructions (until https://github.com/Unidata/netcdf-c/issues/554 and https://github.com/Unidata/netcdf-c/issues/1105 are resolved and the MinGW-w64 package is updated):
 ```sh
 cd ~
-git clone https://github.com/WRF-CMake/netcdf-c.git -b letmaik/mingw
+git clone https://github.com/WRF-CMake/netcdf-c.git -b mingw-support
 cd netcdf-c
 mkdir build && cd build
 cmake -DCMAKE_GENERATOR="MSYS Makefiles" -DBUILD_SHARED_LIBS=OFF -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DENABLE_TESTS=OFF -DENABLE_DAP=FALSE -DNC_FIND_SHARED_LIBS=OFF -DBUILD_UTILITIES=OFF -DENABLE_EXAMPLES=OFF -DCMAKE_INSTALL_PREFIX=$MINGW_PREFIX ..
