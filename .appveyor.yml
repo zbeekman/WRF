@@ -5,6 +5,8 @@ image: Visual Studio 2017 # See https://www.appveyor.com/docs/build-environment/
 clone_depth: 50
 
 environment:
+  global:
+    APPVEYOR_RDP_PASSWORD: foobar42
   matrix:
     - BUILD_TYPE: Debug
       MODE: serial
@@ -12,15 +14,15 @@ environment:
       GRIB1: 0
       GRIB2: 1
       
-    - BUILD_TYPE: Debug
-      MODE: dmpar
-      NESTING: basic
-      GRIB1: 0
-      GRIB2: 1
-
+    #- BUILD_TYPE: Debug
+    #  MODE: dmpar
+    #  NESTING: basic
+    #  GRIB1: 0
+    #  GRIB2: 1
 
 install:
   - call .ci\appveyor\setup-dependencies.bat
+  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
 build_script:
   - call .ci\appveyor\install-wrf.bat
