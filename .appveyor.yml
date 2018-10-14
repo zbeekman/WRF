@@ -6,7 +6,7 @@ clone_depth: 50
 
 environment:
   global:
-    APPVEYOR_RDP_PASSWORD: foobar42
+    APPVEYOR_RDP_PASSWORD: fhiuf&*98324jiF
   matrix:
     - BUILD_TYPE: Debug
       MODE: serial
