@@ -20,6 +20,13 @@ environment:
     #  GRIB1: 0
     #  GRIB2: 1
 
+init:
+  # temporary fix to handle DLL hell issue:
+  # https://github.com/Alexpux/MINGW-packages/issues/4458
+  # https://github.com/appveyor/ci/issues/2571
+  - del c:\windows\system32\libcrypto-1_1-x64.dll
+  - del c:\windows\system32\libssl-1_1-x64.dll
+
 install:
   - call .ci\appveyor\setup-dependencies.bat
 
