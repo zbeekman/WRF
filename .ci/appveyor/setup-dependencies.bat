@@ -30,6 +30,13 @@ bash -lc "pacman --noconfirm --needed -S mingw-w64-x86_64-toolchain mingw64/ming
 bash -lc "pacman --noconfirm --needed -S mingw-w64-x86_64-libpng mingw-w64-x86_64-libjpeg-turbo mingw-w64-x86_64-jasper" || goto :error
 bash -lc "pacman --noconfirm --needed -S mingw-w64-x86_64-hdf5 mingw-w64-x86_64-libtool tar" || goto :error
 
+:: temporary fix to handle DLL hell issue:
+:: https://github.com/Alexpux/MINGW-packages/issues/4458
+:: https://github.com/appveyor/ci/issues/2571
+del c:\windows\system32\libcrypto-1_1-x64.dll
+del c:\windows\system32\libssl-1_1-x64.dll
+bash -lc "pacman --noconfirm -S mingw64/mingw-w64-x86_64-openssl" || goto :error
+
 rem Patch MSMPI
 bash -l "%THIS_FOLDER%patch-msmpi.sh" || goto :error
 rem Test MSMPI

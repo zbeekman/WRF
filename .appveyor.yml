@@ -5,8 +5,6 @@ image: Visual Studio 2017 # See https://www.appveyor.com/docs/build-environment/
 clone_depth: 50
 
 environment:
-  global:
-    APPVEYOR_RDP_PASSWORD: fhiuf&*98324jiF
   matrix:
     - BUILD_TYPE: Debug
       MODE: serial
@@ -14,27 +12,17 @@ environment:
       GRIB1: 0
       GRIB2: 1
       
-    #- BUILD_TYPE: Debug
-    #  MODE: dmpar
-    #  NESTING: basic
-    #  GRIB1: 0
-    #  GRIB2: 1
-
-init:
-  # temporary fix to handle DLL hell issue:
-  # https://github.com/Alexpux/MINGW-packages/issues/4458
-  # https://github.com/appveyor/ci/issues/2571
-  - del c:\windows\system32\libcrypto-1_1-x64.dll
-  - del c:\windows\system32\libssl-1_1-x64.dll
+    - BUILD_TYPE: Debug
+      MODE: dmpar
+      NESTING: basic
+      GRIB1: 0
+      GRIB2: 1
 
 install:
   - call .ci\appveyor\setup-dependencies.bat
 
 build_script:
   - call .ci\appveyor\install-wrf.bat
-
-on_finish:
-  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 
 artifacts:
   - path: build/install
