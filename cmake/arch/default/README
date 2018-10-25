@@ -59,8 +59,8 @@ set(checked "-fbounds-check") # Flags that enable additional run-time checks
 set(temps "-save-temps") # Flag that enables saving of intermediate compiler files
 set(other "-ffree-line-length-none") # Other flags not belonging into the above categories
 
-'checked' is only used when compiling in Debug mode, 'temps' only when specifically requested,
-and 'other' always.
+'checked' is only used when compiling in Debug mode (or if -DENABLE_RUNTIME_CHECKS=ON),
+'temps' only when specifically requested, and 'other' always.
 
 Variables that are defined in less specific files can be replaced or extended in more specific files.
 For example, in Intel_Fortran_UNIX.cmake the following is defined:
