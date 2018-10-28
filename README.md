@@ -1,4 +1,4 @@
-# WRF-CMake [![Build status](https://ci.appveyor.com/api/projects/status/86508wximkvmf95g/branch/wrf-cmake?svg=true)](https://ci.appveyor.com/project/WRF-CMake/wrf/branch/wrf-cmake) [![Build Status](https://travis-ci.com/WRF-CMake/WRF.svg?branch=wrf-cmake)](https://travis-ci.com/WRF-CMake/WRF) 
+# WRF-CMake [![Build status](https://ci.appveyor.com/api/projects/status/86508wximkvmf95g/branch/wrf-cmake?svg=true)](https://ci.appveyor.com/project/WRF-CMake/wrf/branch/wrf-cmake) [![Build Status](https://travis-ci.com/WRF-CMake/WRF.svg?branch=wrf-cmake)](https://travis-ci.com/WRF-CMake/WRF)
 
 - [What is WRF-CMake?](#what-is-wrf-cmake)
 - [Installation](#installation)
@@ -12,7 +12,9 @@
 ## What is WRF-CMake?
 WRF-CMake adds CMake support to the latest version of the [Advanced Research Weather Research and Forecasting](https://www.mmm.ucar.edu/weather-research-and-forecasting-model) model (here WRF, for short) with the intention of streamlining and simplifying its configuration and build process. In our view, the use of CMake provides model developers, code maintainers, and end-users with several advantages such as robust incremental rebuilds, flexible library dependency discovery, native tool-chains for Windows, macOS, and Linux with minimal external dependencies, thus increasing portability, and automatic generation of project files for different platforms.
 
-WRF-CMake is designed to work alongside the current releases of WRF. This means that you can still compile your code using the legacy Makefiles included in WRF and WPS. In the current GitHub platform we also conduct extensive compilation and regression tests at each commit.
+WRF-CMake is designed to work alongside the current releases of WRF. This means that you can still compile your code using the legacy Makefiles included in WRF and WPS.
+
+In the current GitHub set-up, we also include pre-built binaries for Windows, macOS and Linux (see https://github.com/WRF-CMake/WRF/releases) and conduct extensive compilation and regression tests at each commit.
 
 ## Installation
 
@@ -38,7 +40,11 @@ To build WRF-CMake from source, please refer to the [WRF-CMake Installation page
 - Windows with MinGW-w64 and gcc/gfortran
 
 ### Currently unsupported features
-- WRF-NMM (discontinued. See: https://dtcenter.org/wrf-nmm/users/)
+- WRF-NMM (discontinued -- see https://dtcenter.org/wrf-nmm/users/)
+- WRF-DA
+- WRFPLUS
+- WRF-Chem
+- WRF-Hydro
 - Configurations for special environments like supercomputers
 - Promotion of Fortran's REAL to DOUBLE
 
