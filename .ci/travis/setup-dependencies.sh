@@ -26,7 +26,7 @@ if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
 
     # Ubuntu 14.04 does not offer nf-config, however WRF-Make's configure script relies on it
     # to detect whether NetCDF v4 support is available. Since nc-config has the same CLI, just symlink. 
-    ln -sf /usr/bin/nc-config /usr/bin/nf-config
+    sudo ln -sf /usr/bin/nc-config /usr/bin/nf-config
 
     whereis nf-config
     nf-config --has-nc4
