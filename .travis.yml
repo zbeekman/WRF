@@ -40,6 +40,30 @@ jobs:
         - CC=gcc
         - FC=gfortran
         - MODE=dmpar
+    
+    # Make reference build (WATS)
+    - stage: build
+      os: osx
+      osx_image: xcode9.2 # https://github.com/travis-ci/travis-ci/issues/9640
+      language: generic
+      env:
+        - SYSTEM=make
+        - BUILD_TYPE=Debug
+        - CC=gcc-8 # GNU via Homebrew
+        - FC=gfortran-8
+        - MODE=serial
+
+    # Make reference build (WATS)
+    - stage: build
+      os: osx
+      osx_image: xcode9.2 # https://github.com/travis-ci/travis-ci/issues/9640
+      language: generic
+      env:
+        - SYSTEM=make
+        - BUILD_TYPE=Debug
+        - CC=gcc-8 # GNU via Homebrew
+        - FC=gfortran-8
+        - MODE=dmpar
 
     - stage: build
       os: linux
@@ -134,7 +158,7 @@ deploy:
   skip-cleanup: true
   local-dir: ../wats_work/output
   repo: $WATS_DATA_REPO
-  target-branch: $TRAVIS_REPO_SLUG-$TRAVIS_BUILD_NUMBER-$MODE
+  target-branch: $TRAVIS_REPO_SLUG-$TRAVIS_BUILD_NUMBER-$TRAVIS_OS_NAME-$MODE
   on:
     all_branches: true
     condition: $SYSTEM = make
