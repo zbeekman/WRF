@@ -22,6 +22,8 @@ if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
         sudo apt-get install libmpich-dev
     fi
 
+    whereis nf-config
+
 elif [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 
     # Homebrew fails during "brew link" due to c++ being already present.
@@ -34,6 +36,10 @@ elif [[ $TRAVIS_OS_NAME == 'osx' ]]; then
         brew install mpich
     fi
 
+    which nf-config
+
 else
     echo "The environment is not recognised"
 fi
+
+nf-config --has-nc4

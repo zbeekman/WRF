@@ -146,11 +146,11 @@ before_deploy:
   - git checkout $WPS_COMMIT
   - .ci/travis/install-wps.sh
   - cd ..
-  - pip install -r wats/requirements.txt
+  - pip3 install -r wats/requirements.txt
   - if [[ $MODE == dm* ]]; then export MPI_FLAG=--mpi ; fi
-  - python wats/wats/main.py run --mode $WATS_MODE --wrf-dir WRF --wps-dir WPS --work-dir wats_work $MPI_FLAG
-  - pip install -r wats/.ci/travis/requirements.txt
-  - python wats/.ci/travis/cleanup-wats-data.py
+  - python3 wats/wats/main.py run --mode $WATS_MODE --wrf-dir WRF --wps-dir WPS --work-dir wats_work $MPI_FLAG
+  - pip3 install -r wats/.ci/travis/requirements.txt
+  - python3 wats/.ci/travis/cleanup-wats-data.py
 
 deploy:
   provider: pages
