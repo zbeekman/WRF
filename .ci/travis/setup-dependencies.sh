@@ -29,7 +29,6 @@ if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
     sudo ln -sf /usr/bin/nc-config /usr/bin/nf-config
 
     whereis nf-config
-    nf-config --has-nc4
 
 elif [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 
@@ -45,10 +44,15 @@ elif [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 
     # Homebrew installs the CMake version of netcdf which doesn't have nc-config/nf-config support:
     # "nf-config not yet implemented for cmake builds".
-    # This means WRF-Make won't enable NetCDF v4 support.
+    # This means WRF-Make wouldn't enable NetCDF v4 support. As a work-around, just symlink the working
+    # nc-config to make WRF happy.
     which nf-config
-    # nf-config --has-nc4
 
+    rm /usr/local/bin/nf-config
+    ln -s /usr/local/bin/nc-config /usr/local/bin/nf-config
+    
 else
     echo "The environment is not recognised"
 fi
+
+nf-config --has-nc4
