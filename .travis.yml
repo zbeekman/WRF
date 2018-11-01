@@ -40,6 +40,30 @@ jobs:
         - CC=gcc
         - FC=gfortran
         - MODE=dmpar
+    
+    # Make reference build (WATS)
+    - stage: build
+      os: osx
+      osx_image: xcode9.2 # https://github.com/travis-ci/travis-ci/issues/9640
+      language: generic
+      env:
+        - SYSTEM=make
+        - BUILD_TYPE=Debug
+        - CC=gcc-8 # GNU via Homebrew
+        - FC=gfortran-8
+        - MODE=serial
+
+    # Make reference build (WATS)
+    - stage: build
+      os: osx
+      osx_image: xcode9.2 # https://github.com/travis-ci/travis-ci/issues/9640
+      language: generic
+      env:
+        - SYSTEM=make
+        - BUILD_TYPE=Debug
+        - CC=gcc-8 # GNU via Homebrew
+        - FC=gfortran-8
+        - MODE=dmpar
 
     - stage: build
       os: linux
@@ -115,6 +139,7 @@ install:
 script: skip
 
 before_deploy:
+  - .ci/travis/install-python3.sh
   - cd ..
   - git clone --depth=100 --no-single-branch https://github.com/$WPS_REPO.git WPS
   - git clone --depth=1 --branch=$WATS_BRANCH https://github.com/$WATS_REPO.git wats
@@ -122,11 +147,11 @@ before_deploy:
   - git checkout $WPS_COMMIT
   - .ci/travis/install-wps.sh
   - cd ..
-  - pip install -r wats/requirements.txt
+  - pip3 install -r wats/requirements.txt
   - if [[ $MODE == dm* ]]; then export MPI_FLAG=--mpi ; fi
-  - python wats/wats/main.py run --mode $WATS_MODE --wrf-dir WRF --wps-dir WPS --work-dir wats_work $MPI_FLAG
-  - pip install -r wats/.ci/travis/requirements.txt
-  - python wats/.ci/travis/cleanup-wats-data.py
+  - python3 wats/wats/main.py run --mode $WATS_MODE --wrf-dir WRF --wps-dir WPS --work-dir wats_work $MPI_FLAG
+  - pip3 install -r wats/.ci/travis/requirements.txt
+  - python3 wats/.ci/travis/cleanup-wats-data.py
 
 deploy:
   provider: pages
@@ -134,7 +159,7 @@ deploy:
   skip-cleanup: true
   local-dir: ../wats_work/output
   repo: $WATS_DATA_REPO
-  target-branch: $TRAVIS_REPO_SLUG-$TRAVIS_BUILD_NUMBER-$MODE
+  target-branch: $TRAVIS_REPO_SLUG-$TRAVIS_BUILD_NUMBER-$TRAVIS_OS_NAME-$MODE
   on:
     all_branches: true
     condition: $SYSTEM = make
