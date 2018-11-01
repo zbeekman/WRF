@@ -31,10 +31,10 @@ Open an MSYS2 **MinGW 64-bit** shell and run:
 git clone https://github.com/WRF-CMake/WRF.git
 cd WRF
 mkdir build && cd build
-cmake -G "MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=~/WRF_install ..
+cmake -G "MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=<install_directory> ..
 make install
 ```
-The folder `~/WRF_install` now contains the WRF installation and is ready to use.
+The folder `<install_directory>` now contains the WRF installation and is ready to use.
 
 #### Build WRF-CMake with MPI support
 Open an MSYS2 **MinGW 64-bit** shell and run:
@@ -42,7 +42,7 @@ Open an MSYS2 **MinGW 64-bit** shell and run:
 git clone https://github.com/WRF-CMake/WRF.git
 cd WRF
 mkdir build && cd build
-cmake -G "MSYS Makefiles" -DMODE=dmpar -DCMAKE_INSTALL_PREFIX=~/WRF_install \
+cmake -G "MSYS Makefiles" -DMODE=dmpar -DCMAKE_INSTALL_PREFIX=<install_directory> \
     -DMPI_INCLUDE_PATH=$MINGW_PREFIX/include -DMPI_C_LIBRARY="$MSMPI_LIB64/msmpi.lib" \
     -DMPI_Fortran_LIBRARY="$MSMPI_LIB64/msmpifec.lib" ..
 make install
