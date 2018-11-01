@@ -18,7 +18,7 @@ git clone https://github.com/WRF-CMake/WRF.git
 cd WRF
 mkdir build && cd build
 cmake -DCMAKE_INSTALL_PREFIX=<install_directory> ..
-cmake --build . --target install
+make install
 ```
 where `<install_directory>` is the directory where to install WRF. Depending on your system's configuration, you may need to specify [WRF-CMake options](#wrf-cmake-options). If multiple compilers are available on the system, use the `CC` (C compiler) and/or `FC` (Fortran compiler) environment variables to specify them. For example, to use Intel C and Fortran compilers run `CC=icc FC=ifort cmake -DCMAKE_INSTALL_PREFIX=<install_directory> ..`. On macOS, use `CC=gcc-8 FC=gfortran-8` to use the GNU compilers installed with Homebrew.
 
@@ -32,7 +32,7 @@ git clone https://github.com/WRF-CMake/WRF.git
 cd WRF
 mkdir build && cd build
 cmake -G "MSYS Makefiles" -DCMAKE_INSTALL_PREFIX=~/WRF_install ..
-cmake --build . --target install
+make install
 ```
 The folder `~/WRF_install` now contains the WRF installation and is ready to use.
 
@@ -45,7 +45,7 @@ mkdir build && cd build
 cmake -G "MSYS Makefiles" -DMODE=dmpar -DCMAKE_INSTALL_PREFIX=~/WRF_install \
     -DMPI_INCLUDE_PATH=$MINGW_PREFIX/include -DMPI_C_LIBRARY="$MSMPI_LIB64/msmpi.lib" \
     -DMPI_Fortran_LIBRARY="$MSMPI_LIB64/msmpifec.lib" ..
-cmake --build . --target install
+make install
 ```
 
 ### WRF-CMake options
@@ -67,7 +67,7 @@ For example, to build and install WRF-CMake on Linux/macOS by setting all the av
 CC=gcc FC=gfortran cmake -DCMAKE_INSTALL_PREFIX=~/apps/WRF \
     -DCMAKE_BUILD_TYPE=Release -DMODE=dmpar -DNESTING=basic \
     -DENABLE_GRIB1=ON -DENABLE_GRIB2=ON  ..
-cmake --build . --target install
+make install
 ```
 
 ## Build and Install WPS-CMake
@@ -78,7 +78,7 @@ If you intend to run real cases in WRF-CMake, you will also need to compile WPS-
 git clone https://github.com/WPS-CMake/WPS.git
 mkdir build && cd build
 cmake -DCMAKE_INSTALL_PREFIX=<install_directory> -DWRF_DIR=<wrf_cmake_build_directory> ..
-cmake --build . --target install
+make install
 ```
 
 where `<install_directory>` is the directory where to install WPS and `<wrf_cmake_build_directory>` is the Path to the `build` folder of WRF (relative or absolute). To specify more options, please see the [WPS-CMake options](#wps-cmake-options).

@@ -50,7 +50,7 @@ cd /tmp
 wget https://www.ece.uvic.ca/~frodo/jasper/software/jasper-2.0.14.tar.gz
 tar xvzf jasper-2.0.14.tar.gz
 cd jasper-2.0.14/build/
-cmake build ..
+cmake ..
 sudo make install
 ```
 
