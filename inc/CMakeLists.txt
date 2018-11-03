@@ -10,10 +10,13 @@ set(REGISTRY Registry.EM)
 # By not explicitly listing all generated files here and in targets that indirectly depend on them
 # we save ourselves lots of effort. The downside is that whenever any registry file is changed
 # the CMake build folder has to be cleaned to force a rebuild.
+# TODO list all generated files here to avoid stale builds and confusion
 set(GEN_FILES
     actual_new_args.inc
     ../frame/module_state_description.F
 )
+
+file(GLOB REGISTRY_FILES ${CMAKE_SOURCE_DIR}/Registry/[r,R]egistry.*)
 
 get_property(COMPILE_DEFS DIRECTORY PROPERTY COMPILE_DEFINITIONS)
 foreach (def ${COMPILE_DEFS})
@@ -28,7 +31,7 @@ add_custom_command(
     OUTPUT ${GEN_FILES}
     COMMAND registry -DNEW_BDYS ${REGISTRY_DEFS} ${CMAKE_BINARY_DIR}/Registry/${REGISTRY}
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-    DEPENDS registry
+    DEPENDS registry ${REGISTRY_FILES}
 )
 
 foreach( gen_file ${GEN_FILES} )
