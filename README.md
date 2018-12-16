@@ -38,6 +38,7 @@ To build WRF-CMake from source, please refer to the [WRF-CMake Installation page
 - Linux with gcc/gfortran and Intel compilers
 - macOS with gcc/gfortran and Intel compilers
 - Windows with MinGW-w64 and gcc/gfortran
+- Configurations for special environments like supercomputers
 
 ### Currently unsupported features
 - WRF-NMM (discontinued -- see https://dtcenter.org/wrf-nmm/users/)
@@ -45,7 +46,6 @@ To build WRF-CMake from source, please refer to the [WRF-CMake Installation page
 - WRFPLUS
 - WRF-Chem
 - WRF-Hydro
-- Configurations for special environments like supercomputers
 - Promotion of Fortran's REAL to DOUBLE
 
 ## Changes to be upstreamed

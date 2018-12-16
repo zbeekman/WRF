@@ -22,6 +22,27 @@ make install
 ```
 where `<install_directory>` is the directory where to install WRF. Depending on your system's configuration, you may need to specify [WRF-CMake options](#wrf-cmake-options). If multiple compilers are available on the system, use the `CC` (C compiler) and/or `FC` (Fortran compiler) environment variables to specify them. For example, to use Intel C and Fortran compilers run `CC=icc FC=ifort cmake -DCMAKE_INSTALL_PREFIX=<install_directory> ..`. On macOS, use `CC=gcc-8 FC=gfortran-8` to use the GNU compilers installed with Homebrew.
 
+#### Note for HPC users relying on the Modules package
+If you are using `modules` for the dynamic modification of the user's environment via modulefiles, you will need to specify the path to the NetCDF manually after you loaded all the libraries required to compile WRF/WPS. For example:
+
+```
+# This is an example, module names/versions may be different on your system
+module list # enabled modules
+module avail # available modules
+module load cmake
+module load netcdf4
+module load openmpi
+module load gnu/8.1.0
+```
+
+If you do not know the location of NetCDF, you can locate it with the `nc-config --prefix`.
+
+```
+cmake -DCMAKE_INSTALL_PREFIX=install -DNETCDF_DIR=$NETCDF4_DIR ..
+```
+
+where `$NETCDF4_DIR` is the absolute path to your NetCDF installation directory.
+
 ### On Windows (with MinGW-w64 and gcc/gfortran)
 Make sure you [installed all the required dependencies](README_CMAKE_LIBS.md) before continuing.
 
