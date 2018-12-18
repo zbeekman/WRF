@@ -33,8 +33,8 @@ if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
 
 elif [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 
-    # Homebrew fails during "brew link" due to c++ being already present.
-    rm '/usr/local/include/c++'
+    # Homebrew fails during "brew link" if c++ is already present.
+    if command -v /usr/local/include/c++; then rm '/usr/local/include/c++'; fi
 
     brew update
     brew install gcc netcdf jasper
@@ -50,7 +50,7 @@ elif [[ $TRAVIS_OS_NAME == 'osx' ]]; then
     # "/usr/local/bin/nf-config: fork: Resource temporarily unavailable"
     which nf-config
     # nf-config --has-nc4
-    
+
 else
     echo "The environment is not recognised"
 fi
