@@ -35,7 +35,7 @@ Note that if you want to launch WRF-CMake and WPS-CMake built in `dmpar` to run 
 To build WRF-CMake from source, please refer to the [WRF-CMake Installation page](README_CMAKE_INSTALL.md).
 
 ### Currently supported platforms
-- Linux with gcc/gfortran and Intel compilers
+- Linux with gcc/gfortran, Intel, and Cray compilers
 - macOS with gcc/gfortran and Intel compilers
 - Windows with MinGW-w64 and gcc/gfortran
 - Configurations for special environments like supercomputers
@@ -49,6 +49,7 @@ To build WRF-CMake from source, please refer to the [WRF-CMake Installation page
 - Promotion of Fortran's REAL to DOUBLE
 
 ## Changes to be upstreamed
+- `dyn_em/module_big_step_utilities_em.F`: Fix non-standard line continuation character (`\` instead of `&`) leading to compile errors on Cray compilers
 - `external/io_grib1/MEL_grib1/{grib_enc.c,gribputgds.c,pack_spatial.c}`: Remove redundant header includes causing symbol conflicts in Windows
 - `external/io_grib2/g2lib/{dec,enc}_png.c`: Changed type 'voidp' to 'png_voidp' to make it compatible with newer libpng versions. See: https://trac.macports.org/ticket/36470
 - `external/io_grib2/g2lib/enc_jpeg2000.c`: Removed redundant `image.inmem_=1;` to make it compatible with newer libjasper versions >= 1.900.25
