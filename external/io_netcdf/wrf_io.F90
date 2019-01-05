@@ -758,8 +758,8 @@ subroutine Transpose(IO,MemoryOrder,di, Field,l1,l2,m1,m2,n1,n2 &
 ! The following variants of macros are only necessary due to different preprocessing support
 ! in different compilers, mostly to do with whitespace handling.
 #ifdef NO_M4
-#ifdef __GFORTRAN__
-! The following is taken from https://modelingguru.nasa.gov/docs/DOC-1932 and works on gfortran,
+#if defined(__GFORTRAN__) || defined(_CRAYFTN)
+! The following is taken from https://modelingguru.nasa.gov/docs/DOC-1932 and works on gfortran and Cray,
 ! but not clang or Intel Fortran (inserts whitespaces).
 #define XDEX(A,B,C) (A-A/**/1+1+(A/**/2-A/**/1+1)*((B-B/**/1)+(C-C/**/1)*(B/**/2-B/**/1+1)))
 #else
