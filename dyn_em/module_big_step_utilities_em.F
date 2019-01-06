@@ -5709,11 +5709,11 @@ compiler error, not handled yet
 !                                300                                     ! term 4
 !                    
          IF ( ( config_flags%use_theta_m .EQ. 1 ) .AND. (P_Qv .GE. PARAM_FIRST_SCALAR) ) THEN
-            t_new(i,k,j) =  h_diabatic(i,k,j)*(1. + (R_v/R_d)*qv_diabatic(i,k,j)) + \
-                            mpten*(1. + (R_v/R_d)*qv(i,k,j)) + \
+            t_new(i,k,j) =  h_diabatic(i,k,j)*(1. + (R_v/R_d)*qv_diabatic(i,k,j)) + &
+                            mpten*(1. + (R_v/R_d)*qv(i,k,j)) + &
                             (R_v/R_d)*qvten*th_phy(i,k,j) - T0
             th_phy_m_t0(i,k,j) = (t_new(i,k,j)+T0)/(1.+(R_v/R_d)*qv(i,k,j)) - T0
-            h_diabatic(i,k,j) =  ( mpten*(1. + (R_v/R_d)*qv(i,k,j)) + \
+            h_diabatic(i,k,j) =  ( mpten*(1. + (R_v/R_d)*qv(i,k,j)) + &
                                  (R_v/R_d)*qvten*th_phy(i,k,j) ) / dt
          ELSE
             t_new(i,k,j) = t_new(i,k,j) + mpten
@@ -6301,8 +6301,9 @@ END SUBROUTINE set_tend
 
 !------------------------------------------------------------------------------
 ! Begin: Assign limits of spatial loops depending on variable to be diffused.
-! The halo regions are already filled with values by the time this subroutine
-! is called, which allows the stencil to extend beyond the domains' edges.
+! The halo regions outside the physical domain are not defined, hence the loop
+! indices should start 3 rows and columns in for specified boundary conditions.
+! Also modified to work with idealized boundary conditions.
 
     ktf = MIN( kte, kde-1 )
 
@@ -6312,6 +6313,24 @@ END SUBROUTINE set_tend
       i_end   = ite
       j_start = jts
       j_end   = MIN(jde-1,jte)
+      IF ( config_flags%open_xs ) THEN
+        i_start = MAX(its,ids+3)
+      END IF
+      IF ( config_flags%open_ys ) THEN
+        j_start = MAX(jts,jds+3)
+      END IF
+      IF ( config_flags%open_xe ) THEN
+        i_end   = MIN(ite,ide-3)
+      END IF
+      IF ( config_flags%open_ye ) THEN
+        j_end   = MIN(jte,jde-4)
+      END IF
+      IF ( specified ) THEN
+        i_start = MAX(its,ids+3)
+        i_end   = MIN(ite,ide-3)
+        j_start = MAX(jts,jds+3)
+        j_end   = MIN(jte,jde-4)
+      END IF
       k_start = kts
       k_end   = ktf
 
@@ -6321,6 +6340,24 @@ END SUBROUTINE set_tend
       i_end   = MIN(ide-1,ite)
       j_start = jts
       j_end   = jte
+      IF ( config_flags%open_xs ) THEN
+        i_start = MAX(its,ids+3)
+      END IF
+      IF ( config_flags%open_ys ) THEN
+        j_start = MAX(jts,jds+3)
+      END IF
+      IF ( config_flags%open_xe ) THEN
+        i_end   = MIN(ite,ide-4)
+      END IF
+      IF ( config_flags%open_ye ) THEN
+        j_end   = MIN(jte,jde-3)
+      END IF
+      IF ( config_flags%open_xs .or. specified ) THEN
+        i_start = MAX(its,ids+3)
+        i_end   = MIN(ite,ide-4)
+        j_start = MAX(jts,jds+3)
+        j_end   = MIN(jte,jde-3)
+      END IF
       k_start = kts
       k_end   = ktf
 
@@ -6330,6 +6367,24 @@ END SUBROUTINE set_tend
       i_end   = MIN(ide-1,ite)
       j_start = jts
       j_end   = MIN(jde-1,jte)
+      IF ( config_flags%open_xs ) THEN
+        i_start = MAX(its,ids+3)
+      END IF
+      IF ( config_flags%open_ys ) THEN
+        j_start = MAX(jts,jds+3)
+      END IF
+      IF ( config_flags%open_xe ) THEN
+        i_end   = MIN(ite,ide-4)
+      END IF
+      IF ( config_flags%open_ye ) THEN
+        j_end   = MIN(jte,jde-4)
+      END IF
+      IF ( specified ) THEN
+        i_start = MAX(its,ids+3)
+        i_end   = MIN(ide-4,ite)
+        j_start = MAX(jts,jds+3)
+        j_end   = MIN(jde-4,jte)
+      END IF
       k_start = kts+1
       k_end   = ktf
 
@@ -6339,6 +6394,24 @@ END SUBROUTINE set_tend
       i_end   = MIN(ide-1,ite)
       j_start = jts
       j_end   = MIN(jde-1,jte)
+      IF ( config_flags%open_xs ) THEN
+        i_start = MAX(its,ids+3)
+      END IF
+      IF ( config_flags%open_ys ) THEN
+        j_start = MAX(jts,jds+3)
+      END IF
+      IF ( config_flags%open_xe ) THEN
+        i_end   = MIN(ite,ide-4)
+      END IF
+      IF ( config_flags%open_ye ) THEN
+        j_end   = MIN(jte,jde-4)
+      END IF
+      IF ( specified ) THEN
+        i_start = MAX(its,ids+3)
+        i_end   = MIN(ide-4,ite)
+        j_start = MAX(jts,jds+3)
+        j_end   = MIN(jde-4,jte)
+      END IF
       k_start = kts
       k_end   = ktf
 

@@ -122,6 +122,9 @@ jobs:
         - NESTING=basic
 
     - stage: wats
+      # Currently, WATS is only supported for branch builds since
+      # pull requests (from forks) cannot access the necessary secrets.
+      if: type != pull_request
       os: linux
       before_install: skip
       install:
