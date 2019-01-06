@@ -5,7 +5,7 @@ For the installation of libraries, we rely on your system's package managers (AP
 
 ## Table of contents
 - [Ubuntu](#ubuntu)
-    - [Ubuntu 14.04 LTS (Trusty)](#14.04-lts-(trusty))
+    - [14.04 LTS (Trusty)](#14.04-lts-(trusty))
     - [16.04 LTS (Xenial)](#16.04-lts-(xenial))
     - [18.04 LTS (Bionic)](#18.04-lts-(bionic))
 - [macOS](#macOS)
@@ -14,7 +14,7 @@ For the installation of libraries, we rely on your system's package managers (AP
 
 ## Ubuntu
 
-### Ubuntu 14.04 LTS (Trusty)
+### 14.04 LTS (Trusty)
 To install all the required dependencies, including support for MPI, run the following commands from your terminal prompt:
 
 ```sh
@@ -104,7 +104,7 @@ The following MS MPI instructions originated from:
 - http://www.math.ucla.edu/~wotaoyin/windows_coding.html
 - https://github.com/coderefinery/autocmake/issues/85
 
-Download and install both `msi` and `exe` from https://www.microsoft.com/en-us/download/details.aspx?id=56727.
+Download and install both `msi` and `exe` from https://github.com/Microsoft/Microsoft-MPI/releases.
 
 Restart the MSYS2 **MinGW 64-bit** shell and run:
 ```sh
