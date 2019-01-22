@@ -20,6 +20,7 @@ WRF-CMake is designed to work alongside the current releases of WRF, therefore y
 - WRF-Chem
 - WRF-Hydro
 - Promotion of Fortran's REAL to DOUBLE
+- File and line number in wrf_error_fatal() messages
 - WRF-NMM (discontinued -- see https://dtcenter.org/wrf-nmm/users/)
 
 
