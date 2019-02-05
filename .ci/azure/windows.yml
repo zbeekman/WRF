@@ -1,5 +1,13 @@
 steps:
-- script: echo %SYSTEM%
-- script: choco install msys2 --params "/InstallDir:c:\msys64"
-- script: call .ci\appveyor\setup-dependencies.bat
-- script: call .ci\appveyor\install-wrf.bat
+- script: |
+    choco install msys2 --params "/InstallDir:c:\msys64"
+  displayName: 'Install MSYS2'
+- task: BatchScript@1
+  displayName: 'Setup dependencies'
+  inputs:
+    filename: .ci\appveyor\setup-dependencies.bat
+    modifyEnvironment: true
+- task: BatchScript@1
+  displayName: 'Install WRF'
+  inputs:
+    filename: .ci\appveyor\install-wrf.bat

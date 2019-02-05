@@ -7,25 +7,38 @@ trigger:
 - wrf-cmake
 
 jobs:
-- job: Windows
+- job: Windows (Make)
   pool:
     vmImage: vs2017-win2016
   steps:
-  - script: echo "##vso[task.setvariable variable=SYSTEM]make"
+  - script: |
+      echo ##vso[task.setvariable variable=SYSTEM]make
+      echo ##vso[task.setvariable variable=BUILD_TYPE]Debug
+      echo ##vso[task.setvariable variable=MODE]serial
   - template: .ci/azure/windows.yml
 
-- job: Ubuntu
+- job: Ubuntu (Make)
   pool:
     vmImage: ubuntu-16.04
   steps:
-  - script: echo "##vso[task.setvariable variable=OS_NAME]linux"
-  - script: echo "##vso[task.setvariable variable=SYSTEM]make"
+  - script: |
+      echo ##vso[task.setvariable variable=OS_NAME]linux
+      echo ##vso[task.setvariable variable=SYSTEM]make
+      echo ##vso[task.setvariable variable=BUILD_TYPE]Debug
+      echo ##vso[task.setvariable variable=CC]gcc
+      echo ##vso[task.setvariable variable=FC]gfortran
+      echo ##vso[task.setvariable variable=MODE]serial
   - template: .ci/azure/ubuntu.yml
 
-- job: macOS
+- job: macOS (Make)
   pool:
     vmImage: macos-10.13
   steps:
-  - script: echo "##vso[task.setvariable variable=OS_NAME]osx"
-  - script: echo "##vso[task.setvariable variable=SYSTEM]make"
+  - script: |
+      echo ##vso[task.setvariable variable=OS_NAME]osx
+      echo ##vso[task.setvariable variable=SYSTEM]make
+      echo ##vso[task.setvariable variable=BUILD_TYPE]Debug
+      echo ##vso[task.setvariable variable=CC]gcc-8
+      echo ##vso[task.setvariable variable=FC]gfortran-8
+      echo ##vso[task.setvariable variable=MODE]serial
   - template: .ci/azure/macOS.yml

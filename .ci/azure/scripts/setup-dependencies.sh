@@ -7,14 +7,7 @@ set -ex
 if [[ $OS_NAME == 'linux' ]]; then
 
     sudo apt-get update
-
-    # Travis CI is currently on Ubuntu 14.04 which has netCDF 4.1.
-    # All versions of netCDF <= 4.1 contain all components (incl. Fortran libraries),
-    # whereas netCDF > 4.1 is split up into separate libraries.
-    # As soon as Travis CI switches to a new Ubuntu version, the below has to be adapted.
-    # Note: netcdf-bin is only necessary as it provides nc-config which is part of libnetcdf-dev
-    # in later Ubuntu versions.
-    sudo apt-get install gfortran libnetcdf-dev netcdf-bin libpng-dev libjasper-dev
+    sudo apt-get install gfortran libnetcdf-dev libnetcdff-dev netcdf-bin libpng-dev libjasper-dev
 
     if [ $SYSTEM == "make" ]; then
         sudo apt-get install csh m4 libhdf5-serial-dev
