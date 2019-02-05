@@ -20,7 +20,7 @@ jobs:
   steps:
   - script: echo "##vso[task.setvariable variable=OS_NAME]linux"
   - script: echo "##vso[task.setvariable variable=SYSTEM]make"
-  - template: ci/azure/ubuntu.yml
+  - template: .ci/azure/ubuntu.yml
 
 - job: macOS
   pool:
@@ -28,4 +28,4 @@ jobs:
   steps:
   - script: echo "##vso[task.setvariable variable=OS_NAME]osx"
   - script: echo "##vso[task.setvariable variable=SYSTEM]make"
-  - template: ci/azure/macos.yml
+  - template: .ci/azure/macos.yml
