@@ -17,10 +17,6 @@ if [[ $OS_NAME == 'linux' ]]; then
         sudo apt-get install libmpich-dev
     fi
 
-    # Ubuntu 14.04 does not offer nf-config, however WRF-Make's configure script relies on it
-    # to detect whether NetCDF v4 support is available. Since nc-config has the same CLI, just symlink. 
-    sudo ln -sf /usr/bin/nc-config /usr/bin/nf-config
-
     whereis nf-config
     nf-config --has-nc4
 
@@ -30,8 +26,11 @@ elif [[ $OS_NAME == 'osx' ]]; then
     # Use the `-f` flag in case c++ is not present to avoid errors.
     rm -f /usr/local/include/c++
 
+    # disable automatic cleanup, just takes time
+    export HOMEBREW_NO_INSTALL_CLEANUP=1
+
     brew update
-    brew install gcc netcdf jasper
+    brew install coreutils gcc netcdf jasper
 
     if [[ $MODE == dm* ]]; then
         brew install mpich
@@ -43,7 +42,7 @@ elif [[ $OS_NAME == 'osx' ]]; then
     # to nf-config (as done for Ubuntu, see above) doesn't work here:
     # "/usr/local/bin/nf-config: fork: Resource temporarily unavailable"
     which nf-config
-    # nf-config --has-nc4
+    nf-config --has-nc4
 
 else
     echo "The environment is not recognised"
