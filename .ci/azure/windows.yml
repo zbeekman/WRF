@@ -1,4 +1,5 @@
 steps:
+- script: set
 - script: |
     choco install msys2 --params "/InstallDir:c:\msys64"
   displayName: 'Install MSYS2'
