@@ -1,0 +1,4 @@
+steps:
+- script: echo $SYSTEM
+- script: .ci/azure/scripts/setup-dependencies.sh
+- script: .ci/azure/scripts/install-wrf.sh
