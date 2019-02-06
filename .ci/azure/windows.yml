@@ -1,8 +1,15 @@
 steps:
 - script: |
+    "%MSMPI_BIN%\mpiexec.exe" /?
     set
-    %MSMPI_BIN%/mpiexec /?
   displayName: Dump system info
+
+- pwsh: |
+    $msmpi = Get-WmiObject -Class Win32_Product | where { $_.Name -match "Microsoft MPI" }
+    if ($msmpi) {
+      echo $msmpi.Version
+      $msmpi.Uninstall()
+    }
 
 - script: |
     choco install msys2 --params "/InstallDir:c:\msys64" --limit-output
