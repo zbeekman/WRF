@@ -1,6 +1,7 @@
 steps:
 - script: printenv
 - script: .ci/azure/scripts/setup-dependencies.sh
+- script: ls -al /usr/lib/libnetcdf*
 - script: .ci/azure/scripts/install-wrf.sh
 - script: |
     cat tools/nc4_test.log
