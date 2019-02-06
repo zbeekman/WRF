@@ -1,14 +1,13 @@
 steps:
-- script: |
-    "%MSMPI_BIN%\mpiexec.exe" /?
-    set
-  displayName: Dump system info
+- script: set
+  displayName: Dump environment variables
 
+# We will install the latest version later on.
 - pwsh: |
-    $msmpi = Get-WmiObject -Class Win32_Product | where { $_.Name -match "Microsoft MPI" }
-    if ($msmpi) {
-      echo $msmpi.Version
-      $msmpi.Uninstall()
+    $products = Get-CimInstance -ClassName Win32_Product -Filter "Name like 'Microsoft MPI%'"
+    foreach ($p in $products) {
+      echo "Uninstalling $($p.Name)"
+      Invoke-CimMethod -InputObject $p -MethodName Uninstall
     }
 
 - script: |

@@ -1,4 +1,9 @@
 steps:
 - script: printenv
+  displayName: Dump environment variables
+
 - script: .ci/azure/scripts/setup-dependencies.sh
+  displayName: Install dependencies
+
 - script: .ci/azure/scripts/install-wrf.sh
+  displayName: Install WRF
