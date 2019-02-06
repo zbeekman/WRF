@@ -17,8 +17,8 @@ if [[ $OS_NAME == 'linux' ]]; then
         sudo apt-get install libmpich-dev
     fi
 
-    whereis nf-config
-    nf-config --has-nc4
+    nc-config --all
+    nf-config --all
 
 elif [[ $OS_NAME == 'osx' ]]; then
 
@@ -35,6 +35,8 @@ elif [[ $OS_NAME == 'osx' ]]; then
     if [[ $MODE == dm* ]]; then
         brew install mpich
     fi
+
+    nc-config --all
 
     # Homebrew installs the CMake version of netcdf which doesn't have nf-config support:
     # "nf-config not yet implemented for cmake builds".

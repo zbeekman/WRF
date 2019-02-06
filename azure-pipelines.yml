@@ -18,6 +18,20 @@ jobs:
       echo "##vso[task.setvariable variable=MODE]serial"
   - template: .ci/azure/windows.yml
 
+- job: windows_cmake
+  displayName: Windows (CMake)
+  pool:
+    vmImage: vs2017-win2016
+  steps:
+  - script: |
+      echo "##vso[task.setvariable variable=SYSTEM]cmake"
+      echo "##vso[task.setvariable variable=BUILD_TYPE]Debug"
+      echo "##vso[task.setvariable variable=MODE]serial"
+      echo "##vso[task.setvariable variable=GRIB1]0"
+      echo "##vso[task.setvariable variable=GRIB2]1"
+      echo "##vso[task.setvariable variable=NESTING]basic"
+  - template: .ci/azure/windows.yml
+
 - job: ubuntu_make
   displayName: Ubuntu (Make)
   pool:
@@ -32,6 +46,23 @@ jobs:
       echo "##vso[task.setvariable variable=MODE]serial"
   - template: .ci/azure/ubuntu.yml
 
+- job: ubuntu_cmake
+  displayName: Ubuntu (CMake)
+  pool:
+    vmImage: ubuntu-16.04
+  steps:
+  - script: |
+      echo "##vso[task.setvariable variable=OS_NAME]linux"
+      echo "##vso[task.setvariable variable=SYSTEM]cmake"
+      echo "##vso[task.setvariable variable=BUILD_TYPE]Debug"
+      echo "##vso[task.setvariable variable=CC]gcc"
+      echo "##vso[task.setvariable variable=FC]gfortran"
+      echo "##vso[task.setvariable variable=MODE]serial"
+      echo "##vso[task.setvariable variable=GRIB1]0"
+      echo "##vso[task.setvariable variable=GRIB2]1"
+      echo "##vso[task.setvariable variable=NESTING]basic"
+  - template: .ci/azure/ubuntu.yml
+
 - job: macos_make
   displayName: macOS (Make)
   pool:
@@ -44,4 +75,21 @@ jobs:
       echo "##vso[task.setvariable variable=CC]gcc-8"
       echo "##vso[task.setvariable variable=FC]gfortran-8"
       echo "##vso[task.setvariable variable=MODE]serial"
+  - template: .ci/azure/macOS.yml
+
+- job: macos_cmake
+  displayName: macOS (CMake)
+  pool:
+    vmImage: macos-10.13
+  steps:
+  - script: |
+      echo "##vso[task.setvariable variable=OS_NAME]osx"
+      echo "##vso[task.setvariable variable=SYSTEM]cmake"
+      echo "##vso[task.setvariable variable=BUILD_TYPE]Debug"
+      echo "##vso[task.setvariable variable=CC]gcc-8"
+      echo "##vso[task.setvariable variable=FC]gfortran-8"
+      echo "##vso[task.setvariable variable=MODE]serial"
+      echo "##vso[task.setvariable variable=GRIB1]0"
+      echo "##vso[task.setvariable variable=GRIB2]1"
+      echo "##vso[task.setvariable variable=NESTING]basic"
   - template: .ci/azure/macOS.yml
