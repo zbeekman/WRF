@@ -21,6 +21,12 @@ if [ $SYSTEM == "cmake" ]; then
 
 elif [ $SYSTEM == "make" ]; then
 
+    # WRF does not use CC/FC, so let's check what gcc/gfortran actually points to.
+    which gcc
+    gcc --version
+    which gfortran
+    gfortran --version
+
     export NETCDF4=1 # Compile with netCDF-4 support
     export WRF_EM_CORE=1 # Select ARW core
 

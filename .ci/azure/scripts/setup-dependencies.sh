@@ -30,7 +30,7 @@ elif [[ $OS_NAME == 'osx' ]]; then
     export HOMEBREW_NO_INSTALL_CLEANUP=1
 
     brew update
-    brew install coreutils gcc netcdf jasper
+    brew install coreutils gcc netcdf jasper libpng
 
     if [[ $MODE == dm* ]]; then
         brew install mpich

@@ -5,9 +5,10 @@
 set THIS_FOLDER=%~dp0
 
 rem Install MSMPI
-git clone https://github.com/WRF-CMake/msmpi.git || goto :error
-msmpi\MSMpiSetup.exe -unattend || goto :error
-msmpi\msmpisdk.msi /passive || goto :error
+wget https://github.com/Microsoft/Microsoft-MPI/releases/download/v10.0/msmpisetup.exe || goto :error
+wget https://github.com/Microsoft/Microsoft-MPI/releases/download/v10.0/msmpisdk.msi || goto :error
+MSMpiSetup.exe -unattend || goto :error
+msmpisdk.msi /passive || goto :error
 
 :: Remember original PATH as refreshenv will replace it with the state from the system registry
 set OLDPATH=%PATH%
