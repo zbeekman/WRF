@@ -5,8 +5,8 @@
 set THIS_FOLDER=%~dp0
 
 rem Install MSMPI
-curl https://github.com/Microsoft/Microsoft-MPI/releases/download/v10.0/msmpisetup.exe -o msmpisetup.exe || goto :error
-curl https://github.com/Microsoft/Microsoft-MPI/releases/download/v10.0/msmpisdk.msi -o msmpisdk.msi || goto :error
+curl -L https://github.com/Microsoft/Microsoft-MPI/releases/download/v10.0/msmpisetup.exe -o msmpisetup.exe || goto :error
+curl -L https://github.com/Microsoft/Microsoft-MPI/releases/download/v10.0/msmpisdk.msi -o msmpisdk.msi || goto :error
 msmpisetup.exe -unattend || goto :error
 msmpisdk.msi /passive || goto :error
 
