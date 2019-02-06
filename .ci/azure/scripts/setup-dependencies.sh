@@ -42,7 +42,7 @@ elif [[ $OS_NAME == 'osx' ]]; then
     # to nf-config (as done for Ubuntu, see above) doesn't work here:
     # "/usr/local/bin/nf-config: fork: Resource temporarily unavailable"
     which nf-config
-    nf-config --has-nc4
+    #nf-config --has-nc4
 
 else
     echo "The environment is not recognised"
