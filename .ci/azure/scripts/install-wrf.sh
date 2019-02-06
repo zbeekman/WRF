@@ -44,8 +44,13 @@ elif [ $SYSTEM == "make" ]; then
             *) echo "Invalid: $MODE" ;;
         esac
 
-        export HDF5=/usr
-        export NETCDF=/usr
+        # Need to create symlinked folder hierarchy that WRF expects...
+        mkdir netcdf
+        ln -s /usr/include netcdf/include
+        ln -s /usr/lib/x86_64-linux-gnu netcdf/lib
+
+        export HDF5=/usr/lib/x86_64-linux-gnu/hdf5/serial
+        export NETCDF=`pwd`/netcdf
 
     elif [[ $OS_NAME == 'osx' ]]; then
 

@@ -1,14 +1,20 @@
 steps:
-- script: set
 - script: |
-    choco install msys2 --params "/InstallDir:c:\msys64"
-  displayName: 'Install MSYS2'
+    set
+    %MSMPI_BIN%/mpiexec /?
+  displayName: Dump system info
+
+- script: |
+    choco install msys2 --params "/InstallDir:c:\msys64" --limit-output
+  displayName: Install MSYS2
+
 - task: BatchScript@1
-  displayName: 'Setup dependencies'
+  displayName: Setup dependencies
   inputs:
     filename: .ci\appveyor\setup-dependencies.bat
     modifyEnvironment: true
+
 - task: BatchScript@1
-  displayName: 'Install WRF'
+  displayName: Install WRF
   inputs:
     filename: .ci\appveyor\install-wrf.bat
