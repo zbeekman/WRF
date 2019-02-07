@@ -9,7 +9,7 @@ if [[ $OS_NAME == 'linux' ]]; then
     sudo apt-get update
     sudo apt-get install gfortran libnetcdf-dev libnetcdff-dev netcdf-bin libpng-dev libjasper-dev
 
-    if [ $SYSTEM == "make" ]; then
+    if [ $BUILD_SYSTEM == "make" ]; then
         sudo apt-get install csh m4 libhdf5-serial-dev
     fi
 

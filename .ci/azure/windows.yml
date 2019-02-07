@@ -1,5 +1,5 @@
 steps:
-- pwsh:
+- pwsh: |
     Get-WmiObject Win32_Processor | Select-Object -Property [a-z]*
     Get-WmiObject Win32_OperatingSystem | Select-Object -Property [a-z]*
     Get-WmiObject Win32_LogicalDisk

@@ -4,7 +4,7 @@
 
 set -ex
 
-if [ $SYSTEM == "cmake" ]; then
+if [ $BUILD_SYSTEM == "cmake" ]; then
 
     mkdir build && cd build
     cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=install \
@@ -19,7 +19,7 @@ if [ $SYSTEM == "cmake" ]; then
     
     cd ..
 
-elif [ $SYSTEM == "make" ]; then
+elif [ $BUILD_SYSTEM == "make" ]; then
 
     # WRF does not use CC/FC, so let's check what gcc/gfortran actually points to.
     which gcc

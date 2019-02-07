@@ -7,7 +7,7 @@ jobs:
   pool:
     vmImage: vs2017-win2016
   variables:
-    SYSTEM: make
+    BUILD_SYSTEM: make
     BUILD_TYPE: Debug
     MODE: serial
   steps:
@@ -18,7 +18,7 @@ jobs:
   pool:
     vmImage: vs2017-win2016
   variables:
-    SYSTEM: cmake
+    BUILD_SYSTEM: cmake
     BUILD_TYPE: Debug
     MODE: serial
     GRIB1: 0
@@ -35,7 +35,7 @@ jobs:
     vmImage: ubuntu-16.04
   variables:
     OS_NAME: linux
-    SYSTEM: make
+    BUILD_SYSTEM: make
     BUILD_TYPE: Debug
     CC: gcc
     FC: gfortran
@@ -49,7 +49,7 @@ jobs:
     vmImage: ubuntu-16.04
   variables:
     OS_NAME: linux
-    SYSTEM: cmake
+    BUILD_SYSTEM: cmake
     BUILD_TYPE: Debug
     CC: gcc
     FC: gfortran
@@ -66,7 +66,7 @@ jobs:
     vmImage: macos-10.13
   variables:
     OS_NAME: osx
-    SYSTEM: make
+    BUILD_SYSTEM: make
     BUILD_TYPE: Debug
     CC: gcc-8
     FC: gfortran-8
@@ -80,7 +80,7 @@ jobs:
     vmImage: macos-10.13
   variables:
     OS_NAME: osx
-    SYSTEM: cmake
+    BUILD_SYSTEM: cmake
     BUILD_TYPE: Debug
     CC: gcc-8
     FC: gfortran-8
