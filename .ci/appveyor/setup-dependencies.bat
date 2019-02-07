@@ -29,7 +29,7 @@ set MSYSTEM=MINGW64
 
 echo Install MSYS2 and MinGW64 Packages
 bash -lc "pacman --noconfirm -Syu" || goto :error
-bash -lc "pacman --noconfirm --needed -S mingw-w64-x86_64-toolchain mingw64/mingw-w64-x86_64-cmake make unzip mingw64/mingw-w64-x86_64-portablexdr" || goto :error
+bash -lc "pacman --noconfirm --needed -S mingw-w64-x86_64-toolchain mingw64/mingw-w64-x86_64-cmake make unzip git mingw64/mingw-w64-x86_64-portablexdr" || goto :error
 bash -lc "pacman --noconfirm --needed -S mingw-w64-x86_64-libpng mingw-w64-x86_64-libjpeg-turbo mingw-w64-x86_64-jasper" || goto :error
 bash -lc "pacman --noconfirm --needed -S mingw-w64-x86_64-hdf5 mingw-w64-x86_64-libtool tar" || goto :error
 

@@ -79,6 +79,12 @@ elif [ $BUILD_SYSTEM == "make" ]; then
     ./compile em_real
 
     if [ ! -f main/wrf.exe ]; then
+        # One more chance in case we ran out of memory, this time without parallel compilation.
+        export J=
+        ./compile em_real
+    fi
+
+    if [ ! -f main/wrf.exe ]; then
         exit 1
     fi
 
