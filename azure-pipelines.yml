@@ -6,7 +6,7 @@ jobs:
   displayName: Windows (Make)
   pool:
     vmImage: vs2017-win2016
-  parameters:
+  variables:
     SYSTEM: make
     BUILD_TYPE: Debug
     MODE: serial
@@ -17,7 +17,7 @@ jobs:
   displayName: Windows (CMake)
   pool:
     vmImage: vs2017-win2016
-  parameters:
+  variables:
     SYSTEM: cmake
     BUILD_TYPE: Debug
     MODE: serial
@@ -33,7 +33,7 @@ jobs:
   displayName: Ubuntu (Make)
   pool:
     vmImage: ubuntu-16.04
-  parameters:
+  variables:
     OS_NAME: linux
     SYSTEM: make
     BUILD_TYPE: Debug
@@ -47,7 +47,7 @@ jobs:
   displayName: Ubuntu (CMake)
   pool:
     vmImage: ubuntu-16.04
-  parameters:
+  variables:
     OS_NAME: linux
     SYSTEM: cmake
     BUILD_TYPE: Debug
@@ -64,7 +64,7 @@ jobs:
   displayName: macOS (Make)
   pool:
     vmImage: macos-10.13
-  parameters:
+  variables:
     OS_NAME: osx
     SYSTEM: make
     BUILD_TYPE: Debug
@@ -78,7 +78,7 @@ jobs:
   displayName: macOS (CMake)
   pool:
     vmImage: macos-10.13
-  parameters:
+  variables:
     OS_NAME: osx
     SYSTEM: cmake
     BUILD_TYPE: Debug
