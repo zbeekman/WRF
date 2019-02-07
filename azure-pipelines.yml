@@ -7,6 +7,7 @@ jobs:
   pool:
     vmImage: vs2017-win2016
   variables:
+    OS_NAME: windows
     BUILD_SYSTEM: make
     BUILD_TYPE: Debug
     MODE: serial
@@ -18,6 +19,7 @@ jobs:
   pool:
     vmImage: vs2017-win2016
   variables:
+    OS_NAME: windows
     BUILD_SYSTEM: cmake
     BUILD_TYPE: Debug
     MODE: serial

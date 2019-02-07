@@ -78,6 +78,10 @@ elif [ $BUILD_SYSTEM == "make" ]; then
     echo "./compile em_real"
     ./compile em_real
 
+    if [ ! -f main/wrf.exe ]; then
+        exit 1
+    fi
+
 else
     echo "Unknown system: ${system}"
     exit 1

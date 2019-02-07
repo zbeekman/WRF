@@ -1,8 +1,8 @@
 steps:
 - pwsh: |
-    Get-WmiObject Win32_Processor | Select-Object -Property [a-z]*
-    Get-WmiObject Win32_OperatingSystem | Select-Object -Property [a-z]*
-    Get-WmiObject Win32_LogicalDisk
+    Get-CimInstance Win32_Processor | Select-Object -Property [a-z]*
+    Get-CimInstance Win32_OperatingSystem | Select-Object -Property [a-z]*
+    Get-CimInstance Win32_LogicalDisk
   displayName: Dump VM specs
 
 - script: set
@@ -35,5 +35,5 @@ steps:
 - task: PublishPipelineArtifact@0
   displayName: Publish binaries
   inputs:
-    artifactName: binaries
-    targetPath: build/install
+    artifactName: binaries_$(OS_NAME)_$(BUILD_SYSTEM)_$(BUILD_TYPE)_$(MODE)
+    targetPath: build/install/main
