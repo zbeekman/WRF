@@ -15,11 +15,11 @@ steps:
       echo "Uninstalling $($p.Name)"
       Invoke-CimMethod -InputObject $p -MethodName Uninstall
     }
-  condition: and(succeeded(), eq(variables.MODE, 'dmpar'))
+  condition: and(succeeded(), startsWith(variables.MODE, 'dm'))
   displayName: Remove existing MSMPI
 
 - script: |
-    choco install msys2 --params "/InstallDir:c:\msys64" --limit-output
+    choco install msys2 --params "/InstallDir:c:\msys64"
   displayName: Install MSYS2
 
 - task: BatchScript@1
