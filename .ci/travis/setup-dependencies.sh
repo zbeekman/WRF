@@ -49,9 +49,8 @@ elif [[ $TRAVIS_OS_NAME == 'osx' ]]; then
     # This means WRF-Make won't enable NetCDF v4 support. For some reason, symlinking nc-config
     # to nf-config (as done for Ubuntu, see above) doesn't work here:
     # "/usr/local/bin/nf-config: fork: Resource temporarily unavailable"
-    sudo ln -sf /usr/local/bin/nc-config /usr/local/bin/nf-config
     which nf-config
-    nf-config --has-nc4
+    # nf-config --has-nc4
 
 else
     echo "The environment is not recognised"

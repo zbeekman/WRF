@@ -9,6 +9,7 @@ steps:
       echo "Uninstalling $($p.Name)"
       Invoke-CimMethod -InputObject $p -MethodName Uninstall
     }
+  displayName: Remove existing MSMPI
 
 - script: |
     choco install msys2 --params "/InstallDir:c:\msys64" --limit-output
@@ -24,3 +25,9 @@ steps:
   displayName: Install WRF
   inputs:
     filename: .ci\appveyor\install-wrf.bat
+
+- task: PublishPipelineArtifact@0
+  displayName: Publish binaries
+  inputs:
+    artifactName: binaries
+    targetPath: build/install

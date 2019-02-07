@@ -7,3 +7,9 @@ steps:
 
 - script: .ci/azure/scripts/install-wrf.sh
   displayName: Install WRF
+
+- task: PublishPipelineArtifact@0
+  displayName: Publish binaries
+  inputs:
+    artifactName: binaries
+    targetPath: build/install
