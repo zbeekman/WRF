@@ -15,9 +15,9 @@ steps:
 - script: .ci/azure/scripts/install-wrf.sh
   displayName: Install WRF
 
-- task: PublishPipelineArtifact@0
-  displayName: Publish binaries
-  condition: and(succeeded(), eq(variables.BUILD_SYSTEM, 'cmake'))
-  inputs:
-    artifactName: binaries_$(OS_NAME)_$(BUILD_SYSTEM)_$(BUILD_TYPE)_$(MODE)
-    targetPath: build/install/main
+#- task: PublishPipelineArtifact@0
+#  displayName: Publish binaries
+#  condition: and(succeeded(), eq(variables.BUILD_SYSTEM, 'cmake'))
+#  inputs:
+#    artifactName: binaries_$(OS_NAME)_$(BUILD_SYSTEM)_$(BUILD_TYPE)_$(MODE)
+#    targetPath: build/install/main

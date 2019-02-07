@@ -15,6 +15,7 @@ steps:
       echo "Uninstalling $($p.Name)"
       Invoke-CimMethod -InputObject $p -MethodName Uninstall
     }
+  condition: and(succeeded(), eq(variables.MODE, 'dmpar'))
   displayName: Remove existing MSMPI
 
 - script: |
@@ -32,8 +33,8 @@ steps:
   inputs:
     filename: .ci\appveyor\install-wrf.bat
 
-- task: PublishPipelineArtifact@0
-  displayName: Publish binaries
-  inputs:
-    artifactName: binaries_$(OS_NAME)_$(BUILD_SYSTEM)_$(BUILD_TYPE)_$(MODE)
-    targetPath: build/install/main
+#- task: PublishPipelineArtifact@0
+#  displayName: Publish binaries
+#  inputs:
+#    artifactName: binaries_$(OS_NAME)_$(BUILD_SYSTEM)_$(BUILD_TYPE)_$(MODE)
+#    targetPath: build/install/main

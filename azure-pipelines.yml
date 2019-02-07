@@ -2,20 +2,7 @@ trigger:
 - wrf-cmake
 
 jobs:
-- job: windows_make
-  displayName: Windows (Make)
-  pool:
-    vmImage: vs2017-win2016
-  variables:
-    OS_NAME: windows
-    BUILD_SYSTEM: make
-    BUILD_TYPE: Debug
-    MODE: serial
-  steps:
-  - template: .ci/azure/windows.yml
-
-- job: windows_cmake
-  displayName: Windows (CMake)
+- job: windows_cmake_serial
   pool:
     vmImage: vs2017-win2016
   variables:
@@ -23,6 +10,20 @@ jobs:
     BUILD_SYSTEM: cmake
     BUILD_TYPE: Debug
     MODE: serial
+    GRIB1: 0
+    GRIB2: 1
+    NESTING: basic
+  steps:
+  - template: .ci/azure/windows.yml
+
+- job: windows_cmake_dmpar
+  pool:
+    vmImage: vs2017-win2016
+  variables:
+    OS_NAME: windows
+    BUILD_SYSTEM: cmake
+    BUILD_TYPE: Debug
+    MODE: dmpar
     GRIB1: 0
     GRIB2: 1
     NESTING: basic
@@ -31,8 +32,7 @@ jobs:
 
 # TODO CC/FC are not used for Make builds
 
-- job: ubuntu_make
-  displayName: Ubuntu (Make)
+- job: ubuntu_make_serial
   pool:
     vmImage: ubuntu-16.04
   variables:
@@ -45,8 +45,20 @@ jobs:
   steps:
   - template: .ci/azure/ubuntu.yml
 
-- job: ubuntu_cmake
-  displayName: Ubuntu (CMake)
+- job: ubuntu_make_dmpar
+  pool:
+    vmImage: ubuntu-16.04
+  variables:
+    OS_NAME: linux
+    BUILD_SYSTEM: make
+    BUILD_TYPE: Debug
+    CC: gcc
+    FC: gfortran
+    MODE: dmpar
+  steps:
+  - template: .ci/azure/ubuntu.yml
+
+- job: ubuntu_cmake_serial
   pool:
     vmImage: ubuntu-16.04
   variables:
@@ -62,8 +74,23 @@ jobs:
   steps:
   - template: .ci/azure/ubuntu.yml
 
-- job: macos_make
-  displayName: macOS (Make)
+- job: ubuntu_cmake_dmpar
+  pool:
+    vmImage: ubuntu-16.04
+  variables:
+    OS_NAME: linux
+    BUILD_SYSTEM: cmake
+    BUILD_TYPE: Debug
+    CC: gcc
+    FC: gfortran
+    MODE: dmpar
+    GRIB1: 0
+    GRIB2: 1
+    NESTING: basic
+  steps:
+  - template: .ci/azure/ubuntu.yml
+
+- job: macos_make_serial
   pool:
     vmImage: macos-10.13
   variables:
@@ -76,8 +103,20 @@ jobs:
   steps:
   - template: .ci/azure/macos.yml
 
-- job: macos_cmake
-  displayName: macOS (CMake)
+- job: macos_make_dmpar
+  pool:
+    vmImage: macos-10.13
+  variables:
+    OS_NAME: osx
+    BUILD_SYSTEM: make
+    BUILD_TYPE: Debug
+    CC: gcc-8
+    FC: gfortran-8
+    MODE: dmpar
+  steps:
+  - template: .ci/azure/macos.yml
+
+- job: macos_cmake_serial
   pool:
     vmImage: macos-10.13
   variables:
@@ -87,6 +126,22 @@ jobs:
     CC: gcc-8
     FC: gfortran-8
     MODE: serial
+    GRIB1: 0
+    GRIB2: 1
+    NESTING: basic
+  steps:
+  - template: .ci/azure/macos.yml
+
+- job: macos_cmake_dmpar
+  pool:
+    vmImage: macos-10.13
+  variables:
+    OS_NAME: osx
+    BUILD_SYSTEM: cmake
+    BUILD_TYPE: Debug
+    CC: gcc-8
+    FC: gfortran-8
+    MODE: dmpar
     GRIB1: 0
     GRIB2: 1
     NESTING: basic
