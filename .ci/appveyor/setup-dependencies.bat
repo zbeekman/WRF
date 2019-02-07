@@ -4,7 +4,7 @@
 
 set THIS_FOLDER=%~dp0
 
-if "%MODE:~0,2%"=="dmpar" (
+if "%MODE:~0,2%"=="dm" (
     echo Install MSMPI
     curl -L https://github.com/Microsoft/Microsoft-MPI/releases/download/v10.0/msmpisetup.exe -o msmpisetup.exe || goto :error
     curl -L https://github.com/Microsoft/Microsoft-MPI/releases/download/v10.0/msmpisdk.msi -o msmpisdk.msi || goto :error
