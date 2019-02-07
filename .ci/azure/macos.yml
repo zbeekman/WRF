@@ -1,0 +1,22 @@
+steps:
+- script: |
+    top -l 1 -s 0 | grep PhysMem
+    system_profiler | grep Processor
+    sysctl hw
+    df -h
+  displayName: Dump VM specs
+
+- script: printenv
+  displayName: Dump environment variables
+
+- script: .ci/azure/scripts/setup-dependencies.sh
+  displayName: Install dependencies
+
+- script: .ci/azure/scripts/install-wrf.sh
+  displayName: Install WRF
+
+- task: PublishPipelineArtifact@0
+  displayName: Publish binaries
+  inputs:
+    artifactName: binaries
+    targetPath: build/install

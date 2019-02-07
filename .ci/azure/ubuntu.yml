@@ -1,4 +1,10 @@
 steps:
+- script: |
+    free -m
+    lscpu
+    df -h --total
+  displayName: Dump VM specs
+
 - script: printenv
   displayName: Dump environment variables
 

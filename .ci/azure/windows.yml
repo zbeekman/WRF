@@ -1,4 +1,10 @@
 steps:
+- pwsh:
+    Get-WmiObject Win32_Processor | Select-Object -Property [a-z]*
+    Get-WmiObject Win32_OperatingSystem | Select-Object -Property [a-z]*
+    Get-WmiObject Win32_LogicalDisk
+  displayName: Dump VM specs
+
 - script: set
   displayName: Dump environment variables
 
