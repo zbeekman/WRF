@@ -6,12 +6,8 @@ set -ex
 
 if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 
-    # This is really Python 2.
-    brew uninstall python || true
-
-    # Install latest Python 3.
-    brew update
-    brew install python
+    # Existing python is 2.7, upgrade to 3.
+    brew upgrade python
 
     python3 -V
     pip3 -V

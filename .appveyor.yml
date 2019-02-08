@@ -18,13 +18,8 @@ environment:
       GRIB1: 0
       GRIB2: 1
 
-
 install:
   - call .ci\appveyor\setup-dependencies.bat
 
 build_script:
   - call .ci\appveyor\install-wrf.bat
-
-artifacts:
-  - path: build/install
-    name: WRF
