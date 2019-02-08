@@ -4,6 +4,8 @@
 
 set -ex
 
+# TODO adapt to MSMPI 10 which make some of the below redundant
+
 mkdir /tmp/msmpi && cd /tmp/msmpi
 cp "$MSMPI_INC"/mpi.h .
 sed -i '1s/^/#include <stdint.h>\n/' mpi.h # for __int64 type
