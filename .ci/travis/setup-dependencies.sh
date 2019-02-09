@@ -55,3 +55,7 @@ elif [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 else
     echo "The environment is not recognised"
 fi
+
+if [[ $MODE == dm* ]]; then
+    mpif90 -v
+fi

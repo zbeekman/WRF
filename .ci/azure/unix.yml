@@ -1,0 +1,52 @@
+steps:
+- script: |
+    if [[ $OS_NAME == 'osx' ]]; then
+      top -l 1 -s 0 | grep PhysMem
+      system_profiler | grep Processor
+      sysctl hw
+      df -h
+    else
+      free -m
+      lscpu
+      df -h --total
+    fi
+  displayName: Dump VM specs
+
+- script: printenv
+  displayName: Dump environment variables
+
+- script: .ci/azure/scripts/setup-dependencies.sh
+  displayName: Install dependencies
+
+- script: .ci/azure/scripts/install-wrf.sh
+  displayName: Install WRF
+
+- script: |
+    set -e
+    cd ..
+    git clone --depth=100 --no-single-branch https://github.com/$WPS_REPO.git WPS
+    cd WPS
+    git checkout $WPS_COMMIT
+    .ci/azure/scripts/install-wps.sh
+  displayName: Install WPS
+
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.x'
+
+- script: |
+    git clone --depth=1 --branch=$WATS_BRANCH https://github.com/$WATS_REPO.git wats
+    pip install -r wats/requirements.txt
+  displayName: Install WATS
+
+- script: |
+    if [[ $MODE == dm* ]]; then export MPI_FLAG=--mpi ; fi
+    python wats/wats/main.py run --mode $WATS_MODE --wrf-dir ../WRF --wps-dir . --work-dir wats_work $MPI_FLAG
+  displayName: Run WATS
+
+#- task: PublishPipelineArtifact@0
+#  displayName: Publish binaries
+#  condition: and(succeeded(), eq(variables.BUILD_SYSTEM, 'cmake'))
+#  inputs:
+#    artifactName: binaries_$(OS_NAME)_$(BUILD_SYSTEM)_$(BUILD_TYPE)_$(MODE)
+#    targetPath: build/install/main
