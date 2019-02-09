@@ -93,6 +93,11 @@ elif [ $BUILD_SYSTEM == "make" ]; then
         exit 1
     fi
 
+    # In Azure Pipeline builds, the repository folder is not named after the repository name.
+    # When building WPS in the Make variant, WPS looks for hard-coded folder names of WRF.
+    # To make WPS happy, we symlink the repository to the "WRF" folder.
+    ln -sf `pwd` ../WRF
+
 else
     echo "Unknown system: ${system}"
     exit 1
