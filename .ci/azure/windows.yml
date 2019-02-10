@@ -43,7 +43,9 @@ steps:
     cd WPS
     git checkout %WPS_COMMIT%
     git log --oneline -n 1
-    call .ci\appveyor\install-wps.bat
+  displayName: Download WPS
+
+- script: call ..\WPS\.ci\appveyor\install-wps.bat
   displayName: Install WPS
 
 - task: UsePythonVersion@0
