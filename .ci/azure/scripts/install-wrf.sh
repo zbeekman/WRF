@@ -4,6 +4,9 @@
 
 set -ex
 
+SCRIPTDIR=$(dirname "$0")
+cd $SCRIPTDIR/../../..
+
 if [ $BUILD_SYSTEM == "cmake" ]; then
 
     mkdir build && cd build
