@@ -36,7 +36,9 @@ steps:
     cd WPS
     git checkout $WPS_COMMIT
     git log --oneline -n 1
-    .ci/azure/scripts/install-wps.sh
+  displayName: Download WPS
+
+- script: ../WPS/.ci/azure/scripts/install-wps.sh
   displayName: Install WPS
 
 - task: UsePythonVersion@0
