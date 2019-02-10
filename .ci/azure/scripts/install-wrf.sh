@@ -75,6 +75,10 @@ elif [ $BUILD_SYSTEM == "make" ]; then
     echo "./configure $debug <<< $cfg\n1\n"
     ./configure $debug <<< $cfg$'\n1\n'
 
+    echo "==== configure.wrf ===="
+    cat configure.wrf
+    echo "==== end configure.wrf ===="
+
     echo "./compile em_real"
     ./compile em_real
 
