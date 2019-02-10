@@ -34,6 +34,7 @@ steps:
     git clone --depth=100 --no-single-branch https://github.com/$WPS_REPO.git WPS
     cd WPS
     git checkout $WPS_COMMIT
+    git log --oneline -n 1
     .ci/azure/scripts/install-wps.sh
   displayName: Install WPS
 
