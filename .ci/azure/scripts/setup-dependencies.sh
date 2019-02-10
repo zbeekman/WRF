@@ -4,12 +4,12 @@
 
 set -ex
 
-if [[ $OS_NAME == 'linux' ]]; then
+if [[ $OS_NAME == 'Linux' ]]; then
 
     sudo apt-get update
     sudo apt-get install gfortran libnetcdf-dev libnetcdff-dev netcdf-bin libpng-dev libjasper-dev
 
-    if [ $BUILD_SYSTEM == "make" ]; then
+    if [ $BUILD_SYSTEM == 'Make' ]; then
         sudo apt-get install csh m4 libhdf5-serial-dev
     fi
 
@@ -20,7 +20,7 @@ if [[ $OS_NAME == 'linux' ]]; then
     nc-config --all
     nf-config --all
 
-elif [[ $OS_NAME == 'osx' ]]; then
+elif [[ $OS_NAME == 'macOS' ]]; then
 
     # If c++ is already present on the system, homebrew fails to install gcc.
     # Use the `-f` flag in case c++ is not present to avoid errors.

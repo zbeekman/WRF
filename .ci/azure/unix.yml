@@ -1,64 +1,78 @@
-steps:
-- script: |
-    if [[ $OS_NAME == 'osx' ]]; then
-      sw_vers
-      top -l 1 -s 0 | grep PhysMem
-      sysctl hw
-      df -h
-    else
-      lsb_release -a
-      free -m
-      lscpu
-      df -h --total
-    fi
-  displayName: Dump VM specs
+jobs:
+- job: ${{ parameters.OS_NAME }}_${{ parameters.BUILD_SYSTEM }}_${{ parameters.BUILD_TYPE }}_${{ parameters.MODE }}
+  displayName: ${{ parameters.OS_NAME }} ${{ parameters.BUILD_SYSTEM }} [${{ parameters.BUILD_TYPE }}, ${{ parameters.MODE }}]
 
-- script: printenv
-  displayName: Dump environment variables
+  pool:
+    ${{ if eq(parameters.OS_NAME, 'Linux') }}:
+      vmImage: ubuntu-16.04
+    ${{ if eq(parameters.OS_NAME, 'macOS') }}:
+      vmImage: macos-10.13
 
-- script: .ci/azure/scripts/setup-dependencies.sh
-  displayName: Install dependencies
+  variables:
+    ${{ each pair in parameters }}:
+      ${{ pair.key }}: ${{ pair.value }}
 
-- script: .ci/azure/scripts/install-wrf.sh
-  displayName: Install WRF
+  steps:
+  - script: |
+      if [[ $OS_NAME == 'macOS' ]]; then
+        sw_vers
+        top -l 1 -s 0 | grep PhysMem
+        sysctl hw
+        df -h
+      else
+        lsb_release -a
+        free -m
+        lscpu
+        df -h --total
+      fi
+    displayName: Dump VM specs
 
-# In Azure Pipeline builds, the repository folder is not named after the repository name.
-# When building WPS in the Make variant, WPS looks for hard-coded folder names of WRF.
-# To make WPS happy but also to avoid having to pass a different folder to the CMake config,
-# we symlink the repository to the "WRF" folder.
-- script: ln -sf `pwd` ../WRF
-  displayName: Symlink repository as "WRF" for convenience
+  - script: printenv
+    displayName: Dump environment variables
 
-- script: |
-    set -e
-    cd ..
-    git clone --depth=100 --no-single-branch https://github.com/$WPS_REPO.git WPS
-    cd WPS
-    git checkout $WPS_COMMIT
-    git log --oneline -n 1
-  displayName: Download WPS
+  - script: .ci/azure/scripts/setup-dependencies.sh
+    displayName: Install dependencies
 
-- script: ../WPS/.ci/azure/scripts/install-wps.sh
-  displayName: Install WPS
+  - script: .ci/azure/scripts/install-wrf.sh
+    displayName: Install WRF
 
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '3.x'
+  # In Azure Pipeline builds, the repository folder is not named after the repository name.
+  # When building WPS in the Make variant, WPS looks for hard-coded folder names of WRF.
+  # To make WPS happy but also to avoid having to pass a different folder to the CMake config,
+  # we symlink the repository to the "WRF" folder.
+  - script: ln -sf `pwd` ../WRF
+    displayName: Symlink repository as "WRF" for convenience
 
-- script: |
-    git clone --depth=1 --branch=$WATS_BRANCH https://github.com/$WATS_REPO.git wats
-    pip install -r wats/requirements.txt
-  displayName: Install WATS
+  - script: |
+      set -e
+      cd ..
+      git clone --depth=100 --no-single-branch https://github.com/$WPS_REPO.git WPS
+      cd WPS
+      git checkout $WPS_COMMIT
+      git log --oneline -n 1
+    displayName: Download WPS
 
-- script: |
-    if [[ $MODE == dm* ]]; then export MPI_FLAG=--mpi ; fi
-    if [[ $BUILD_SYSTEM == cmake ]]; then dir_suffix=build/install ; fi
-    python wats/wats/main.py run --mode $WATS_MODE --wrf-dir ./$dir_suffix --wps-dir ../WPS/$dir_suffix --work-dir wats_work $MPI_FLAG
-  displayName: Run WATS
+  - script: ../WPS/.ci/azure/scripts/install-wps.sh
+    displayName: Install WPS
 
-#- task: PublishPipelineArtifact@0
-#  displayName: Publish binaries
-#  condition: and(succeeded(), eq(variables.BUILD_SYSTEM, 'cmake'))
-#  inputs:
-#    artifactName: binaries_$(OS_NAME)_$(BUILD_SYSTEM)_$(BUILD_TYPE)_$(MODE)
-#    targetPath: build/install/main
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.x'
+
+  - script: |
+      git clone --depth=1 --branch=$WATS_BRANCH https://github.com/$WATS_REPO.git wats
+      pip install -r wats/requirements.txt
+    displayName: Install WATS
+
+  - script: |
+      if [[ $MODE == dm* ]]; then export MPI_FLAG=--mpi ; fi
+      if [[ $BUILD_SYSTEM == CMake ]]; then dir_suffix=build/install ; fi
+      python wats/wats/main.py run --mode $WATS_MODE --wrf-dir ./$dir_suffix --wps-dir ../WPS/$dir_suffix --work-dir wats_work $MPI_FLAG
+    displayName: Run WATS
+
+  #- task: PublishPipelineArtifact@0
+  #  displayName: Publish binaries
+  #  condition: and(succeeded(), eq(variables.BUILD_SYSTEM, 'CMake'))
+  #  inputs:
+  #    artifactName: binaries_$(OS_NAME)_$(BUILD_SYSTEM)_$(BUILD_TYPE)_$(MODE)
+  #    targetPath: build/install/main

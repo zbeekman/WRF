@@ -7,7 +7,7 @@ set -ex
 SCRIPTDIR=$(dirname "$0")
 cd $SCRIPTDIR/../../..
 
-if [ $BUILD_SYSTEM == "cmake" ]; then
+if [ $BUILD_SYSTEM == 'CMake' ]; then
 
     mkdir build && cd build
     cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=install \
@@ -22,7 +22,7 @@ if [ $BUILD_SYSTEM == "cmake" ]; then
     
     cd ..
 
-elif [ $BUILD_SYSTEM == "make" ]; then
+elif [ $BUILD_SYSTEM == 'Make' ]; then
 
     # WRF does not use CC/FC, so let's check what gcc/gfortran actually points to.
     which gcc
@@ -39,7 +39,7 @@ elif [ $BUILD_SYSTEM == "make" ]; then
         debug=
     fi
 
-    if [[ $OS_NAME == 'linux' ]]; then
+    if [[ $OS_NAME == 'Linux' ]]; then
 
         case $MODE in
             serial) cfg=32 ;;
@@ -55,7 +55,7 @@ elif [ $BUILD_SYSTEM == "make" ]; then
         export HDF5=/usr/lib/x86_64-linux-gnu/hdf5/serial
         export NETCDF=`pwd`/netcdf
 
-    elif [[ $OS_NAME == 'osx' ]]; then
+    elif [[ $OS_NAME == 'macOS' ]]; then
 
         case $MODE in
             serial) cfg=15 ;;
