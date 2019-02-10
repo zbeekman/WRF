@@ -48,7 +48,8 @@ steps:
 
 - script: |
     if [[ $MODE == dm* ]]; then export MPI_FLAG=--mpi ; fi
-    python wats/wats/main.py run --mode $WATS_MODE --wrf-dir . --wps-dir ../WPS --work-dir wats_work $MPI_FLAG
+    if [[ $BUILD_SYSTEM == cmake ]]; then dir_suffix=build/install ; fi
+    python wats/wats/main.py run --mode $WATS_MODE --wrf-dir ./$dir_suffix --wps-dir ../WPS/$dir_suffix --work-dir wats_work $MPI_FLAG
   displayName: Run WATS
 
 #- task: PublishPipelineArtifact@0
