@@ -17,10 +17,18 @@ steps:
     vstsFeedPackage: wps.ref
     vstsPackageVersion: $(WATS_WPS_PKG_VERSION)
 
+- bash: |
+    cd wats_wps_outputs
+    find . -type f
+  displayName: List WPS output files
+
+# TODO extend WATS to support WRF cases that require different WPS cases
+#      currently we hard-code --wps-case-output-dir wats_wps_outputs/00
+
 - pwsh: |
     if ($Env:MODE.StartsWith("dm")) { $mpi_flag="--mpi" }
     if ($Env:BUILD_SYSTEM -eq "CMake") { $dir_suffix="build/install" }
-    python wats/wats/main.py run --mode $Env:WATS_MODE --wrf-dir ./$dir_suffix --wps-dir ../WPS/$dir_suffix --wps-case-output-dir wats_wps_outputs/ --work-dir wats_work $mpi_flag
+    python wats/wats/main.py run --mode $Env:WATS_MODE --wrf-dir ./$dir_suffix --wps-dir ../WPS/$dir_suffix --wps-case-output-dir wats_wps_outputs/00 --work-dir wats_work $mpi_flag
   displayName: Run WATS
 
 - task: PublishBuildArtifacts@1
