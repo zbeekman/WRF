@@ -15,6 +15,7 @@ steps:
     downloadDirectory: wats_wps_outputs/
     vstsFeed: WATS
     vstsFeedPackage: wps.ref
+    vstsPackageVersion: $(WATS_WPS_PKG_VERSION)
 
 - pwsh: |
     if ($Env:MODE.StartsWith("dm")) { $mpi_flag="--mpi" }
