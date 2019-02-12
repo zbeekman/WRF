@@ -7,7 +7,7 @@ variables:
   WATS_REPO: WRF-CMake/wats
   WATS_BRANCH: master
   WATS_MODE: wrf
-  WATS_WPS_PKG_VERSION: 0.0.1
+  WATS_WPS_PKG_VERSION: 0.0.2
 
 jobs:
 # TODO CC/FC are not used for Make builds
