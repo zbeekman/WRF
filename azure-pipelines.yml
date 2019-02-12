@@ -9,26 +9,6 @@ variables:
   WATS_MODE: wrf
 
 jobs:
-- template: .ci/azure/windows.yml
-  parameters:
-    OS_NAME: Windows
-    BUILD_SYSTEM: CMake
-    BUILD_TYPE: Debug
-    MODE: serial
-    GRIB1: 0
-    GRIB2: 1
-    NESTING: basic
-
-- template: .ci/azure/windows.yml
-  parameters:
-    OS_NAME: Windows
-    BUILD_SYSTEM: CMake
-    BUILD_TYPE: Debug
-    MODE: dmpar
-    GRIB1: 0
-    GRIB2: 1
-    NESTING: basic
-
 # TODO CC/FC are not used for Make builds
 
 - template: .ci/azure/unix.yml
@@ -114,3 +94,65 @@ jobs:
     GRIB1: 0
     GRIB2: 1
     NESTING: basic
+
+- template: .ci/azure/windows.yml
+  parameters:
+    OS_NAME: Windows
+    BUILD_SYSTEM: CMake
+    BUILD_TYPE: Debug
+    MODE: serial
+    GRIB1: 0
+    GRIB2: 1
+    NESTING: basic
+
+- template: .ci/azure/windows.yml
+  parameters:
+    OS_NAME: Windows
+    BUILD_SYSTEM: CMake
+    BUILD_TYPE: Debug
+    MODE: dmpar
+    GRIB1: 0
+    GRIB2: 1
+    NESTING: basic
+
+- template: .ci/azure/wats_diff.yml
+  parameters:
+    OS_NAME_MAKE: Linux
+    OS_NAME_CMAKE: Linux
+    MODE: serial
+    BUILD_TYPE: Debug
+
+- template: .ci/azure/wats_diff.yml
+  parameters:
+    OS_NAME_MAKE: Linux
+    OS_NAME_CMAKE: Linux
+    MODE: dmpar
+    BUILD_TYPE: Debug
+
+- template: .ci/azure/wats_diff.yml
+  parameters:
+    OS_NAME_MAKE: macOS
+    OS_NAME_CMAKE: macOS
+    MODE: serial
+    BUILD_TYPE: Debug
+
+- template: .ci/azure/wats_diff.yml
+  parameters:
+    OS_NAME_MAKE: macOS
+    OS_NAME_CMAKE: macOS
+    MODE: dmpar
+    BUILD_TYPE: Debug
+
+- template: .ci/azure/wats_diff.yml
+  parameters:
+    OS_NAME_MAKE: Linux
+    OS_NAME_CMAKE: Windows
+    MODE: serial
+    BUILD_TYPE: Debug
+
+- template: .ci/azure/wats_diff.yml
+  parameters:
+    OS_NAME_MAKE: Linux
+    OS_NAME_CMAKE: Windows
+    MODE: dmpar
+    BUILD_TYPE: Debug
