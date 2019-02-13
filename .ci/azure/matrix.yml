@@ -3,6 +3,7 @@ parameters:
   BUILD_SYSTEMS: [Make, CMake]
   BUILD_TYPES: [Debug, Release]
   MODES: [serial, dmpar]
+  NESTING: basic
 
 jobs:
 # TODO CC/FC are not used for Make builds
@@ -22,6 +23,7 @@ jobs:
             CC: gcc
             FC: gfortran
             MODE: ${{ MODE }}
+            NESTING: ${{ NESTING }}
       - template: wats_diff.yml
         parameters:
           ${{ if eq(parameters.OS_NAME, 'Windows') }}:
@@ -29,5 +31,6 @@ jobs:
           ${{ if ne(parameters.OS_NAME, 'Windows') }}:
             OS_NAME_MAKE: ${{ OS_NAME }}
           OS_NAME_CMAKE: ${{ OS_NAME }}
-          MODE: ${{ MODE }}
           BUILD_TYPE: ${{ BUILD_TYPE }}
+          MODE: ${{ MODE }}
+          NESTING: ${{ NESTING }}
