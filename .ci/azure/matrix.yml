@@ -12,9 +12,9 @@ jobs:
     - ${{ each MODE in parameters.MODES }}:
       - ${{ each BUILD_SYSTEM in parameters.BUILD_SYSTEMS }}:
         - ${{ if eq(parameters.OS_NAME, 'Windows') }}:
-            template: .ci/azure/windows.yml
+            template: windows.yml
           ${{ if ne(parameters.OS_NAME, 'Windows') }}:
-            template: .ci/azure/unix.yml
+            template: unix.yml
           parameters:
             OS_NAME: ${{ OS_NAME }}
             BUILD_SYSTEM: ${{ BUILD_SYSTEM }}
@@ -22,7 +22,7 @@ jobs:
             CC: gcc
             FC: gfortran
             MODE: ${{ MODE }}
-      - template: .ci/azure/wats_diff.yml
+      - template: wats_diff.yml
         parameters:
           ${{ if eq(parameters.OS_NAME, 'Windows') }}:
             OS_NAME_MAKE: Linux
