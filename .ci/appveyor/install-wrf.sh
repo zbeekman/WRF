@@ -11,7 +11,7 @@ mkdir build && cd build
 
 # TODO remove -DMPI_* variables once these get auto-detected
 # Note that -DMODE alone decides whether MPI is used or not.
-CC=gcc FC=gfortran cmake -G "MSYS Makefiles" \
+cmake -G "MSYS Makefiles" \
     -DCMAKE_INSTALL_PREFIX=install -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
     -DMODE=$MODE -DNESTING=${NESTING} \
     -DENABLE_GRIB1=${GRIB1} -DENABLE_GRIB2=${GRIB2} \
