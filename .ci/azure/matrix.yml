@@ -4,6 +4,8 @@ parameters:
   BUILD_TYPES: [Debug, Release]
   MODES: [serial, dmpar]
   NESTING: basic
+  GRIB1: 0
+  GRIB2: 1
 
 jobs:
 # TODO CC/FC are not used for Make builds
@@ -24,6 +26,8 @@ jobs:
             FC: gfortran
             MODE: ${{ MODE }}
             NESTING: ${{ parameters.NESTING }}
+            GRIB1: ${{ parameters.GRIB1 }}
+            GRIB2: ${{ parameters.GRIB2 }}
       - template: wats_diff.yml
         parameters:
           ${{ if eq(parameters.OS_NAME, 'Windows') }}:
@@ -33,4 +37,3 @@ jobs:
           OS_NAME_CMAKE: ${{ OS_NAME }}
           BUILD_TYPE: ${{ BUILD_TYPE }}
           MODE: ${{ MODE }}
-          NESTING: ${{ parameters.NESTING }}
