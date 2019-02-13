@@ -1,8 +1,10 @@
 parameters:
-  TEMPLATES:
+  templates:
     Linux: unix.yml
     macOS: unix.yml
     Windows: windows.yml
+  
+  # TODO CC/FC are not used for Make builds
   Linux:
     CC: gcc
     FC: gfortran
@@ -12,10 +14,12 @@ parameters:
   Windows:
     CC: gcc
     FC: gfortran
+  
   universal:
     NESTING: basic
     GRIB1: 0
     GRIB2: 1
+  
   # loop/matrix parameters
   OS_NAMES: [Linux, macOS, Windows]
   BUILD_SYSTEMS: [Make, CMake]
@@ -23,13 +27,12 @@ parameters:
   MODES: [serial, dmpar]
 
 jobs:
-# TODO CC/FC are not used for Make builds
-
 - ${{ each OS_NAME in parameters.OS_NAMES }}:
   - ${{ each BUILD_TYPE in parameters.BUILD_TYPES }}:
     - ${{ each MODE in parameters.MODES }}:
+      
       - ${{ each BUILD_SYSTEM in parameters.BUILD_SYSTEMS }}:
-        - template: ${{ parameters.TEMPLATES[OS_NAME] }}
+        - template: ${{ parameters.templates[OS_NAME] }}
           parameters:
             OS_NAME: ${{ OS_NAME }}
             BUILD_SYSTEM: ${{ BUILD_SYSTEM }}
@@ -37,6 +40,7 @@ jobs:
             MODE: ${{ MODE }}
             ${{ insert }}: ${{ parameters[OS_NAME] }}
             ${{ insert }}: ${{ parameters.universal }}
+          
       - template: wats_diff.yml
         parameters:
           # For Windows, since there is no Make-based reference, compare against Linux.
