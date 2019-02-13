@@ -29,13 +29,13 @@ jobs:
   - ${{ each BUILD_TYPE in parameters.BUILD_TYPES }}:
     - ${{ each MODE in parameters.MODES }}:
       - ${{ each BUILD_SYSTEM in parameters.BUILD_SYSTEMS }}:
-        - template: ${{ parameters.TEMPLATES[parameters.OS_NAME] }}
+        - template: ${{ parameters.TEMPLATES[OS_NAME] }}
           parameters:
             OS_NAME: ${{ OS_NAME }}
             BUILD_SYSTEM: ${{ BUILD_SYSTEM }}
             BUILD_TYPE: ${{ BUILD_TYPE }}
             MODE: ${{ MODE }}
-            ${{ insert }}: ${{ parameters[parameters.OS_NAME] }}
+            ${{ insert }}: ${{ parameters[OS_NAME] }}
             ${{ insert }}: ${{ parameters.universal }}
       - template: wats_diff.yml
         parameters:
