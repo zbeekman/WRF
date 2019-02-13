@@ -157,3 +157,154 @@ jobs:
     OS_NAME_CMAKE: Windows
     MODE: dmpar
     BUILD_TYPE: Debug
+
+
+# DUPLICATED FOR RELEASE
+# TODO factor this out into a template and use iteration over parameters
+
+
+- template: .ci/azure/unix.yml
+  parameters:
+    OS_NAME: Linux
+    BUILD_SYSTEM: Make
+    BUILD_TYPE: Release
+    CC: gcc
+    FC: gfortran
+    MODE: serial
+
+- template: .ci/azure/unix.yml
+  parameters:
+    OS_NAME: Linux
+    BUILD_SYSTEM: Make
+    BUILD_TYPE: Release
+    CC: gcc
+    FC: gfortran
+    MODE: dmpar
+
+- template: .ci/azure/unix.yml
+  parameters:
+    OS_NAME: Linux
+    BUILD_SYSTEM: CMake
+    BUILD_TYPE: Release
+    CC: gcc
+    FC: gfortran
+    MODE: serial
+    GRIB1: 0
+    GRIB2: 1
+    NESTING: basic
+
+- template: .ci/azure/unix.yml
+  parameters:
+    OS_NAME: Linux
+    BUILD_SYSTEM: CMake
+    BUILD_TYPE: Release
+    CC: gcc
+    FC: gfortran
+    MODE: dmpar
+    GRIB1: 0
+    GRIB2: 1
+    NESTING: basic
+
+- template: .ci/azure/unix.yml
+  parameters:
+    OS_NAME: macOS
+    BUILD_SYSTEM: Make
+    BUILD_TYPE: Release
+    CC: gcc-8
+    FC: gfortran-8
+    MODE: serial
+
+- template: .ci/azure/unix.yml
+  parameters:
+    OS_NAME: macOS
+    BUILD_SYSTEM: Make
+    BUILD_TYPE: Release
+    CC: gcc-8
+    FC: gfortran-8
+    MODE: dmpar
+
+- template: .ci/azure/unix.yml
+  parameters:
+    OS_NAME: macOS
+    BUILD_SYSTEM: CMake
+    BUILD_TYPE: Release
+    CC: gcc-8
+    FC: gfortran-8
+    MODE: serial
+    GRIB1: 0
+    GRIB2: 1
+    NESTING: basic
+
+- template: .ci/azure/unix.yml
+  parameters:
+    OS_NAME: macOS
+    BUILD_SYSTEM: CMake
+    BUILD_TYPE: Release
+    CC: gcc-8
+    FC: gfortran-8
+    MODE: dmpar
+    GRIB1: 0
+    GRIB2: 1
+    NESTING: basic
+
+- template: .ci/azure/windows.yml
+  parameters:
+    OS_NAME: Windows
+    BUILD_SYSTEM: CMake
+    BUILD_TYPE: Release
+    MODE: serial
+    GRIB1: 0
+    GRIB2: 1
+    NESTING: basic
+
+- template: .ci/azure/windows.yml
+  parameters:
+    OS_NAME: Windows
+    BUILD_SYSTEM: CMake
+    BUILD_TYPE: Release
+    MODE: dmpar
+    GRIB1: 0
+    GRIB2: 1
+    NESTING: basic
+
+- template: .ci/azure/wats_diff.yml
+  parameters:
+    OS_NAME_MAKE: Linux
+    OS_NAME_CMAKE: Linux
+    MODE: serial
+    BUILD_TYPE: Release
+
+- template: .ci/azure/wats_diff.yml
+  parameters:
+    OS_NAME_MAKE: Linux
+    OS_NAME_CMAKE: Linux
+    MODE: dmpar
+    BUILD_TYPE: Release
+
+- template: .ci/azure/wats_diff.yml
+  parameters:
+    OS_NAME_MAKE: macOS
+    OS_NAME_CMAKE: macOS
+    MODE: serial
+    BUILD_TYPE: Release
+
+- template: .ci/azure/wats_diff.yml
+  parameters:
+    OS_NAME_MAKE: macOS
+    OS_NAME_CMAKE: macOS
+    MODE: dmpar
+    BUILD_TYPE: Release
+
+- template: .ci/azure/wats_diff.yml
+  parameters:
+    OS_NAME_MAKE: Linux
+    OS_NAME_CMAKE: Windows
+    MODE: serial
+    BUILD_TYPE: Release
+
+- template: .ci/azure/wats_diff.yml
+  parameters:
+    OS_NAME_MAKE: Linux
+    OS_NAME_CMAKE: Windows
+    MODE: dmpar
+    BUILD_TYPE: Release
