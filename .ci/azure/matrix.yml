@@ -23,7 +23,7 @@ jobs:
             CC: gcc
             FC: gfortran
             MODE: ${{ MODE }}
-            NESTING: ${{ NESTING }}
+            NESTING: ${{ parameters.NESTING }}
       - template: wats_diff.yml
         parameters:
           ${{ if eq(parameters.OS_NAME, 'Windows') }}:
@@ -33,4 +33,4 @@ jobs:
           OS_NAME_CMAKE: ${{ OS_NAME }}
           BUILD_TYPE: ${{ BUILD_TYPE }}
           MODE: ${{ MODE }}
-          NESTING: ${{ NESTING }}
+          NESTING: ${{ parameters.NESTING }}
