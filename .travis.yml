@@ -19,7 +19,7 @@ jobs:
       dist: trusty
       sudo: required
       env:
-        - SYSTEM=make
+        - BUILD_SYSTEM=Make
         - BUILD_TYPE=Debug
         - CC=gcc
         - FC=gfortran
@@ -30,7 +30,7 @@ jobs:
       dist: trusty
       sudo: required
       env:
-        - SYSTEM=make
+        - BUILD_SYSTEM=Make
         - BUILD_TYPE=Debug
         - CC=gcc
         - FC=gfortran
@@ -41,7 +41,7 @@ jobs:
       osx_image: xcode9.2 # https://github.com/travis-ci/travis-ci/issues/9640
       language: generic
       env:
-        - SYSTEM=make
+        - BUILD_SYSTEM=Make
         - BUILD_TYPE=Debug
         - CC=gcc-8 # GNU via Homebrew
         - FC=gfortran-8
@@ -52,7 +52,7 @@ jobs:
       osx_image: xcode9.2 # https://github.com/travis-ci/travis-ci/issues/9640
       language: generic
       env:
-        - SYSTEM=make
+        - BUILD_SYSTEM=Make
         - BUILD_TYPE=Debug
         - CC=gcc-8 # GNU via Homebrew
         - FC=gfortran-8
@@ -65,7 +65,7 @@ jobs:
       dist: trusty
       sudo: required # Need sudo to install netcdf via apt as not whitelisted 
       env:
-        - SYSTEM=cmake
+        - BUILD_SYSTEM=CMake
         - BUILD_TYPE=Debug
         - CC=gcc
         - FC=gfortran
@@ -79,7 +79,7 @@ jobs:
       dist: trusty
       sudo: required
       env:
-        - SYSTEM=cmake
+        - BUILD_SYSTEM=CMake
         - BUILD_TYPE=Debug
         - CC=gcc
         - FC=gfortran
@@ -93,7 +93,7 @@ jobs:
       osx_image: xcode9.2 # https://github.com/travis-ci/travis-ci/issues/9640
       language: generic
       env:
-        - SYSTEM=cmake
+        - BUILD_SYSTEM=CMake
         - BUILD_TYPE=Debug
         - CC=gcc-8 # GNU via Homebrew
         - FC=gfortran-8
@@ -107,7 +107,7 @@ jobs:
       osx_image: xcode9.2 # https://github.com/travis-ci/travis-ci/issues/9640
       language: generic
       env:
-        - SYSTEM=cmake
+        - BUILD_SYSTEM=CMake
         - BUILD_TYPE=Debug
         - CC=gcc-8 # GNU via Homebrew
         - FC=gfortran-8

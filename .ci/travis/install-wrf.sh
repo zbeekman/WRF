@@ -4,7 +4,7 @@
 
 set -ex
 
-if [ $SYSTEM == "cmake" ]; then
+if [ $BUILD_SYSTEM == "CMake" ]; then
 
     mkdir build && cd build
     cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=install \
@@ -19,7 +19,7 @@ if [ $SYSTEM == "cmake" ]; then
     
     cd ..
 
-elif [ $SYSTEM == "make" ]; then
+elif [ $BUILD_SYSTEM == "Make" ]; then
 
     export NETCDF4=1 # Compile with netCDF-4 support
     export WRF_EM_CORE=1 # Select ARW core
@@ -68,6 +68,6 @@ elif [ $SYSTEM == "make" ]; then
     ./compile em_real
 
 else
-    echo "Unknown system: ${system}"
+    echo "Unknown system: ${BUILD_SYSTEM}"
     exit 1
 fi

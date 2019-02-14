@@ -5,6 +5,9 @@ image: Visual Studio 2017 # See https://www.appveyor.com/docs/build-environment/
 clone_depth: 50
 
 environment:
+  global:
+    BUILD_SYSTEM: CMake
+
   matrix:
     - BUILD_TYPE: Debug
       CC: gcc
