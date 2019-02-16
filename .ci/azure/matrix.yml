@@ -21,7 +21,7 @@ parameters:
     GRIB2: 1
   
   # loop/matrix parameters
-  OS_NAMES: [Linux, macOS, Windows]
+  OS_NAMES: [Windows, Linux, macOS]
   BUILD_SYSTEMS: [Make, CMake]
   BUILD_TYPES: [Debug, Release]
   MODES: [serial, dmpar]
