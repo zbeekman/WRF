@@ -117,6 +117,7 @@ jobs:
         - NESTING=basic
 
 before_install:
+  - .ci/travis/dump-vm-specs.sh
   - .ci/travis/setup-dependencies.sh
 
 install:

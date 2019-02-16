@@ -48,6 +48,7 @@ elif [[ $OS_NAME == 'macOS' ]]; then
 
 else
     echo "The environment is not recognised"
+    exit 1
 fi
 
 if [[ $MODE == dm* ]]; then

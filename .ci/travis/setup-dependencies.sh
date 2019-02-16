@@ -37,6 +37,9 @@ elif [[ $TRAVIS_OS_NAME == 'osx' ]]; then
     # Use the `-f` flag in case c++ is not present to avoid errors.
     rm -f /usr/local/include/c++
 
+    # disable automatic cleanup, just takes time
+    export HOMEBREW_NO_INSTALL_CLEANUP=1
+
     brew update
     brew install gcc netcdf jasper
 
@@ -54,6 +57,7 @@ elif [[ $TRAVIS_OS_NAME == 'osx' ]]; then
 
 else
     echo "The environment is not recognised"
+    exit 1
 fi
 
 if [[ $MODE == dm* ]]; then

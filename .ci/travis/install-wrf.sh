@@ -67,6 +67,21 @@ elif [ $BUILD_SYSTEM == "Make" ]; then
     echo "./compile em_real"
     ./compile em_real
 
+    if [ ! -f main/wrf.exe ]; then
+        # Try again in case we ran out of memory, this time without parallel compilation.
+        export J=
+        ./compile em_real
+    fi
+
+    if [ ! -f main/wrf.exe ]; then
+        # Last chance.
+        ./compile em_real
+    fi
+
+    if [ ! -f main/wrf.exe ]; then
+        exit 1
+    fi
+
 else
     echo "Unknown system: ${BUILD_SYSTEM}"
     exit 1
