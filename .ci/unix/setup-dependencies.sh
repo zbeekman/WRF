@@ -4,6 +4,8 @@
 
 set -ex
 
+SCRIPTDIR=$(dirname "$0")
+
 if [ "$(uname)" == "Linux" ]; then
 
     sudo apt-get update
@@ -46,11 +48,10 @@ elif [ "$(uname)" == "Darwin" ]; then
     export HOMEBREW_NO_INSTALL_CLEANUP=1
 
     brew update
-    brew install coreutils gcc netcdf jasper libpng
-
-    if [[ $MODE == dm* ]]; then
-        brew install mpich
-    fi
+    # Since "brew install" can't silently ignore already installed packages
+    # we're using this instead.
+    # See https://github.com/Homebrew/brew/issues/2491#issuecomment-294264745.
+    brew bundle $SCRIPTDIR/Brewfile
 
     nc-config --all
 

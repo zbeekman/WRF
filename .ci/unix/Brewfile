@@ -1,0 +1,6 @@
+brew "coreutils"
+brew "gcc"
+brew "netcdf"
+brew "jasper"
+brew "libpng"
+brew "mpich"
