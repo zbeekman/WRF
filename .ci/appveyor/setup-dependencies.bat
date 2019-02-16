@@ -1,33 +1,34 @@
-:: Copyright 2018 M. Riechert and D. Meyer. Licensed under the MIT License.
+@echo off
+rem Copyright 2018 M. Riechert and D. Meyer. Licensed under the MIT License.
 
-:: Adapted from https://github.com/meta-toolkit/meta/blob/c7019401185cdfa15e1193aad821894c35a83e3f/.appveyor.yml
+rem Adapted from https://github.com/meta-toolkit/meta/blob/c7019401185cdfa15e1193aad821894c35a83e3f/.appveyor.yml
 
 set THIS_FOLDER=%~dp0
 
 if "%MODE:~0,2%"=="dm" (
     echo Install MSMPI
-    :: v10 currently unusable (https://github.com/Microsoft/Microsoft-MPI/issues/7)
-    :: curl -L https://github.com/Microsoft/Microsoft-MPI/releases/download/v10.0/msmpisetup.exe -o msmpisetup.exe || goto :error
-    :: curl -L https://github.com/Microsoft/Microsoft-MPI/releases/download/v10.0/msmpisdk.msi -o msmpisdk.msi || goto :error
-    :: v9.0.1
+    rem v10 currently unusable (https://github.com/Microsoft/Microsoft-MPI/issues/7)
+    rem powershell -c Invoke-WebRequest -OutFile msmpisetup.exe https://github.com/Microsoft/Microsoft-MPI/releases/download/v10.0/msmpisetup.exe || goto :error
+    rem powershell -c Invoke-WebRequest -OutFile msmpisdk.msi https://github.com/Microsoft/Microsoft-MPI/releases/download/v10.0/msmpisdk.msi || goto :error
+    rem v9.0.1
     powershell -c Invoke-WebRequest -OutFile msmpisetup.exe https://download.microsoft.com/download/4/A/6/4A6AAED8-200C-457C-AB86-37505DE4C90D/msmpisetup.exe || goto :error
     powershell -c Invoke-WebRequest -OutFile msmpisdk.msi https://download.microsoft.com/download/4/A/6/4A6AAED8-200C-457C-AB86-37505DE4C90D/msmpisdk.msi || goto :error
     msmpisetup.exe -unattend || goto :error
     msmpisdk.msi /passive || goto :error
 )
 
-:: Remember original PATH as refreshenv will replace it with the state from the system registry
+rem Remember original PATH as refreshenv will replace it with the state from the system registry
 set OLDPATH=%PATH%
 
-:: MSMPI addds global vars like MSMPI_INC -- need to propagate these changes to current shell.
-:: Use Chocolatey cmd (https://stackoverflow.com/a/44807922).
-:: Note: This overrides PATH, hence PATH is updated after this.
+rem MSMPI addds global vars like MSMPI_INC -- need to propagate these changes to current shell.
+rem Use Chocolatey cmd (https://stackoverflow.com/a/44807922).
+rem Note: This overrides PATH, hence PATH is updated after this.
 call refreshenv.cmd
 
-:: Restore old PATH after refreshenv in case other scripts modified it already
+rem Restore old PATH after refreshenv in case other scripts modified it already
 set PATH=%OLDPATH%
 
-:: Setup MinGW shell
+rem Setup MinGW shell
 set PATH=C:\msys64\usr\bin;%PATH%
 set MSYSTEM=MINGW64
 
