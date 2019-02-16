@@ -47,7 +47,7 @@ elif [ $BUILD_SYSTEM == 'Make' ]; then
             *) echo "Invalid: $MODE" ;;
         esac
 
-        if [ "$(uname -c -s)" == "trusty" ]; then
+        if [ "$(lsb_release -c -s)" == "trusty" ]; then
             export HDF5=/usr
             export NETCDF=/usr
         else

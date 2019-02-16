@@ -9,7 +9,7 @@ if [ "$(uname)" == "Linux" ]; then
     sudo apt-get update
     sudo apt-get install gfortran libpng-dev libjasper-dev 
 
-    if [ "$(uname -c -s)" == "trusty" ]; then
+    if [ "$(lsb_release -c -s)" == "trusty" ]; then
         # Ubuntu 14.04 provides netCDF 4.1. All versions of netCDF <= 4.1 contain
         # all components (incl. Fortran libraries), whereas netCDF > 4.1 is split
         # up into separate libraries.
