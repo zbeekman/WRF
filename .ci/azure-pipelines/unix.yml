@@ -43,7 +43,7 @@ jobs:
       git log --oneline -n 1
     displayName: Download WPS
 
-  - script: ../WPS/.ci/azure/scripts/install-wps.sh
+  - script: ../WPS/.ci/unix/install-wps.sh
     displayName: Install WPS
 
   - template: wats_run.yml
