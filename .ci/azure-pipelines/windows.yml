@@ -12,10 +12,10 @@ jobs:
       ${{ pair.key }}: ${{ pair.value }}
 
   steps:
-  - pwsh: .ci\appveyor\dump-vm-specs.ps1
+  - pwsh: .ci\windows\dump-vm-specs.ps1
     displayName: Dump VM specs
 
-  - pwsh: .ci\appveyor\increase-pagefile-size.ps1
+  - pwsh: .ci\windows\increase-pagefile-size.ps1
     displayName: Increase page file size
 
   - script: set
@@ -38,13 +38,13 @@ jobs:
   - task: BatchScript@1
     displayName: Setup dependencies
     inputs:
-      filename: .ci\appveyor\setup-dependencies.bat
+      filename: .ci\windows\setup-dependencies.bat
       modifyEnvironment: true
 
-  - pwsh: .ci\appveyor\dump-vm-specs.ps1
+  - pwsh: .ci\windows\dump-vm-specs.ps1
     displayName: Dump VM specs
 
-  - script: call .ci\appveyor\install-wrf.bat
+  - script: call .ci\windows\install-wrf.bat
     displayName: Install WRF
 
   # In Azure Pipeline builds, the repository folder is not named after the repository name.
@@ -61,7 +61,7 @@ jobs:
       git log --oneline -n 1
     displayName: Download WPS
 
-  - script: call ..\WPS\.ci\appveyor\install-wps.bat
+  - script: call ..\WPS\.ci\windows\install-wps.bat
     displayName: Install WPS
 
   - template: wats_run.yml

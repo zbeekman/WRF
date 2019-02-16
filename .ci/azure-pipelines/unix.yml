@@ -15,16 +15,16 @@ jobs:
       ${{ pair.key }}: ${{ pair.value }}
 
   steps:
-  - script: .ci/travis/dump-vm-specs.sh
+  - script: .ci/unix/dump-vm-specs.sh
     displayName: Dump VM specs
 
   - script: printenv
     displayName: Dump environment variables
 
-  - script: .ci/azure/scripts/setup-dependencies.sh
+  - script: .ci/unix/setup-dependencies.sh
     displayName: Install dependencies
 
-  - script: .ci/azure/scripts/install-wrf.sh
+  - script: .ci/unix/install-wrf.sh
     displayName: Install WRF
 
   # In Azure Pipeline builds, the repository folder is not named after the repository name.

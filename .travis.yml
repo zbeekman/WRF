@@ -3,13 +3,6 @@
 language: python
 python: "3.6"
 
-env:
-  global:
-    - WRF_REPO=$TRAVIS_REPO_SLUG
-    - WPS_REPO=WRF-CMake/WPS
-    - WRF_COMMIT=$TRAVIS_COMMIT
-    - WPS_COMMIT=wps-cmake
-
 jobs:
   include:
     # Make builds
@@ -117,10 +110,10 @@ jobs:
         - NESTING=basic
 
 before_install:
-  - .ci/travis/dump-vm-specs.sh
-  - .ci/travis/setup-dependencies.sh
+  - .ci/unix/dump-vm-specs.sh
+  - .ci/unix/setup-dependencies.sh
 
 install:
-  - .ci/travis/install-wrf.sh
+  - .ci/unix/install-wrf.sh
 
 script: skip

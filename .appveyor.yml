@@ -26,10 +26,10 @@ environment:
       GRIB2: 1
 
 install:
-  - ps: .ci\appveyor\dump-vm-specs.ps1
-  - ps: .ci\appveyor\increase-pagefile-size.ps1
-  - call .ci\appveyor\setup-dependencies.bat
-  - ps: .ci\appveyor\dump-vm-specs.ps1
+  - ps: .ci\windows\dump-vm-specs.ps1
+  - ps: .ci\windows\increase-pagefile-size.ps1
+  - call .ci\windows\setup-dependencies.bat
+  - ps: .ci\windows\dump-vm-specs.ps1
 
 build_script:
-  - call .ci\appveyor\install-wrf.bat
+  - call .ci\windows\install-wrf.bat

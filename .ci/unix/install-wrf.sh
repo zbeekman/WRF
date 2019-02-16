@@ -4,7 +4,10 @@
 
 set -ex
 
-if [ $BUILD_SYSTEM == "CMake" ]; then
+SCRIPTDIR=$(dirname "$0")
+cd $SCRIPTDIR/../..
+
+if [ $BUILD_SYSTEM == 'CMake' ]; then
 
     mkdir build && cd build
     cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DCMAKE_INSTALL_PREFIX=install \
@@ -19,7 +22,13 @@ if [ $BUILD_SYSTEM == "CMake" ]; then
     
     cd ..
 
-elif [ $BUILD_SYSTEM == "Make" ]; then
+elif [ $BUILD_SYSTEM == 'Make' ]; then
+
+    # WRF does not use CC/FC, so let's check what gcc/gfortran actually points to.
+    which gcc
+    gcc --version
+    which gfortran
+    gfortran --version
 
     export NETCDF4=1 # Compile with netCDF-4 support
     export WRF_EM_CORE=1 # Select ARW core
@@ -30,7 +39,7 @@ elif [ $BUILD_SYSTEM == "Make" ]; then
         debug=
     fi
 
-    if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
+    if [ "$(uname)" == "Linux" ]; then
 
         case $MODE in
             serial) cfg=32 ;;
@@ -38,10 +47,20 @@ elif [ $BUILD_SYSTEM == "Make" ]; then
             *) echo "Invalid: $MODE" ;;
         esac
 
-        export HDF5=/usr
-        export NETCDF=/usr
+        if [ "$(uname -c -s)" == "trusty" ]; then
+            export HDF5=/usr
+            export NETCDF=/usr
+        else
+            # Need to create symlinked folder hierarchy that WRF expects...
+            mkdir netcdf
+            ln -s /usr/include netcdf/include
+            ln -s /usr/lib/x86_64-linux-gnu netcdf/lib
 
-    elif [[ $TRAVIS_OS_NAME == 'osx' ]]; then
+            export HDF5=/usr/lib/x86_64-linux-gnu/hdf5/serial
+            export NETCDF=`pwd`/netcdf
+        fi
+
+    elif [ "$(uname)" == "Darwin" ]; then
 
         case $MODE in
             serial) cfg=15 ;;
@@ -53,7 +72,7 @@ elif [ $BUILD_SYSTEM == "Make" ]; then
 
         # macOS doesn't support "readlink -f" and brew's coreutils provides a replacement called greadlink.
         # We use readlink to get the absolute path of the netCDF library folder as WRF's setup scripts
-        # can't handle symlinks properly. Note that coreutils is already installed on Travis CI.
+        # can't handle symlinks properly.
         export NETCDF=$(greadlink -f $(brew --prefix netcdf)) # see comment above about greadlink
 
     else
@@ -63,6 +82,10 @@ elif [ $BUILD_SYSTEM == "Make" ]; then
     # 1 = basic nesting
     echo "./configure $debug <<< $cfg\n1\n"
     ./configure $debug <<< $cfg$'\n1\n'
+
+    echo "==== configure.wrf ===="
+    cat configure.wrf
+    echo "==== end configure.wrf ===="
 
     echo "./compile em_real"
     ./compile em_real
@@ -83,6 +106,6 @@ elif [ $BUILD_SYSTEM == "Make" ]; then
     fi
 
 else
-    echo "Unknown system: ${BUILD_SYSTEM}"
+    echo "Unknown system: $(uname)"
     exit 1
 fi
