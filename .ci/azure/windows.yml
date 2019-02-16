@@ -12,11 +12,11 @@ jobs:
       ${{ pair.key }}: ${{ pair.value }}
 
   steps:
-  - pwsh: |
-      Get-CimInstance Win32_Processor | Select-Object -Property [a-z]*
-      Get-CimInstance Win32_OperatingSystem | Select-Object -Property [a-z]*
-      Get-CimInstance Win32_LogicalDisk
+  - pwsh: .ci\appveyor\dump-vm-specs.ps1
     displayName: Dump VM specs
+
+  - pwsh: .ci\appveyor\increase-pagefile-size.ps1
+    displayName: Increase page file size
 
   - script: set
     displayName: Dump environment variables

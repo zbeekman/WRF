@@ -26,6 +26,8 @@ environment:
       GRIB2: 1
 
 install:
+  - ps: .ci\appveyor\dump-vm-specs.ps1
+  - ps: .ci\appveyor\increase-pagefile-size.ps1
   - call .ci\appveyor\setup-dependencies.bat
 
 build_script:
