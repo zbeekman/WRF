@@ -9,8 +9,8 @@ if "%MODE:~0,2%"=="dm" (
     :: v10 currently unusable (https://github.com/Microsoft/Microsoft-MPI/issues/7)
     :: curl -L https://github.com/Microsoft/Microsoft-MPI/releases/download/v10.0/msmpisetup.exe -o msmpisetup.exe || goto :error
     :: curl -L https://github.com/Microsoft/Microsoft-MPI/releases/download/v10.0/msmpisdk.msi -o msmpisdk.msi || goto :error
-    curl -L https://download.microsoft.com/download/4/A/6/4A6AAED8-200C-457C-AB86-37505DE4C90D/msmpisetup.exe -o msmpisetup.exe || goto :error
-    curl -L https://download.microsoft.com/download/4/A/6/4A6AAED8-200C-457C-AB86-37505DE4C90D/msmpisdk.msi -o msmpisdk.msi || goto :error
+    curl -L https://raw.githubusercontent.com/WRF-CMake/msmpi/v9.0.1/msmpisetup.exe -o msmpisetup.exe || goto :error
+    curl -L https://raw.githubusercontent.com/WRF-CMake/msmpi/v9.0.1/msmpisdk.msi -o msmpisdk.msi || goto :error
     msmpisetup.exe -unattend || goto :error
     msmpisdk.msi /passive || goto :error
 )
