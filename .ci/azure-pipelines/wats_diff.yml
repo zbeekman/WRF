@@ -6,7 +6,7 @@ jobs:
     vmImage: ubuntu-16.04
   
   dependsOn:
-  - ${{ parameters.OS_NAME_LEFT }}_${{ parameters.BUILD_SYSTEM_LEFT }}_${{ parameters.BUILD_TYPE }}_${{ parameters.MODE_LEFT }}
+  - ${{ parameters.OS_NAME_LEFT }}_${{ parameters.BUILD_SYSTEM_LEFT }}_${{ parameters.BUILD_TYPE }}_${{ parameters.MODE }}
   - ${{ parameters.OS_NAME_RIGHT }}_${{ parameters.BUILD_SYSTEM_RIGHT }}_${{ parameters.BUILD_TYPE }}_${{ parameters.MODE }}
   
   steps:
