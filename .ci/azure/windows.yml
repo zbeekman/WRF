@@ -15,7 +15,7 @@ jobs:
   - pwsh: .ci\appveyor\dump-vm-specs.ps1
     displayName: Dump VM specs
 
-  - pwsh: .ci\appveyor\increase-pagefile-size.ps1
+  - pwsh: .ci\azure\scripts\increase-pagefile-size.ps1
     displayName: Increase page file size
 
   - script: set
@@ -40,6 +40,9 @@ jobs:
     inputs:
       filename: .ci\appveyor\setup-dependencies.bat
       modifyEnvironment: true
+
+  - pwsh: .ci\appveyor\dump-vm-specs.ps1
+    displayName: Dump VM specs
 
   - script: call .ci\appveyor\install-wrf.bat
     displayName: Install WRF

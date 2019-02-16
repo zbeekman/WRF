@@ -2,6 +2,8 @@ Get-CimInstance Win32_Processor |
     Select-Object Name, NumberOfCores, NumberOfLogicalProcessors | 
     Format-List
 
+Write-Host "Working directory: $(pwd)"
+
 Get-CimInstance -Class Win32_LogicalDisk |
     Where-Object {$_.DriveType -ne 5} |
     Select-Object Name, FileSystem, VolumeDirty, `
