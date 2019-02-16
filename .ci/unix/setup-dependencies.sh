@@ -51,7 +51,7 @@ elif [ "$(uname)" == "Darwin" ]; then
     # Since "brew install" can't silently ignore already installed packages
     # we're using this instead.
     # See https://github.com/Homebrew/brew/issues/2491#issuecomment-294264745.
-    brew bundle $SCRIPTDIR/Brewfile
+    brew bundle --file=$SCRIPTDIR/Brewfile
 
     nc-config --all
 
