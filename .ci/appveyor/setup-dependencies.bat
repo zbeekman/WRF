@@ -6,8 +6,11 @@ set THIS_FOLDER=%~dp0
 
 if "%MODE:~0,2%"=="dm" (
     echo Install MSMPI
-    curl -L https://github.com/Microsoft/Microsoft-MPI/releases/download/v10.0/msmpisetup.exe -o msmpisetup.exe || goto :error
-    curl -L https://github.com/Microsoft/Microsoft-MPI/releases/download/v10.0/msmpisdk.msi -o msmpisdk.msi || goto :error
+    :: v10 currently unusable (https://github.com/Microsoft/Microsoft-MPI/issues/7)
+    :: curl -L https://github.com/Microsoft/Microsoft-MPI/releases/download/v10.0/msmpisetup.exe -o msmpisetup.exe || goto :error
+    :: curl -L https://github.com/Microsoft/Microsoft-MPI/releases/download/v10.0/msmpisdk.msi -o msmpisdk.msi || goto :error
+    curl -L https://download.microsoft.com/download/4/A/6/4A6AAED8-200C-457C-AB86-37505DE4C90D/msmpisetup.exe -o msmpisetup.exe || goto :error
+    curl -L https://download.microsoft.com/download/4/A/6/4A6AAED8-200C-457C-AB86-37505DE4C90D/msmpisdk.msi -o msmpisdk.msi || goto :error
     msmpisetup.exe -unattend || goto :error
     msmpisdk.msi /passive || goto :error
 )
@@ -33,16 +36,9 @@ bash -lc "pacman --noconfirm --needed -S mingw-w64-x86_64-toolchain mingw64/ming
 bash -lc "pacman --noconfirm --needed -S mingw-w64-x86_64-libpng mingw-w64-x86_64-libjpeg-turbo mingw-w64-x86_64-jasper" || goto :error
 bash -lc "pacman --noconfirm --needed -S mingw-w64-x86_64-hdf5 mingw-w64-x86_64-libtool tar" || goto :error
 
-:: temporary fix to handle DLL hell issue:
-:: https://github.com/Alexpux/MINGW-packages/issues/4458
-:: https://github.com/appveyor/ci/issues/2571
-::del c:\windows\system32\libcrypto-1_1-x64.dll
-::del c:\windows\system32\libssl-1_1-x64.dll
-::bash -lc "pacman --noconfirm -S mingw64/mingw-w64-x86_64-openssl" || goto :error
-
 if "%MODE:~0,2%"=="dm" (
     echo Patch MSMPI
-    bash -l "%THIS_FOLDER%patch-msmpi.sh" || goto :error
+    bash -l "%THIS_FOLDER%patch-msmpi-v9.sh" || goto :error
     echo Test MSMPI
     bash -l "%THIS_FOLDER%test-msmpi.sh" || goto :error
 )
