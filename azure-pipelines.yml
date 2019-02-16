@@ -10,4 +10,4 @@ variables:
   WATS_WPS_PKG_VERSION: 0.0.2
 
 jobs:
-- template: .ci/azure/matrix.yml
+- template: .ci/azure-pipelines/matrix.yml
