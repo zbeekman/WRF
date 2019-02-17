@@ -1,5 +1,6 @@
-trigger:
-- wrf-cmake
+# Run manually or by schedule only.
+trigger: none
+pr: none
 
 jobs:
 - template: .ci/azure-pipelines/matrix.yml
