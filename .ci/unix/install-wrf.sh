@@ -46,7 +46,7 @@ elif [ $BUILD_SYSTEM == 'Make' ]; then
             smpar)  cfg=33 ;;
             dmpar)  cfg=34 ;;
             dm_sm)  cfg=35 ;;
-            *) echo "Invalid: $MODE" ;;
+            *) echo "Invalid: $MODE"; exit 1 ;;
         esac
 
         if [ "$(lsb_release -c -s)" == "trusty" ]; then
@@ -66,8 +66,10 @@ elif [ $BUILD_SYSTEM == 'Make' ]; then
 
         case $MODE in
             serial) cfg=15 ;;
+            smpar)  cfg=16 ;;
             dmpar)  cfg=17 ;;
-            *) echo "Invalid: $MODE" ;;
+            dm_sm)  cfg=18 ;;
+            *) echo "Invalid: $MODE"; exit 1 ;;
         esac
 
         export HDF5=$(brew --prefix hdf5)
@@ -78,7 +80,8 @@ elif [ $BUILD_SYSTEM == 'Make' ]; then
         export NETCDF=$(greadlink -f $(brew --prefix netcdf)) # see comment above about greadlink
 
     else
-        echo "The environment is not recognised"
+        echo "Unknown OS: $(uname)"
+        exit 1
     fi
 
     # 1 = basic nesting
@@ -108,6 +111,6 @@ elif [ $BUILD_SYSTEM == 'Make' ]; then
     fi
 
 else
-    echo "Unknown system: $(uname)"
+    echo "Unknown build system: $BUILD_SYSTEM"
     exit 1
 fi

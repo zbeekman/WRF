@@ -20,11 +20,20 @@ parameters:
     GRIB1: 0
     GRIB2: 1
   
-  # loop/matrix parameters
+  # Loop/matrix parameters.
+  # Note that these may be overridden by the including yml (typically azure-pipelines.yml).
   OS_NAMES: [Windows, Linux, macOS]
   BUILD_SYSTEMS: [Make, CMake]
   BUILD_TYPES: [Debug, Release]
   MODES: [serial, smpar, dmpar, dm_sm]
+
+variables:
+  WPS_REPO: WRF-CMake/WPS
+  WPS_COMMIT: letmaik/azure-pipelines
+  WATS_REPO: WRF-CMake/wats
+  WATS_BRANCH: master
+  WATS_MODE: wrf
+  WATS_WPS_PKG_VERSION: 0.0.2
 
 jobs:
 - ${{ each OS_NAME in parameters.OS_NAMES }}:
