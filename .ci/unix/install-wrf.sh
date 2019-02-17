@@ -45,7 +45,7 @@ elif [ $BUILD_SYSTEM == 'Make' ]; then
             serial) cfg=32 ;;
             smpar)  cfg=33 ;;
             dmpar)  cfg=34 ;;
-            sm+dm)  cfg=35 ;;
+            dm_sm)  cfg=35 ;;
             *) echo "Invalid: $MODE" ;;
         esac
 
