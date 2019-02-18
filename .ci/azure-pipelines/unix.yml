@@ -22,7 +22,7 @@ jobs:
     displayName: Dump environment variables
 
   - script: .ci/unix/setup-dependencies.sh
-    displayName: Install dependencies
+    displayName: Setup dependencies
 
   - script: .ci/unix/install-wrf.sh
     displayName: Install WRF
