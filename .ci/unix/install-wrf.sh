@@ -24,6 +24,28 @@ if [ $BUILD_SYSTEM == 'CMake' ]; then
 
 elif [ $BUILD_SYSTEM == 'Make' ]; then
 
+    # The config options below are hard-coded for gcc/gfortran,
+    # let's check if another compiler was requested.
+    if [[ ! $CC == gcc* ]]; then
+        echo "Unsupported CC: $CC"
+        exit 1
+    fi
+    if [[ ! $FC == gfortran* ]]; then
+        echo "Unsupported FC: $FC"
+        exit 1
+    fi
+
+    # On macOS we use Homebrew which installs gcc/gfortran only with a version
+    # suffix (gcc-8 etc.). This is because macOS has gcc already pointing to the system clang.
+    # Since we want to keep the arch/ files as they are, we create a symlink
+    # to the Homebrew variants and put them in PATH before everything else.
+    if [[ ! $CC == gcc ]]; then
+        mkdir -p compilers
+        ln -sf $(which $CC) compilers/gcc
+        ln -sf $(which $FC) compilers/gfortran
+        export PATH=$(pwd)/compilers:$PATH
+    fi
+
     # WRF does not use CC/FC, so let's check what gcc/gfortran actually points to.
     which gcc
     gcc --version
