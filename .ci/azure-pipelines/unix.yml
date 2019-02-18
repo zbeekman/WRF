@@ -27,23 +27,4 @@ jobs:
   - script: .ci/unix/install-wrf.sh
     displayName: Install WRF
 
-  # In Azure Pipeline builds, the repository folder is not named after the repository name.
-  # When building WPS in the Make variant, WPS looks for hard-coded folder names of WRF.
-  # To make WPS happy but also to avoid having to pass a different folder to the CMake config,
-  # we symlink the repository to the "WRF" folder.
-  - script: ln -sf `pwd` ../WRF
-    displayName: Symlink repository as "WRF" for convenience
-
-  - script: |
-      set -e
-      cd ..
-      git clone --depth=100 --no-single-branch https://github.com/$WPS_REPO.git WPS
-      cd WPS
-      git checkout $WPS_COMMIT
-      git log --oneline -n 1
-    displayName: Download WPS
-
-  - script: ../WPS/.ci/unix/install-wps.sh
-    displayName: Install WPS
-
   - template: wats_run.yml

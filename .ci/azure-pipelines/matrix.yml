@@ -15,8 +15,6 @@ parameters:
     FC: gfortran
   
   common:
-    WPS_REPO: WRF-CMake/WPS
-    WPS_COMMIT: letmaik/azure-pipelines
     WATS_REPO: WRF-CMake/wats
     WATS_BRANCH: master
     WATS_MODE: wrf
