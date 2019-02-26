@@ -1,3 +1,6 @@
+(Get-CimInstance Win32_OperatingSystem).Caption
+(Get-CimInstance Win32_OperatingSystem).Version
+
 Get-CimInstance Win32_Processor | 
     Select-Object Name, NumberOfCores, NumberOfLogicalProcessors | 
     Format-List
