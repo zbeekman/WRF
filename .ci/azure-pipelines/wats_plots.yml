@@ -12,7 +12,7 @@ jobs:
         - ${{ each BUILD_SYSTEM in parameters.BUILD_SYSTEMS }}:
           # For Windows, since there is no Make-based build, skip that combination.
           - ${{ if not(and(eq(OS_NAME, 'Windows'), eq(BUILD_SYSTEM, 'Make'))) }}:
-            - ${{ parameters.OS_NAME }}_${{ parameters.BUILD_SYSTEM }}_${{ parameters.BUILD_TYPE }}_${{ parameters.MODE }}
+            - ${{ OS_NAME }}_${{ BUILD_SYSTEM }}_${{ BUILD_TYPE }}_${{ MODE }}
 
   steps:
   - bash: bash .ci/unix/use-conda.sh
@@ -39,11 +39,11 @@ jobs:
           - ${{ if not(or(and(eq(OS_NAME, 'Windows'), eq(BUILD_SYSTEM, 'Make')), and(eq(OS_NAME, 'Linux'), eq(BUILD_SYSTEM, 'Make'), eq(MODE, 'serial'), eq(BUILD_TYPE, 'Debug')))) }}:
 
             - task: DownloadBuildArtifacts@0
-              displayName: Retrieve trial ${{ parameters.OS_NAME }}/${{ parameters.BUILD_SYSTEM }}/${{ parameters.BUILD_TYPE }}/${{ parameters.MODE }} WATS outputs
+              displayName: Retrieve trial ${{ OS_NAME }}/${{ BUILD_SYSTEM }}/${{ BUILD_TYPE }}/${{ MODE }} WATS outputs
               inputs:
                 downloadPath: wats_outputs
                 downloadType: specific
-                itemPattern: 'wats_${{ parameters.OS_NAME }}_${{ parameters.BUILD_SYSTEM }}_${{ parameters.BUILD_TYPE }}_${{ parameters.MODE }}/**'
+                itemPattern: 'wats_${{ OS_NAME }}_${{ BUILD_SYSTEM }}_${{ BUILD_TYPE }}_${{ MODE }}/**'
             
             - script: |
                 cd wats_outputs
@@ -54,12 +54,12 @@ jobs:
                 set -ex
                 O=wats_outputs
                 W="python wats/wats/plots.py compute --out-dir wats_stats"
-                $W $O/wats_Linux_Make_Debug_serial $O/wats_${{ parameters.OS_NAME }}_${{ parameters.BUILD_SYSTEM }}_${{ parameters.BUILD_TYPE }}_${{ parameters.MODE }}
+                $W $O/wats_Linux_Make_Debug_serial $O/wats_${{ OS_NAME }}_${{ BUILD_SYSTEM }}_${{ BUILD_TYPE }}_${{ MODE }}
               displayName: 'Run WATS: compute plot stats'
 
             - script: |
-                rm -rf wats_outputs/wats_${{ parameters.OS_NAME }}_${{ parameters.BUILD_SYSTEM }}_${{ parameters.BUILD_TYPE }}_${{ parameters.MODE }}
-              displayName: Remove trial ${{ parameters.OS_NAME }}/${{ parameters.BUILD_SYSTEM }}/${{ parameters.BUILD_TYPE }}/${{ parameters.MODE }} WATS outputs 
+                rm -rf wats_outputs/wats_${{ OS_NAME }}_${{ BUILD_SYSTEM }}_${{ BUILD_TYPE }}_${{ MODE }}
+              displayName: Remove trial ${{ OS_NAME }}/${{ BUILD_SYSTEM }}/${{ BUILD_TYPE }}/${{ MODE }} WATS outputs 
   
   - script: |
       python wats/wats/plots.py plot --stats-dir wats_stats --out-dir wats_plots

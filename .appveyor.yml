@@ -27,9 +27,7 @@ environment:
 
 install:
   - ps: .ci\windows\dump-vm-specs.ps1
-  - ps: .ci\windows\increase-pagefile-size.ps1
   - call .ci\windows\setup-dependencies.bat
-  - ps: .ci\windows\dump-vm-specs.ps1
 
 build_script:
   - call .ci\windows\install-wrf.bat
