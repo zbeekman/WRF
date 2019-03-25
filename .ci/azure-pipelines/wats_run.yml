@@ -4,7 +4,7 @@ steps:
 
 - pwsh: |
     git clone --depth=1 --branch=$Env:WATS_BRANCH https://github.com/$Env:WATS_REPO.git wats
-    conda env update -f wats/environment.yml
+    conda env update -n base -f wats/environment.yml
   displayName: Install WATS
 
 - task: UniversalPackages@0
