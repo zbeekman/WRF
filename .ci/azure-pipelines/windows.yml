@@ -12,11 +12,22 @@ jobs:
       ${{ pair.key }}: ${{ pair.value }}
 
   steps:
+  - bash: bash .ci/unix/use-conda.sh
+    displayName: Enable Conda
+
+  - pwsh: |
+      git clone --depth=1 --branch=$Env:WATS_BRANCH https://github.com/$Env:WATS_REPO.git wats
+      conda env update -n base -f wats/environment.yml
+    displayName: Install WATS
+
+  - script: set
+  - script: pip freeze
+  - script: python --version
+  - script: python -c "import sys; print(sys.path)"
+      
+
   - pwsh: .ci\windows\dump-vm-specs.ps1
     displayName: Dump VM specs
-
-  - pwsh: .ci\windows\increase-pagefile-size.ps1
-    displayName: Increase page file size
 
   - script: set
     displayName: Dump environment variables
@@ -41,9 +52,6 @@ jobs:
     inputs:
       filename: .ci\windows\setup-dependencies.bat
       modifyEnvironment: true
-
-  - pwsh: .ci\windows\dump-vm-specs.ps1
-    displayName: Dump VM specs
 
   - script: call .ci\windows\install-wrf.bat
     displayName: Install WRF

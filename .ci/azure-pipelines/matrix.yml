@@ -74,3 +74,12 @@ jobs:
         BUILD_TYPE: ${{ BUILD_TYPE }}
         MODE: ${{ MODE }}
         ${{ insert }}: ${{ parameters.common }}
+
+- ${{ if parameters.WATS_PLOTS }}:
+  - template: wats_plots.yml
+    parameters:
+      OS_NAMES: ${{ parameters.OS_NAMES }}
+      BUILD_SYSTEMS: ${{ parameters.BUILD_SYSTEMS }}
+      BUILD_TYPES: ${{ parameters.BUILD_TYPES }}
+      MODES: ${{ parameters.MODES }}
+      ${{ insert }}: ${{ parameters.common }}

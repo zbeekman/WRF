@@ -1,0 +1,76 @@
+jobs:
+- job: wats_plots
+  displayName: 'WATS plots'
+  
+  pool:
+    vmImage: ubuntu-16.04
+  
+  dependsOn:
+  - ${{ each OS_NAME in parameters.OS_NAMES }}:
+    - ${{ each BUILD_TYPE in parameters.BUILD_TYPES }}:
+      - ${{ each MODE in parameters.MODES }}:
+        - ${{ each BUILD_SYSTEM in parameters.BUILD_SYSTEMS }}:
+          # For Windows, since there is no Make-based build, skip that combination.
+          - ${{ if not(and(eq(OS_NAME, 'Windows'), eq(BUILD_SYSTEM, 'Make'))) }}:
+            - ${{ parameters.OS_NAME }}_${{ parameters.BUILD_SYSTEM }}_${{ parameters.BUILD_TYPE }}_${{ parameters.MODE }}
+
+  variables:
+    ${{ each pair in parameters }}:
+      ${{ pair.key }}: ${{ pair.value }}
+
+  steps:
+  - bash: bash .ci/unix/use-conda.sh
+    displayName: Enable Conda
+  
+  - script: |
+      git clone --depth=1 --branch=$WATS_BRANCH https://github.com/$WATS_REPO.git wats
+      conda env update -n base -f wats/environment.yml
+    displayName: Install WATS
+  
+  - task: DownloadBuildArtifacts@0
+    displayName: Retrieve reference WATS outputs
+    inputs:
+      downloadPath: wats_outputs
+      downloadType: specific
+      itemPattern: 'wats_Linux_Make_Debug_serial/**'
+  
+  - ${{ each OS_NAME in parameters.OS_NAMES }}:
+    - ${{ each BUILD_TYPE in parameters.BUILD_TYPES }}:
+      - ${{ each MODE in parameters.MODES }}:
+        - ${{ each BUILD_SYSTEM in parameters.BUILD_SYSTEMS }}:
+          # For Windows, since there is no Make-based build, skip that combination.
+          # Also, skip the reference combination.
+          - ${{ if not(or(and(eq(OS_NAME, 'Windows'), eq(BUILD_SYSTEM, 'Make')), and(eq(OS_NAME, 'Linux'), eq(BUILD_SYSTEM, 'Make'), eq(MODE, 'serial'), eq(BUILD_TYPE, 'Debug')))) }}:
+
+            - task: DownloadBuildArtifacts@0
+              displayName: Retrieve trial ${{ parameters.OS_NAME }}/${{ parameters.BUILD_SYSTEM }}/${{ parameters.BUILD_TYPE }}/${{ parameters.MODE }} WATS outputs
+              inputs:
+                downloadPath: wats_outputs
+                downloadType: specific
+                itemPattern: 'wats_${{ parameters.OS_NAME }}_${{ parameters.BUILD_SYSTEM }}_${{ parameters.BUILD_TYPE }}_${{ parameters.MODE }}/**'
+            
+            - script: |
+                cd wats_outputs
+                find . -type f
+              displayName: List WATS output files
+            
+            - script: |
+                set -ex
+                O=wats_outputs
+                W="python wats/wats/plots.py compute --out-dir wats_stats"
+                $W $O/wats_Linux_Make_Debug_serial $O/wats_${{ parameters.OS_NAME }}_${{ parameters.BUILD_SYSTEM }}_${{ parameters.BUILD_TYPE }}_${{ parameters.MODE }}
+              displayName: 'Run WATS: compute plot stats'
+
+            - script: |
+                rm -rf wats_outputs/wats_${{ parameters.OS_NAME }}_${{ parameters.BUILD_SYSTEM }}_${{ parameters.BUILD_TYPE }}_${{ parameters.MODE }}
+              displayName: Remove trial ${{ parameters.OS_NAME }}/${{ parameters.BUILD_SYSTEM }}/${{ parameters.BUILD_TYPE }}/${{ parameters.MODE }} WATS outputs 
+  
+  - script: |
+      python wats/wats/plots.py plot --stats-dir wats_stats --out-dir wats_plots
+    displayName: 'Run WATS: create plots'
+  
+  - task: PublishBuildArtifacts@1
+    displayName: Store WATS plots
+    inputs:
+      pathtoPublish: wats_plots
+      artifactName: wats_plots
