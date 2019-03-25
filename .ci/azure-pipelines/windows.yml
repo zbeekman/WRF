@@ -42,5 +42,3 @@ jobs:
     displayName: Install WRF
 
   - template: wats_run.yml
-    parameters:
-      ${{ insert }}: ${{ parameters }}

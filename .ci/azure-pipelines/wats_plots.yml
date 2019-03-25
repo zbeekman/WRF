@@ -14,12 +14,15 @@ jobs:
           - ${{ if not(and(eq(OS_NAME, 'Windows'), eq(BUILD_SYSTEM, 'Make'))) }}:
             - ${{ OS_NAME }}_${{ BUILD_SYSTEM }}_${{ BUILD_TYPE }}_${{ MODE }}
 
+  variables:
+    ${{ insert }}: ${{ parameters.vars }}
+
   steps:
   - bash: bash .ci/unix/use-conda.sh
     displayName: Enable Conda
   
-  - script: |
-      git clone --depth=1 --branch=${{ parameters.WATS_BRANCH }} https://github.com/${{ parameters.WATS_REPO }}.git wats
+  - pwsh: |
+      git clone --depth=1 --branch=$Env:WATS_BRANCH https://github.com/$Env:WATS_REPO.git wats
       conda env update -n base -f wats/environment.yml
     displayName: Install WATS
   

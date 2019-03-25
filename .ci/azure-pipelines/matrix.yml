@@ -82,4 +82,5 @@ jobs:
       BUILD_SYSTEMS: ${{ parameters.BUILD_SYSTEMS }}
       BUILD_TYPES: ${{ parameters.BUILD_TYPES }}
       MODES: ${{ parameters.MODES }}
-      ${{ insert }}: ${{ parameters.common }}
+      vars:
+        ${{ insert }}: ${{ parameters.common }}
