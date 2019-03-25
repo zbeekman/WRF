@@ -11,8 +11,7 @@ jobs:
       vmImage: macos-10.13
 
   variables:
-    ${{ each pair in parameters }}:
-      ${{ pair.key }}: ${{ pair.value }}
+    ${{ insert }}: ${{ parameters }}
 
   steps:
   - script: .ci/unix/dump-vm-specs.sh
