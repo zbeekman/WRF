@@ -1,11 +1,10 @@
 steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '3.x'
+- bash: bash .ci/unix/use-conda.sh
+  displayName: Enable Conda
 
 - pwsh: |
     git clone --depth=1 --branch=$Env:WATS_BRANCH https://github.com/$Env:WATS_REPO.git wats
-    pip install -r wats/requirements.txt
+    conda env update -f wats/environment.yml
   displayName: Install WATS
 
 - task: UniversalPackages@0
@@ -21,9 +20,6 @@ steps:
     cd wats_wps_outputs
     find . -type f
   displayName: List WPS output files
-
-# TODO extend WATS to support WRF cases that require different WPS cases
-#      currently we hard-code --wps-case-output-dir wats_wps_outputs/00
 
 - pwsh: |
     if ($Env:MODE.StartsWith("dm")) { $mpi_flag="--mpi" }

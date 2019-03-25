@@ -16,7 +16,7 @@ parameters:
   
   common:
     WATS_REPO: WRF-CMake/wats
-    WATS_BRANCH: master
+    WATS_BRANCH: letmaik/plots
     WATS_MODE: wrf
     WATS_WPS_PKG_VERSION: 0.0.2
     NESTING: basic
