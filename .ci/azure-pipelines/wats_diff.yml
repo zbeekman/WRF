@@ -45,6 +45,6 @@ jobs:
       set -ex
       O=wats_outputs
       W="python wats/wats/main.py diff --mode $WATS_MODE"
-      $W $O/wats_${OS_NAME_LEFT}_${BUILD_SYSTEM_LEFT}_${BUILD_TYPE}_${MODE} $O/wats_${OS_NAME_RIGHT}_${BUILD_SYSTEM_RIGHT }}_${BUILD_TYPE}_${MODE}
+      $W $O/wats_${OS_NAME_LEFT}_${BUILD_SYSTEM_LEFT}_${BUILD_TYPE}_${MODE} $O/wats_${OS_NAME_RIGHT}_${BUILD_SYSTEM_RIGHT}_${BUILD_TYPE}_${MODE}
     displayName: Run WATS diff
       
