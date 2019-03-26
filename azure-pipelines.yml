@@ -7,4 +7,5 @@ jobs:
     BUILD_TYPES: [Debug]
     #MODES: [dm_sm]
     MODES: [serial]
+    WATS_DIFF: false
     WATS_PLOTS: true # TODO disable

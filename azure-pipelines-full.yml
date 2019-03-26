@@ -7,4 +7,5 @@ jobs:
   parameters:
     BUILD_TYPES: [Debug, Release]
     MODES: [serial, smpar, dmpar, dm_sm]
+    WATS_DIFF: true
     WATS_PLOTS: true

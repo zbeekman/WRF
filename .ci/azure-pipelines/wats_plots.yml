@@ -74,3 +74,9 @@ jobs:
     inputs:
       pathtoPublish: wats_plots
       artifactName: wats_plots
+
+  - task: PublishBuildArtifacts@1
+    displayName: Store WATS plot stats
+    inputs:
+      pathtoPublish: wats_stats
+      artifactName: wats_stats
