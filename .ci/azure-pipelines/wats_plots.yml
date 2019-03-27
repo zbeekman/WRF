@@ -64,7 +64,13 @@ jobs:
             - script: |
                 rm -rf wats_outputs/wats_${{ OS_NAME }}_${{ BUILD_SYSTEM }}_${{ BUILD_TYPE }}_${{ MODE }}
               displayName: Remove trial ${{ OS_NAME }}/${{ BUILD_SYSTEM }}/${{ BUILD_TYPE }}/${{ MODE }} WATS outputs 
-  
+
+  - task: PublishBuildArtifacts@1
+    displayName: Store WATS plot stats
+    inputs:
+      pathtoPublish: wats_stats
+      artifactName: wats_stats
+
   - script: |
       python wats/wats/plots.py plot --stats-dir wats_stats --out-dir wats_plots
     displayName: 'Run WATS: create plots'
@@ -74,9 +80,3 @@ jobs:
     inputs:
       pathtoPublish: wats_plots
       artifactName: wats_plots
-
-  - task: PublishBuildArtifacts@1
-    displayName: Store WATS plot stats
-    inputs:
-      pathtoPublish: wats_stats
-      artifactName: wats_stats
