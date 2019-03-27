@@ -48,7 +48,7 @@ jobs:
               ${{ insert }}: ${{ parameters.common }}
       
       # Make vs CMake comparison
-      - ${{ if parameters.WATS_DIFF }}:
+      - ${{ if eq(parameters.WATS_DIFF, 'true') }}:
         - template: wats_diff.yml
           parameters:
             # For Windows, since there is no Make-based reference, compare against Linux.
@@ -64,7 +64,7 @@ jobs:
             ${{ insert }}: ${{ parameters.common }}
 
 # Make vs Make comparison
-- ${{ if parameters.WATS_DIFF }}:
+- ${{ if eq(parameters.WATS_DIFF, 'true') }}:
   - ${{ each BUILD_TYPE in parameters.BUILD_TYPES }}:
     - ${{ each MODE in parameters.MODES }}:
       - template: wats_diff.yml
@@ -77,7 +77,7 @@ jobs:
           MODE: ${{ MODE }}
           ${{ insert }}: ${{ parameters.common }}
 
-- ${{ if parameters.WATS_PLOTS }}:
+- ${{ if eq(parameters.WATS_PLOTS, 'true') }}:
   - template: wats_plots.yml
     parameters:
       OS_NAMES: ${{ parameters.OS_NAMES }}
