@@ -41,7 +41,7 @@ if [ "$(uname)" == "Linux" ]; then
         wget ftp://ftp.unidata.ucar.edu/pub/netcdf/netcdf-fortran-4.4.4.tar.gz
         tar xvzf netcdf-fortran-4.4.4.tar.gz
         cd netcdf-fortran-4.4.4
-        CC=gcc-8 FC=gfortran-8 ./configure --prefix=/usr
+        CC=gcc-8 FC=gfortran-8 ./configure --disable-f03 --prefix=/usr
         make -j 4
         sudo make install
     fi
