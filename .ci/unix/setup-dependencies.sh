@@ -41,7 +41,9 @@ if [ "$(uname)" == "Linux" ]; then
         wget ftp://ftp.unidata.ucar.edu/pub/netcdf/netcdf-fortran-4.4.4.tar.gz
         tar xvzf netcdf-fortran-4.4.4.tar.gz
         cd netcdf-fortran-4.4.4
-        CC=gcc-8 FC=gfortran-8 ./configure --disable-f03 --prefix=/usr
+        sed -i 's/ADD_SUBDIRECTORY(examples)/#ADD_SUBDIRECTORY(examples)/' CMakeLists.txt
+        mkdir build && cd build
+        CC=gcc-8 FC=gfortran-8 cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=/usr ..
         make -j 4
         sudo make install
     fi
@@ -55,7 +57,7 @@ if [ "$(uname)" == "Linux" ]; then
     fi
 
     nc-config --all
-    nf-config --all
+    nf-config --all || true
 
 elif [ "$(uname)" == "Darwin" ]; then
 
