@@ -37,6 +37,7 @@ if [ "$(uname)" == "Linux" ]; then
         sudo apt-get install libnetcdf-dev
 
         # Need to build netcdf-fortran manually as the Fortran compiler versions have to match.
+        # TODO remove this once WRF 4.1 is out (as that switches from modules to .inc for netcdf & mpi)
         cd /tmp
         wget ftp://ftp.unidata.ucar.edu/pub/netcdf/netcdf-fortran-4.4.4.tar.gz
         tar xvzf netcdf-fortran-4.4.4.tar.gz
@@ -53,7 +54,19 @@ if [ "$(uname)" == "Linux" ]; then
     fi
 
     if [[ $MODE == dm* ]]; then
-        sudo apt-get install libmpich-dev
+        if [ "$(lsb_release -c -s)" == "trusty" ]; then
+            sudo apt-get install libmpich-dev
+        else
+            # Need to build mpich manually as the Fortran compiler versions have to match.
+            # TODO remove this once WRF 4.1 is out (as that switches from modules to .inc for netcdf & mpi)
+            MPICH_VERSION=3.2.1
+            cd /tmp
+            curl http://www.mpich.org/static/downloads/${MPICH_VERSION}/mpich-${MPICH_VERSION}.tar.gz | tar xz
+            cd mpich-${MPICH_VERSION}
+            CC=gcc-8 FC=gfortran-8 ./configure --prefix=/usr
+            make -j 4
+            sudo make install
+        fi
     fi
 
     nc-config --all
