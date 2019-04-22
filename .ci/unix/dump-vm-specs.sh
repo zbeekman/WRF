@@ -8,7 +8,7 @@ if [ "$(uname)" == "Darwin" ]; then
     sysctl hw
     df -h
     cat /etc/hosts
-    sudo scutil --get HostName
+    sudo scutil --get HostName || true
 elif [ "$(uname)" == "Linux" ]; then
     lsb_release -a
     free -m
