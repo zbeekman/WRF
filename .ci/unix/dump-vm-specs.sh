@@ -9,6 +9,7 @@ if [ "$(uname)" == "Darwin" ]; then
     df -h
     cat /etc/hosts
     sudo scutil --get HostName || true
+    sudo scutil --get LocalHostName || true
 elif [ "$(uname)" == "Linux" ]; then
     lsb_release -a
     free -m
