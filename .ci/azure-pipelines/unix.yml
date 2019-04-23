@@ -14,7 +14,7 @@ jobs:
     ${{ insert }}: ${{ parameters }}
 
   steps:
-  ${{ if eq(parameters.OS_NAME, 'macOS') }}:
+  - ${{ if eq(parameters.OS_NAME, 'macOS') }}:
     # See https://stackoverflow.com/questions/23112515/mpich2-gethostbyname-failed.
     # (occured randomly)
     - script: |
