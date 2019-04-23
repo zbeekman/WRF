@@ -14,6 +14,12 @@ jobs:
     ${{ insert }}: ${{ parameters }}
 
   steps:
+  ${{ if eq(parameters.OS_NAME, 'macOS') }}:
+    # See https://stackoverflow.com/questions/23112515/mpich2-gethostbyname-failed.
+    # (occured randomly)
+    - script: echo "127.0.0.1 $(sudo scutil --get LocalHostName).local" | sudo tee -a /etc/hosts
+      displayName: Fix hostname
+
   - script: .ci/unix/dump-vm-specs.sh
     displayName: Dump VM specs
 
