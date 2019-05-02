@@ -81,7 +81,7 @@ elif [ "$(uname)" == "Darwin" ]; then
     # disable automatic cleanup, just takes time
     export HOMEBREW_NO_INSTALL_CLEANUP=1
 
-    brew update
+    brew update -v
     # Since "brew install" can't silently ignore already installed packages
     # we're using this instead.
     # See https://github.com/Homebrew/brew/issues/2491#issuecomment-294264745.
