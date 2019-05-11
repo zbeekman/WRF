@@ -5,7 +5,6 @@ jobs:
 - template: .ci/azure-pipelines/matrix.yml
   parameters:
     BUILD_TYPES: [Debug]
-    #MODES: [dm_sm]
-    MODES: [serial]
+    MODES: [serial, dm_sm]
     WATS_DIFF: false
-    WATS_PLOTS: true # TODO disable
+    WATS_PLOTS: false
