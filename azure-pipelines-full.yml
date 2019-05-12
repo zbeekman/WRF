@@ -1,5 +1,7 @@
-# Run manually or by schedule only.
-trigger: none
+# Runs on commits to the wrf-cmake branch.
+# PR builds can be triggered by commenting "/azp run WRF (full)".
+trigger:
+- wrf-cmake
 pr: none
 
 jobs:

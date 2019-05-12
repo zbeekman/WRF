@@ -1,5 +1,4 @@
-trigger:
-- wrf-cmake
+# Runs on commits to any branch and PRs.
 
 jobs:
 - template: .ci/azure-pipelines/matrix.yml
