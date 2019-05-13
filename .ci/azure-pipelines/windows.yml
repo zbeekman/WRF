@@ -41,4 +41,5 @@ jobs:
   - script: call .ci\windows\install-wrf.bat
     displayName: Install WRF
 
-  - template: wats_run.yml
+  - ${{ if eq(parameters.WATS_RUN, 'true') }}:
+    - template: wats_run.yml

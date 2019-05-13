@@ -46,6 +46,8 @@ jobs:
               MODE: ${{ MODE }}
               ${{ insert }}: ${{ parameters[OS_NAME] }}
               ${{ insert }}: ${{ parameters.common }}
+              ${{ if or(eq(parameters.WATS_PLOTS, 'true'), eq(parameters.WATS_DIFF, 'true')) }}:
+                WATS_RUN: true
       
       # Make vs CMake comparison
       - ${{ if eq(parameters.WATS_DIFF, 'true') }}:
