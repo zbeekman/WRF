@@ -1,4 +1,9 @@
-# Runs on commits to any branch and PRs.
+# Runs on commits to any branch except wrf-cmake.
+trigger:
+  branches:
+    exclude:
+    - wrf-cmake
+pr: none
 
 jobs:
 - template: .ci/azure-pipelines/matrix.yml
