@@ -14,10 +14,12 @@ authors:
     affiliation: 1
   - name: D. Meyer
     orcid: 0000-0002-7071-7547
-    affiliation: 1
+    affiliation: 2
 affiliations:
-  - name: None
+  - name: Independent scholar
     index: 1
+  - name: Independent scholar
+    index: 2
 date: 14 May 2019
 bibliography: paper.bib
 ---
