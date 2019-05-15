@@ -42,7 +42,7 @@ set(run_files
     p3_lookup_table_1.dat-v4.1
     p3_lookup_table_2.dat-v4.1
     HLC.TBL
-    wind-turbine-1.TBL
+    wind-turbine-1.tbl
     ishmael-gamma-tab.bin
     ishmael-qi-qc.bin
     ishmael-qi-qr.bin
