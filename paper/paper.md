@@ -11,8 +11,13 @@ tags:
 authors:
   - name: M. Riechert
     orcid: 0000-0003-3299-1382
+    affiliation: 1
   - name: D. Meyer
     orcid: 0000-0002-7071-7547
+    affiliation: 1
+affiliations:
+  - name: None
+    index: 1
 date: 14 May 2019
 bibliography: paper.bib
 ---
