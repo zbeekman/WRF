@@ -14,12 +14,10 @@ authors:
     affiliation: 1
   - name: D. Meyer
     orcid: 0000-0002-7071-7547
-    affiliation: 2
+    affiliation: 1
 affiliations:
   - name: Independent scholar
     index: 1
-  - name: Independent scholar
-    index: 2
 date: 14 May 2019
 bibliography: paper.bib
 ---
@@ -54,9 +52,10 @@ $w$     | Vertical component of wind velocity     | $\mathsf{m\ s^{-1}}$
 Table: WRF prognostic variables evaluated during integration tests.
 
 
-Both $\delta$ and NRMSE are computed per domain for all grid-points on all vertical levels. Normalising factors are computed per grid-point for $\delta$ and per domain, per quantity, per variant, on all vertical-levels and grid-points for NRMSE. $\boldsymbol{\delta}$ represents the vector of all $\delta$s per domain. Results from the current evaluation show that different operating systems have the greatest impact on both $\delta$ and NRMSE (Figure 1) over compiler optimisation strategies or type of build system used.
-
 ![`A`: extended box plots of relative percentage errors ($\boldsymbol{\delta}$) against the reference implementation (`Linux/Make/Debug/serial`) for domain with highest errors only (domain 2). `B`: normalised root mean-square error (NRMSE). 0 and 60 show the number of minutes elapsed since the start of the simulation. Extended boxplots show minimum, maximum, median, and percentiles at [99.9, 99, 75, 25, 5, 1, 0.1].](wrf-cmake-stats-plots.pdf)
+
+
+Both $\delta$ and NRMSE are computed per domain for all grid-points on all vertical levels. Normalising factors are computed per grid-point for $\delta$ and per domain, per quantity, per variant, on all vertical-levels and grid-points for NRMSE. $\boldsymbol{\delta}$ represents the vector of all $\delta$s per domain. Results from the current evaluation show that different operating systems have the greatest impact on both $\delta$ and NRMSE (Figure 1) over compiler optimisation strategies or type of build system used.
 
 
 # Acknowledgements
