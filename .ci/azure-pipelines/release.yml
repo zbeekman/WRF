@@ -1,0 +1,39 @@
+steps:
+- ${{ if eq(OS_NAME, 'Windows') }}:
+  - task: ArchiveFiles@2
+    inputs:
+      rootFolderOrFile: build/install
+      includeRootFolder: false
+      archiveType: zip
+      archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.SourceBranchName)-$(MODE)-$(NESTING)-$(BUILD_TYPE)-$(OS_NAME).zip' 
+    displayName: Create distribution package
+
+- ${{ if not(eq(OS_NAME, 'Windows')) }}:
+  - bash: bash .ci/unix/delocate.sh
+    displayName: Delocate
+
+  - task: ArchiveFiles@2
+    inputs:
+      rootFolderOrFile: build/install
+      includeRootFolder: false
+      archiveType: tar
+      tarCompression: xz
+      archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.SourceBranchName)-$(MODE)-$(NESTING)-$(BUILD_TYPE)-$(OS_NAME).tar.xz' 
+    displayName: Create distribution package
+
+- bash: |
+    rename -f 'y/A-Z/a-z/' $(Build.ArtifactStagingDirectory)/*
+  displayName: Rename to lowercase
+
+- task: GithubRelease@0 
+  displayName: Create GitHub Draft Release
+  inputs:
+    githubConnection: WRF-CMake
+    repositoryName: WRF-CMake/WRF
+    # TODO we really want createOrEdit here like on Appveyor or Travis CI
+    #action: create
+    isDraft: true
+    isPreRelease: true
+    assetUploadMode: replace
+    assets: |
+      $(Build.ArtifactStagingDirectory)/*
