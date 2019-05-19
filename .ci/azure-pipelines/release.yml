@@ -1,5 +1,5 @@
 steps:
-- ${{ if eq(OS_NAME, 'Windows') }}:
+- ${{ if eq(parameters.OS_NAME, 'Windows') }}:
   - task: ArchiveFiles@2
     inputs:
       rootFolderOrFile: build/install
@@ -8,7 +8,7 @@ steps:
       archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.SourceBranchName)-$(MODE)-$(NESTING)-$(BUILD_TYPE)-$(OS_NAME).zip' 
     displayName: Create distribution package
 
-- ${{ if not(eq(OS_NAME, 'Windows')) }}:
+- ${{ if not(eq(parameters.OS_NAME, 'Windows')) }}:
   - bash: bash .ci/unix/delocate.sh
     displayName: Delocate
 
