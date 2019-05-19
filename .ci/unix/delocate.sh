@@ -9,7 +9,6 @@ cd $SCRIPTDIR/../..
 
 if [ "$(uname)" == "Darwin" ]; then
 
-    brew upgrade python
     pip3 install delocate
     delocate-path build/install
 

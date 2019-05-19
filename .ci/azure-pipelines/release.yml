@@ -21,8 +21,8 @@ steps:
       archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.SourceBranchName)-$(MODE)-$(NESTING)-$(BUILD_TYPE)-$(OS_NAME).tar.xz' 
     displayName: Create distribution package
 
-- bash: |
-    rename -f 'y/A-Z/a-z/' $(Build.ArtifactStagingDirectory)/*
+- pwsh: |
+    dir $(Build.ArtifactStagingDirectory) -r | % { if ($_.Name -cne $_.Name.ToLower()) { ren $_.FullName $_.Name.ToLower() } }
   displayName: Rename to lowercase
 
 - task: GithubRelease@0 
