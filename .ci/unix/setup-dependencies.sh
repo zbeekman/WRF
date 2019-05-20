@@ -81,7 +81,6 @@ if [ "$(uname)" == "Linux" ]; then
             -DHDF5_ENABLE_Z_LIB_SUPPORT=ON \
             -LA ..
         sudo make install -j$(nproc)
-        ln -s /usr/lib/libhdf5_hl_fortran.so /usr/lib/libhdf5hl_fortran.so
         popd
 
         NETCDF_C_VERSION=4.6.1
@@ -94,6 +93,7 @@ if [ "$(uname)" == "Linux" ]; then
             --disable-examples \
             --disable-testsets
         sudo make install -j$(nproc)
+        popd
 
         NETCDF_FORTRAN_VERSION=4.4.4
         curl https://www.unidata.ucar.edu/downloads/netcdf/ftp/netcdf-fortran-${NETCDF_FORTRAN_VERSION}.tar.gz | tar xz
