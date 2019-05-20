@@ -61,8 +61,8 @@ if [ "$(uname)" == "Linux" ]; then
         sudo make install -j$(nproc)
         popd
 
-        HDF5_VERSION=1.10.4
-        curl https://support.hdfgroup.org/ftp/HDF5/current/src/CMake-hdf5-${HDF5_VERSION}.tar.gz | tar xz
+        HDF5_VERSION=1.10.5
+        curl https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-1.10/hdf5-${HDF5_VERSION}/src/CMake-hdf5-${HDF5_VERSION}.tar.gz | tar xz
         pushd CMake-hdf5-${HDF5_VERSION}/hdf5-${HDF5_VERSION}
         mkdir build
         cd build
