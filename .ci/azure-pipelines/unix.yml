@@ -10,12 +10,19 @@ jobs:
     ${{ if eq(parameters.OS_NAME, 'macOS') }}:
       vmImage: macos-10.13
 
-  container: quay.io/pypa/manylinux2010_x86_64:latest
+  container:
+    image: quay.io/pypa/manylinux2010_x86_64:latest
+    options: "--name ci-container -v /usr/bin/docker:/tmp/docker:ro"
 
   variables:
     ${{ insert }}: ${{ parameters }}
 
   steps:
+  - script: |
+      /tmp/docker exec -t -u 0 ci-container \
+        sh -c "yum install sudo"
+    displayName: Set up sudo
+
   - script: .ci/unix/dump-vm-specs.sh
     displayName: Dump VM specs
 
