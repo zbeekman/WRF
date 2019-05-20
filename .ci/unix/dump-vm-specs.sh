@@ -13,7 +13,7 @@ if [ "$(uname)" == "Darwin" ]; then
 elif [ "$(uname)" == "Linux" ]; then
     if [ -f /etc/redhat-release ]; then
         sudo yum install -y redhat-lsb
-    fi
+    fi 
     lsb_release -a
     free -m
     lscpu
