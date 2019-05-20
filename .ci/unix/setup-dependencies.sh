@@ -97,10 +97,11 @@ if [ "$(uname)" == "Linux" ]; then
 
         NETCDF_FORTRAN_VERSION=4.4.4
         curl https://www.unidata.ucar.edu/downloads/netcdf/ftp/netcdf-fortran-${NETCDF_FORTRAN_VERSION}.tar.gz | tar xz
-        cd netcdf-fortran-${NETCDF_FORTRAN_VERSION}
+        pushd netcdf-fortran-${NETCDF_FORTRAN_VERSION}
         export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/lib
         ./configure --prefix=/usr --enable-static
         sudo make install -j$(nproc)
+        popd
     else
         echo "The environment is not recognised"
         exit 1
