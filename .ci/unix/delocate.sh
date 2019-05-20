@@ -10,7 +10,7 @@ cd $SCRIPTDIR/../..
 if [ "$(uname)" == "Darwin" ]; then
 
     pip3 install delocate
-    delocate-path build/install
+    delocate-path build/install/main
 
 else
     echo "Unknown OS: $(uname)"
