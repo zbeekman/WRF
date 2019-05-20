@@ -44,29 +44,63 @@ if [ "$(uname)" == "Linux" ]; then
         cd netcdf-fortran-4.4.4
         sed -i 's/ADD_SUBDIRECTORY(examples)/#ADD_SUBDIRECTORY(examples)/' CMakeLists.txt
         mkdir build && cd build
-        CC=gcc-8 FC=gfortran-8 cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=/usr ..
+        cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=/usr ..
         make -j 4
         sudo make install
     elif [ "$(lsb_release -i -s)" == "CentOS" ]; then
         sudo yum install -y zlib-devel libpng-devel jasper-devel libjpeg-devel xz
 
-        wget https://cmake.org/files/v3.14/cmake-3.14.3-Linux-x86_64.sh -O cmake.sh && \
-        sudo bash cmake.sh --prefix=/usr --exclude-subdir --skip-license && \
+        curl https://cmake.org/files/v3.14/cmake-3.14.3-Linux-x86_64.sh -o cmake.sh
+        sudo bash cmake.sh --prefix=/usr --exclude-subdir --skip-license
         rm cmake.sh
 
-        MPICH_VERSION=3.2.1
-        curl http://www.mpich.org/static/downloads/${MPICH_VERSION}/mpich-${MPICH_VERSION}.tar.gz | tar xz
-        pushd mpich-${MPICH_VERSION}
-        ./configure --prefix=/usr
-        make install -j$(nproc)
-        popd
-
         SZIP_VERSION=2.1.1
-        curl https://support.hdfgroup.org/ftp/lib-external/szip/${SZIP_VERSION}/src/szip-${SZIP_VERSION}.tar.gz | tar xz && \
+        curl https://support.hdfgroup.org/ftp/lib-external/szip/${SZIP_VERSION}/src/szip-${SZIP_VERSION}.tar.gz | tar xz
         pushd szip-${SZIP_VERSION}
         ./configure --prefix=/usr
-        make install -j$(nproc)
+        sudo make install -j$(nproc)
         popd
+
+        HDF5_VERSION=1.10.4
+        curl https://support.hdfgroup.org/ftp/HDF5/current/src/CMake-hdf5-${HDF5_VERSION}.tar.gz | tar xz
+        pushd CMake-hdf5-${HDF5_VERSION}/hdf5-${HDF5_VERSION}
+        mkdir build
+        cd build
+        cmake -DCMAKE_INSTALL_PREFIX=/usr \
+            -DBUILD_SHARED_LIBS=ON \
+            -DBUILD_TESTING=OFF \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_SKIP_RPATH=ON \
+            -DHDF5_BUILD_HL_LIB=ON \
+            -DHDF5_BUILD_CPP_LIB=OFF \
+            -DHDF5_BUILD_FORTRAN=ON \
+            -DHDF5_BUILD_TOOLS=OFF \
+            -DHDF5_BUILD_EXAMPLES=OFF \
+            -DHDF5_ENABLE_DEPRECATED_SYMBOLS=ON \
+            -DHDF5_ENABLE_SZIP_SUPPORT=ON \
+            -DHDF5_ENABLE_Z_LIB_SUPPORT=ON \
+            -LA ..
+        sudo make install -j$(nproc)
+        ln -s /usr/lib/libhdf5_hl_fortran.so /usr/lib/libhdf5hl_fortran.so
+        popd
+
+        NETCDF_C_VERSION=4.6.1
+        curl https://www.unidata.ucar.edu/downloads/netcdf/ftp/netcdf-${NETCDF_C_VERSION}.tar.gz | tar xz
+        pushd netcdf-${NETCDF_C_VERSION}
+        ./configure --prefix=/usr \
+            --disable-doxygen \
+            --enable-logging \
+            --disable-dap \
+            --disable-examples \
+            --disable-testsets
+        sudo make install -j$(nproc)
+
+        NETCDF_FORTRAN_VERSION=4.4.4
+        curl https://www.unidata.ucar.edu/downloads/netcdf/ftp/netcdf-fortran-${NETCDF_FORTRAN_VERSION}.tar.gz | tar xz
+        cd netcdf-fortran-${NETCDF_FORTRAN_VERSION}
+        export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/lib
+        ./configure --prefix=/usr --enable-static
+        sudo make install -j$(nproc)
     else
         echo "The environment is not recognised"
         exit 1
@@ -76,7 +110,6 @@ if [ "$(uname)" == "Linux" ]; then
         if [ "$(lsb_release -i -s)" == "Ubuntu" ]; then
             sudo apt-get install csh m4 libhdf5-serial-dev
         elif [ "$(lsb_release -i -s)" == "CentOS" ]; then
-            #sudo yum install -y hdf5-devel
             echo foo
         fi
     fi
@@ -84,16 +117,15 @@ if [ "$(uname)" == "Linux" ]; then
     if [[ $MODE == dm* ]]; then
         if [ "$(lsb_release -c -s)" == "trusty" ]; then
             sudo apt-get install libmpich-dev
-        elif [ "$(lsb_release -i -s)" == "Ubuntu" ]; then
+        else
             # Need to build mpich manually as the Fortran compiler versions have to match.
             # TODO remove this once WRF 4.1 is out (as that switches from modules to .inc for netcdf & mpi)
             MPICH_VERSION=3.2.1
             cd /tmp
             curl http://www.mpich.org/static/downloads/${MPICH_VERSION}/mpich-${MPICH_VERSION}.tar.gz | tar xz
             cd mpich-${MPICH_VERSION}
-            CC=gcc-8 FC=gfortran-8 ./configure --prefix=/usr
-            make -j 4
-            sudo make install
+            ./configure --prefix=/usr
+            sudo make install -j 4
         fi
     fi
 
