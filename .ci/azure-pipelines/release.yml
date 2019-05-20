@@ -34,6 +34,7 @@ steps:
     tag: $(Build.SourceBranchName)
     isDraft: true
     isPreRelease: true
+    addChangeLog: false
     assetUploadMode: replace
     assets: |
       $(Build.ArtifactStagingDirectory)/*
