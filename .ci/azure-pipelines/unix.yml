@@ -10,6 +10,8 @@ jobs:
     ${{ if eq(parameters.OS_NAME, 'macOS') }}:
       vmImage: macos-10.13
 
+  container: quay.io/pypa/manylinux2010_x86_64
+
   variables:
     ${{ insert }}: ${{ parameters }}
 
