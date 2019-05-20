@@ -27,7 +27,7 @@ if [ "$(uname)" == "Linux" ]; then
         # to detect whether NetCDF v4 support is available.
         # Since nc-config has the same CLI, just symlink. 
         sudo ln -sf /usr/bin/nc-config /usr/bin/nf-config
-    else
+    elif [ "$(lsb_release -i -s)" == "Ubuntu" ]; then
         # macOS (via Homebrew) and Windows (via MSYS2) always provide the latest
         # compiler versions. On Ubuntu, we need to opt-in explicitly. 
         sudo add-apt-repository ppa:ubuntu-toolchain-r/test
@@ -47,6 +47,11 @@ if [ "$(uname)" == "Linux" ]; then
         CC=gcc-8 FC=gfortran-8 cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=/usr ..
         make -j 4
         sudo make install
+    elif [ "$(lsb_release -i -s)" == "?" ]; then
+        echo foo
+    else
+        echo "The environment is not recognised"
+        exit 1
     fi
 
     if [ $BUILD_SYSTEM == 'Make' ]; then
@@ -56,7 +61,7 @@ if [ "$(uname)" == "Linux" ]; then
     if [[ $MODE == dm* ]]; then
         if [ "$(lsb_release -c -s)" == "trusty" ]; then
             sudo apt-get install libmpich-dev
-        else
+        elif [ "$(lsb_release -i -s)" == "Ubuntu" ]; then
             # Need to build mpich manually as the Fortran compiler versions have to match.
             # TODO remove this once WRF 4.1 is out (as that switches from modules to .inc for netcdf & mpi)
             MPICH_VERSION=3.2.1
