@@ -77,6 +77,7 @@ if [ "$(uname)" == "Linux" ]; then
             sudo apt-get install csh m4 libhdf5-serial-dev
         elif [ "$(lsb_release -i -s)" == "CentOS" ]; then
             #sudo yum install -y hdf5-devel
+            echo foo
         fi
     fi
 
