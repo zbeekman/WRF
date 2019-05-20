@@ -47,15 +47,37 @@ if [ "$(uname)" == "Linux" ]; then
         CC=gcc-8 FC=gfortran-8 cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_TESTS=OFF -DCMAKE_INSTALL_PREFIX=/usr ..
         make -j 4
         sudo make install
-    elif [ "$(lsb_release -i -s)" == "?" ]; then
-        echo foo
+    elif [ "$(lsb_release -i -s)" == "CentOS" ]; then
+        sudo yum install -y zlib-devel libpng-devel jasper-devel libjpeg-devel xz
+
+        wget https://cmake.org/files/v3.14/cmake-3.14.3-Linux-x86_64.sh -O cmake.sh && \
+        sudo bash cmake.sh --prefix=/usr --exclude-subdir --skip-license && \
+        rm cmake.sh
+
+        MPICH_VERSION=3.2.1
+        curl http://www.mpich.org/static/downloads/${MPICH_VERSION}/mpich-${MPICH_VERSION}.tar.gz | tar xz
+        pushd mpich-${MPICH_VERSION}
+        ./configure --prefix=/usr
+        make install -j$(nproc)
+        popd
+
+        SZIP_VERSION=2.1.1
+        curl https://support.hdfgroup.org/ftp/lib-external/szip/${SZIP_VERSION}/src/szip-${SZIP_VERSION}.tar.gz | tar xz && \
+        pushd szip-${SZIP_VERSION}
+        ./configure --prefix=/usr
+        make install -j$(nproc)
+        popd
     else
         echo "The environment is not recognised"
         exit 1
     fi
 
     if [ $BUILD_SYSTEM == 'Make' ]; then
-        sudo apt-get install csh m4 libhdf5-serial-dev
+        if [ "$(lsb_release -i -s)" == "Ubuntu" ]; then
+            sudo apt-get install csh m4 libhdf5-serial-dev
+        elif [ "$(lsb_release -i -s)" == "CentOS" ]; then
+            #sudo yum install -y hdf5-devel
+        fi
     fi
 
     if [[ $MODE == dm* ]]; then

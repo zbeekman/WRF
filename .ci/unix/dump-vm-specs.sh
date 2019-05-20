@@ -12,7 +12,7 @@ if [ "$(uname)" == "Darwin" ]; then
     sudo scutil --get LocalHostName || true
 elif [ "$(uname)" == "Linux" ]; then
     if [ -f /etc/redhat-release ]; then
-        sudo yum install -y redhat-lsb
+        sudo yum install -y redhat-lsb-core
     fi 
     lsb_release -a
     free -m
