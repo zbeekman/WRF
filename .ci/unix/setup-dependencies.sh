@@ -81,6 +81,8 @@ if [ "$(uname)" == "Linux" ]; then
             -DHDF5_ENABLE_Z_LIB_SUPPORT=ON \
             -LA ..
         sudo make install -j$(nproc)
+        # for WRF-Make
+        sudo ln -s /usr/lib/libhdf5_hl_fortran.so /usr/lib/libhdf5hl_fortran.so &&
         popd
 
         NETCDF_C_VERSION=4.6.1
