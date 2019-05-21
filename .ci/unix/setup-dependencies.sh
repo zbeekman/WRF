@@ -111,7 +111,7 @@ if [ "$(uname)" == "Linux" ]; then
         if [ "$(lsb_release -i -s)" == "Ubuntu" ]; then
             sudo apt-get install csh m4 libhdf5-serial-dev
         elif [ "$(lsb_release -i -s)" == "CentOS" ]; then
-            echo foo
+            sudo yum install -y tcsh m4
         fi
     fi
 
