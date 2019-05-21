@@ -29,8 +29,8 @@ parameters:
   # Note that these may be overridden by the including yml (typically azure-pipelines.yml).
   #OS_NAMES: [Windows, Linux, macOS]
   OS_NAMES: [Linux]
-  #BUILD_SYSTEMS: [Make, CMake]
-  BUILD_SYSTEMS: [CMake]
+  BUILD_SYSTEMS: [Make, CMake]
+  #BUILD_SYSTEMS: [CMake]
   #BUILD_TYPES: [Debug, Release]
   BUILD_TYPES: [Debug]
   #MODES: [serial, smpar, dmpar, dm_sm]
