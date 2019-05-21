@@ -22,6 +22,7 @@ parameters:
     NESTING: basic
     GRIB1: 0
     GRIB2: 1
+    REAL8: 0
   
   # Loop/matrix parameters.
   # Note that these may be overridden by the including yml (typically azure-pipelines.yml).

@@ -16,6 +16,7 @@ environment:
       NESTING: basic
       GRIB1: 0
       GRIB2: 1
+      REAL8: 0
       
     - BUILD_TYPE: Debug
       CC: gcc
@@ -24,6 +25,7 @@ environment:
       NESTING: basic
       GRIB1: 0
       GRIB2: 1
+      REAL8: 1
 
 install:
   - ps: .ci\windows\dump-vm-specs.ps1
